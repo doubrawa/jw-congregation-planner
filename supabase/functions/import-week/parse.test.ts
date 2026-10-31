@@ -128,6 +128,9 @@ describe('dienstteilBekannt — kennt der Parser den Punkt?', () => {
       ['Gespräche beginnen', 'VON HAUS ZU HAUS · 3 Min.'],
       ['Interesse fördern', 'INFORMELL · 4 Min.'],
       ['Menschen zu Jüngern machen', 'IN DER ÖFFENTLICHKEIT · 5 Min.'],
+      // Bis zum 31.10.2026 nicht — gefunden in der Woche ab 14.9.2026, als die
+      // Prüfungen zum ersten Mal über ein ganzes Jahr liefen.
+      ['Menschen zu Jüngern machen', 'Gespräch mit einem Bibelschüler · 4 Min. · th Lektion 11'],
       ['Gespräche beginnen', '3 Min.'],
       ['Was würdest du sagen?', 'Besprechung · 6 Min.'],
       ['Unsere Glaubensansichten erklären', 'Gespielte Szene · 5 Min. · th Lektion 17'],
@@ -208,11 +211,55 @@ describe('parseWorkbookWeek (Struktur, deutsche Seite)', () => {
     expect(parts('UNSER LEBEN ALS CHRIST')[0]!.names).toEqual([{ name: '', bereichsKey: 'besprechung' }])
   })
 
-  it('Bibellesung (= letzter Schätze-Punkt): Schriftstelle im Titel, Quelle in Meta', () => {
+  it('Bibellesung: Schriftstelle im Titel, Quelle in Meta', () => {
     const bl = parts('SCHÄTZE AUS GOTTES WORT').at(-1)!
     expect(bl.title).toBe('Bibellesung · Mus 13:1-14')
     expect(bl.meta).toBe('4 Min. · th Lektion 2')
     expect(bl.names[0]!.bereichsKey).toBe('bibellesung')
+  })
+
+  it('die Bibellesung ist der Punkt mit Schriftstelle und Quelle, nicht der letzte (31.10.2026)', () => {
+    // Ein Punkt dahinter bekam bis dahin ihre Plätze — und sie die einer
+    // Besprechung, ohne Schriftstelle im Titel.
+    const html = FIXTURE_DE.replace(
+      '<h2 data-pid="18"',
+      '<h3 data-pid="30" class="du-color--teal-700">4. Kurzer Rückblick</h3>\n  <p data-pid="31">(2 Min.) Etwas Text.</p>\n  <h2 data-pid="18"',
+    )
+    const schaetze = parseWorkbookWeek(html).mid.sections[1]!.items as ImportedPart[]
+    expect(schaetze.map((p) => p.names[0]!.bereichsKey)).toEqual(['vortrag', 'bibellesung', 'besprechung'])
+    expect(schaetze[1]!.title).toBe('Bibellesung · Mus 13:1-14')
+    expect(schaetze[2]!.title).toBe('Kurzer Rückblick')
+  })
+
+  it('birmanisch: Nummer mit Abschnittszeichen, Rahmen bis dorthin (Review 31.10.2026)', () => {
+    // Gemessen an der Woche ab 2.11.2026: „၃။ …" statt „3. …", und der Satz
+    // endet mit „။". Vorher blieb `num` leer, die Zahl stand im Titel, und die
+    // Schülerteile hatten keinen Rahmen. Text hier Platzhalter, die Zeichen echt.
+    const html = FIXTURE_DE.replace('1. Erster Vortrag', '၁။ Erster Vortrag').replace(
+      '(3 Min.) VON HAUS ZU HAUS. Irgendein Text.',
+      '(၃ မိ.) DOMO XI DOMO။ Irgendein Text။',
+    )
+    const w = parseWorkbookWeek(html)
+    const vortrag = w.mid.sections[1]!.items[0] as ImportedPart
+    expect([vortrag.num, vortrag.title]).toEqual([1, 'Erster Vortrag'])
+    const dienst = w.mid.sections[2]!.items[0] as ImportedPart
+    expect(dienst.meta).toBe('DOMO XI DOMO · ၃ မိ. · lmd Lektion 1 Punkt 5')
+    expect(dienst.mins).toBe(3)
+  })
+
+  it('eine Quelle allein macht noch keine Bibellesung — es braucht die Schriftstelle dazu', () => {
+    const html = FIXTURE_DE.replace(
+      '<h2 data-pid="18"',
+      '<h3 data-pid="30" class="du-color--teal-700">4. Lektion wiederholen</h3>\n  <p data-pid="31">(2 Min.) (th Lektion 5)</p>\n  <h2 data-pid="18"',
+    )
+    const schaetze = parseWorkbookWeek(html).mid.sections[1]!.items as ImportedPart[]
+    expect(schaetze.map((p) => p.names[0]!.bereichsKey)).toEqual(['vortrag', 'bibellesung', 'besprechung'])
+  })
+
+  it('ohne Punkt mit Schriftstelle und Quelle bleibt es der letzte', () => {
+    const html = FIXTURE_DE.replace('(4 Min.) Mus 13:1-14 ( th Lektion 2 )', '(4 Min.)')
+    const schaetze = parseWorkbookWeek(html).mid.sections[1]!.items as ImportedPart[]
+    expect(schaetze.map((p) => p.names[0]!.bereichsKey)).toEqual(['vortrag', 'bibellesung'])
   })
 
   it('Dienst-Rahmen wird wörtlich übernommen (verbatim, sprachunabhängig)', () => {
@@ -409,6 +456,31 @@ describe('parseWorkbookWeek — die Form ab 2027 (Lieder als Absatz)', () => {
     expect(close.meta).toBe('3 Min.')
     expect(close.mins).toBe(3)
     expect(close.names).toEqual([{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }])
+  })
+
+  it('ein Schlusslied ohne Link gehört trotzdem zu den Schlussworten (31.10.2026)', () => {
+    // So steht es in der chinesischen Ausgabe der Woche ab 4.1.2027: kein Link
+    // ins Liederbuch, nur fetter Text. Die Zeile hieß bis dahin nur „结语".
+    const ohneLink = FIXTURE_2027.replace(
+      /<p data-pid="48"[\s\S]*?<\/p>/,
+      '<p data-pid="48" class="p48"><strong>Lied 61</strong> <strong>und Gebet</strong></p>',
+    )
+    expect(ohneLink).not.toContain('lied-61') // Positivkontrolle: der Link ist weg
+    const close = parseWorkbookWeek(ohneLink).mid.sections.at(-1)!.items[0] as ImportedPart
+    expect(close.title).toBe('Schlussworte · Lied 61 und Gebet')
+    expect(close.names).toEqual([{ name: '', rolle: 'Gebet', bereichsKey: 'gebet' }])
+  })
+
+  it('ein Hinweis mit Klammer nach der Schlusszeile überschreibt sie nicht (Review 31.10.2026)', () => {
+    // Gegenstück zum Lied ohne Link: Nicht jeder Absatz unter einer farblosen
+    // Überschrift mit Zahl ist ein Schlusslied — nur der erste, solange die
+    // Schlusszeile fehlt.
+    const mitHinweis = FIXTURE_2027.replace(
+      '</article>',
+      '<h3 data-pid="60" class="du-fontSize--base">Hinweis zum Leseprogramm (Seite 5)</h3>\n  <p data-pid="61">Etwas Text.</p>\n</article>',
+    )
+    const close = parseWorkbookWeek(mitHinweis).mid.sections.at(-1)!.items[0] as ImportedPart
+    expect(close.title).toBe('Schlussworte · Lied 61 und Gebet')
   })
 
   it('Schlussworte ohne Lied darunter: die Zeile der Seite, nicht die deutsche Rückfall-Zeile', () => {

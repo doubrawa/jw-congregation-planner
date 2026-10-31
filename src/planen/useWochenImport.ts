@@ -8,7 +8,10 @@ import type { Week } from '../data/types'
 import { JW_TO_CONG } from '../i18n/langs'
 import { programmSpanne, useT } from '../i18n/useT'
 import { holenNach, loadedUntilMs } from '../data/holen'
-import { type ImportFehler, importNextWeek, importWeekVariants } from '../lib/import'
+import { type ImportFehler, type ImportResult, importNextWeek, importWeekVariants } from '../lib/import'
+
+/** Was „Holen" vorlegt: die Woche und was der Parser darin geraten hat. */
+export type Geholt = Extract<ImportResult, { ok: true }>
 
 /**
  * Wie viele Wochen ihre Sprachvarianten gleichzeitig nachholen dürfen.
@@ -40,10 +43,11 @@ export function useWochenImport(): {
    */
   holenMoeglich: () => boolean
   /**
-   * Holt die nächste Woche von jw.org, ohne sie anzuhängen. `null`, wenn
-   * nichts kam — warum, sagt der Toast.
+   * Holt die nächste Woche von jw.org, ohne sie anzuhängen — samt dem, was
+   * der Parser darin nicht kannte. `null`, wenn nichts kam; warum, sagt der
+   * Toast.
    */
-  holen: () => Promise<Week | null>
+  holen: () => Promise<Geholt | null>
   /**
    * Hängt eine geholte Woche an. Mit `zuteilen` öffnet sich ihr Plan, und die
    * offenen Plätze der ganzen Woche werden automatisch besetzt.
@@ -106,7 +110,7 @@ export function useWochenImport(): {
     return true
   }
 
-  const holen = async (): Promise<Week | null> => {
+  const holen = async (): Promise<Geholt | null> => {
     // Abruf der nächsten Woche von jw.org (Edge Function), direkt in der
     // Versammlungssprache (jw.org-Code, sonst Deutsch). Einen eigenen Zweig
     // für die Entwicklerseite gibt es nicht mehr: Bis zum 2.10.2026 hängte er
@@ -167,7 +171,7 @@ export function useWochenImport(): {
     const res = await importNextWeek(holenNach(state.weeks, fromIso(heute)), langCode, altCodes)
     // Geholt ist geholt: Ob die Woche übernommen wird, entscheidet das Blatt.
     dispatch({ type: 'stopImport' })
-    if (res.ok) return res.week
+    if (res.ok) return res
     // Jeder Fehler hat seinen Satz in der Sprache des Lesers — keiner kommt
     // als Meldung des Servers durch (`ImportFehler`). Ohne Datenbank (auch:
     // Entwicklerseite) ist der Abruf gar nicht möglich; hier stand früher der

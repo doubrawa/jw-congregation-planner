@@ -80,12 +80,19 @@ describe('importNextWeek', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('Erfolg → ok mit Woche; ruft import-week mit after/lang/altLangs', async () => {
+  it('Erfolg → ok mit Woche und Befunden; ruft import-week mit after/lang/altLangs', async () => {
+    const week = wk('2026-07-20')
+    const befunde = [{ art: 'nummern', nr: 7 }]
+    invoke.mockResolvedValue({ data: { week, befunde }, error: null })
+    const res = await importNextWeek('2026-07-13', 'de', ['en'])
+    expect(res).toEqual({ ok: true, week, befunde })
+    expect(invoke).toHaveBeenCalledWith('import-week', { body: { after: '2026-07-13', lang: 'de', altLangs: ['en'] } })
+  })
+
+  it('eine Function ohne Befunde (vor dem 31.10.2026) ergibt keine — kein Absturz im Blatt', async () => {
     const week = wk('2026-07-20')
     invoke.mockResolvedValue({ data: { week }, error: null })
-    const res = await importNextWeek('2026-07-13', 'de', ['en'])
-    expect(res).toEqual({ ok: true, week })
-    expect(invoke).toHaveBeenCalledWith('import-week', { body: { after: '2026-07-13', lang: 'de', altLangs: ['en'] } })
+    expect(await importNextWeek('2026-07-13')).toEqual({ ok: true, week, befunde: [] })
   })
 
   it('Transportfehler → „unbekannt", die Meldung steht in der Konsole', async () => {
@@ -130,7 +137,7 @@ describe('importWeekVariants', () => {
     const week = wk('2026-07-20')
     invoke.mockResolvedValue({ data: { week }, error: null })
     const res = await importWeekVariants('2026-07-20', 'de', ['fr'])
-    expect(res).toEqual({ ok: true, week })
+    expect(res).toEqual({ ok: true, week, befunde: [] })
     expect(invoke).toHaveBeenCalledWith('import-week', { body: { start: '2026-07-20', lang: 'de', altLangs: ['fr'] } })
   })
 

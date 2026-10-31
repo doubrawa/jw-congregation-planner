@@ -1,5 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { makeTr } from '../../../src/i18n/translate'
+import type { Befund } from '../import-week/befunde.ts'
 
 /*
  * Tests der Edge Function `import-week` — der Teil, der bis T65 ohne Aufbau
@@ -166,8 +167,11 @@ const studieArtikel = (code: string, lieder = 2): string => `<html><body>
   ${lieder >= 2 ? `<a class="pub-sjj" href="#">[${code}] Lied 200</a>` : ''}
 </body></html>`
 
-/** Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. */
-const wochenSeite = (kopf: string, schalter = ''): string => `<article>${schalter}
+/**
+ * Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. Mit
+ * `zusatz` steht unter „SERVO XI" ein zweiter Punkt (siehe `Seiten.zusatz`).
+ */
+const wochenSeite = (kopf: string, schalter = '', zusatz = false): string => `<article>${schalter}
   <h1 data-pid="1" class="du-color--textSubdued">${kopf}</h1>
   <h2 data-pid="2" class="du-fontSize--base">QORBLA 13-15</h2>
   <h3 data-pid="3" class="x"><span class="dc-icon--music"></span> Xylo 12 qi Preku | Vorqi Blen (1 vim)</h3>
@@ -176,7 +180,9 @@ const wochenSeite = (kopf: string, schalter = ''): string => `<article>${schalte
   <p data-pid="6">(10 vim)</p>
   <h2 data-pid="18" class="du-color--gold-700">SERVO XI</h2>
   <h3 data-pid="19" class="du-color--gold-700">4. Konvo Beg</h3>
-  <p data-pid="20">(3 vim) DOMO XI DOMO.</p>
+  <p data-pid="20">(3 vim) DOMO XI DOMO.</p>${zusatz ? `
+  <h3 data-pid="21" class="du-color--gold-700">5. Nova Afero</h3>
+  <p data-pid="22">(2 vim) Frob.</p>` : ''}
   <h2 data-pid="25" class="du-color--maroon-600">VIVO KRISTO</h2>
   <h3 data-pid="27" class="du-color--maroon-600">7. Loka Diskuto</h3>
   <p data-pid="28">(15 vim) Diskuto.</p>
@@ -218,10 +224,17 @@ interface Seiten {
   einfach?: boolean
   /** Antwortet die ältere Ausgabe (`ALT_SLUG`) nicht mehr? */
   altFehlt?: boolean
+  /**
+   * Sprachen, deren Fassung einen Punkt mehr trägt als die deutsche — sie
+   * gliedert sich anders, und Plätze wie Texte gehen nach der Stelle.
+   */
+  zusatz?: string[]
 }
 
 let seiten: Seiten
 let geholt: string[]
+/** Das Protokoll der Function: Befunde schreibt sie dort auf Deutsch hin. */
+let warnung: MockInstance<typeof console.warn>
 
 /* ---- Zugang (Sitzung, Mitgliedschaft, Dienstschlüssel) -------------------- */
 
@@ -277,7 +290,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
     const code = variante[1]!
     if (!seiten.sprachen.includes(code)) return weg()
     const w = [...WOCHEN_SLUGS, ...ALT_WOCHEN_SLUGS].find((x) => url.includes(x))
-    return w ? text(wochenSeite(`[${code}] ${w}`)) : weg()
+    return w ? text(wochenSeite(`[${code}] ${w}`, '', seiten.zusatz?.includes(code))) : weg()
   }
   const woche = [...WOCHEN_SLUGS, ...ALT_WOCHEN_SLUGS].find((s) => url.includes(s))
   if (woche) {
@@ -336,6 +349,7 @@ interface Antwort {
     we: { sections: { label: string }[] }
     alt?: Record<string, { range: string; mid: { sections: Array<{ items: Array<{ names?: unknown[] }> }> }; we: { sections: unknown[] } }>
   }
+  befunde?: Befund[]
   error?: string
   /** HTTP-Status der Antwort — nur `hole()` setzt ihn. */
   status?: number
@@ -361,6 +375,8 @@ beforeEach(() => {
     sprachen: ['en', 'es', 'fr'],
   }
   geholt = []
+  warnung = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  warnung.mockClear()
 })
 
 afterAll(() => {
@@ -868,6 +884,57 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
     // Deutsche eine Absicht ist oder eine Lücke.
     expect(makeTr('es')(week?.range ?? '')).not.toBe(week?.range)
     expect(makeTr('ru')(week?.range ?? '')).not.toBe(week?.range)
+  })
+})
+
+/**
+ * **Was der Parser nicht kennt, reist mit der Woche** (31.10.2026). Bis dahin
+ * rät er still: Ein neuer Punkt bekam einen geratenen Platz, und erst wer die
+ * Woche plante, konnte es merken. Jetzt nennt die Antwort die Stellen
+ * (`befunde`), das Blatt „Programm holen" zeigt sie, und das Protokoll sagt es
+ * dem Betreiber auf Deutsch.
+ *
+ * Die Wochenseite hier ist so gebaut, dass der Parser ihren Punkt unter
+ * „SERVO XI" nicht kennt — „DOMO XI DOMO" ist keine Form, die er versteht.
+ */
+describe('import-week: Befunde reisen mit der Woche', () => {
+  const UNBEKANNT: Befund = { art: 'unbekannt', nr: 4, titel: 'Konvo Beg', form: 'DOMO XI DOMO' }
+  const gliederungen = (befunde: Befund[] = []) => befunde.filter((b) => b.art === 'gliederung').map((b) => b.sprache)
+
+  it('der unbekannte Punkt steht in der Antwort und im Protokoll', async () => {
+    const { week, befunde } = await hole({ after: '2026-03-02' })
+    expect(week?.start).toBe('2026-03-09')
+    expect(befunde).toContainEqual(UNBEKANNT)
+    expect(String(warnung.mock.calls[0]?.[1])).toContain('Punkt 4 „Konvo Beg": Form „DOMO XI DOMO"')
+  })
+
+  it('für eine spanische Versammlung prüft die deutsche Fassung die Form — wie sie die Plätze liefert', async () => {
+    const { week, befunde } = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(week?.lang).toBe('es')
+    expect(befunde).toContainEqual(UNBEKANNT)
+    // Gleich gegliedert wie die deutsche: kein Befund dazu.
+    expect(gliederungen(befunde)).toEqual([])
+  })
+
+  it('gliedert sich die Fassung der Versammlung anders, sagt die Antwort es', async () => {
+    seiten.zusatz = ['es']
+    const { befunde } = await hole({ after: '2026-03-02', lang: 'es' })
+    expect(befunde).toContainEqual(expect.objectContaining({ art: 'gliederung', sprache: 'es' }))
+  })
+
+  it('ebenso bei einer weiteren Programmsprache — die Variante bleibt trotzdem dabei', async () => {
+    seiten.zusatz = ['fr']
+    const { week, befunde } = await hole({ after: '2026-03-02', lang: 'de', altLangs: ['en', 'fr'] })
+    expect(Object.keys(week?.alt ?? {}).sort()).toEqual(['en', 'fr'])
+    // Nur die abweichende Sprache, nicht die gleich gegliederte.
+    expect(gliederungen(befunde)).toEqual(['fr'])
+  })
+
+  it('die Woche des Gedächtnismahls ist gebaut, nicht geparst — sie meldet nichts', async () => {
+    const { week, befunde } = await hole({ after: '2026-03-23' })
+    expect(week?.anlass?.art).toBe('mem')
+    expect(befunde).toEqual([])
+    expect(warnung).not.toHaveBeenCalled()
   })
 })
 

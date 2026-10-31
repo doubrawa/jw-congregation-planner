@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import { useApp } from '../app/context'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
@@ -7,11 +8,12 @@ import { Sheet } from '../components/Sheet'
 import { isSong } from '../data/helpers'
 import type { Meeting, SectionColor, Week } from '../data/types'
 import { sprachenListe, useLangNames } from '../i18n/langnames'
-import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
-import { useWochenImport } from './useWochenImport'
+import { fill, type ProgWeek, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
+import { befundZeile } from './heft-befunde'
+import { type Geholt, useWochenImport } from './useWochenImport'
 
 /** Was beim Holen gerade ist: nichts, der Abruf läuft, oder die Woche liegt zum Prüfen da. */
-type Holen = { art: 'zu' } | { art: 'holt' } | { art: 'geholt'; week: Week }
+type Holen = { art: 'zu' } | { art: 'holt' } | { art: 'geholt'; geholt: Geholt }
 
 /**
  * **„Holen"** (T121, Entwürfe `GWochen`, `GDesktopPlanen`, `GImport`): holt die
@@ -33,20 +35,20 @@ export function HolenKnopf({ className }: { className: string }) {
     if (!holenMoeglich()) return
     const nr = ++lauf.current
     setStand({ art: 'holt' })
-    void holen().then((week) => {
-      if (lauf.current === nr) setStand(week ? { art: 'geholt', week } : { art: 'zu' })
+    void holen().then((geholt) => {
+      if (lauf.current === nr) setStand(geholt ? { art: 'geholt', geholt } : { art: 'zu' })
     })
   }
   const schliessen = (): void => {
     lauf.current++
     setStand({ art: 'zu' })
   }
-  const geholt = stand.art === 'geholt' ? stand.week : null
+  const geholt = stand.art === 'geholt' ? stand.geholt : null
   const uebernehmenMit = (zuteilen: boolean) =>
     geholt
       ? () => {
           schliessen()
-          uebernehmen(geholt, zuteilen)
+          uebernehmen(geholt.week, zuteilen)
         }
       : null
 
@@ -65,7 +67,7 @@ export function HolenKnopf({ className }: { className: string }) {
       {stand.art !== 'zu' &&
         createPortal(
           <ProgrammHolenBlatt
-            week={geholt}
+            geholt={geholt}
             onZuteilen={uebernehmenMit(true)}
             onUebernehmen={uebernehmenMit(false)}
             onClose={schliessen}
@@ -92,19 +94,65 @@ function abschnitteMitPunkten(meeting: Meeting): AbschnittZahl[] {
 }
 
 /**
+ * **Unerwartetes im Arbeitsheft** (31.10.2026): was der Parser in dieser Woche
+ * nicht kannte und darum geraten hat (`befunde.ts`). Bis dahin übernahm
+ * „Holen" eine neue Form still — mit geratenen Plätzen, die „Übernehmen und
+ * zuteilen" gleich besetzte.
+ */
+function HeftBefunde({ befunde, p }: { befunde: Befund[]; p: ProgWeek & { week: Week } }) {
+  const { state } = useApp()
+  const { t } = useT()
+  const titelId = useId()
+  // Die Überschrift so, wie die Liste darunter sie zeigt — aus derselben Fassung.
+  const abschnittName = (kind: string) => {
+    const label = p.week.mid.sections.find((s) => s.kind === kind)?.label
+    return label ? p.tpw(label) : null
+  }
+  const zeilen = befunde.flatMap((b) => befundZeile(b, t, abschnittName, state.lang) ?? [])
+  // Ein Alarm: Der Kasten erscheint erst, wenn der Abruf fertig ist, und soll
+  // vor „Übernehmen" gehört werden, nicht erst beim Durchlesen.
+  return (
+    <section className="holen-befunde" role="alert" aria-labelledby={titelId}>
+      <h3 id={titelId} className="holen-befunde-titel">
+        {t.heftBefundeTitel}
+      </h3>
+      <p className="klein-text">{t.heftBefundeText}</p>
+      <ul className="holen-befunde-liste">
+        {zeilen.map((zeile, i) => (
+          <li key={i}>
+            {zeile.stelle && (
+              <span className="holen-befund-stelle">
+                {zeile.stelle}
+                {zeile.titel && (
+                  <>
+                    {' · '}
+                    <bdi>{zeile.titel}</bdi>
+                  </>
+                )}
+              </span>
+            )}
+            <span>{zeile.text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/**
  * **Das Blatt „Programm holen"** (Entwurf `GImport`): die Spur Holen, Prüfen,
- * Zuteilen; darunter, was kam — die Woche, ihre Abschnitte mit der Zahl der
- * Punkte, die Sprachen —, und die Wahl: übernehmen und gleich zuteilen, nur
- * übernehmen oder abbrechen. Solange der Abruf läuft, sind beide Übernehmen
- * gesperrt.
+ * Zuteilen; darunter, was kam — was der Parser darin nicht kannte, die Woche,
+ * ihre Abschnitte mit der Zahl der Punkte, die Sprachen —, und die Wahl:
+ * übernehmen und gleich zuteilen, nur übernehmen oder abbrechen. Solange der
+ * Abruf läuft, sind beide Übernehmen gesperrt.
  */
 function ProgrammHolenBlatt({
-  week,
+  geholt,
   onZuteilen,
   onUebernehmen,
   onClose,
 }: {
-  week: Week | null
+  geholt: Geholt | null
   onZuteilen: (() => void) | null
   onUebernehmen: (() => void) | null
   onClose: () => void
@@ -113,7 +161,8 @@ function ProgrammHolenBlatt({
   const { t } = useT()
   const progWeek = useProgWeeks()
   useLangNames(state.lang)
-  const p = week ? progWeek(week) : null
+  const p = geholt ? progWeek(geholt.week) : null
+  const befunde = geholt?.befunde ?? []
   const abschnitte = p ? abschnitteMitPunkten(p.week.mid) : []
   const spur: SpurSchritt[] = [
     { name: t.spurHolen, lage: p ? 'voll' : 'jetzt' },
@@ -127,6 +176,7 @@ function ProgrammHolenBlatt({
         <Spur schritte={spur} label={t.programmHolen} />
         {p ? (
           <>
+            {befunde.length > 0 && <HeftBefunde befunde={befunde} p={p} />}
             <div className="holen-woche">
               <div className="holen-kopf">
                 <span className="holen-spanne">{programmSpanne(p)}</span>

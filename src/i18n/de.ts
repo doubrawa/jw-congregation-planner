@@ -538,6 +538,21 @@ export const DE = {
     programmpunkteN: 'Programmpunkte: {n}', punkteN: 'Punkte: {n}',
     holenHinweis: 'Beim Übernehmen kommt der feste Leiter des Wachtturm-Studiums gleich mit, bei Abwesenheit sein Vertreter. Abwesenheiten werden beim Zuteilen beachtet.',
     uebernehmenZuteilen: 'Übernehmen und zuteilen', nurUebernehmen: 'Nur übernehmen',
+    // Was der Parser in der geholten Woche nicht kannte (31.10.2026,
+    // `import-week/befunde.ts`): Kasten über der Woche, je Stelle eine Zeile —
+    // fett die Stelle („Punkt {n}", ein Abschnitt, eine Sprache), darunter der Satz.
+    heftBefundeTitel: 'Unerwartetes im Arbeitsheft',
+    heftBefundeText: 'Was die App hier nicht kennt, hat sie geraten. Prüfe diese Stellen nach dem Übernehmen.',
+    heftPunkt: 'Punkt {n}',
+    heftZeitraum: 'Der Zeitraum der Woche fehlt.',
+    heftLied: 'Kein Lied mit Nummer erkannt.',
+    heftLeer: 'Keine Programmpunkte erkannt.',
+    heftNummern: 'Davor fehlt womöglich ein Programmpunkt.',
+    heftUnvollstaendig: 'Nummer, Titel, Minuten oder Plätze fehlen.',
+    heftUnbekannt: 'Diese Art Programmpunkt kennt die App noch nicht — die Plätze sind geraten.',
+    heftBibellesung: 'Die Bibellesung ist womöglich falsch erkannt.',
+    heftStudium: 'Das Versammlungsbibelstudium ist womöglich falsch erkannt.',
+    heftGliederung: 'Anders aufgebaut als die deutsche Fassung, nach der sich die App richtet — Plätze oder Texte können verschoben sein.',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).

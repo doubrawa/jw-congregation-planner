@@ -46,6 +46,21 @@ describe('wochenHolen', () => {
     expect(gefragt).toEqual(['(ohne)', '2026-09-07', '2026-09-14'])
   })
 
+  it('sammelt, was der Parser nicht kannte — je Woche, nur wo etwas kam (Review 31.10.2026)', async () => {
+    // Bis dahin übernahm das Skript nur `week`, und ein Neuaufbau schrieb ein
+    // Jahr Wochen, ohne die geratenen Plätze zu nennen.
+    const befunde = [{ art: 'unbekannt', nr: 7, titel: 'Etwas Neues', form: 'Rollenspiel' }]
+    const holen = (_url: string, init: { body: string }) => {
+      const { after } = JSON.parse(init.body)
+      return Promise.resolve(antwort(after ? { ...woche('2026-09-14'), befunde } : { ...woche('2026-09-07'), befunde: [] }))
+    }
+
+    const { wochen, hinweise } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 2, holen })
+
+    expect(wochen.map((w) => w.start)).toEqual(['2026-09-07', '2026-09-14'])
+    expect(hinweise).toEqual([{ woche: wochen[1], befunde }])
+  })
+
   it('schickt Sprache und Programmsprachen der Versammlung mit', async () => {
     let gesehen: { lang?: string; altLangs?: string[] } = {}
     const holen = (_url: string, init: { body: string }) => {

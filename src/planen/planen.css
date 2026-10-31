@@ -1829,6 +1829,49 @@ body:has(.planen-leiste) .toast {
   padding-inline: 4px;
 }
 
+/* Was der Parser nicht kannte (31.10.2026) — getönt wie ein Problem, über der
+   Woche, damit es vor „Übernehmen und zuteilen" gelesen wird. */
+.holen-befunde {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1px solid var(--problem-rand);
+  border-radius: 20px;
+  background: var(--problem-flaeche);
+}
+
+/* In Textfarbe: `--problem` auf der getönten Fläche hielt im hellen Design nur
+   4,43:1 (AA verlangt 4,5:1, Review 31.10.2026). Den Alarm tragen Fläche und
+   Rand. */
+.holen-befunde-titel {
+  margin: 0;
+  color: var(--text);
+  font-size: calc(14px * var(--fs));
+  font-weight: 700;
+}
+
+.holen-befunde-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.holen-befunde-liste > li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: calc(13.5px * var(--fs));
+}
+
+.holen-befund-stelle {
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
 .holen-laedt {
   padding-block: 24px;
   color: var(--text2);

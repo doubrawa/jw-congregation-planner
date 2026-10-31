@@ -1896,6 +1896,16 @@ und die Programmsprachen. Dann wählst du:
 - **Nur übernehmen** – die Woche kommt dazu; zugeteilt wird später.
 - **Abbrechen** – nichts ändert sich.
 
+**Unerwartetes im Arbeitsheft.** Ändert jw.org die Form des Arbeitshefts – ein
+neuer Programmpunkt, ein Lied in neuer Schreibweise, ein Abschnitt mehr –, kennt
+die App das zunächst nicht und rät: Ein neuer Punkt bekommt etwa einen
+Schülerplatz, obwohl ihn vielleicht ein Ältester übernimmt. Dann steht über der
+Woche ein roter Kasten mit jeder solchen Stelle (**Punkt 7** samt Titel, ein
+Abschnitt oder eine Programmsprache) und was dort geraten ist. Übernehmen geht
+trotzdem; sieh dir danach diese Stellen im Plan an und teile dort von Hand zu,
+wo die App falsch geraten hat. Bei einer gewöhnlichen Woche erscheint der
+Kasten nicht.
+
 Mit beiden Arten zu übernehmen steht der **feste Leiter des Wachtturm-Studiums**
 gleich in der Woche – ist er am Tag der Zusammenkunft abwesend oder schon
 eingeteilt (etwa mit dem öffentlichen Vortrag aus dem Vortragsplan), sein

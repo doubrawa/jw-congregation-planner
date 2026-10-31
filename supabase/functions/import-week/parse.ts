@@ -9,8 +9,9 @@
 // SPRACHUNABHÄNGIG: Die Seite gibt es in ~480 Sprachen mit identischer Struktur.
 // Erkennung keyt daher ausschließlich auf **Struktur** — Farbklassen der
 // Überschriften (teal/gold/maroon), das Noten-Icon, die 1./2./3.-Nummerierung
-// (überall westliche Ziffern), die „(<Zahl> …)“-Zeitklammer und die **Position**
-// (letzter Schätze-Punkt = Bibellesung, letzter Unser-Leben-Punkt = VBS) — NICHT
+// (überall westliche Ziffern), die „(<Zahl> …)“-Zeitklammer, die Klammern der
+// Zeitzeile (Schätze-Punkt mit Schriftstelle und Quelle = Bibellesung) und die
+// **Position** (letzter Unser-Leben-Punkt = VBS) — NICHT
 // auf deutschen/englischen Text. Der sichtbare Text (Sektions-Überschriften,
 // Titel, Lieder, Schriftstellen, Rahmen) wird **wörtlich aus der Zielsprache
 // übernommen**. Nur unsere eigenen Struktur-Labels (ERÖFFNUNG/ABSCHLUSS) und die
@@ -299,7 +300,7 @@ function tokenize(html: string): Token[] {
 /* ---- Feld-Parser (sprachunabhängig) -------------------------------------- */
 
 /** Dezimalziffer **irgendeiner** Schrift — westlich, arabisch-indisch, Thai … */
-const ZIFFER = /\p{Nd}/u
+export const ZIFFER = /\p{Nd}/u
 
 /**
  * Beginnt die Zeile mit einer Zeitklammer? Maßgeblich ist, dass **in** der
@@ -322,11 +323,13 @@ const KLAMMER_AUF = new RegExp(`[${AUF}]`, 'u')
 /**
  * Satzende — der Rahmen endet daran. Neben dem westlichen Punkt und den
  * vollbreiten Formen auch Danda (Hindi/Bengali), das arabische Satzende (Urdu),
- * Verjaket (Armenisch) und der äthiopische Punkt. Ohne sie lief der Rahmen bis
- * in die Quellenangabe hinein und fiel dann durch die Ziffernprüfung — Hindi
- * hatte deshalb bei jedem Schülerteil einen leeren Rahmen.
+ * Verjaket (Armenisch), der äthiopische Punkt und das birmanische
+ * Abschnittszeichen (U+104B, seit 31.10.2026: „ဆွေးနွေးပါ။" stand samt Zeichen
+ * im Meta, und die Schülerteile hatten keinen Rahmen). Ohne sie lief der Rahmen
+ * bis in die Quellenangabe hinein und fiel dann durch die Ziffernprüfung —
+ * Hindi hatte deshalb bei jedem Schülerteil einen leeren Rahmen.
  */
-const SATZENDE = /[.。．।۔։።]/
+const SATZENDE = /[.。．।۔։።။]/
 /**
  * Satzenden, die beim Entfernen der Klammern allein zurückbleiben. Vorn der
  * Punkt, den die ukrainische Ausgabe gleich hinter die Zeitklammer setzt
@@ -341,10 +344,12 @@ const SATZENDE_VORN = new RegExp(`^(?:${RAND}|${SATZENDE.source})+`, 'u')
 const SATZENDE_HINTEN = new RegExp(`(?:${RAND}+|(?<=\\p{Nd}))(?:${SATZENDE.source})+${RAND}*$`, 'u')
 /**
  * Nummer eines Programmpunkts: „1.“, aber auch „1．“ (chinesisch, vollbreiter
- * Punkt) und „١-‏“ (arabisch, Bindestrich statt Punkt). Ohne die Varianten blieb
- * die Zahl im Titel stehen und `num` leer.
+ * Punkt), „١-‏“ (arabisch, Bindestrich statt Punkt) und „၃။“ (birmanisch, das
+ * Abschnittszeichen U+104B). Ohne die Varianten blieb die Zahl im Titel stehen
+ * und `num` leer — birmanisch bis zum 31.10.2026, gefunden von `heftBefunde`
+ * an der Woche ab 2.11.2026 in 70 Sprachen.
  */
-const NUMMER = new RegExp(`^${RAND}*(\\p{Nd}+)${RAND}*[.．。\\-‐‑–]${RAND}*`, 'u')
+const NUMMER = new RegExp(`^${RAND}*(\\p{Nd}+)${RAND}*[.．。။\\-‐‑–]${RAND}*`, 'u')
 /** Publikations-Kürzel (MEPS, in jeder Sprache gleich). */
 const PUB_SYM = /\b(th|lmd|lff|lfb|wcg|bt|jr|it|bhs|cf|lvs|rr|od|kr|jy|cl|be|sjj|snnw|w\d{2}|g\d{2})\b/i
 
@@ -519,8 +524,15 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
       continue
     }
     // Lied / Eröffnung / Abschluss — als `h3` mit Noten-Icon oder, ab 2027,
-    // als Absatz, der mit dem Link ins Liederbuch beginnt (`LIED_VORN`).
-    if ((tok.tag === 'h3' && tok.music) || (tok.tag === 'p' && tok.liedVorn)) {
+    // als Absatz, der mit dem Link ins Liederbuch beginnt (`LIED_VORN`). Unter
+    // dem Kopf der Schlusszeile ist auch ein Absatz ohne Link ihr Lied: Die
+    // chinesische Ausgabe der Woche ab 4.1.2027 setzt dort keinen („唱诗第164首和
+    // 祷告"), und bis zum 31.10.2026 ging das Schlusslied damit verloren — die
+    // Zeile hieß nur „结语" (gefunden von `heftBefunde`). Aber nur, solange es
+    // noch keine Schlusszeile gibt: Ein Hinweis mit Klammer darunter samt Absatz
+    // überschrieb sie sonst.
+    const liedOhneLink = schlussKopf !== null && closing === null
+    if ((tok.tag === 'h3' && tok.music) || (tok.tag === 'p' && (tok.liedVorn || liedOhneLink))) {
       // Steht der Kopf der Schlusszeile darüber, gehört das Lied zu ihm:
       // zusammengesetzt ist es die Zeile, wie sie bis 2026 in einer `h3` stand.
       const text = schlussKopf === null ? tok.text : `${schlussKopf} | ${tok.text}`
@@ -605,7 +617,13 @@ export function parseWorkbookWeek(html: string): ImportedWeek {
 const CONVO_RE = /Gespräche beginnen|Interesse fördern|Menschen zu Jüngern machen|Jünger machen/i
 const TALK_RE = /Ansprache|\bVortrag\b/i
 const BELIEF_RE = /Glaubensansichten erklären/i
-const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit/i
+/**
+ * Die Rahmen der Schülerteile. „Gespräch mit einem Bibelschüler" fehlte bis zum
+ * 31.10.2026: `dienstteilBekannt` hielt den Punkt damit für eine neue Form
+ * (Woche ab 14.9.2026, „Menschen zu Jüngern machen") — die Plätze stimmten,
+ * der Titel gab sie vor.
+ */
+const SETTING_RE = /Von Haus zu Haus|Informell|In der Öffentlichkeit|Gespräch mit einem Bibelschüler/i
 
 /**
  * Eine **Besprechung** — erkannt am Beschreiber, der in der Zeitzeile vor dem
@@ -747,7 +765,7 @@ function dienstteilPlaetze(title: string, meta: string): ImportedSlot[] | null {
 }
 
 /** Die Form eines Punkts: das erste Atom der Meta-Zeile — ohne Beschreiber die Zeit. */
-function formVon(meta: string): string {
+export function formVon(meta: string): string {
   return meta.split(' · ')[0] ?? ''
 }
 
@@ -789,6 +807,24 @@ export function applyGoldSlots(target: ImportedWeek, source: ImportedWeek): void
   }
 }
 
+/**
+ * **Die Bibellesung** — der Schätze-Punkt, dessen Zeitzeile Schriftstelle und
+ * Quelle trägt („(4 Min.) Jer 36:1-13 (th Lektion 2)"); der letzte davon, und
+ * ohne einen solchen der letzte Punkt des Abschnitts.
+ *
+ * Bis zum 31.10.2026 galt allein die Stelle. Ein neuer Punkt hinter der
+ * Bibellesung hätte ihre Plätze bekommen und sie die einer Besprechung, ohne
+ * Schriftstelle im Titel. Gemessen an 320 Wochenseiten (68 deutsche Wochen
+ * 11/2025–2/2027, die laufenden dazu in 14 Sprachen): Der Abschnitt hat immer
+ * drei Punkte, die ersten beiden tragen nur die Zeit, die Bibellesung immer
+ * Schriftstelle und Quelle — beide Regeln wählen überall denselben Punkt. Was
+ * davon abweicht, meldet `heftBefunde` (befunde.ts).
+ */
+function bibellesungVon(recs: PartRec[]): PartRec | undefined {
+  const schaetze = recs.filter((r) => r.color === 'teal')
+  return schaetze.findLast((r) => stripParens(r.time) !== '' && sourceOf(r.time) !== '') ?? schaetze.at(-1)
+}
+
 /** Titel/Meta/Slots je Punkt festlegen — kennt jetzt die Position in der Sektion. */
 function finalizeParts(recs: PartRec[]): void {
   const firstOf: Partial<Record<SecColor, PartRec>> = {}
@@ -797,6 +833,7 @@ function finalizeParts(recs: PartRec[]): void {
     firstOf[rec.color] ??= rec // erster je Farbe
     lastOf[rec.color] = rec // letzter je Farbe
   }
+  const bibellesung = bibellesungVon(recs)
 
   for (const rec of recs) {
     const { part, color, raw, time } = rec
@@ -805,8 +842,8 @@ function finalizeParts(recs: PartRec[]): void {
     // Die Zahl getrennt vom Anzeigetext — sie ist in jeder Sprache dieselbe.
     part.mins = ersteZahl(min)
 
-    if (color === 'teal' && rec === lastOf.teal) {
-      // letzter Schätze-Punkt = Bibellesung. Schriftstelle anhängen.
+    if (rec === bibellesung) {
+      // Schriftstelle anhängen.
       const scripture = stripParens(time)
       part.title = scripture ? `${title} · ${scripture}` : title
       part.meta = joinMeta(min, sourceOf(time))

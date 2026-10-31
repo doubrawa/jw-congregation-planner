@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import { dict } from '../i18n/ui'
 import type { Section, Service, Week } from '../data/types'
 import { zahlBinden } from '../i18n/zahl-binden'
@@ -28,7 +29,7 @@ import { zahlBinden } from '../i18n/zahl-binden'
  */
 
 const importNextWeek = vi.fn((_after?: string, _lang?: string, _alt?: string[]) =>
-  Promise.resolve<{ ok: boolean; week?: Week; error?: string }>({ ok: true, week: undefined }),
+  Promise.resolve<{ ok: boolean; week?: Week; befunde?: Befund[]; error?: string }>({ ok: true, week: undefined }),
 )
 const importWeekVariants = vi.fn((_start: string, _lang: string, _codes: string[]) =>
   Promise.resolve<{ ok: boolean; week?: Week }>({ ok: false }),
@@ -406,6 +407,131 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
       expect(text, k).not.toContain(t[k])
     }
     expect(text).toContain(zahlBinden('Program parts: 3'))
+  })
+
+  /*
+   * **Unerwartetes im Arbeitsheft** (31.10.2026). Bis dahin übernahm „Holen"
+   * eine Woche mit einer neuen Form still: Der Parser riet die Plätze, und
+   * „Übernehmen und zuteilen" besetzte sie gleich. Jetzt steht über der Woche,
+   * was er nicht kannte — je Stelle eine Zeile.
+   */
+  const MIT_BEFUNDEN: Befund[] = [
+    { art: 'unbekannt', nr: 7, titel: 'Etwas ganz Neues', form: 'Rollenspiel zu dritt' },
+    // Der Abschnitt steht mit seiner Art im Befund; die Überschrift kommt aus der Woche.
+    { art: 'lied', abschnitt: 'eroeffnung' },
+    { art: 'gliederung', sprache: 'en', ist: 'a', soll: 'b' },
+    { art: 'zeitraum' },
+  ]
+  /** Eine Woche mit Eröffnung, wie der Import sie baut — Überschrift kanonisch deutsch. */
+  const mitEroeffnung = () =>
+    woche('2026-09-14', '14.–20. September', [
+      { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ iid: 'e', title: 'Lied 1', names: [] }] },
+      { ...abschnitt('SCHÄTZE AUS GOTTES WORT', 'petrol', 3), kind: 'schaetze' },
+    ])
+  const kasten = () => blatt()?.querySelector('.holen-befunde') ?? null
+  const zeilen = () => [...(kasten()?.querySelectorAll('li') ?? [])].map((li) => li.textContent)
+
+  it('was der Parser nicht kannte, steht über der Woche — Stelle, Titel und was dort ist', async () => {
+    importNextWeek.mockResolvedValue({ ok: true, week: mitEroeffnung(), befunde: MIT_BEFUNDEN })
+    const { container } = zeige({ progLangs: ['en'] })
+    holen(container)
+    await geholt()
+    expect(kasten()?.querySelector('h3')?.textContent).toBe(t.heftBefundeTitel)
+    expect(kasten()?.textContent).toContain(t.heftBefundeText)
+    // Ein Alarm: Er erscheint erst nach dem Abruf und wird angesagt.
+    expect(kasten()?.getAttribute('role')).toBe('alert')
+    expect(zeilen()).toEqual([
+      `Punkt 7 · Etwas ganz Neues${t.heftUnbekannt}`,
+      `ERÖFFNUNG${t.heftLied}`,
+      `Englisch${t.heftGliederung}`,
+      // Die ganze Woche: keine Stelle, nur der Satz.
+      t.heftZeitraum,
+    ])
+    // Über der Woche, damit es vor „Übernehmen und zuteilen" gelesen wird.
+    const woche_ = blatt()!.querySelector('.holen-woche')!
+    expect(kasten()!.compareDocumentPosition(woche_) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Übernehmen bleibt möglich — der Planer entscheidet.
+    expect(blattKnopf(t.uebernehmenZuteilen)?.disabled).toBe(false)
+  })
+
+  it('Gegenprobe: eine gewöhnliche Woche zeigt keinen Kasten', async () => {
+    // Eine Function von vor dem 31.10.2026 ohne das Feld fängt `import.ts` ab
+    // (`import.test.ts`).
+    importNextWeek.mockResolvedValue({ ok: true, week: woche('2026-09-14'), befunde: [] })
+    const { container } = zeige()
+    holen(container)
+    await geholt()
+    expect(blatt()?.querySelector('.holen-woche')).not.toBeNull() // Positivkontrolle: die Woche steht da
+    expect(kasten()).toBeNull()
+  })
+
+  it('ein Abschnitt, den die Woche nicht hat, steht ohne Stelle da — nie als Schlüssel', async () => {
+    // Gefunden auf der Entwicklerseite: Ihre Wochen tragen keine Art an den
+    // Abschnitten, und der Kasten zeigte „eroeffnung".
+    importNextWeek.mockResolvedValue({ ok: true, week: woche('2026-09-14'), befunde: [{ art: 'lied', abschnitt: 'eroeffnung' }] })
+    const { container } = zeige()
+    holen(container)
+    await geholt()
+    expect(zeilen()).toEqual([t.heftLied])
+  })
+
+  it('eine Befund-Art, die dieses Bündel nicht kennt, fehlt nur in der Liste — das Blatt steht (Review 31.10.2026)', async () => {
+    // Die Function wird vor der App ausgerollt; ein Gerät behält sein Bündel,
+    // bis es neu lädt. Bis dahin warf das Blatt beim Zeichnen.
+    const neu = { art: 'kuenftig', nr: 3 } as unknown as Befund
+    importNextWeek.mockResolvedValue({ ok: true, week: mitEroeffnung(), befunde: [neu, { art: 'zeitraum' }] })
+    const { container } = zeige()
+    holen(container)
+    await geholt()
+    expect(kasten()?.querySelector('h3')?.textContent).toBe(t.heftBefundeTitel)
+    expect(zeilen()).toEqual([t.heftZeitraum])
+  })
+
+  it('der Abschnitt heißt wie in der Fassung, die das Blatt zeigt — nicht wie im Heft der Versammlung (Review 31.10.2026)', async () => {
+    // Spanische Versammlung, App auf Englisch, Englisch als Programmsprache:
+    // Das Blatt zeigt die englische Fassung. Der Befund trug bis dahin die
+    // spanische Überschrift, und `tu` übersetzt keinen spanischen Text.
+    const es = woche('2026-09-14', '14–20 de septiembre', [
+      { ...abschnitt('TESOROS DE LA BIBLIA', 'petrol', 3), kind: 'schaetze' },
+    ])
+    const enFassung = woche('2026-09-14', 'September 14-20', [
+      { ...abschnitt('TREASURES FROM GOD’S WORD', 'petrol', 3), kind: 'schaetze' },
+    ])
+    importNextWeek.mockResolvedValue({
+      ok: true,
+      week: { ...es, lang: 'es', alt: { en: enFassung } } as Week,
+      befunde: [{ art: 'bibellesung', abschnitt: 'schaetze' }],
+    })
+    const en = dict('en')
+    const { container } = zeige({ lang: 'en', congLang: 'es', progLangs: ['en'] })
+    holen(container)
+    await waitFor(() => expect(blattKnopf(en.nurUebernehmen)?.disabled).toBe(false))
+    // Positivkontrolle: Die Liste darunter zeigt die englische Fassung.
+    expect(blatt()!.querySelector('.holen-abschnitt-name')?.textContent).toBe('TREASURES FROM GOD’S WORD')
+    expect(zeilen()).toEqual([`TREASURES FROM GOD’S WORD${en.heftBibellesung}`])
+  })
+
+  it('in der Sprache des Lesers — und der Abschnitt in der des Programms', async () => {
+    importNextWeek.mockResolvedValue({ ok: true, week: mitEroeffnung(), befunde: MIT_BEFUNDEN })
+    const en = dict('en')
+    const { container } = zeige({ lang: 'en', congLang: 'en' })
+    holen(container)
+    await waitFor(() => expect(blattKnopf(en.nurUebernehmen)?.disabled).toBe(false))
+    expect(kasten()?.querySelector('h3')?.textContent).toBe(en.heftBefundeTitel)
+    // Die Sprachnamen kommen nachgeladen (`useLangNames`); bis dahin steht der
+    // deutsche — unter der Last der ganzen Suite lange genug, um es zu sehen.
+    await waitFor(() =>
+      expect(zeilen()).toEqual([
+        `Part 7 · Etwas ganz Neues${en.heftUnbekannt}`,
+        // „ERÖFFNUNG" steht kanonisch deutsch in der Woche — übersetzt wie im Programm.
+        `OPENING${en.heftLied}`,
+        `English${en.heftGliederung}`,
+        en.heftZeitraum,
+      ]),
+    )
+    for (const k of ['heftBefundeTitel', 'heftBefundeText', 'heftUnbekannt', 'heftLied', 'heftGliederung'] as const) {
+      expect(kasten()!.textContent, k).not.toContain(t[k])
+    }
   })
 
   it('wird das Blatt geschlossen, während geholt wird, verfällt das Ergebnis', async () => {

@@ -22,6 +22,7 @@
 // =============================================================================
 
 import { CORS, dienstSchluessel, json, mitDienstSchluessel, restKlient, wert } from '../_shared/rest.ts'
+import { befundAufDeutsch, heftBefunde, strukturBefunde, type Befund } from './befunde.ts'
 import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } from './parse.ts'
 import { articleTitle, songs, studyIssueSlugs, studySynopses } from './study.ts'
 import { gedaechtnismahlWoche } from './gedaechtnismahl.ts'
@@ -266,7 +267,7 @@ Deno.serve(async (req: Request) => {
       const memWeek = gedaechtnismahlWoche(start.toISOString().slice(0, 10), mem)
       const memStudy = await studyArticle(start, lang)
       if (memStudy) applyStudy(memWeek, memStudy)
-      return json({ week: { ...memWeek, lang } })
+      return json({ week: { ...memWeek, lang }, befunde: [] })
     }
 
     const germanHtml = await fetchText(weekUrl)
@@ -301,6 +302,14 @@ Deno.serve(async (req: Request) => {
     // ist die geparste Woche bereits die deutsche.
     const germanWeek = lang === 'de' ? week : parseWorkbookWeek(germanHtml)
     if (germanWeek !== week) applyGoldSlots(week, germanWeek)
+
+    // Was der Parser nicht kennt und darum geraten hat (befunde.ts) — die App
+    // zeigt es vor dem Übernehmen. Die Formen unter „Uns im Dienst verbessern"
+    // prüft die deutsche Fassung, von der auch die Plätze kommen.
+    const befunde: Befund[] = [
+      ...heftBefunde(week, germanWeek),
+      ...(germanWeek !== week ? strukturBefunde(germanWeek, week, lang) : []),
+    ]
 
     // Wochenend-Wachtturm-Studienartikel automatisch eintragen: Titel + Lied vor
     // dem Studium (WACHTTURM-STUDIUM) und Schlusslied (ABSCHLUSS), in der
@@ -338,7 +347,9 @@ Deno.serve(async (req: Request) => {
           const altStudy = start ? await studyArticle(start, code) : null
           // mirror immer setzen: die Variante folgt strukturell der Primärwoche
           applyStudy(altWeek, altStudy, study ?? { title: null, songOpen: null, songClose: null })
-          return stripVariant(altWeek)
+          // Die Texte einer Variante gehen nach der Stelle — gegliedert wie die
+          // deutsche Fassung muss sie also auch sein.
+          return { week: stripVariant(altWeek), befunde: strukturBefunde(germanWeek, altWeek, code) }
         } catch {
           // Variante nicht verfügbar/fehlerhaft → Woche bleibt ohne diese Sprache
           return null
@@ -347,10 +358,17 @@ Deno.serve(async (req: Request) => {
     )
     wanted.forEach((code, i) => {
       const variante = varianten[i]
-      if (variante) week.alt = { ...week.alt, [code]: variante }
+      if (!variante) return
+      week.alt = { ...week.alt, [code]: variante.week }
+      befunde.push(...variante.befunde)
     })
 
-    return json({ week })
+    // Für den Betreiber steht es auch im Protokoll — auf Deutsch, wie `heft-pruefen.mjs` es schreibt.
+    if (befunde.length > 0) {
+      console.warn(`import-week ${week.start ?? ''} ${lang}:`, befunde.map((b) => befundAufDeutsch(b, germanWeek)).join('; '))
+    }
+
+    return json({ week, befunde })
   } catch (err) {
     // Der Fehlertext bleibt in den Logs. In der Antwort verriet er, was beim
     // Abruf passiert ist — bei einer fremden Adresse also, ob dort etwas

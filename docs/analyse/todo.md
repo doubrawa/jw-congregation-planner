@@ -9146,7 +9146,7 @@ Tests: die Reihenfolge in `fs-bereich-tabs.test.tsx` und
 bewacht (`gruppenbesuche-reiter-rechts`). Handbücher (Verkündiger, Planer) und
 die sieben Bilder mit der Leiste neu, Maße unverändert.
 
-## Aufgenommen am 31. Oktober 2026 (T156–T162)
+## Aufgenommen am 31. Oktober 2026 (T156–T163)
 
 ### T156 · Mutationsprobe abgeschafft, Unit-Tests mit Gegenprobe stattdessen 🔧 ✅ umgesetzt (31. Oktober 2026)
 
@@ -9543,6 +9543,83 @@ Gegenprobe mit erfundener Spalte → `400 42703`. Functions unverändert.
 
 **Live seit 31.10.2026 21:18** mit dem Push von `85e2898f` (Pages grün,
 `sw.js` → `shell-85e2898`).
+
+### T163 · Holen warnt bei Unerwartetem im Arbeitsheft 🔧 ✅ umgesetzt (31. Oktober 2026)
+
+„was passiert eigentlich, wenn ich ein wochenprogramm importiere und dort etwas
+drin ist, was unerwartet ist, weil es einen neuen programmtyp gibt" — Antwort
+war: nichts. Der Parser riet still (ein Schülerplatz für einen neuen Punkt; ein
+Punkt hinter der Bibellesung bekam ihre Plätze; ein Abschnitt mit fremder
+Farbklasse fiel ganz weg), und nur eine völlig fremde Seite brach ab.
+`heft-pruefen.mjs` sah das meiste, lief aber nur von Hand.
+
+- **Ein Prüfmodul für beide** (`import-week/befunde.ts`): `heftBefunde` und
+  `strukturBefunde` liefern Schlüssel mit Stelle — Zeitraum, Lied ohne Nummer,
+  leerer Abschnitt, Nummernsprung (einmal je Sprung), unvollständiger Punkt,
+  unbekannter Punkt (neue Form unter „Uns im Dienst verbessern", geprüft an der
+  deutschen Fassung; ein vierter Schätze-Punkt), Bibellesung ohne Schriftstelle
+  oder Quelle, Studium nicht der längste Punkt, andere Gliederung als Deutsch
+  (Zielsprache und jede Variante). `heft-pruefen.mjs` nutzt dasselbe und
+  schreibt es mit `befundAufDeutsch` aus; seine Proben stehen jetzt in
+  `befunde.test.ts`.
+- **Die Function** schickt `befunde` mit der Woche und schreibt sie deutsch ins
+  Protokoll (`console.warn`). Ein Client ohne das Feld (alte Function) nimmt `[]`.
+- **Das Blatt „Programm holen"** zeigt über der Woche den Kasten
+  **„Unerwartetes im Arbeitsheft"**, je Stelle eine Zeile (`heft-befunde.ts`);
+  Übernehmen bleibt möglich. Texte in 12 Sprachen: 12 neu (`heftBefundeTitel`,
+  `heftBefundeText`, `heftPunkt`, `heftZeitraum`, `heftLied`, `heftLeer`,
+  `heftNummern`, `heftUnvollstaendig`, `heftUnbekannt`, `heftBibellesung`,
+  `heftStudium`, `heftGliederung`). Handbuch Planer, Abschnitt 8.
+- **Die Bibellesung** ist jetzt der Schätze-Punkt mit Schriftstelle und Quelle
+  (sonst wie bisher der letzte) — ein Punkt dahinter nimmt ihr nicht mehr die
+  Plätze.
+- **Gemessen an 320 echten Wochenseiten** (68 deutsche Wochen 11/2025–2/2027,
+  die laufenden in 14 Sprachen): Der neue Parser liefert auf 319 dasselbe wie
+  der alte; die eine Abweichung ist ein Fehler, den die Prüfungen fanden und
+  der behoben ist — die chinesische Woche ab 4.1.2027 setzt das Schlusslied
+  ohne Link, die Zeile hieß nur „结语". Ebenso gefunden: Der Rahmen „Gespräch
+  mit einem Bibelschüler" fehlte in `SETTING_RE` (Woche ab 14.9.2026, Plätze
+  stimmten über den Titel). Danach meldet keine der 320 Seiten etwas.
+
+Gegenproben (22, alle rot): 15 an Parser, Prüfungen und Function, 7 am Client
+(Kasten fehlt oder steht unter der Woche, Befunde verworfen, falscher Satz,
+Abschnitt unübersetzt, Titel fehlt). Suite 7598/7598, tsc, Lint, Laufzeit auf
+`/demo.html` mit dem echten Blatt (de dunkel; ar hell, 320 px, Stufe 1,45: kein
+Überlauf), `heft-pruefen.mjs en` gegen jw.org: 18 Wochen, keine Auffälligkeiten.
+
+**/simplify** (Winkel nacheinander): `heftBefunde` in eine Funktion je Prüfung
+zerlegt (Lieder, Punkte, Schätze, Dienst, Studium); `formVon` aus `parse.ts`
+statt einer Abschrift; `Geholt` ist der Erfolgsfall von `ImportResult` statt
+eines eigenen Typs, das Blatt bekommt ihn ganz. Verworfen: nichts.
+
+**/code-review max** (Winkel nacheinander, dazu eine Woche in 57 weiteren
+Sprachen gemessen; 11 Befunde, 10 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | Birmanisch: Die Punktnummer „၃။" kannte `NUMMER` nicht — alle Nummern fehlten, und der Kasten käme jede Woche mit neun Zeilen. Dazu `။` als Satzende: Die Schülerteile hatten keinen Rahmen, „ဆွေးနွေးပါ။" stand samt Zeichen im Meta. Danach 57 Sprachen ohne Befund |
+| 2 | behoben | Eine unbekannte Befund-Art (neue Function, altes Bündel) ließ das Blatt abstürzen — jetzt keine Zeile dafür, der Compiler verlangt weiter jede bekannte Art |
+| 3 | behoben | Ein farbloser Hinweis mit Zahl in Klammern **nach** der Schlusszeile überschrieb sie samt Absatz darunter (Rückschritt gegenüber HEAD, per Probe) — ein Absatz ohne Link gilt nur noch als Schlusslied, solange es keine Schlusszeile gibt |
+| 4 | offen | Die Befunde leben nur im Blatt: Nach dem Übernehmen markiert nichts im Plan die geratenen Punkte |
+| 5 | behoben | `wochen-importieren.mjs` warf die Befunde weg — jetzt „Unerwartetes im Arbeitsheft" je Woche, ohne Abbruch |
+| 6 | behoben | Kastentitel in `--problem` auf `--problem-flaeche`: hell 4,43:1, unter AA — jetzt in Textfarbe; Fläche und Rand tragen den Alarm |
+| 7 | behoben | Eine unlesbare Nummer hieß „davor fehlt womöglich ein Programmpunkt" — jetzt `unvollstaendig` mit `nummer`, Text „Nummer, Titel, Minuten oder Plätze fehlen." in 12 Sprachen |
+| 8 | behoben | Befunde trugen die Überschrift der Versammlungssprache; zeigt das Blatt eine Sprachvariante, passte sie nicht zur Liste darunter — jetzt die Art (`kind`), die Überschrift kommt aus der gezeigten Woche (fehlt sie, steht die Zeile ohne Stelle, nie der Schlüssel) |
+| 9 | behoben | Der Kasten erscheint nach dem Abruf — jetzt `role="alert"` |
+| 10 | behoben | pl: „w programie" neben „periodyk „Życie i służba"" — jetzt dasselbe Wort |
+| 11 | behoben | `ZIFFER` doppelt — `befunde.ts` nimmt die aus `parse.ts` |
+
+Verworfen: Spion auf `console.warn` ohne Wiederherstellung (die Datei läuft für
+sich), Varianten gegen Deutsch statt gegen die Primärsprache geprüft (der Kasten
+warnt dann schon für die Primärsprache), ein zweiter Punkt mit Schriftstelle
+hinter der Bibellesung (wird als unbekannter Punkt gemeldet).
+
+Gegenproben zu 1–3, 5 und 7–9 rot (10). 320 Seiten wie vorher (319 gleich, die
+chinesische Schlusszeile), 57 Sprachen ohne Befund. Suite 7606/7606, tsc, Lint,
+Laufzeit auf `/demo.html` (hell: Titel dunkel, `role="alert"`, unbekannte Art
+ohne Absturz).
+
+**Noch nicht ausgerollt:** `import-week` muss vor dem Push deployt werden.
 
 ## Was bewusst offen bleibt
 

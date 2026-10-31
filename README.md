@@ -465,14 +465,24 @@ node scripts/heft-pruefen.mjs en
 Es holt die kommenden Wochen von jw.org (dieselbe Suche wie `import-week`,
 `hefte.ts`), parst sie und meldet, was nach einer neuen Form der Seite aussieht:
 Eröffnung oder Abschluss ohne Liednummer, kein Lied unter „Unser Leben als
-Christ", Lücken in den Nummern, Punkte ohne Minuten oder Plätze, eine Form unter
-„Uns im Dienst verbessern", die der Parser nicht kennt — und je genannter
-Sprache, ob sich ihre Fassung wie die deutsche gliedert. Ohne Sprachcode prüft
-es nur Deutsch, `--alle` auch vergangene Wochen. Anlass: Ab Januar 2027 wären
-alle Lieder ohne Nummer gekommen und der „Vortrag des Vorsitzenden" als
-Schülerteil; aufgefallen ist das am 16.10.2026 nur, weil jemand die nächste
-Ausgabe gelesen hat. Meldet es etwas: erst die Seite ansehen, dann den Parser
-anpassen.
+Christ", Sprünge in den Nummern, Punkte ohne Nummer, Titel, Minuten oder Plätze, Punkte,
+deren Art der Parser nicht kennt (unter „Uns im Dienst verbessern" eine neue
+Form, unter „Schätze aus Gottes Wort" ein vierter Punkt), eine Bibellesung ohne
+Schriftstelle oder Quelle, ein Studium, das nicht der längste Punkt ist — und je
+genannter Sprache, ob sich ihre Fassung wie die deutsche gliedert. Ohne
+Sprachcode prüft es nur Deutsch, `--alle` auch vergangene Wochen. Anlass: Ab
+Januar 2027 wären alle Lieder ohne Nummer gekommen und der „Vortrag des
+Vorsitzenden" als Schülerteil; aufgefallen ist das am 16.10.2026 nur, weil
+jemand die nächste Ausgabe gelesen hat. Meldet es etwas: erst die Seite ansehen,
+dann den Parser anpassen.
+
+Dieselben Prüfungen (`import-week/befunde.ts`) laufen seit dem 31.10.2026 bei
+jedem „Holen" in der App: Das Blatt „Programm holen" zeigt dann „Unerwartetes im
+Arbeitsheft" mit den Stellen, und das Protokoll der Function nennt sie auf
+Deutsch. `wochen-importieren.mjs` schreibt sie je Woche als „Unerwartetes im
+Arbeitsheft" hin, bricht aber nicht ab — die Woche ist da, nur einzelne Plätze
+sind geraten. Das Skript bleibt für den Blick voraus — die App sieht eine neue
+Form erst, wenn jemand die Woche holt.
 
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,

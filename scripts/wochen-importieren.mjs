@@ -98,6 +98,10 @@ const WOCHE_MS = 7 * 864e5
  *    (die des Gedächtnismahls baut die Function), ein Sprung heißt also, dass
  *    eine Ausgabe fehlte (`discoverWeeks` übergeht eine vergangene, die jw.org
  *    nicht mehr liefert).
+ *  - `hinweise` — Wochen, in denen der Parser etwas nicht kannte und die Plätze
+ *    geraten hat (`befunde` der Function, `import-week/befunde.ts`). In der App
+ *    zeigt sie das Blatt „Programm holen"; bis zum Review am 31.10.2026 warf
+ *    das Skript sie weg, und ein Neuaufbau schrieb ein Jahr Wochen ohne Wort.
  *
  * `holen` ist ein Parameter, damit die Probe ohne Netz messen kann.
  *
@@ -109,6 +113,7 @@ const WOCHE_MS = 7 * 864e5
 export async function wochenHolen({ url, key, lang = 'de', altLangs = [], ab, anzahl, holen = fetch }) {
   const wochen = []
   const luecken = []
+  const hinweise = []
   let cursor = ab
   for (let i = 0; i < anzahl; i++) {
     const antwort = await holen(`${url}/functions/v1/import-week`, {
@@ -121,18 +126,19 @@ export async function wochenHolen({ url, key, lang = 'de', altLangs = [], ab, an
     try {
       nutzlast = text ? JSON.parse(text) : null
     } catch {
-      return { wochen, luecken, fehler: `unlesbare Antwort (${antwort.status}): ${text.slice(0, 120)}`, ende: false }
+      return { wochen, luecken, hinweise, fehler: `unlesbare Antwort (${antwort.status}): ${text.slice(0, 120)}`, ende: false }
     }
     if (!nutzlast?.week) {
       const ende = nutzlast?.ende === true || nutzlast?.code === 'sprache-fehlt'
-      return { wochen, luecken, fehler: nutzlast?.error ?? `HTTP ${antwort.status}`, ende }
+      return { wochen, luecken, hinweise, fehler: nutzlast?.error ?? `HTTP ${antwort.status}`, ende }
     }
     const { start } = nutzlast.week
     if (cursor && start && Date.parse(start) - Date.parse(cursor) > WOCHE_MS) luecken.push({ nach: cursor, kam: start })
     wochen.push(nutzlast.week)
+    if (nutzlast.befunde?.length) hinweise.push({ woche: nutzlast.week, befunde: nutzlast.befunde })
     cursor = start
   }
-  return { wochen, luecken, fehler: '', ende: false }
+  return { wochen, luecken, hinweise, fehler: '', ende: false }
 }
 
 /**
@@ -227,13 +233,19 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`Vorhanden:    ${vorhandene.length} Woche(n)${zuletzt ? `, zuletzt ${zuletzt}` : ''}`)
   console.log(`Holen:        ${anzahl} Woche(n) ab ${montagNach(nach, 1)}\n`)
 
-  const { wochen, luecken, fehler, ende } = await wochenHolen({
+  const { wochen, luecken, hinweise, fehler, ende } = await wochenHolen({
     url, key, lang: cong.cong_lang, altLangs: cong.prog_langs ?? [], ab: nach, anzahl,
   })
   const neue = nurNeue(vorhandene, wochen)
   for (const w of neue) console.log(`  ${w.start}  ${w.range ?? ''}`)
   for (const l of luecken) {
     console.log(`\nLücke: nach ${l.nach} kam erst ${l.kam} — die Wochen dazwischen lieferte jw.org nicht.`)
+  }
+  // Kein Abbruch: Die Woche ist da, nur einzelne Plätze sind geraten.
+  const { befundAufDeutsch } = await import('../supabase/functions/import-week/befunde.ts')
+  for (const { woche, befunde } of hinweise.filter((h) => neue.includes(h.woche))) {
+    console.log(`\nUnerwartetes im Arbeitsheft, Woche ${woche.start}: ${befunde.map((b) => befundAufDeutsch(b, woche)).join('; ')}`)
+    console.log('  Die Plätze dort sind geraten — in der App nachsehen.')
   }
   if (fehler) console.log(`\n${ende ? 'Danach nichts mehr' : `Abgebrochen nach ${wochen.length} Woche(n)`}: ${fehler}`)
 

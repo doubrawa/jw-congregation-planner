@@ -4,6 +4,7 @@
  * CORS). Ohne Datenbank (keine Konfiguration, Entwicklerseite) nicht verfügbar.
  */
 
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import type { Week } from '../data/types'
 import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
@@ -36,7 +37,11 @@ async function serverFehler(error: { message: string }): Promise<ImportFehler> {
   return unbekannt(body?.error ?? error.message)
 }
 
-export type ImportResult = { ok: true; week: Week } | { ok: false; error: ImportFehler }
+/**
+ * Mit der Woche kommt, was der Parser darin nicht kannte und darum geraten hat
+ * (`befunde.ts`) — leer bei einer gewöhnlichen Woche.
+ */
+export type ImportResult = { ok: true; week: Week; befunde: Befund[] } | { ok: false; error: ImportFehler }
 
 /**
  * Holt die nächste kommende Woche nach `afterISO` (oder die aktuelle) in der
@@ -72,7 +77,8 @@ async function wocheHolen(
     body: { ...wo, lang: langCode, altLangs },
   })
   if (error) return { ok: false, error: await serverFehler(error) }
-  const payload = data as { week?: Week; error?: string } | null
+  const payload = data as { week?: Week; befunde?: Befund[]; error?: string } | null
   if (!payload?.week) return { ok: false, error: unbekannt(payload?.error) }
-  return { ok: true, week: payload.week }
+  // Eine Function von vor dem 31.10.2026 schickt keine Befunde.
+  return { ok: true, week: payload.week, befunde: payload.befunde ?? [] }
 }
