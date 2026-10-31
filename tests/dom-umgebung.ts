@@ -14,6 +14,8 @@
  *   Attrappe sähe statt der Handy- die Tablet-Fassung. Fehlt hier wie in jsdom.
  * - **`navigator.clipboard`** ebenso: `copyText` käme über den zweiten Weg zum
  *   Erfolg, wo die Probe den ersten meint.
+ * - **`ResizeObserver`** (in happy-dom ohne Wirkung): Der Film nähme ihn statt
+ *   seines `resize`-Horchers.
  * - **Ungesetzte Längen** rechnet happy-dom zu `''` statt `0px`; der Druckbogen
  *   (`Bogen`) las daraus NaN und setzte jeden Block auf ein eigenes Blatt.
  *
@@ -42,12 +44,14 @@
  *
  * Kommentare in den Proben, die „jsdom" nennen, meinen die Proben-Umgebung.
  * Wo die App fragt, ob es eine Schnittstelle gibt, antwortet happy-dom nach
- * dieser Datei wie jsdom; was es darüber hinaus kennt (`scrollIntoView`,
- * `TouchEvent`), ersetzen die Proben ohnehin durch ihre Attrappen.
+ * dieser Datei wie jsdom. Was es darüber hinaus kennt und die App ohne
+ * Nachfrage aufruft (`scrollIntoView`), hat jeder Browser — dort ist happy-dom
+ * näher dran (unter jsdom brauchte jede solche Probe eine Attrappe).
  * In Node (kein `window`) und unter jsdom geschieht hier nichts.
  */
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
   Reflect.deleteProperty(globalThis, 'matchMedia')
+  Reflect.deleteProperty(globalThis, 'ResizeObserver')
   // Am Prototyp, nicht an `navigator` selbst: Proben setzen ihre Attrappe als
   // eigene Eigenschaft und löschen sie danach wieder (`clipboard.test.ts`).
   Object.defineProperty(Object.getPrototypeOf(navigator) as object, 'clipboard', { configurable: true, get: () => undefined })

@@ -130,6 +130,10 @@ export default defineConfig(({ command }) => ({
     // Die Bildschirm-Proben laufen unter happy-dom (Docblock je Datei); was die
     // App dort anders vorfände als unter jsdom, gleicht diese Datei an.
     setupFiles: ['./tests/dom-umgebung.ts'],
+    // Ein `<script src>`, das eine Probe einhängt (die Fassungsprüfung liest
+    // das Bündel daraus), lädt happy-dom nicht — und schrieb dafür je Skript
+    // einen Fehler samt Stapel auf die Konsole. jsdom lud es ebenso wenig, still.
+    environmentOptions: { happyDOM: { settings: { handleDisabledFileLoadingAsSuccess: true } } },
     // Die CI hat beim Testen keine Supabase-Variablen. Lokal läse Vite
     // `.env.local` mit — ein Test, der davon abhing, war dann lokal grün und
     // in der CI rot (15.9.2026, der Deploy blieb stehen). Leer gilt hier
