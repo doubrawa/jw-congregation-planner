@@ -330,6 +330,18 @@ describe('Die Sprachvarianten laufen mit', () => {
     // den Umbau also vollständig zurückgenommen, nicht nur die kanonische Woche.
     expect((bei(bei(en.mid.sections, 0).items, 1) as PartItem).title).toBe('Congregation Bible Study')
   })
+
+  it('ohne mins bleibt auch die Meta-Zeile der Variante, wie sie ist — geraten wird dort ebenso wenig', () => {
+    // Dieselbe Regel wie unten für die kanonische Woche: Ohne verlässliche
+    // Dauer träfe das Ersetzen die Nummer des Studienartikels, und die
+    // englische Fassung zeigte einen anderen Artikel als die deutsche.
+    const enMeta = (w: Week[]) => (bei(bei(eine(w).alt!.en!.we.sections, 1).items, 1) as PartItem).meta
+    // Positivkontrolle: Mit `mins` kürzt die Variante mit.
+    expect(enMeta(setDienstwoche([mitVariante()], 0, true))).toBe('Studienartikel 28 · 30 Min.')
+    const ohneMins = mitVariante()
+    delete bei(wtParts(ohneMins), 0).mins
+    expect(enMeta(setDienstwoche([ohneMins], 0, true))).toBe('Studienartikel 28 · 60 Min.')
+  })
 })
 
 describe('Randfälle, die im Betrieb vorkommen', () => {

@@ -607,7 +607,9 @@ export interface Meeting {
    * Gesetzt, sobald der Planer am Ablauf selbst etwas geändert hat: einen
    * eigenen Punkt angelegt, einen gelöscht, einen verschoben, die
    * Kreisaufseher-Woche eingerichtet. Die Sprachvarianten (`Week.alt`) ziehen
-   * bei jeder dieser Änderungen mit — und bekommen die Marke deshalb ebenso.
+   * bei jeder dieser Änderungen mit — und bekommen die Marke deshalb ebenso,
+   * aber nur, wenn sie den Ablauf bis dahin mitgetragen haben: Eine Variante,
+   * die erst nach einem Umbau dazukam, bekommt sie nie (`umbauMerken`).
    *
    * Sie beantwortet genau eine Frage, und zwar in `localizedWeek`: **Darf diese
    * Variante die Titel setzen?** Eine Variante, die erst später nachgeholt

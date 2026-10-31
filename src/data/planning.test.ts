@@ -1606,4 +1606,58 @@ describe('Der Ratgeber-Platz beim Zuteilen (31.10.2026)', () => {
     expect(assignSlot(weeks, { ...RATGEBER, wi: 99 }, 'Rat Geber', undefined, 'p-rat')).toBe(weeks)
     expect(slotValue(weeks, { ...RATGEBER, wi: 99 })).toBe('')
   })
+
+  it('ein nie besetzter Ratgeber ist leer — das Blatt öffnet ohne Namen, statt abzubrechen', () => {
+    // Eine Woche ohne Zusätzliche Klasse hat gar keinen Ratgeber-Platz.
+    const weeks = [{ ...structuredClone(buildImportWeek()), start: '2026-09-07' }]
+    expect(weeks[0]!.mid.auxRatgeber).toBeUndefined()
+    expect(slotValue(weeks, RATGEBER)).toBe('')
+  })
+})
+
+/*
+ * **Ein Hilfsdienst-Platz im Blatt.** Seine Position ist seine Kennung: An ihr
+ * hängen der Aufgaben-Schlüssel (`…|helper|mik|1`), die Zusage und die
+ * Erinnerung. Austragen leert den Platz — es rückt nichts nach.
+ */
+describe('Hilfsdienst-Plätze im Zuteilen-Blatt', () => {
+  const helfer = (pos: number, svc = 'mik'): MeetingSlotSelection => ({ kind: 'helper', wi: 0, tab: 'mid', svc, pos, label: '', priv: null, groups: false })
+
+  it('zeigt den gespeicherten Namen — hinter den gespeicherten Plätzen und bei unbekanntem Dienst einen leeren', () => {
+    const weeks = assignSlot(buildDemoWeeks(), helfer(0), 'Bernd Beispiel', undefined, 'p-bernd')
+    expect(slotValue(weeks, helfer(0))).toBe('Bernd Beispiel')
+    expect(slotValue(weeks, helfer(7))).toBe('')
+    expect(slotValue(weeks, helfer(0, 'unbekannt'))).toBe('')
+  })
+
+  it('Austragen leert den Platz an seiner Stelle, ohne Kennung — der Platz dahinter bleibt, wo er war', () => {
+    let weeks = assignSlot(buildDemoWeeks(), helfer(0), 'Anna Beispiel', undefined, 'p-anna')
+    weeks = assignSlot(weeks, helfer(1), 'Bernd Beispiel', undefined, 'p-bernd')
+    const ohne = assignSlot(weeks, helfer(0), '')
+    expect(ohne).not.toBe(weeks)
+    expect(ohne[0]!.mid.helpers.mik?.[0]).toStrictEqual({ name: '' })
+    expect(ohne[0]!.mid.helpers.mik?.[1]).toStrictEqual({ name: 'Bernd Beispiel', pid: 'p-bernd' })
+  })
+
+  it('ein Name ohne Person (Gast) steht ohne Kennung da', () => {
+    const weeks = assignSlot(buildDemoWeeks(), helfer(0), 'Gast Platzhalter')
+    expect(weeks[0]!.mid.helpers.mik?.[0]).toStrictEqual({ name: 'Gast Platzhalter' })
+  })
+})
+
+describe('changedSlotKeys: ein neu eingefügter Punkt', () => {
+  it('besetzt eingefügt ist ein geänderter Platz — leer eingefügt nicht', () => {
+    // Ein eigener Punkt unter „Unser Leben als Christ", gleich mit Person: Für
+    // ihn gab es vorher nichts, er zählt also als neu besetzt (Entzug, Zusagen,
+    // „Plan senden" lesen daran ab). Ein leerer neuer Punkt ändert niemandem
+    // etwas.
+    const before = structuredClone(buildDemoWeeks()[0]!.mid)
+    const after = structuredClone(before)
+    const section = after.sections.find((s) => s.items.some((i) => !isSong(i)))!
+    section.items.push(
+      { iid: 'neu-besetzt', title: 'Demoaufgabe 98', meta: '10 Min.', mins: 10, names: [{ name: 'Anna Beispiel', pid: 'p-anna', bereichsKey: 'besprechung' }] },
+      { iid: 'neu-leer', title: 'Demoaufgabe 99', meta: '10 Min.', mins: 10, names: [{ name: '', bereichsKey: 'besprechung' }] },
+    )
+    expect(changedSlotKeys(before, after, DEMO_SERVICES, '2026-09-07', 'mid')).toEqual(['2026-09-07|mid|part|neu-besetzt|0'])
+  })
 })

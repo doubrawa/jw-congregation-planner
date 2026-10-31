@@ -9,7 +9,7 @@ import {
 } from './meeting-edit'
 import { localizedWeek } from './localize'
 import { buildImportWeek } from '../../tests/testdaten/testdaten'
-import { isSong, istArt } from './helpers'
+import { isSong, istArt, TITEL_SCHLUSSVORTRAG } from './helpers'
 import type { Meeting, PartItem, Week } from './types'
 
 /**
@@ -119,6 +119,84 @@ describe('Nachgeholte Sprachvariante einer bearbeiteten Woche', () => {
 
     const gezeigt = localizedWeek(nachher, 'en')
     expect(titel(gezeigt.mid, 1)).toEqual(titel(nachher.alt!.en!.mid, 1))
+  })
+})
+
+/**
+ * **Ein späterer Umbau macht eine nachgeholte Variante nicht gültig** (Befund
+ * A1, 31.10.2026).
+ *
+ * Die Marke schützte nur bis zur nächsten Änderung: `umbauMerken` setzte sie
+ * auf **jede** Variante, auch auf eine, die erst nach dem ersten Umbau
+ * nachgeholt worden war. Ab dem zweiten Umbau trugen Zusammenkunft und
+ * Variante dieselbe Marke, und deren Titel legten sich wieder Punkt für Punkt
+ * über einen anderen Ablauf — genau der Fall, für den es die Marke gibt.
+ *
+ * Am deutlichsten in der Kreisaufseher-Woche: Kam die Programmsprache dazu,
+ * während sie eingerichtet war, ist das Zurücknehmen der zweite Umbau. Die
+ * englische Ansicht zeigte danach „Versammlungsbibelstudium" zwischen
+ * englischen Punkten — und das Thema des Schlussvortrags als Abschluss.
+ */
+describe('Ein späterer Umbau macht eine nachgeholte Variante nicht gültig (A1)', () => {
+  const LAC = 3
+
+  it('nach einem zweiten eigenen Punkt trägt der erste nicht den Titel des gelöschten', () => {
+    const woche = buildImportWeek()
+    const umgebaut = lacAdd(lacRemove([woche], 0, 'mid', LAC, 1), 0, 'mid', LAC, 'Eigener Punkt')
+    umgebaut[0]!.alt = { en: alsVariante(woche) } // erst jetzt nachgeholt
+    const nachher = lacAdd(umgebaut, 0, 'mid', LAC, 'Zweiter Punkt')[0]!
+    expect(titel(nachher.mid, LAC)).toContain('Eigener Punkt') // Positivkontrolle: der Aufbau stimmt
+    expect(titel(localizedWeek(nachher, 'en').mid, LAC)).toEqual(titel(nachher.mid, LAC))
+  })
+
+  it('Gegenprobe: eine Variante, die beide Umbauten mitgemacht hat, gilt weiter', () => {
+    const woche = buildImportWeek()
+    woche.alt = { en: alsVariante(woche) }
+    const umgebaut = lacAdd(lacRemove([woche], 0, 'mid', LAC, 1), 0, 'mid', LAC, 'Eigener Punkt')
+    const nachher = lacAdd(umgebaut, 0, 'mid', LAC, 'Zweiter Punkt')[0]!
+    const gezeigt = titel(localizedWeek(nachher, 'en').mid, LAC)
+    expect(gezeigt).toEqual(titel(nachher.alt!.en!.mid, LAC))
+    expect(gezeigt.at(-1)).toBe('Versammlungsbibelstudium [en]')
+  })
+
+  it('in der Kreisaufseher-Woche nachgeholt, dann zurückgenommen: kein deutscher Titel zwischen englischen', () => {
+    const woche = buildImportWeek()
+    const ein = setDienstwoche([woche], 0, true)
+    ein[0]!.alt = { en: alsVariante(woche) } // die Programmsprache kam während der Woche dazu
+    const aus = setDienstwoche(ein, 0, false)[0]!
+    expect(titel(localizedWeek(aus, 'en').mid, LAC)).toEqual(titel(aus.mid, LAC))
+  })
+
+  it('… und die Variante behält ihren eigenen Titel des Bibelstudiums — der kanonische überschreibt ihn nicht', () => {
+    const woche = buildImportWeek()
+    const ein = setDienstwoche([woche], 0, true)
+    ein[0]!.alt = { en: alsVariante(woche) }
+    const aus = setDienstwoche(ein, 0, false)[0]!
+    const vbs = aus.mid.sections[LAC]!.items.findIndex((it) => !isSong(it) && it.names.some((n) => n.bereichsKey === 'leser'))
+    expect((aus.mid.sections[LAC]!.items[vbs] as PartItem).title).toBe('Versammlungsbibelstudium') // Positivkontrolle
+    expect((aus.alt!.en!.mid.sections[LAC]!.items[vbs] as PartItem).title).toBe('Versammlungsbibelstudium [en]')
+  })
+
+  it('… und das Thema des Schlussvortrags erscheint nicht als Abschluss', () => {
+    // Die nachgeholte Variante hat die Sektion des Schlussvortrags nicht; an
+    // ihrer Stelle steht dort der Abschluss. Das Thema landete in ihm.
+    const woche = buildImportWeek()
+    const ein = setDienstwoche([woche], 0, true)
+    ein[0]!.alt = { en: alsVariante(woche) }
+    const si = ein[0]!.we.sections.findIndex((s) => istArt(s, 'dienstvortrag'))
+    const aus = setDienstwoche(setPartThema(ein, 0, 'we', si, 0, TITEL_SCHLUSSVORTRAG, 'Demo-Thema 3'), 0, false)[0]!
+    const abschluss = aus.we.sections.findIndex((s) => istArt(s, 'abschluss'))
+    const gezeigt = titel(localizedWeek(aus, 'en').we, abschluss)
+    expect(gezeigt).toEqual(titel(aus.we, abschluss))
+    expect(gezeigt.join(' ')).not.toContain(TITEL_SCHLUSSVORTRAG)
+  })
+
+  it('Gegenprobe: war die Variante beim Einrichten schon da, kommt sie mit ihrem Titel zurück und gilt', () => {
+    const woche = buildImportWeek()
+    woche.alt = { en: alsVariante(woche) }
+    const aus = setDienstwoche(setDienstwoche([woche], 0, true), 0, false)[0]!
+    expect(titel(localizedWeek(aus, 'en').mid, LAC)).toEqual(titel(aus.alt!.en!.mid, LAC))
+    expect(titel(aus.alt!.en!.mid, LAC)).toContain('Versammlungsbibelstudium [en]')
   })
 })
 

@@ -111,6 +111,8 @@ const umschalter = (slug: string, codes: string[], fremd?: { code: string; url: 
  * „Lesen in"-Umschalter der Artikelseite.
  */
 const STUDIE_SLUG = 'wachtturm-studienausgabe-januar-2026'
+/** Die zweite infrage kommende Ausgabe (`studyIssueSlugs`: drei Monate vorher). */
+const STUDIE_SLUG_DAVOR = 'wachtturm-studienausgabe-dezember-2025'
 const STUDIE_ARTIKEL_PFAD = '/de/bibliothek/zeitschriften/artikel-de'
 
 /**
@@ -136,18 +138,32 @@ const STUDIE_UEBERSICHT = `<html><body>
     <h2><a href="${STUDIE_ARTIKEL_PFAD}">Erfundener Studientitel</a></h2>
   </div>`
   }).join('\n')}
+  <div class="synopsis card">
+    <p class="contextTitle">30. März–5. April 2026</p>
+    <h2><a href="${STUDIE_ARTIKEL_PFAD}">Erfundener Studientitel</a></h2>
+  </div>
+</body></html>`
+
+/**
+ * Eine Übersicht, die nur die Kopf-Karte trägt — die Ausgabe gibt es, den
+ * Artikel für die gesuchte Woche aber nicht darin.
+ */
+const UEBERSICHT_OHNE_KARTEN = `<html><body>
+  <div class="synopsis card">
+    <p class="contextTitle">DER WACHTTURM</p>
+  </div>
 </body></html>`
 
 /**
  * Artikelseite. Der Umschalter steht wie auf der Wochenseite als
  * `<option value data-url>`; die Lieder tragen das MEPS-Symbol `pub-sjj`.
  */
-const studieArtikel = (code: string): string => `<html><body>
+const studieArtikel = (code: string, lieder = 2): string => `<html><body>
   ${['es', 'en', 'fr'].map((c) => `<option value="${c}" data-url="/${c}/artikel-es"></option>`).join('')}
   <h1 data-pid="1">[${code}] Studientitel</h1>
-  <a class="pub-sjj" href="#">[${code}] Lied 100</a>
+  ${lieder >= 1 ? `<a class="pub-sjj" href="#">[${code}] Lied 100</a>` : ''}
   <a class="pub-nwt" href="#">Keine Liednummer</a>
-  <a class="pub-sjj" href="#">[${code}] Lied 200</a>
+  ${lieder >= 2 ? `<a class="pub-sjj" href="#">[${code}] Lied 200</a>` : ''}
 </body></html>`
 
 /** Wochenseite in erfundener Sprache — die Struktur ist das Gemessene. */
@@ -180,6 +196,14 @@ interface Seiten {
   sprachen: string[]
   /** Liefert die Studienausgabe eine Übersicht samt Artikel? (Vorgabe: nein) */
   studie?: boolean
+  /**
+   * In welcher der beiden infrage kommenden Ausgaben die Karte der Woche
+   * steht — ohne Angabe in der ersten (Januar), sonst erst in der zweiten
+   * (Dezember) oder in keiner. Die erste gibt es dann trotzdem, nur ohne Karte.
+   */
+  studieKarte?: 'zweite' | 'keine'
+  /** Wie viele Lieder der Studienartikel nennt (Vorgabe: zwei). */
+  lieder?: number
   /**
    * Sprachcode, für den der Umschalter eine **fremde, absolute** Adresse
    * ausweist statt eines jw.org-Pfads. jw.org tut das heute nicht — aber der
@@ -269,12 +293,17 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   }
   // Wachtturm-Studienausgabe: Übersichtsseite und Artikel (siehe STUDIE).
   if (seiten.studie) {
-    if (url === `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG}/`) return text(STUDIE_UEBERSICHT)
-    if (url === `${BASE}${STUDIE_ARTIKEL_PFAD}`) return text(studieArtikel('de'))
+    if (url === `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG}/`) {
+      return text(seiten.studieKarte ? UEBERSICHT_OHNE_KARTEN : STUDIE_UEBERSICHT)
+    }
+    if (url === `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG_DAVOR}/` && seiten.studieKarte === 'zweite') {
+      return text(STUDIE_UEBERSICHT)
+    }
+    if (url === `${BASE}${STUDIE_ARTIKEL_PFAD}`) return text(studieArtikel('de', seiten.lieder))
     const artikelVariante = new RegExp(`^${BASE}/([a-z-]+)/artikel-es$`).exec(url)
     if (artikelVariante) {
       const code = artikelVariante[1] ?? ''
-      return seiten.sprachen.includes(code) ? text(studieArtikel(code)) : weg()
+      return seiten.sprachen.includes(code) ? text(studieArtikel(code, seiten.lieder)) : weg()
     }
   }
   // Sonstige Studienausgaben: nicht vorhanden → applyStudy lässt die Vorlage stehen.
@@ -372,6 +401,17 @@ describe('import-week: die gewöhnliche Woche', () => {
     expect(res.week).toBeUndefined()
     expect(res.status).toBe(404)
     expect(res.ende).toBe(true)
+  })
+
+  it('der erste Import ohne `after` bekommt die letzte Woche, solange die neue Ausgabe fehlt', async () => {
+    // Gegenstück zum Fall darüber: Ohne `after` gibt es noch keine Woche, die
+    // überschrieben werden könnte. Am Montag, dem 4. Mai, ist Mai/Juni noch
+    // nicht erschienen — eine neue Versammlung bekommt dann die letzte Woche
+    // des Hefts statt gar keiner.
+    vi.setSystemTime(new Date('2026-05-04T09:00:00Z'))
+    const { week, status } = await hole({})
+    expect(status).toBe(200)
+    expect(week?.start).toBe('2026-04-27')
   })
 
   it('trägt keinen Anlass', async () => {
@@ -474,6 +514,19 @@ describe('import-week: die Woche des Gedächtnismahls', () => {
     const { week } = await hole({ start: '2026-03-30' })
     expect(week?.start).toBe('2026-03-30')
     expect(week?.anlass?.art).toBe('mem')
+  })
+
+  it('ihr Wochenende bekommt das Wachtturm-Studium — eine Wochenseite fehlt, der Artikel nicht', async () => {
+    // Die Zusammenkunft am Wochenende findet statt (das Mahl ist am
+    // Donnerstag), und die Studienausgabe führt ihren Artikel wie jeden
+    // anderen. Ohne ihn stünde nur diese eine Woche mit leerer Vorlage da.
+    seiten.studie = true
+    const { week } = await hole({ after: '2026-03-23', lang: 'de' })
+    expect(week?.anlass?.art).toBe('mem') // Positivkontrolle: die gebaute Woche
+    const wt = JSON.stringify(week?.we ?? {})
+    expect(wt).toContain('[de] Studientitel')
+    expect(wt).toContain('[de] Lied 100')
+    expect(wt).toContain('Lied 200')
   })
 })
 
@@ -654,13 +707,59 @@ describe('import-week: die Studienausgabe wird deutsch angesteuert', () => {
   it('ohne Sprachfassung des Artikels bleibt die Vorlage stehen', async () => {
     // Der Artikel ist neuer als die Übersetzung — dann lieber die leere
     // Vorlage („Studienartikel eintragen") als ein deutscher Titel mitten im
-    // spanischen Programm.
+    // italienischen Programm. Die Wochenseite gibt es auf Italienisch, der
+    // Artikel bietet nur Spanisch, Englisch und Französisch an.
+    //
+    // Bis zum 31.10.2026 fuhr dieser Fall Englisch — das bietet der Artikel
+    // an. Geprüft war damit der Gegenfall (der Artikel kommt übersetzt), und
+    // der Rückweg zur Vorlage lief in keinem Test.
     seiten.studie = true
-    seiten.sprachen = ['en'] // die Wochenseite gibt es auf Englisch …
-    const { week } = await hole({ after: '2026-03-02', lang: 'en' })
+    seiten.sprachen = ['it']
+    const { week } = await hole({ after: '2026-03-02', lang: 'it' })
+    // Positivkontrolle: Die Woche kam, und zwar in der italienischen Fassung.
+    expect(week?.lang).toBe('it')
+    expect(week?.range).toContain('[it]')
     const wt = JSON.stringify(week?.we ?? {})
-    expect(wt).toContain('[en] Studientitel') // … und den Artikel auch
-    seiten.sprachen = ['en', 'es', 'fr']
+    expect(wt).toContain('(Studienartikel eintragen)')
+    expect(wt).not.toContain('Studientitel')
+    expect(wt).not.toContain('Lied 100')
+    expect(wt).not.toContain('Lied 200')
+  })
+
+  it('steht der Artikel erst in der zweiten infrage kommenden Ausgabe, wird er dort gefunden', async () => {
+    // Die Studienausgabe erscheint rund zwei Monate vor der Behandlung,
+    // manchmal drei. Fehlt die Woche in der ersten, endet die Suche nicht.
+    seiten.studie = true
+    seiten.studieKarte = 'zweite'
+    const { week } = await hole({ after: '2026-03-02', lang: 'de' })
+    expect(JSON.stringify(week?.we ?? {})).toContain('[de] Studientitel')
+    expect(studienUrls().filter((u) => u.includes('wachtturm-studienausgabe'))).toEqual([
+      `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG}/`,
+      `${BASE}/de/bibliothek/zeitschriften/${STUDIE_SLUG_DAVOR}/`,
+    ])
+  })
+
+  it('steht er in keiner, bleibt die Vorlage — die Woche kommt trotzdem', async () => {
+    seiten.studie = true
+    seiten.studieKarte = 'keine'
+    const { week, status } = await hole({ after: '2026-03-02', lang: 'de' })
+    expect(status).toBe(200)
+    expect(week?.start).toBe('2026-03-09')
+    expect(JSON.stringify(week?.we ?? {})).toContain('(Studienartikel eintragen)')
+  })
+
+  it('nennt der Artikel nur ein Lied, ist es das vor dem Studium — ein Schlusslied wird nicht erfunden', async () => {
+    // Das letzte Lied ist das Schlusslied — aber nur, wenn es ein zweites gibt.
+    // Sonst stünde das Lied vor dem Studium auch im Abschluss.
+    seiten.studie = true
+    seiten.lieder = 1
+    const { week } = await hole({ after: '2026-03-02', lang: 'de' })
+    const abschnitte = (week?.we.sections ?? []) as unknown as Array<{ kind?: string; items: Array<{ song?: string; title?: string }> }>
+    const wt = abschnitte.find((s) => s.kind === 'wtStudium')
+    expect(wt?.items[0]?.song).toBe('[de] Lied 100')
+    expect(wt?.items[1]?.title).toBe('[de] Studientitel')
+    const abschluss = abschnitte.find((s) => s.kind === 'abschluss')
+    expect(abschluss?.items[0]?.title).toBe('Schlussworte · Lied · Gebet')
   })
 
   it('auf Deutsch braucht der Artikel keinen Umweg', async () => {
@@ -860,6 +959,16 @@ describe('import-week: geholt wird nur bei jw.org', () => {
     const { week } = await hole({ after: '2026-03-02', altLangs: ['xx', 'en'] })
     expect(fremdeAbrufe()).toEqual([])
     expect(Object.keys(week?.alt ?? {})).toEqual(['en'])
+  })
+
+  it('jw.org ohne „www" ist jw.org — die Sperre trifft fremde Hosts, nicht diesen', async () => {
+    // Gegenprobe zu den Fällen oben: Wer die Prüfung auf `www.` verengt,
+    // verlöre eine Sprachfassung, deren Umschalter die kurze Adresse nennt.
+    const kurz = `https://jw.org/xx/bibliothek/jw-arbeitsheft/${SLUG}/${WOCHEN_SLUGS[1]}/`
+    seiten.fremdeVariante = { code: 'xx', url: kurz }
+    const { status } = await hole({ after: '2026-03-02', lang: 'xx' })
+    expect(geholt).toContain(kurz)
+    expect(status).toBe(200)
   })
 
   it('der Fehlertext verrät den Abruf nicht', async () => {
