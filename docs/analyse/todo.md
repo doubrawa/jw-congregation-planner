@@ -9250,6 +9250,31 @@ ungenutzt entfernt hatte (`tagDerZusammenkunft`, tsc TS2459) — wieder da
 Functions brauchen nichts: `terminTag` ist neu in `_shared/planung.ts`, und
 nur diese beiden rufen es auf.
 
+### T158 · Mehr Abdeckung, Befund A1, happy-dom 🔧 ✅ umgesetzt (31. Oktober 2026)
+
+Zwei Sitzungen nach T156, mit freien Tokens des Betreibers; nach `/simplify`
+und `/code-review max` zusammengeführt (`51d6bbf0`, `4ae28423`, `5f7e4879`,
+Review `8ede124d`):
+
+- **Abdeckung** in zwei Teilen, nur Tests mit Gegenproben — Functions
+  `send-plan`, `substitute`, `send-reminders`, `import-week`, `tauschen`,
+  `trolley`, dazu Auswertung, Vortragsplan, Planung, Speichern, Laden,
+  Reducer, Treffpunkte, Kandidaten, Helfer. Zweige 91,84 → 93,24 %. Die
+  Sabotage von Hand lief als Wegwerf-Skript im Scratchpad, ohne Katalog.
+- **Befund A1** (der einzige Fehler im Code): Nach einem zweiten Umbau galt
+  eine später nachgeholte Sprachvariante wieder (`umbauMerken`), und ihre
+  Titel legten sich über einen anderen Ablauf — nachgestellt etwa
+  „Concluding Service Talk" in einer Woche ohne Kreisaufseher. Nur App.
+- **happy-dom statt jsdom** für 125 Bildschirm-Proben (5 bleiben bei jsdom:
+  echter Verlauf, Klick einer `label`); `tests/dom-umgebung.ts` gleicht an,
+  wo die App nachfragt. Wörterbuch und Übersetzer je Sprache einmal gebaut.
+  Suite rund 103 → 81 s (zusammen gemessen: 88,6 s für 7588 Tests). Nach dem
+  Holen einmal `npm install` (neu: happy-dom).
+- **Review:** ein Befund in den Tests (Melder und Konsolen-Spion in
+  `afterEach`). Der Speicher von `makeTr` liegt in
+  `_shared/i18n/translate.ts`; `send-plan` und `send-reminders` laden die
+  Datei, verhalten sich aber gleich.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9288,9 +9313,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑
 
-**156 der 157 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**157 der 158 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |
