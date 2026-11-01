@@ -580,6 +580,8 @@ export default {
   "toastErsatzGesucht": "انصراف ثبت شد · جایگزین جستجو می‌شود",
   "toastUebernommen": "متشکریم! وظیفهٔ کمکی را پذیرفتید",
   "toastUebernommenKonflikt": "پذیرفته شد · توجه: آن روز از قبل وظیفه دارید",
+  "toastErsatzNichtMehrGesucht": "پذیرفته نشد · دیگر برای این وظیفهٔ کمکی جایگزین لازم نیست",
+  "toastPlatzSchonVergeben": "ثبت نشد · کس دیگری این وظیفه را زودتر پذیرفته است",
   "errTitel": "خطای نمایش",
   "errText": "این بخش نمایش داده نشد. بقیهٔ برنامه کار می‌کند.",
   "toastSpeicherFehler": "تغییر ذخیره نشد — دوباره بارگذاری کنید",

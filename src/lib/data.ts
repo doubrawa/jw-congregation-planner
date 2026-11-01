@@ -48,6 +48,7 @@ import type {
   Week,
 } from '../data/types'
 import { supabase } from './supabase'
+import { fehlerAntwort } from './function-antwort'
 import {
   type AbsenceRow,
   absenceFromRow,
@@ -1135,11 +1136,23 @@ function standMerken(staende: Map<string, string>, woche: string, stand: string,
 }
 
 /**
+ * **Warum der Server ein Übernehmen abwies**, soweit es der Nutzer erfahren
+ * soll — beim Einspringen und beim freien Platz (`substitute`). Ohne Grund
+ * bleibt es beim allgemeinen Hinweis.
+ *
+ *  - `nicht-gesucht`: Für den Platz sucht niemand mehr Ersatz — der Absagende
+ *    kann doch, oder ein anderer ist schon eingesprungen (`not-sought`).
+ *  - `vergeben`: Den freien Platz hat schon ein anderer (`slot-taken`).
+ */
+export type Abweisung = 'nicht-gesucht' | 'vergeben'
+
+/**
  * Meldung „ein anderer Planer war schneller". Wie beim Schreibfehler kennt
  * diese Schicht weder Dispatch noch Sprache — sie meldet nur, *dass* es
- * passiert ist; wer neu lädt und es anzeigt, meldet sich hier an (store.tsx).
+ * passiert ist und, wo der Server es sagt, warum; wer neu lädt und es
+ * anzeigt, meldet sich hier an (store.tsx).
  */
-type Konfliktmelder = () => void
+type Konfliktmelder = (grund?: Abweisung) => void
 
 let konfliktMelder: Konfliktmelder | null = null
 
@@ -1740,17 +1753,21 @@ export function substituteSeek(taskKey: string): void {
  * beim Füllen eines freien Platzes. Bis zum 14.10.2026 stand hier `run()`: Es
  * meldete einen Schreibfehler, und der Aufrufer stand trotzdem weiter als
  * eingesprungen da, wo längst ein anderer stand — bis zum nächsten Laden.
+ *
+ * Ist das Gesuch erledigt, sagt der Hinweis das (1.11.2026). Mit dem
+ * allgemeinen „konnte nicht gespeichert werden" stand der Nutzer ratlos da,
+ * nachdem der Absagende sein Gesuch zurückgezogen hatte.
  */
 export function substituteTake(taskKey: string): void {
   if (!supabase) return
   const geladen = ladung
-  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(({ data, error }) => {
+  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(async ({ data, error }) => {
     if (!error) {
       standDerFunctionUebernehmen(data, geladen)
       return
     }
     console.error('[substitute/take]', error.message)
-    konfliktMelder?.()
+    konfliktMelder?.((await fehlerAntwort(error))?.error === 'not-sought' ? 'nicht-gesucht' : undefined)
   })
 }
 
@@ -1790,7 +1807,8 @@ export function tauschStaendeUebernehmen(staende: readonly unknown[], geladen: n
  *
  * Schlägt es fehl — jemand war schneller, der Platz wird nicht mehr angeboten
  * —, wird **nachgeladen** statt nur gemeldet (`konfliktMelder`). Mit `run()`
- * stünde man hier weiter eingetragen, wo längst ein anderer steht.
+ * stünde man hier weiter eingetragen, wo längst ein anderer steht. War jemand
+ * schneller, sagt der Hinweis das (1.11.2026).
  *
  * Der Kalendertag des Geräts geht mit (5.10.2026): Der Server kennt nur UTC,
  * und zwischen Mitternacht und 02:00 ließe sich dort noch ein Platz vom Vorabend
@@ -1800,13 +1818,13 @@ export function platzFuellen(taskKey: string): void {
   if (!supabase) return
   const heute = isoDay(new Date())
   const geladen = ladung
-  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(({ data, error }) => {
+  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(async ({ data, error }) => {
     if (!error) {
       standDerFunctionUebernehmen(data, geladen)
       return
     }
     console.error('[substitute/fill]', error.message)
-    konfliktMelder?.()
+    konfliktMelder?.((await fehlerAntwort(error))?.error === 'slot-taken' ? 'vergeben' : undefined)
   })
 }
 

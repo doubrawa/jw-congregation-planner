@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Odwołano · szukamy zastępstwa",
   "toastUebernommen": "Dziękujemy! To zadanie pomocnicze jest teraz twoje",
   "toastUebernommenKonflikt": "Podjęte · uwaga: tego dnia masz już zadanie",
+  "toastErsatzNichtMehrGesucht": "Nie przejęto · do tego zadania pomocniczego nie szukamy już zastępstwa",
+  "toastPlatzSchonVergeben": "Nie zapisano · ktoś inny już przejął to zadanie",
   "errTitel": "Błąd wyświetlania",
   "errText": "Nie udało się wyświetlić tej sekcji. Reszta aplikacji działa dalej.",
   "toastSpeicherFehler": "Nie udało się zapisać zmiany — odśwież stronę",

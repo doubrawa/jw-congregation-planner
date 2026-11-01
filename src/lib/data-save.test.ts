@@ -483,6 +483,48 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     setKonfliktMelder(null)
   })
 
+  /*
+   * **Der Grund kommt mit** (1.11.2026). Beim Testen: abgesagt, Ersatz gesucht,
+   * dann doch gekonnt und zurückgezogen — das andere Gerät tippte noch auf
+   * „Übernehmen" und las „Änderung konnte nicht gespeichert werden". Der Server
+   * wusste es genauer (`not-sought`); er schickt den Grund in der Antwort, die
+   * `functions.invoke` hinter `error.context` legt.
+   */
+  const abgewiesen = (grund: string) =>
+    Promise.resolve({
+      data: null,
+      error: { message: 'Edge Function returned a non-2xx status code', context: { json: () => Promise.resolve({ error: grund }) } },
+    })
+
+  it.each([
+    ['Einspringen, Gesuch zurückgezogen', () => substituteTake('k1'), 'not-sought', 'nicht-gesucht'],
+    ['Freier Platz, schon vergeben', () => platzFuellen('k1'), 'slot-taken', 'vergeben'],
+    // Gegenproben: Jeder andere Grund bleibt beim allgemeinen Hinweis —
+    // auch derselbe Grund an der anderen Stelle.
+    ['Einspringen, anderer Grund', () => substituteTake('k1'), 'meeting-cancelled', undefined],
+    ['Einspringen, Woche geändert', () => substituteTake('k1'), 'slot-taken', undefined],
+    ['Freier Platz, anderer Grund', () => platzFuellen('k1'), 'not-sought', undefined],
+  ])('%s: der Konflikt nennt den Grund des Servers', async (_name, ruf, server, erwartet) => {
+    const konflikt = vi.fn()
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(abgewiesen(server))
+    ruf()
+    await abwarten()
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    expect(konflikt).toHaveBeenCalledWith(erwartet)
+    setKonfliktMelder(null)
+  })
+
+  it('ohne lesbare Antwort (kein Netz) bleibt der allgemeine Hinweis', async () => {
+    const konflikt = vi.fn()
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'Failed to fetch' } }))
+    substituteTake('k1')
+    await abwarten()
+    expect(konflikt).toHaveBeenCalledWith(undefined)
+    setKonfliktMelder(null)
+  })
+
   it.each([
     ['Einspringen', () => substituteTake('k1'), 'take'],
     ['Ersatzsuche', () => substituteSeek('k1'), 'seek'],

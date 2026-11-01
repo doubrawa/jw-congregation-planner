@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Anulat · se caută un înlocuitor",
   "toastUebernommen": "Mulțumim! Ai preluat sarcina de sprijin",
   "toastUebernommenKonflikt": "Preluată · atenție: în ziua aceea ai deja o însărcinare",
+  "toastErsatzNichtMehrGesucht": "Nu s-a preluat · pentru această sarcină de sprijin nu se mai caută un înlocuitor",
+  "toastPlatzSchonVergeben": "Nu s-a înregistrat · altcineva a preluat deja această sarcină",
   "errTitel": "Eroare de afișare",
   "errText": "Această secțiune nu a putut fi afișată. Restul aplicației funcționează în continuare.",
   "toastSpeicherFehler": "Modificarea nu a putut fi salvată — reîncarcă pagina",

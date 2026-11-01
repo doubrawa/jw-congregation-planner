@@ -5,6 +5,7 @@ import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { AppAction } from './context'
 import type { LadeOptionen, StandOptionen } from './hydrate'
+import type { Abweisung } from '../lib/data'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -95,13 +96,14 @@ vi.mock('../lib/push-abo', () => ({
  * hier die Übergabestelle abgegriffen: Der Provider trägt seine Funktion ein,
  * und der Test ruft genau die auf, die `data.ts` aufrufen würde.
  */
-const melder = { schreibfehler: null as (() => void) | null, konflikt: null as (() => void) | null }
+type Konfliktmelder = (grund?: Abweisung) => void
+const melder = { schreibfehler: null as (() => void) | null, konflikt: null as Konfliktmelder | null }
 vi.mock('../lib/data', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   setSchreibfehlerMelder: (fn: (() => void) | null) => {
     melder.schreibfehler = fn
   },
-  setKonfliktMelder: (fn: (() => void) | null) => {
+  setKonfliktMelder: (fn: Konfliktmelder | null) => {
     melder.konflikt = fn
   },
 }))
@@ -112,9 +114,10 @@ const { STANDARD_ZEITEN } = await import('../data/vorgaben')
 const { useApp } = await import('./context')
 const { anmeldeAdresseVergessen } = await import('../login/anmelde-adresse')
 
-/** Auslösen, was `data.ts` bei einem Fehlschlag auslösen würde. */
-function melderAufrufen(art: 'schreibfehler' | 'konflikt'): void {
-  melder[art]?.()
+/** Auslösen, was `data.ts` bei einem Fehlschlag auslösen würde — beim Konflikt mit dem Grund des Servers, wo er einen nennt. */
+function melderAufrufen(art: 'schreibfehler' | 'konflikt', grund?: Abweisung): void {
+  if (art === 'konflikt') melder.konflikt?.(grund)
+  else melder.schreibfehler?.()
 }
 
 function huelle({ children }: { children: ReactNode }) {
@@ -269,6 +272,46 @@ describe('Schreibkonflikt: ein anderer Planer war schneller (T39)', () => {
       melderAufrufen('konflikt')
     })
     expect(loadAndHydrate).not.toHaveBeenCalled()
+  })
+
+  /*
+   * Beim Übernehmen nennt der Server den Grund (1.11.2026): Wer gerade
+   * „Danke! Du hast … übernommen" gelesen hat, erfährt, was daraus wurde —
+   * nicht, dass etwas „nicht gespeichert" werden konnte. Nachgeladen wird
+   * trotzdem, sonst stünde er weiter als eingesprungen da.
+   */
+  it.each([
+    ['nicht-gesucht', DE.toastErsatzNichtMehrGesucht],
+    ['vergeben', DE.toastPlatzSchonVergeben],
+  ] as const)('ein abgewiesenes Übernehmen (%s) sagt, warum — und lädt nach', async (grund, text) => {
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'setDataStatus', status: 'ready', userId: 'u1' })
+    })
+    loadAndHydrate.mockClear()
+    await act(async () => {
+      melderAufrufen('konflikt', grund)
+    })
+    expect(result.current.state.toast?.text).toBe(text)
+    expect(text).not.toBe(DE.toastSpeicherFehler)
+    expect(loadAndHydrate).toHaveBeenCalledWith(expect.anything(), 'u1', { silent: true })
+  })
+
+  it('in der Sprache des Nutzers, nicht deutsch', async () => {
+    // Gegenprobe gegen den englischen Rückfall: Arabisch hat einen eigenen Text.
+    await loadOverlay('ar')
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'setLang', lang: 'ar' })
+      result.current.dispatch({ type: 'setDataStatus', status: 'ready', userId: 'u1' })
+    })
+    await act(async () => {
+      melderAufrufen('konflikt', 'nicht-gesucht')
+    })
+    const ar = dict('ar').toastErsatzNichtMehrGesucht
+    expect(result.current.state.toast?.text).toBe(ar)
+    expect(ar).not.toBe(DE.toastErsatzNichtMehrGesucht)
+    expect(ar).not.toBe(dict('en').toastErsatzNichtMehrGesucht)
   })
 })
 

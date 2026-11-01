@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Annullato · si cerca un sostituto",
   "toastUebernommen": "Grazie! Ora il servizio di supporto è tuo",
   "toastUebernommenKonflikt": "Preso · attenzione: quel giorno hai già un incarico",
+  "toastErsatzNichtMehrGesucht": "Non assegnato · per questo servizio di supporto non si cerca più un sostituto",
+  "toastPlatzSchonVergeben": "Iscrizione non riuscita · qualcun altro ha già preso questo incarico",
   "errTitel": "Errore di visualizzazione",
   "errText": "Non è stato possibile mostrare questa sezione. Il resto dell’app continua a funzionare.",
   "toastSpeicherFehler": "Modifica non salvata — ricarica la pagina",

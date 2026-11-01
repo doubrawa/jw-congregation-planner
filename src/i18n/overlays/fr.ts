@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Annulé · un remplaçant est recherché",
   "toastUebernommen": "Merci\u00a0! Tu te charges de ce service auxiliaire",
   "toastUebernommenKonflikt": "Pris en charge · attention\u00a0: tu as déjà une attribution ce jour-là",
+  "toastErsatzNichtMehrGesucht": "Pas pris en charge · on ne cherche plus de remplaçant pour ce service auxiliaire",
+  "toastPlatzSchonVergeben": "Pas d’inscription · quelqu’un d’autre a déjà pris cette place",
   "errTitel": "Problème d’affichage",
   "errText": "Cette section n’a pas pu s’afficher. Le reste de l’application continue de fonctionner.",
   "toastSpeicherFehler": "La modification n’a pas pu être enregistrée — recharge la page",

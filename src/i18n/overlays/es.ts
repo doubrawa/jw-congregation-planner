@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Cancelado · se busca un sustituto",
   "toastUebernommen": "¡Gracias! Te has encargado del servicio de apoyo",
   "toastUebernommenKonflikt": "Aceptado · atención: ya tienes una asignación ese día",
+  "toastErsatzNichtMehrGesucht": "Sin asignar · ya no se busca sustituto para este servicio de apoyo",
+  "toastPlatzSchonVergeben": "Sin asignar · otra persona ya tomó esta asignación",
   "errTitel": "Error de visualización",
   "errText": "No se pudo mostrar esta sección. El resto de la aplicación sigue funcionando.",
   "toastSpeicherFehler": "No se pudo guardar el cambio — vuelve a cargar",

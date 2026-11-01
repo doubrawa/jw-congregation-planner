@@ -395,6 +395,8 @@ export default {
   "toastErsatzGesucht": "Declined · a substitute is being sought",
   "toastUebernommen": "Thanks! You’ve taken over the support duty",
   "toastUebernommenKonflikt": "Taken over · note: you’re already assigned that day",
+  "toastErsatzNichtMehrGesucht": "Not taken over · this support duty no longer needs a substitute",
+  "toastPlatzSchonVergeben": "Not signed up · someone else has already taken this place",
   "notifVerhindert": "Assignment declined",
   "erinnerungenCard": "Reminders",
   "remErste": "First reminder",

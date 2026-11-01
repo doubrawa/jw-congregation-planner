@@ -556,6 +556,8 @@ export default {
   "toastErsatzGesucht": "تم الاعتذار · يُبحث عن بديل",
   "toastUebernommen": "شكرًا! توليت خدمة المساندة",
   "toastUebernommenKonflikt": "تم التولي · انتبه: لديك تعيين في ذلك اليوم",
+  "toastErsatzNichtMehrGesucht": "لم تُسند إليك · لم تعد هناك حاجة إلى بديل لخدمة المساندة هذه",
+  "toastPlatzSchonVergeben": "لم يتم تسجيلك · سبقك أحد إلى هذه المهمة",
   "congLabel": "جماعة {name}",
   "nurMitglieder": "الدخول لأعضاء الجماعة فقط",
   "appZweck": "تخطيط الاجتماعات، توزيع التعيينات، إدارة الجماعة.",

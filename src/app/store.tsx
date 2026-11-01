@@ -176,14 +176,21 @@ export function AppProvider({
   // schneller") wäre schärfer, hieße aber je Sprache eine erfundene
   // Übersetzung — und eine erfundene ist schlimmer als eine zutreffende, die es
   // schon gibt.
+  //
+  // Anders beim Übernehmen (1.11.2026): Dort nennt der Server den Grund, und
+  // wer gerade „Danke! Du hast … übernommen" gelesen hat, soll erfahren, was
+  // daraus wurde — nicht, dass etwas „nicht gespeichert" werden konnte.
   useEffect(() => {
     let laeuft = false
-    setKonfliktMelder(() => {
+    setKonfliktMelder((grund) => {
       if (laeuft) return // ein Hinweis genügt; mehrere Wochen reißen oft mit
       const uid = stateRef.current.userId
       if (!uid) return
       laeuft = true
-      dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastSpeicherFehler })
+      const t = dict(stateRef.current.lang)
+      const text =
+        grund === 'nicht-gesucht' ? t.toastErsatzNichtMehrGesucht : grund === 'vergeben' ? t.toastPlatzSchonVergeben : t.toastSpeicherFehler
+      dispatch({ type: 'showToast', text })
       void loadAndHydrate(dispatch, uid, { silent: true }).finally(() => {
         laeuft = false
       })

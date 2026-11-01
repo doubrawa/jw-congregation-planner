@@ -581,6 +581,8 @@ export default {
   "toastErsatzGesucht": "Görevden çekildin · yerine biri aranıyor",
   "toastUebernommen": "Teşekkürler! Yardımcı görevi üstlendin",
   "toastUebernommenKonflikt": "Üstlenildi · dikkat: o gün zaten bir görevin var",
+  "toastErsatzNichtMehrGesucht": "Üstlenilmedi · bu yardımcı görev için artık yedek aranmıyor",
+  "toastPlatzSchonVergeben": "Kaydın yapılmadı · bu görevi başka biri zaten üstlendi",
   "errTitel": "Görüntüleme hatası",
   "errText": "Bu bölüm görüntülenemedi. Uygulamanın geri kalanı çalışmaya devam ediyor.",
   "toastSpeicherFehler": "Değişiklik kaydedilemedi — sayfayı yeniden yükle",

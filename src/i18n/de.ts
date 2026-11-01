@@ -811,6 +811,9 @@ export const DE = {
     toastErsatzGesucht: 'Abgesagt · es wird ein Ersatz gesucht',
     toastUebernommen: 'Danke! Du hast den Hilfsdienst übernommen',
     toastUebernommenKonflikt: 'Übernommen · Achtung: du bist an dem Tag schon eingeteilt',
+    // Der Server wies das Übernehmen ab (`Abweisung` in lib/data.ts).
+    toastErsatzNichtMehrGesucht: 'Nicht übernommen · für diesen Hilfsdienst wird kein Ersatz mehr gesucht',
+    toastPlatzSchonVergeben: 'Nicht eingetragen · den Platz hat schon jemand übernommen',
     notifVerhindert: 'Verhinderung gemeldet',
     // Konten & Mitglieder
     laedt: 'Lädt …',
