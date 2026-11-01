@@ -9694,6 +9694,13 @@ Blatt vertauscht, Sprachnamen nicht geladen). Suite 7627/7627, tsc, Lint;
 Laufzeit: `h2`, Satz und Marken je nach Befund, Knopf 48 px, „الإنكليزية" im
 arabischen Plan.
 
+**Ausgerollt am 1.11.2026 um 07:41**, vor dem Push: `import-week` v56
+(`verify_jwt` wie `config.toml`). Rauchtest: OPTIONS → `200 ok`, POST mit dem
+öffentlichen Schlüssel → `401 unauthorized` aus dem Handler; die 17 deployten
+Dateien per `functions download` gleich der Arbeitskopie. **Live seit
+1.11.2026 07:45** mit dem Push von `9f4c4e5f` (Pages grün, `sw.js` →
+`shell-9f4c4e5`).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
