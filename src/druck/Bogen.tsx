@@ -31,6 +31,11 @@ export interface DruckBlock {
  * Ein Block, der allein höher ist als ein Blatt, bekommt sein Blatt ohne feste
  * Höhe (`ueberlang`): Er läuft auf die nächste Seite weiter, statt abgeschnitten
  * zu werden.
+ *
+ * **Vorher rückt der Bogen zusammen** (`eng`, 1.11.2026): engere Zeilen,
+ * weniger Luft zwischen Punkten und Diensten, und noch einmal gemessen. Eine
+ * Woche mit langen Namen bei den Hilfsdiensten lief sonst um wenige Pixel auf
+ * ein zweites Blatt. Was ohnehin passt, behält seinen Abstand.
  */
 export function Bogen({
   titel,
@@ -44,6 +49,7 @@ export function Bogen({
   bloecke: readonly DruckBlock[]
 }) {
   const [blaetter, setBlaetter] = useState<Blatt[] | null>(null)
+  const [eng, setEng] = useState(false)
   const messung = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -63,13 +69,16 @@ export function Bogen({
     // gleich — zwei Abstände: nach dem Kopf und vor dem Fuß. Abgezogen war bis
     // zum 16.10.2026 nur einer; ein volles Blatt war 16 px zu hoch, und der Fuß
     // rutschte in den Rand (`blaetterVerteilen` zählt nur die zwischen Blöcken).
-    setBlaetter(blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - 2 * abstand, abstand, anschluss))
-  }, [blaetter, bloecke])
+    const verteilt = blaetterVerteilen(hoehen, BLATT_HOEHE - rand - kopf - fuss - 2 * abstand, abstand, anschluss)
+    // Passt ein Block allein nicht, erst enger setzen und neu messen — noch im selben Klick.
+    if (!eng && verteilt.some((seite) => seite.ueberlang)) setEng(true)
+    else setBlaetter(verteilt)
+  }, [blaetter, bloecke, eng])
 
   if (blaetter === null) {
     return createPortal(
       <div ref={messung} className="druck-messen" aria-hidden="true">
-        <DruckBlatt titel={titel} zeitraum={zeitraum} art={art}>
+        <DruckBlatt titel={titel} zeitraum={zeitraum} art={art} eng={eng}>
           {bloecke.map((block) => (
             <Block key={block.key} block={block} />
           ))}
@@ -87,6 +96,7 @@ export function Bogen({
           titel={titel}
           zeitraum={zeitraum}
           art={art}
+          eng={eng}
           seite={i + 1}
           seiten={blaetter.length}
           ueberlang={seite.ueberlang}

@@ -23,6 +23,7 @@ export function DruckBlatt({
   seite = 1,
   seiten = 1,
   art,
+  eng = false,
   ueberlang = false,
   children,
 }: {
@@ -31,6 +32,8 @@ export function DruckBlatt({
   seite?: number
   seiten?: number
   art?: BlattArt
+  /** Enger gesetzt, damit ein Block doch auf ein Blatt passt (`Bogen`). */
+  eng?: boolean
   /** Der Inhalt ist höher als ein Blatt: keine feste Höhe, er läuft weiter statt abgeschnitten zu werden. */
   ueberlang?: boolean
   children: ReactNode
@@ -38,7 +41,12 @@ export function DruckBlatt({
   const { state } = useApp()
   const { t } = useT()
   const stand = fill(t.stand, { datum: gebundenesDatum(new Date(), state.lang, 'tagMonatJahr') })
-  const klassen = ['druck-blatt', art === 'monat' && 'druck-blatt--monat', ueberlang && 'druck-blatt--ueberlang'].filter(Boolean)
+  const klassen = [
+    'druck-blatt',
+    art === 'monat' && 'druck-blatt--monat',
+    eng && 'druck-blatt--eng',
+    ueberlang && 'druck-blatt--ueberlang',
+  ].filter(Boolean)
   return (
     <section className={klassen.join(' ')}>
       <header className="druck-blatt-kopf">

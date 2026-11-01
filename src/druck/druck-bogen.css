@@ -386,6 +386,39 @@
   margin-inline-end: 6px;
 }
 
+/* ---- Enger, wenn es sonst nicht auf ein Blatt passt (`Bogen`) --------- */
+
+/* Eine Woche mit langen Namen bei den Hilfsdiensten lief um wenige Pixel auf
+   ein zweites Blatt (1.11.2026). Gemessen an einer solchen Woche: rund 150 px
+   weniger. Was ohnehin passt, bleibt, wie es war. */
+.druck-blatt--eng {
+  line-height: 1.25;
+}
+
+.druck-blatt--eng .druck-punkt {
+  padding: 3px 0 4px;
+}
+
+.druck-blatt--eng .druck-punkt-text {
+  gap: 1px;
+}
+
+.druck-blatt--eng .druck-abschnitt-kopf {
+  padding: 7px 0 3px;
+}
+
+.druck-blatt--eng .druck-hilfsdienste {
+  padding-top: 14px;
+}
+
+.druck-blatt--eng .druck-dienst-zeile {
+  padding: 3px 0 4px;
+}
+
+.druck-blatt--eng .druck-dienst-zeile--kopf {
+  padding: 0 0 3px;
+}
+
 /* ---- Monat: zwei Wochen je Blatt, je Punkt eine Zeile ---------------- */
 
 .druck-blatt--monat {

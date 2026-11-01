@@ -73,6 +73,37 @@ describe('Papier kommt nur aus benannten Seiten', () => {
   })
 })
 
+/**
+ * **Enger, wenn es sonst nicht passt** (1.11.2026): `Bogen` setzt die Klasse,
+ * hier steht, dass sie auch etwas tut — unter vitest gibt es kein CSS.
+ * Jede Regel muss enger sein als die gewöhnliche, sonst wäre das zweite Messen
+ * umsonst.
+ */
+describe('Das eng gesetzte Blatt', () => {
+  /** Die Summe der senkrechten Abstände einer `padding`-Angabe („6px 0 7px" → 13). */
+  const senkrecht = (padding: string | undefined): number => {
+    const [oben = 0, , unten = oben] = (padding ?? '').split(/\s+/).map((w) => parseFloat(w) || 0)
+    return oben + unten
+  }
+
+  it('engere Zeilen als sonst', () => {
+    expect(Number(wert('.druck-blatt--eng', 'line-height')[0])).toBeLessThan(Number(wert('.druck-blatt', 'line-height')[0]))
+  })
+
+  it.each(['.druck-punkt', '.druck-abschnitt-kopf', '.druck-dienst-zeile'])('%s rückt zusammen', (selektor) => {
+    const eng = senkrecht(wert(`.druck-blatt--eng ${selektor}`, 'padding')[0])
+    const sonst = senkrecht(wert(selektor, 'padding')[0])
+    expect(sonst, `${selektor} ohne Abstand gelesen`).toBeGreaterThan(0)
+    expect(eng).toBeLessThan(sonst)
+  })
+
+  it('die Hilfsdienste rücken an die Zusammenkunft heran', () => {
+    expect(parseFloat(wert('.druck-blatt--eng .druck-hilfsdienste', 'padding-top')[0] ?? '')).toBeLessThan(
+      parseFloat(wert('.druck-hilfsdienste', 'padding-top')[0] ?? ''),
+    )
+  })
+})
+
 describe('Rechts-nach-links: der Behälter der Blätter nicht, die Blätter schon', () => {
   it('der Behälter läuft links-nach-rechts, jedes Blatt in seiner Sprache', () => {
     expect(wert('.druck-bogen', 'direction')).toEqual(['ltr'])

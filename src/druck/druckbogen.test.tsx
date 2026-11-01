@@ -440,13 +440,20 @@ describe('Der Bogen der Trolleys', () => {
  * Höhen kommen deshalb hier aus `data-hoehe`.
  */
 describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
+  /** `data-hoehe`, auf einem eng gesetzten Blatt `data-eng`, wo es eine gibt. */
+  const blockHoehe = (el: Element): number => {
+    const block = el.querySelector<HTMLElement>('[data-hoehe]')
+    const eng = el.closest('.druck-blatt--eng') && block?.dataset.eng
+    return Number(eng ?? block?.dataset.hoehe ?? 0)
+  }
+
   beforeEach(() => {
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       const hoehe = this.classList.contains('druck-blatt-kopf')
         ? 85
         : this.classList.contains('druck-blatt-fuss')
           ? 27
-          : Number(this.querySelector<HTMLElement>('[data-hoehe]')?.dataset.hoehe ?? 0)
+          : blockHoehe(this)
       return { height: hoehe, width: 0, top: 0, left: 0, right: 0, bottom: hoehe, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
     })
   })
@@ -479,6 +486,31 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
     const [erst, lang] = [...container.querySelectorAll('.druck-blatt')]
     expect(erst?.classList.contains('druck-blatt--ueberlang')).toBe(false)
     expect(lang?.classList.contains('druck-blatt--ueberlang')).toBe(true)
+  })
+
+  /** Ein Block, der eng gesetzt `eng` hoch ist, sonst `hoehe`. */
+  const block = (hoehe: number, eng: number) => ({ key: 'w', inhalt: <div data-hoehe={hoehe} data-eng={eng}>Woche</div> })
+
+  it('passt ein Block nur knapp nicht, rückt der Bogen zusammen — und bleibt auf einem Blatt (1.11.2026)', () => {
+    // Die Woche mit langen Namen bei den Hilfsdiensten: 1030 normal, 880 eng; Platz 1010.
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1030, 880)]} />)
+    const alle = [...container.querySelectorAll('.druck-blatt')]
+    expect(alle).toHaveLength(1)
+    expect(alle[0]!.classList.contains('druck-blatt--eng')).toBe(true)
+    expect(alle[0]!.classList.contains('druck-blatt--ueberlang')).toBe(false)
+    expect(texte(container, '.druck-blatt-fuss')).toEqual([expect.stringContaining(zahlBinden('Seite 1 von 1'))])
+  })
+
+  it('was ohnehin passt, behält seinen Abstand', () => {
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1000, 880)]} />)
+    expect(container.querySelector('.druck-blatt--eng')).toBeNull()
+  })
+
+  it('hilft auch das Zusammenrücken nicht, läuft der Block weiter — eng gesetzt, damit weniger hinüberläuft', () => {
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1400, 1200)]} />)
+    const [blatt] = [...container.querySelectorAll('.druck-blatt')]
+    expect(blatt?.classList.contains('druck-blatt--ueberlang')).toBe(true)
+    expect(blatt?.classList.contains('druck-blatt--eng')).toBe(true)
   })
 
   /** Eine Tabelle mit 30 Zeilen zu je 40 px. */
