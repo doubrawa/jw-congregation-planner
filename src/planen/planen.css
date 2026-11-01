@@ -545,6 +545,17 @@
   overscroll-behavior: contain;
 }
 
+/* Mit Maus steht ein Rollbalken neben der Liste, und die Punkte stießen an ihn
+   (Windows, 1.11.2026): rechts etwas Luft, die Legende darüber rückt mit. Am
+   Handy und Tablet blendet sich der Balken nur beim Rollen ein — dort rückten
+   die Punkte ohne Grund von der Kante der Karte darüber ab. */
+@media (pointer: fine) {
+  .zuteilen-liste,
+  .zuteilen-zaehler {
+    padding-inline-end: 8px;
+  }
+}
+
 /* Eine Person: Name (mit „· Vorschlag"), darunter die Zeile; rechts die Punkte. */
 .zuteilen-zeile {
   display: grid;
