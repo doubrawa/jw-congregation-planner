@@ -112,7 +112,7 @@
 
 @media (min-width: 768px) {
   .screen {
-    max-width: 760px;
+    max-width: var(--screen-breite);
     padding: 24px 32px;
   }
 }

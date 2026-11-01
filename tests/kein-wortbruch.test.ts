@@ -154,9 +154,24 @@ describe('Bei großer Schrift bekommt ein langes Wort Platz oder trennt', () => 
   it('am breiten Fenster wird die Personenliste nicht breiter als ein Bildschirm — den Platz bekommt die Person', () => {
     // Am Bildschirm des Betreibers (25.10.2026) war die Liste über 2000 px breit, die Person 420.
     const raster = deklarationen('personen/personen.css', '.personen-raster')
-    expect(raster).toMatch(/grid-template-columns:\s*minmax\(0, 760px\) /)
+    expect(raster).toMatch(/grid-template-columns:\s*minmax\(0, var\(--screen-breite\)\) /)
     // Darüber wächst die Person, bis sie ebenso breit ist.
-    expect(raster).toMatch(/max-width:\s*1520px/)
+    expect(raster).toMatch(/max-width:\s*calc\(2 \* var\(--screen-breite\)\)/)
+  })
+
+  it('eine Spalte neben einem Bildschirm rechnet mit seiner Breite — eine Zahl für alle (1.11.2026)', () => {
+    // Mit `1fr` statt der Breite klaffte im Planen am breiten Fenster eine
+    // Lücke zwischen Plan und Zuteilen-Spalte; mit einer Abschrift der Zahl
+    // liefe sie auseinander, sobald sich `.screen` ändert.
+    expect(deklarationen('styles/tokens.css', ':root', '/* ---- In beiden Darstellungen gleich')).toMatch(
+      /--screen-breite:\s*760px;/,
+    )
+    // `.screen` steht zweimal da; die Breite trägt die Regel ab dem Tablet.
+    const shell = Object.fromEntries(cssDateien())['app/shell.css'] ?? ''
+    expect(shell).toMatch(/\.screen \{\s*max-width:\s*var\(--screen-breite\);/)
+    expect(deklarationen('planen/planen.css', '.planen-raster')).toMatch(
+      /grid-template-columns:\s*minmax\(0, var\(--screen-breite\)\) 320px;/,
+    )
   })
 
   it('wird eine Karte der Einstellungen für die Schrift zu schmal, steht der Wert unter dem Namen', () => {

@@ -137,6 +137,12 @@
   --r-sheet: 28px;
   --r-pill: 999px;
 
+  /* Wie breit ein Bildschirm höchstens wird (`.screen`, ab dem Tablet). Eine
+     Spalte daneben rechnet damit — Zuteilen im Planen, die Person neben der
+     Personenliste —, nie mit `1fr`: Sonst klafft am breiten Fenster eine
+     Lücke zwischen beiden (1.11.2026). */
+  --screen-breite: 760px;
+
   /* Schatten: das Blatt als Fenster (ab 920 px) und die Datumsauswahl über
      allem. Bis zum 16.10.2026 standen beide fest verdrahtet in ihren Dateien,
      und hier drei Werte, die niemand nahm. */

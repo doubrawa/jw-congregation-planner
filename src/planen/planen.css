@@ -612,13 +612,13 @@
 
 /* ---- Zuteilen am Desktop: die Spalte neben dem Plan (`GDesktopPlanen`) ---- */
 
-/* Der Plan ist höchstens so breit wie ein Bildschirm (760 px, `.screen`); die
+/* Der Plan ist höchstens so breit wie ein Bildschirm (`--screen-breite`); die
    Spalte steht gleich daneben, was übrig ist, bleibt rechts frei. Mit `1fr`
    rückte sie am breiten Fenster an den Rand, und zwischen ihr und dem Plan
    klaffte eine leere Fläche (1.11.2026). */
 .planen-raster {
   display: grid;
-  grid-template-columns: minmax(0, 760px) 320px;
+  grid-template-columns: minmax(0, var(--screen-breite)) 320px;
   align-items: start;
 }
 
