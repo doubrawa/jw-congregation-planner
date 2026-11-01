@@ -64,8 +64,11 @@
   padding-block-start: 16px;
 }
 
-/* Der Stand, wo es nichts mehr zu bestätigen gibt. */
+/* Der Stand, wo es nichts mehr zu bestätigen gibt — in einer eigenen Zeile,
+   die Knöpfe darunter nebeneinander. In derselben Zeile wie „Ich kann nicht"
+   drängte er am Handy „Tauschen" allein in eine zweite (1.11.2026). */
 .aufgabe-stand {
+  flex-basis: 100%;
   color: var(--akzent-text);
   font-weight: 600;
 }
