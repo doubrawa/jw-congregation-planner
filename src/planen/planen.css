@@ -1872,6 +1872,29 @@ body:has(.planen-leiste) .toast {
   overflow-wrap: break-word;
 }
 
+/* „Geprüft" über dem Plan (T163): an den Anfang, nicht über die ganze Breite. */
+.holen-befunde-geprueft {
+  align-self: flex-start;
+  margin-top: 4px;
+  border: 1px solid var(--problem-rand);
+  color: var(--text);
+}
+
+/* Die Marke am geratenen Punkt — Fläche und Rand wie der Kasten darüber, die
+   Schrift in Textfarbe (dort gemessen: `--problem` auf der Fläche hält kein
+   AA). Eine eigene Zeile: Daneben klebte sie am Knopf „Partner". */
+.prog-geraten {
+  width: fit-content;
+  margin-top: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--problem-rand);
+  border-radius: var(--r-pill);
+  background: var(--problem-flaeche);
+  color: var(--text);
+  font-size: calc(11px * var(--fs));
+  font-weight: 600;
+}
+
 .holen-laedt {
   padding-block: 24px;
   color: var(--text2);

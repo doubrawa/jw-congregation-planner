@@ -22,6 +22,7 @@ import { WeiterePlaenePlan } from './WeiterePlaenePlan'
 import { GruppenbesuchePlan } from './GruppenbesuchePlan'
 import { FsPlan } from './FsPlan'
 import { FsRulesPanel } from './FsRulesPanel'
+import { HeftBefunde } from './HeftBefunde'
 import { AuxCounselorPanel } from './AuxCounselorPanel'
 import { WochePanel } from './WochePanel'
 import { HelpersPanel } from './HelpersPanel'
@@ -204,6 +205,21 @@ function PlanenBody() {
       ) : (
         <>
           <AusfallBanner week={rawWeek} tab={tab} />
+
+          {/* Was der Import im Arbeitsheft geraten hat (T163) — es betrifft
+              nur die Zusammenkunft unter der Woche. Die Punkte darunter
+              tragen ihre Marke (`MeetingSection`). */}
+          {tab === 'mid' && rawWeek.befunde && rawWeek.befunde.length > 0 && (
+            <HeftBefunde
+              befunde={rawWeek.befunde}
+              week={week}
+              tpw={tpw}
+              text={t.heftBefundePlanText}
+              markenText={t.heftBefundeMarkiert}
+              ebene="h2"
+              onGeprueft={rechte.zuteilen ? () => dispatch({ type: 'heftBefundeGeprueft', start: rawWeek.start }) : undefined}
+            />
+          )}
 
           {/* Wie weit die Woche ist und was zu klären ist (T121, `GPlanen`) —
               an der Stelle der früheren Banner und ihrer Legende. */}

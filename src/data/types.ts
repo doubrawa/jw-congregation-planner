@@ -1,3 +1,4 @@
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import type { SectionKind } from './constants'
 /**
  * Datenmodell — abgeleitet aus dem Design-Handoff (State-Referenz der
@@ -860,6 +861,21 @@ export interface Week {
    * kanonisch (siehe localizedWeek in data/localize.ts).
    */
   alt?: Record<string, WeekVariant>
+  /**
+   * **Was der Import in dieser Woche geraten hat** (T163) — die Befunde aus
+   * `import-week/befunde.ts`, die das Blatt „Programm holen" zeigt.
+   *
+   * Bis zum 1.11.2026 lebten sie nur in diesem Blatt: Nach dem Übernehmen
+   * zeigte nichts mehr, welche Plätze geraten waren, und „Übernehmen und
+   * zuteilen" besetzte sie gleich (Review Nr. 4). Jetzt kommen sie mit der
+   * Woche in die Datenbank. Der Plan zeigt sie über der Zusammenkunft unter der
+   * Woche und markiert die betroffenen Punkte (`iid`), bis ein Planer „Geprüft"
+   * wählt (`heftBefundeGeprueft`). Eine später nachgeholte Sprache bringt ihre
+   * eigene Gliederung mit (`mergeWeekAlt`).
+   *
+   * Fehlt, wo es nichts zu prüfen gibt — gemessen an 320 Wochenseiten: überall.
+   */
+  befunde?: Befund[]
 }
 
 /**

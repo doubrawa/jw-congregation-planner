@@ -1902,9 +1902,13 @@ die App das zunächst nicht und rät: Ein neuer Punkt bekommt etwa einen
 Schülerplatz, obwohl ihn vielleicht ein Ältester übernimmt. Dann steht über der
 Woche ein roter Kasten mit jeder solchen Stelle (**Punkt 7** samt Titel, ein
 Abschnitt oder eine Programmsprache) und was dort geraten ist. Übernehmen geht
-trotzdem; sieh dir danach diese Stellen im Plan an und teile dort von Hand zu,
-wo die App falsch geraten hat. Bei einer gewöhnlichen Woche erscheint der
-Kasten nicht.
+trotzdem. Der Kasten kommt mit der Woche mit: Er steht danach im Plan über der
+Zusammenkunft unter der Woche, und jeder betroffene Programmpunkt trägt die
+Marke **Beim Holen geraten** – auch wenn du ihn inzwischen verschoben hast.
+Teile dort von Hand zu, wo die App falsch geraten hat, und tippe dann im Kasten
+auf **Geprüft**; Kasten und Marken verschwinden. Holt die App eine
+Programmsprache später nach und ist sie anders aufgebaut, erscheint der Kasten
+ebenso. Bei einer gewöhnlichen Woche erscheint er nicht.
 
 Mit beiden Arten zu übernehmen steht der **feste Leiter des Wachtturm-Studiums**
 gleich in der Woche – ist er am Tag der Zusammenkunft abwesend oder schon

@@ -1,6 +1,6 @@
 /** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { useReducer } from 'react'
 import { reducer } from '../app/reducer'
 import {
@@ -11,6 +11,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications, privSetzen } from '../data/helpers'
 import { helferKey, sentKey } from '../data/planning'
@@ -802,5 +803,139 @@ describe('„Woche einrichten" beim Blättern (16.10.2026)', () => {
     expect(offen()).toEqual([false, false])
     fireEvent.click(seite(container).querySelector(`button[aria-label="${t.a11yNextWeek}"]`)!)
     expect(offen()).toEqual([false, true])
+  })
+})
+
+/**
+ * **Was der Import geraten hat, bleibt im Plan stehen** (T163, Review Nr. 4,
+ * 1.11.2026).
+ *
+ * Bis dahin zeigte nur das Blatt „Programm holen", was der Parser nicht
+ * kannte. Nach „Übernehmen und zuteilen" stand der Planer im Plan, die
+ * geratenen Plätze schon besetzt, und nichts erinnerte mehr daran. Jetzt steht
+ * der Kasten über der Zusammenkunft unter der Woche, der Punkt trägt eine
+ * Marke, und beides geht erst mit „Geprüft".
+ */
+describe('Was der Import geraten hat (T163)', () => {
+  /** Der Schülerteil (`i103`) ist geraten, dazu ein Lied ohne Nummer — eine Zeile ohne Punkt. */
+  const BEFUNDE: Befund[] = [
+    { art: 'unbekannt', nr: 4, iid: 'i103', titel: 'Gespräche beginnen', form: 'Rollenspiel' },
+    { art: 'lied', abschnitt: 'eroeffnung' },
+  ]
+  const kasten = (c: HTMLElement) => seite(c).querySelector('.holen-befunde')
+  /** Die Titel der Punkte, die eine Marke tragen. */
+  const markiert = (c: HTMLElement) =>
+    [...seite(c).querySelectorAll('.prog-row')]
+      .filter((r) => r.querySelector('.prog-geraten'))
+      .map((r) => r.querySelector('.prog-title')?.textContent)
+  const geprueft = (c: HTMLElement) =>
+    [...(kasten(c)?.querySelectorAll('button') ?? [])].find((b) => b.textContent === t.heftGeprueft)
+
+  it('über der Zusammenkunft unter der Woche steht der Kasten, und der Punkt trägt seine Marke', () => {
+    const { container } = zeige({ weeks: [woche({ befunde: BEFUNDE })] })
+    // Unter dem Seitentitel (h1) eine h2, wie die Abschnitte darunter — keine
+    // Ebene übersprungen (Review 1.11.2026).
+    expect(kasten(container)?.querySelector('h2')?.textContent).toBe(t.heftBefundeTitel)
+    expect(kasten(container)?.querySelector('p')?.textContent).toBe(`${t.heftBefundePlanText} ${t.heftBefundeMarkiert}`)
+    // Kein Alarm: Er steht bei jedem Öffnen der Woche da, nicht erst nach einem Abruf.
+    expect(kasten(container)?.getAttribute('role')).toBeNull()
+    expect([...kasten(container)!.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      `Punkt 4 · Gespräche beginnen${t.heftUnbekannt}`,
+      // Die Woche hat keine Eröffnung mit Art: Die Zeile steht ohne Stelle.
+      t.heftLied,
+    ])
+    expect(markiert(container)).toEqual(['4 Gespräche beginnen'])
+    expect(seite(container).querySelector('.prog-geraten')?.textContent).toBe(t.heftGeraten)
+    // Über dem Plan, nicht irgendwo darunter.
+    const ersterAbschnitt = seite(container).querySelector('.prog-abschnitt')!
+    expect(kasten(container)!.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('betrifft kein Befund einen Punkt der Woche, verspricht der Kasten keine Marken (Review 1.11.2026)', () => {
+    // So kommt der Kasten nach einer später nachgeholten Sprache (nur die
+    // Gliederung) oder mit einem Lied ohne Nummer — und mit einem Punkt, den
+    // der Planer inzwischen gelöscht hat.
+    const ohnePunkt: Befund[] = [
+      { art: 'gliederung', sprache: 'en', ist: 'a', soll: 'b' },
+      { art: 'lied', abschnitt: 'eroeffnung' },
+      { art: 'unbekannt', nr: 9, iid: 'geloescht', titel: 'Weg', form: 'Rollenspiel' },
+    ]
+    const { container } = zeige({ weeks: [woche({ befunde: ohnePunkt })] })
+    expect(kasten(container)?.querySelectorAll('li')).toHaveLength(3) // Positivkontrolle: der Kasten steht da
+    expect(kasten(container)?.querySelector('p')?.textContent).toBe(t.heftBefundePlanText)
+    expect(markiert(container)).toEqual([])
+  })
+
+  it('ein Nummernsprung nennt den Punkt danach im Kasten, markiert ihn aber nicht — an ihm ist nichts geraten', () => {
+    const { container } = zeige({ weeks: [woche({ befunde: [{ art: 'nummern', nr: 4, iid: 'i103' }] })] })
+    expect(kasten(container)?.querySelector('li')?.textContent).toBe(`Punkt 4 · Gespräche beginnen${t.heftNummern}`)
+    expect(markiert(container)).toEqual([])
+    expect(kasten(container)?.querySelector('p')?.textContent).toBe(t.heftBefundePlanText)
+  })
+
+  it('die Sprache einer Gliederungs-Zeile heißt in der Sprache des Lesers — der Plan lädt die Namen selbst (Review 1.11.2026)', async () => {
+    // Bis dahin lud sie nur das Blatt „Programm holen"; im Plan stand der
+    // deutsche Name („Englisch") in jeder anderen Oberfläche.
+    const en = dict('en')
+    const { container } = zeige({ lang: 'en', weeks: [woche({ befunde: [{ art: 'gliederung', sprache: 'fr', ist: 'a', soll: 'b' }] })] })
+    await waitFor(() => expect(kasten(container)?.querySelector('li')?.textContent).toBe(`French${en.heftGliederung}`))
+  })
+
+  it('Gegenprobe: eine Woche ohne Befunde zeigt weder Kasten noch Marke', () => {
+    const { container } = zeige()
+    expect(seite(container).querySelector('.prog-abschnitt')).not.toBeNull() // Positivkontrolle: der Plan steht da
+    expect(kasten(container)).toBeNull()
+    expect(markiert(container)).toEqual([])
+  })
+
+  it('am Wochenende nicht — die Befunde gelten dem Arbeitsheft, also der Zusammenkunft unter der Woche', () => {
+    const { container } = zeige({ weeks: [woche({ befunde: BEFUNDE })], tab: 'we' })
+    expect(seite(container).querySelector('.meeting-tabs')).not.toBeNull() // Positivkontrolle: der Plan des Wochenendes
+    expect(kasten(container)).toBeNull()
+  })
+
+  it('der Punkt heißt, wie er jetzt dasteht — verschoben trägt er eine andere Nummer', () => {
+    // `swapKeepNums` lässt die Nummern an ihrer Stelle; die Marke folgt der Kennung.
+    const w = woche({ befunde: BEFUNDE })
+    const teil = w.mid.sections[1]!.items[0] as PartItem
+    teil.num = 5
+    const { container } = zeige({ weeks: [w] })
+    expect(kasten(container)?.querySelector('li')?.textContent).toBe(`Punkt 5 · Gespräche beginnen${t.heftUnbekannt}`)
+    expect(markiert(container)).toEqual(['5 Gespräche beginnen'])
+  })
+
+  it('„Geprüft" schickt die Woche, um die es geht', () => {
+    const { container, dispatch } = zeige({ weeks: [woche({ befunde: BEFUNDE })] })
+    fireEvent.click(geprueft(container)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'heftBefundeGeprueft', start: '2026-09-07' })
+  })
+
+  it('… und danach sind Kasten und Marke fort — durch den echten Reducer', () => {
+    const start: AppState = {
+      ...demoZustand(),
+      screen: 'planen', tab: 'mid', dataStatus: 'ready',
+      congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
+      persons: [PLANER], groups: [], services: DIENSTE, absences: [],
+      weeks: [woche({ befunde: BEFUNDE })], fsWeeks: [[]], fsRules: [], week: 0,
+      congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
+    }
+    function Buehne() {
+      const [state, dispatch] = useReducer(reducer, start)
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <PlanenScreen />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container } = render(<Buehne />)
+    expect(markiert(container)).toHaveLength(1)
+    fireEvent.click(geprueft(container)!)
+    expect(kasten(container)).toBeNull()
+    expect(markiert(container)).toEqual([])
   })
 })

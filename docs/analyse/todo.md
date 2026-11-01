@@ -9600,7 +9600,7 @@ Sprachen gemessen; 11 Befunde, 10 behoben):
 | 1 | behoben | Birmanisch: Die Punktnummer „၃။" kannte `NUMMER` nicht — alle Nummern fehlten, und der Kasten käme jede Woche mit neun Zeilen. Dazu `။` als Satzende: Die Schülerteile hatten keinen Rahmen, „ဆွေးနွေးပါ။" stand samt Zeichen im Meta. Danach 57 Sprachen ohne Befund |
 | 2 | behoben | Eine unbekannte Befund-Art (neue Function, altes Bündel) ließ das Blatt abstürzen — jetzt keine Zeile dafür, der Compiler verlangt weiter jede bekannte Art |
 | 3 | behoben | Ein farbloser Hinweis mit Zahl in Klammern **nach** der Schlusszeile überschrieb sie samt Absatz darunter (Rückschritt gegenüber HEAD, per Probe) — ein Absatz ohne Link gilt nur noch als Schlusslied, solange es keine Schlusszeile gibt |
-| 4 | offen | Die Befunde leben nur im Blatt: Nach dem Übernehmen markiert nichts im Plan die geratenen Punkte |
+| 4 | behoben (1.11.) | Die Befunde leben nur im Blatt: Nach dem Übernehmen markiert nichts im Plan die geratenen Punkte — siehe Nachtrag unten |
 | 5 | behoben | `wochen-importieren.mjs` warf die Befunde weg — jetzt „Unerwartetes im Arbeitsheft" je Woche, ohne Abbruch |
 | 6 | behoben | Kastentitel in `--problem` auf `--problem-flaeche`: hell 4,43:1, unter AA — jetzt in Textfarbe; Fläche und Rand tragen den Alarm |
 | 7 | behoben | Eine unlesbare Nummer hieß „davor fehlt womöglich ein Programmpunkt" — jetzt `unvollstaendig` mit `nummer`, Text „Nummer, Titel, Minuten oder Plätze fehlen." in 12 Sprachen |
@@ -9627,6 +9627,72 @@ Functions sind unverändert (kein `_shared/` geändert).
 
 **Live seit 31.10.2026 22:45** mit dem Push von `e0681b1c` (Pages grün,
 `sw.js` → `shell-e0681b1`).
+
+**Nachtrag 1.11.2026 — Review-Befund Nr. 4 („mach punkt 4"):** Die Befunde
+kommen mit der Woche in die Datenbank, und der Plan zeigt sie, bis ein Planer
+sie geprüft hat.
+
+- **Kennung am Befund**: Betrifft ein Befund einen Punkt (`nummern`,
+  `unvollstaendig`, `unbekannt`, `bibellesung`, `studium`), trägt er dessen
+  `iid` — die der Woche, die hinausgeht, auch bei einer fremden Sprache. Nummer
+  und Titel halten nicht: Verschiebt der Planer einen Punkt, bleiben die
+  Nummern an ihrer Stelle (`swapKeepNums`), „Punkt 5" wäre danach ein anderer.
+- **`Week.befunde`**: „Übernehmen" (beide Knöpfe) hängt sie an die Woche, nur
+  wenn es welche gibt. Eine später nachgeholte Programmsprache bringt ihre
+  Gliederung mit (`mergeWeekAlt` mit `befunde`) — nur die der neuen Sprachen,
+  die übrigen Befunde der neu geparsten Woche tragen fremde Kennungen.
+  `wochen-importieren.mjs` schreibt sie ebenso mit der Woche (statt sie nur
+  auszugeben; `hinweise` entfällt).
+- **Im Plan**: Der Kasten „Unerwartetes im Arbeitsheft" (jetzt
+  `HeftBefunde.tsx`, im Blatt und im Plan derselbe) steht über der
+  Zusammenkunft unter der Woche, ohne `role="alert"`; jeder betroffene Punkt
+  trägt die Marke **Beim Holen geraten**. Die Zeilen nehmen Nummer und Titel aus
+  der gezeigten Woche (`stellenIn`), sonst, was der Import sah. **Geprüft**
+  (`heftBefundeGeprueft`, offline gesperrt) nimmt die Befunde von der Woche.
+- Texte in 12 Sprachen: 4 neu (`heftBefundePlanText`, `heftBefundeMarkiert`,
+  `heftGeprueft`, `heftGeraten`). Handbuch Planer, Abschnitt 8; README.
+
+Gegenproben (27, alle rot): Kennung falsch oder leer (vier Arten),
+Übernehmen ohne oder mit leerer Liste, Nachholen mit allen Befunden oder mit
+der Versammlungssprache, `mergeWeekAlt` vergisst oder ersetzt,
+`heftBefundeGeprueft` entfernt nichts, baut jede Woche neu, schreibt doppelt,
+gilt offline als Ansehen; Kasten fehlt, steht am Wochenende, als Alarm im Plan,
+ohne Alarm im Blatt; „Geprüft" ohne Wirkung; Marke fehlt oder an jedem Punkt;
+Zeile mit Nummer oder Titel des Imports, unübersetzt; `geratenePunkte` zu
+weit; Skript ohne oder mit leerer Liste. Laufzeit auf `/demo.html` (Befunde
+über den echten Reducer, „Geprüft" per Mausklick): 375 px hell, 320 px ar
+dunkel Stufe 1,45 ohne Überlauf, Kontrast Titel und Marke 11,7:1, Text 4,8:1.
+
+**/simplify** (Winkel nacheinander): Punktsuche in `stellenIn` als ein
+`find` statt zweier Schleifen; Namen in `befundZeile` (`imImport`, `jetzt`)
+statt eines zweiten `b`; der Kasten liest die Sprache über `useAppSelector`
+statt den ganzen Zustand. Verworfen: das Anhängen der Befunde in die Function
+zu verlegen (`week.befunde` statt eines eigenen Felds) — der Abruf der
+Varianten braucht seinen eigenen Filter ohnehin, und die laufende App liest
+`befunde` neben der Woche.
+
+**/code-review max** (Winkel nacheinander; 6 Befunde, 6 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | ru „Это приложение угадало при загрузке" las sich als „Diese App hat beim Laden geraten", uk ähnlich schief — jetzt „Die App hat das geraten" |
+| 2 | behoben | Der Plan-Text versprach Marken auch ohne markierten Punkt (nachgeholte Sprache, nur Gliederung; Lied ohne Nummer; gelöschter Punkt) — jetzt eigener Satz `heftBefundeMarkiert`, nur wenn unten wirklich einer markiert ist |
+| 3 | behoben | Der Punkt nach einem Nummernsprung trug „Beim Holen geraten", obwohl an ihm nichts geraten ist — Nummernsprünge stehen nur im Kasten |
+| 4 | behoben | Im Plan folgte der Kastentitel als `h3` auf den Seitentitel (`h1`) — jetzt `ebene` wie in `ZusammenkunftAnsicht`: im Plan `h2`, im Blatt `h3` |
+| 5 | behoben | „Geprüft" setzte `min-height: 44px` über die 48 px von `.knopf-leise` |
+| 6 | behoben | Gefunden bei der Laufzeitprobe: Im Plan lud niemand die Sprachnamen (`useLangNames`) — die Gliederungs-Zeile hieß in jeder Oberfläche „Englisch". Jetzt lädt der Kasten sie selbst |
+
+Verworfen: Kasten auch bei ausgefallener Zusammenkunft unter der Woche (die
+Punkte stehen dort weiter und lassen sich bearbeiten; fällt der Ausfall weg,
+gilt der Hinweis wieder), „Geprüft" ohne zweiten Tipp (die Vorgabe gilt
+Löschen und Entfernen; hier wird ein Hinweis quittiert, keine Eingabe
+gelöscht).
+
+Gegenproben jetzt 34, alle rot (dazu: Marken-Satz immer oder nie, gelöschter
+Punkt zählt als markiert, Nummernsprung mit Marke, Titelebene im Plan und im
+Blatt vertauscht, Sprachnamen nicht geladen). Suite 7627/7627, tsc, Lint;
+Laufzeit: `h2`, Satz und Marken je nach Befund, Knopf 48 px, „الإنكليزية" im
+arabischen Plan.
 
 ## Was bewusst offen bleibt
 

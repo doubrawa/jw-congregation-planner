@@ -863,7 +863,7 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
 
   it('der Knopf holt die nächste Woche und legt sie vor — übernommen wird erst im Blatt', async () => {
     const neu = importiert(W2)
-    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    importNextWeek.mockResolvedValue({ ok: true, week: neu, befunde: [] })
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
@@ -883,7 +883,7 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
 
   it('„Übernehmen und zuteilen" öffnet die neue Woche und besetzt ihre offenen Plätze', async () => {
     const neu = importiert(W2)
-    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    importNextWeek.mockResolvedValue({ ok: true, week: neu, befunde: [] })
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)
@@ -900,7 +900,7 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
 
   it('„Abbrechen" verwirft die geholte Woche', async () => {
     const neu = importiert(W2)
-    importNextWeek.mockResolvedValue({ ok: true, week: neu })
+    importNextWeek.mockResolvedValue({ ok: true, week: neu, befunde: [] })
     const weeks = [besetzt(W1)]
     const { container, dispatch } = planer({ weeks, confirmations: allesBestaetigt(weeks), dataStatus: 'ready' })
     fireEvent.click(importKnopf(container)!)

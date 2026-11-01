@@ -34,6 +34,11 @@ export type Fehlend = 'nummer' | 'titel' | 'minuten' | 'plaetze'
  * `lac` …), nicht mit seiner Überschrift — die gibt es in der Sprache des Hefts,
  * und die App zeigt womöglich eine andere Fassung derselben Woche. Wer den
  * Befund ausgibt, nimmt die Überschrift aus der Woche, die er zeigt.
+ *
+ * Betrifft ein Befund einen Programmpunkt, trägt er dessen Kennung (`iid`).
+ * Die App speichert die Befunde mit der Woche (`Week.befunde`) und markiert
+ * den Punkt im Plan daran — Nummer und Titel kann der Planer ändern, die
+ * Kennung bleibt (Review Nr. 4, 1.11.2026).
  */
 export type Befund =
   /** Die Woche hat keinen Zeitraum — das erste `h1` fehlt. */
@@ -43,15 +48,15 @@ export type Befund =
   /** Ein farbiger Abschnitt ohne Punkte — seine Farbklasse kennt der Parser nicht. */
   | { art: 'leer'; abschnitt: string }
   /** Die Nummern springen bei diesem Punkt: Davor fehlt womöglich einer. */
-  | { art: 'nummern'; nr: number }
+  | { art: 'nummern'; nr: number; iid: string }
   /** Ein Punkt ohne Nummer, Titel, Minuten oder Plätze. Ohne Nummer ist `nr` seine Stelle. */
-  | { art: 'unvollstaendig'; nr: number; titel: string; fehlt: Fehlend[] }
+  | { art: 'unvollstaendig'; nr: number; iid: string; titel: string; fehlt: Fehlend[] }
   /** Ein Punkt, dessen Art der Parser nicht kennt — seine Plätze sind geraten. `form` ist das erste Atom der Meta-Zeile. */
-  | { art: 'unbekannt'; nr: number; titel: string; form: string }
-  /** Kein Schätze-Punkt mit Schriftstelle und Quelle — als Bibellesung gilt der letzte. */
-  | { art: 'bibellesung'; abschnitt: string }
-  /** Der letzte Punkt unter „Unser Leben als Christ" ist nicht der längste — und gilt doch als Versammlungsbibelstudium. */
-  | { art: 'studium'; abschnitt: string }
+  | { art: 'unbekannt'; nr: number; iid: string; titel: string; form: string }
+  /** Kein Schätze-Punkt mit Schriftstelle und Quelle — als Bibellesung gilt der letzte (`iid`). */
+  | { art: 'bibellesung'; abschnitt: string; iid: string }
+  /** Der letzte Punkt unter „Unser Leben als Christ" (`iid`) ist nicht der längste — und gilt doch als Versammlungsbibelstudium. */
+  | { art: 'studium'; abschnitt: string; iid: string }
   /** Die Fassung in `sprache` gliedert sich anders als die deutsche; Plätze und Texte gehen dort nach der Stelle. */
   | { art: 'gliederung'; sprache: string; ist: string; soll: string }
 
@@ -66,7 +71,7 @@ const punkteVon = (woche: ImportedWeek, kind: string) => abschnitt(woche, kind)?
 /** Unter welcher Nummer ein Punkt gemeldet wird: seiner eigenen, ohne eine seiner Stelle. */
 type Nummer = (p: ImportedPart) => number
 
-const unbekannt = (p: ImportedPart, form: string, nr: Nummer): Befund => ({ art: 'unbekannt', nr: nr(p), titel: p.title, form })
+const unbekannt = (p: ImportedPart, form: string, nr: Nummer): Befund => ({ art: 'unbekannt', nr: nr(p), iid: p.iid, titel: p.title, form })
 
 /**
  * **Was an `woche` nach einer neuen Form aussieht.** Leer heißt: Der Parser
@@ -118,12 +123,12 @@ function punktBefunde(alle: ImportedPart[], nr: Nummer): Befund[] {
   for (const p of alle) {
     const fehlt: Fehlend[] = []
     if (p.num === undefined) fehlt.push('nummer')
-    else if (p.num !== erwartet) befunde.push({ art: 'nummern', nr: p.num })
+    else if (p.num !== erwartet) befunde.push({ art: 'nummern', nr: p.num, iid: p.iid })
     erwartet = (p.num ?? erwartet) + 1
     if (!p.title.trim()) fehlt.push('titel')
     if (typeof p.mins !== 'number') fehlt.push('minuten')
     if (p.names.length === 0) fehlt.push('plaetze')
-    if (fehlt.length > 0) befunde.push({ art: 'unvollstaendig', nr: nr(p), titel: p.title, fehlt })
+    if (fehlt.length > 0) befunde.push({ art: 'unvollstaendig', nr: nr(p), iid: p.iid, titel: p.title, fehlt })
   }
   return befunde
 }
@@ -140,7 +145,7 @@ function schaetzeBefunde(woche: ImportedWeek, nr: Nummer): Befund[] {
   const lesung = punkte.find((p) => p.names.some((n) => n.bereichsKey === 'bibellesung'))
   const befunde = punkte.filter((p, i) => i >= 2 && p !== lesung).map((p) => unbekannt(p, formVon(p.meta ?? ''), nr))
   if (s && lesung && (!lesung.title.includes(' · ') || (lesung.meta ?? '').split(' · ').length < 2)) {
-    befunde.push({ art: 'bibellesung', abschnitt: stelle(s) })
+    befunde.push({ art: 'bibellesung', abschnitt: stelle(s), iid: lesung.iid })
   }
   return befunde
 }
@@ -163,8 +168,9 @@ function studiumBefunde(woche: ImportedWeek): Befund[] {
   const leben = abschnitt(woche, 'lac')
   const punkte = leben?.items.filter(istPunkt) ?? []
   const studium = punkte.at(-1)
-  const nichtLaengster = studium && punkte.some((p) => p !== studium && (p.mins ?? 0) >= (studium.mins ?? 0))
-  return leben && nichtLaengster ? [{ art: 'studium', abschnitt: stelle(leben) }] : []
+  if (!leben || !studium) return []
+  const nichtLaengster = punkte.some((p) => p !== studium && (p.mins ?? 0) >= (studium.mins ?? 0))
+  return nichtLaengster ? [{ art: 'studium', abschnitt: stelle(leben), iid: studium.iid }] : []
 }
 
 /** Die Gliederung einer Woche: je Abschnitt Lieder (L) und Punkte mit Nummer. */

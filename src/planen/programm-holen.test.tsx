@@ -32,13 +32,16 @@ const importNextWeek = vi.fn((_after?: string, _lang?: string, _alt?: string[]) 
   Promise.resolve<{ ok: boolean; week?: Week; befunde?: Befund[]; error?: string }>({ ok: true, week: undefined }),
 )
 const importWeekVariants = vi.fn((_start: string, _lang: string, _codes: string[]) =>
-  Promise.resolve<{ ok: boolean; week?: Week }>({ ok: false }),
+  Promise.resolve<{ ok: boolean; week?: Week; befunde?: Befund[] }>({ ok: false }),
 )
+
+/** Wie `import.ts`: Ein Erfolg trägt immer seine Befunde, notfalls keine. */
+const mitBefunden = <T extends { ok: boolean; befunde?: Befund[] }>(r: T): T => (r.ok ? { befunde: [], ...r } : r)
 
 vi.mock('../lib/import', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  importNextWeek: (a?: string, b?: string, c?: string[]) => importNextWeek(a, b, c),
-  importWeekVariants: (a: string, b: string, c: string[]) => importWeekVariants(a, b, c),
+  importNextWeek: (a?: string, b?: string, c?: string[]) => importNextWeek(a, b, c).then(mitBefunden),
+  importWeekVariants: (a: string, b: string, c: string[]) => importWeekVariants(a, b, c).then(mitBefunden),
 }))
 
 const { HolenKnopf } = await import('./ProgrammHolen')
@@ -165,8 +168,25 @@ describe('Holen in der Produktion', () => {
     await geholt()
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'addImportedWeek', week: neue })
     fireEvent.click(blattKnopf(t.nurUebernehmen)!)
+    // Ohne Befunde bleibt die Woche, wie sie kam — keine leere Liste an jeder.
     expect(dispatch).toHaveBeenCalledWith({ type: 'addImportedWeek', week: neue })
     expect(blatt()).toBeNull()
+  })
+
+  it('Übernehmen nimmt mit, was der Parser geraten hat — der Plan markiert es dann (Review Nr. 4)', async () => {
+    // Bis zum 1.11.2026 ging der Kasten mit dem Blatt, und nichts erinnerte
+    // im Plan an die geratenen Plätze.
+    const neue = woche('2026-09-14')
+    const befunde: Befund[] = [{ art: 'unbekannt', nr: 7, iid: 'neu-7', titel: 'Etwas ganz Neues', form: 'Rollenspiel' }]
+    for (const knopf of [t.nurUebernehmen, t.uebernehmenZuteilen]) {
+      importNextWeek.mockResolvedValue({ ok: true, week: neue, befunde })
+      const { container, dispatch } = zeige()
+      holen(container)
+      await geholt()
+      fireEvent.click(blattKnopf(knopf)!)
+      expect(dispatch, knopf).toHaveBeenCalledWith({ type: 'addImportedWeek', week: { ...neue, befunde } })
+      cleanup()
+    }
   })
 
   it('„Übernehmen und zuteilen" hängt an, öffnet die Woche und besetzt sie', async () => {
@@ -256,6 +276,29 @@ describe('Holen in der Produktion', () => {
     holen(container)
     await waitFor(() => expect(importWeekVariants).toHaveBeenCalledWith('2026-09-07', 'de', ['en']))
     await waitFor(() => expect(dispatch.mock.calls.some((c) => c[0].type === 'mergeWeekAlt')).toBe(true))
+  })
+
+  it('eine nachgeholte Sprache bringt nur mit, wie sie selbst sich gliedert (Review Nr. 4)', async () => {
+    // Die Function parst die ganze Woche neu: Ihre übrigen Befunde gelten der
+    // Fassung der Versammlung, und die kam schon mit ihren eigenen — samt
+    // Kennungen, die die gespeicherte Woche nicht trägt.
+    const alt = woche('2026-09-14')
+    const enGliederung: Befund = { art: 'gliederung', sprache: 'en', ist: 'a', soll: 'b' }
+    importWeekVariants.mockResolvedValue({
+      ok: true,
+      week: { ...alt, alt: { en: alt } },
+      befunde: [
+        { art: 'unbekannt', nr: 7, iid: 'frisch-geparst', titel: 'Neu', form: 'Rollenspiel' },
+        { art: 'gliederung', sprache: 'es', ist: 'a', soll: 'b' },
+        enGliederung,
+      ],
+    })
+    const { container, dispatch } = zeige({ weeks: [woche('2026-09-07')], congLang: 'es', progLangs: ['en'] })
+    holen(container)
+    await waitFor(() => expect(importWeekVariants).toHaveBeenCalledWith('2026-09-07', 'es', ['en']))
+    await waitFor(() =>
+      expect(dispatch).toHaveBeenCalledWith({ type: 'mergeWeekAlt', start: '2026-09-07', alt: { en: alt }, befunde: [enGliederung] }),
+    )
   })
 
   it('mehrere Lücken werden in Blöcken geholt, nicht eine nach der anderen', async () => {
@@ -416,7 +459,8 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
    * was er nicht kannte — je Stelle eine Zeile.
    */
   const MIT_BEFUNDEN: Befund[] = [
-    { art: 'unbekannt', nr: 7, titel: 'Etwas ganz Neues', form: 'Rollenspiel zu dritt' },
+    // Ein Punkt, den die gezeigte Woche nicht hat: Es gilt, was der Import sah.
+    { art: 'unbekannt', nr: 7, iid: 'nicht-da', titel: 'Etwas ganz Neues', form: 'Rollenspiel zu dritt' },
     // Der Abschnitt steht mit seiner Art im Befund; die Überschrift kommt aus der Woche.
     { art: 'lied', abschnitt: 'eroeffnung' },
     { art: 'gliederung', sprache: 'en', ist: 'a', soll: 'b' },
@@ -437,7 +481,7 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     holen(container)
     await geholt()
     expect(kasten()?.querySelector('h3')?.textContent).toBe(t.heftBefundeTitel)
-    expect(kasten()?.textContent).toContain(t.heftBefundeText)
+    expect(kasten()?.querySelector('p')?.textContent).toBe(t.heftBefundeText)
     // Ein Alarm: Er erscheint erst nach dem Abruf und wird angesagt.
     expect(kasten()?.getAttribute('role')).toBe('alert')
     expect(zeilen()).toEqual([
@@ -500,7 +544,7 @@ describe('Das Blatt zeigt, was kam (Entwurf `GImport`)', () => {
     importNextWeek.mockResolvedValue({
       ok: true,
       week: { ...es, lang: 'es', alt: { en: enFassung } } as Week,
-      befunde: [{ art: 'bibellesung', abschnitt: 'schaetze' }],
+      befunde: [{ art: 'bibellesung', abschnitt: 'schaetze', iid: 'TESOROS DE LA BIBLIA-2' }],
     })
     const en = dict('en')
     const { container } = zeige({ lang: 'en', congLang: 'es', progLangs: ['en'] })

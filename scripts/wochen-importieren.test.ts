@@ -46,19 +46,21 @@ describe('wochenHolen', () => {
     expect(gefragt).toEqual(['(ohne)', '2026-09-07', '2026-09-14'])
   })
 
-  it('sammelt, was der Parser nicht kannte — je Woche, nur wo etwas kam (Review 31.10.2026)', async () => {
-    // Bis dahin übernahm das Skript nur `week`, und ein Neuaufbau schrieb ein
-    // Jahr Wochen, ohne die geratenen Plätze zu nennen.
-    const befunde = [{ art: 'unbekannt', nr: 7, titel: 'Etwas Neues', form: 'Rollenspiel' }]
+  it('hängt an die Woche, was der Parser nicht kannte — nur wo etwas kam (Review 31.10.2026, Nr. 4)', async () => {
+    // Bis zum 31.10. übernahm das Skript nur `week`, und ein Neuaufbau schrieb
+    // ein Jahr Wochen, ohne die geratenen Plätze zu nennen; bis zum 1.11.
+    // standen sie nur auf der Konsole, und im Plan markierte sie nichts.
+    const befunde = [{ art: 'unbekannt', nr: 7, iid: 'i7', titel: 'Etwas Neues', form: 'Rollenspiel' }]
     const holen = (_url: string, init: { body: string }) => {
       const { after } = JSON.parse(init.body)
       return Promise.resolve(antwort(after ? { ...woche('2026-09-14'), befunde } : { ...woche('2026-09-07'), befunde: [] }))
     }
 
-    const { wochen, hinweise } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 2, holen })
+    const { wochen } = await wochenHolen({ url: 'https://x', key: 'k', anzahl: 2, holen })
 
     expect(wochen.map((w) => w.start)).toEqual(['2026-09-07', '2026-09-14'])
-    expect(hinweise).toEqual([{ woche: wochen[1], befunde }])
+    expect(wochen[0]).not.toHaveProperty('befunde')
+    expect(wochen[1]?.befunde).toEqual(befunde)
   })
 
   it('schickt Sprache und Programmsprachen der Versammlung mit', async () => {
@@ -266,6 +268,16 @@ describe('main: eingeordnet wie beim Import in der App', () => {
     })
     expect(tabellen.fs_weeks).toEqual([{ congregation_id: C, start: '2026-08-24', data: vorhanden }])
     expect(ausgabe.join('\n')).toContain('Treffpunkte schon da')
+  })
+
+  it('schreibt mit der Woche, was der Parser geraten hat — der Plan markiert es dann (Review Nr. 4)', async () => {
+    const befunde = [{ art: 'unbekannt', nr: 1, iid: 's-2026-08-24', titel: 'Probe-Schülerteil', form: 'Probe' }]
+    const { tabellen, ausgabe } = await fahre(() => main(['--anzahl', '1']), {
+      bestand: { congregations: [VERSAMMLUNG] },
+      funktionen: { 'import-week': () => ({ json: { week: roh('2026-08-24'), befunde } }) },
+    })
+    expect((tabellen.weeks ?? []).map((z) => (z.data as Week).befunde)).toEqual([befunde])
+    expect(ausgabe.join('\n')).toContain('Unerwartetes im Arbeitsheft, Woche 2026-08-24')
   })
 })
 

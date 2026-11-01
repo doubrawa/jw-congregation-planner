@@ -898,20 +898,30 @@ describe('import-week: weitere Programmsprachen als Varianten', () => {
  * „SERVO XI" nicht kennt — „DOMO XI DOMO" ist keine Form, die er versteht.
  */
 describe('import-week: Befunde reisen mit der Woche', () => {
-  const UNBEKANNT: Befund = { art: 'unbekannt', nr: 4, titel: 'Konvo Beg', form: 'DOMO XI DOMO' }
+  /**
+   * Der unbekannte Punkt — mit der Kennung, die er in der Woche trägt, die
+   * hinausgeht: Daran markiert ihn der Plan nach dem Übernehmen (Review Nr. 4,
+   * 1.11.2026). Gesucht über den Titel, den er dort hat.
+   */
+  const unbekannt = (week: Antwort['week']): Befund => {
+    const punkte = (week?.mid.sections ?? []) as Array<{ items: Array<{ iid?: string; title?: string }> }>
+    const iid = punkte.flatMap((s) => s.items).find((i) => i.title === 'Konvo Beg')?.iid ?? '(fehlt)'
+    return { art: 'unbekannt', nr: 4, iid, titel: 'Konvo Beg', form: 'DOMO XI DOMO' }
+  }
   const gliederungen = (befunde: Befund[] = []) => befunde.filter((b) => b.art === 'gliederung').map((b) => b.sprache)
 
   it('der unbekannte Punkt steht in der Antwort und im Protokoll', async () => {
     const { week, befunde } = await hole({ after: '2026-03-02' })
     expect(week?.start).toBe('2026-03-09')
-    expect(befunde).toContainEqual(UNBEKANNT)
+    expect(befunde).toContainEqual(unbekannt(week))
     expect(String(warnung.mock.calls[0]?.[1])).toContain('Punkt 4 „Konvo Beg": Form „DOMO XI DOMO"')
   })
 
   it('für eine spanische Versammlung prüft die deutsche Fassung die Form — wie sie die Plätze liefert', async () => {
     const { week, befunde } = await hole({ after: '2026-03-02', lang: 'es' })
     expect(week?.lang).toBe('es')
-    expect(befunde).toContainEqual(UNBEKANNT)
+    // Die Kennung der spanischen Woche — die deutsche geht nicht hinaus.
+    expect(befunde).toContainEqual(unbekannt(week))
     // Gleich gegliedert wie die deutsche: kein Befund dazu.
     expect(gliederungen(befunde)).toEqual([])
   })

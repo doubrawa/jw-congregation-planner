@@ -479,10 +479,13 @@ dann den Parser anpassen.
 Dieselben Prüfungen (`import-week/befunde.ts`) laufen seit dem 31.10.2026 bei
 jedem „Holen" in der App: Das Blatt „Programm holen" zeigt dann „Unerwartetes im
 Arbeitsheft" mit den Stellen, und das Protokoll der Function nennt sie auf
-Deutsch. `wochen-importieren.mjs` schreibt sie je Woche als „Unerwartetes im
-Arbeitsheft" hin, bricht aber nicht ab — die Woche ist da, nur einzelne Plätze
-sind geraten. Das Skript bleibt für den Blick voraus — die App sieht eine neue
-Form erst, wenn jemand die Woche holt.
+Deutsch. Übernommen kommen sie mit der Woche in die Datenbank (`Week.befunde`,
+seit dem 1.11.2026): Der Plan zeigt den Kasten über der Zusammenkunft unter der
+Woche und markiert die betroffenen Punkte, bis ein Planer „Geprüft" wählt.
+`wochen-importieren.mjs` schreibt sie ebenso mit der Woche und nennt sie je
+Woche als „Unerwartetes im Arbeitsheft", bricht aber nicht ab — die Woche ist
+da, nur einzelne Plätze sind geraten. Das Skript bleibt für den Blick voraus —
+die App sieht eine neue Form erst, wenn jemand die Woche holt.
 
 **Vorher ist nichts zu setzen.** Die Projekt-URL holen sich die Skripte aus
 `.env.local` (`VITE_SUPABASE_URL`), und nach dem Secret-Schlüssel fragen sie,

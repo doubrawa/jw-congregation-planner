@@ -553,6 +553,13 @@ export const DE = {
     heftBibellesung: 'Die Bibellesung ist womöglich falsch erkannt.',
     heftStudium: 'Das Versammlungsbibelstudium ist womöglich falsch erkannt.',
     heftGliederung: 'Anders aufgebaut als die deutsche Fassung, nach der sich die App richtet — Plätze oder Texte können verschoben sein.',
+    // Derselbe Kasten nach dem Übernehmen über dem Plan der Woche (1.11.2026),
+    // bis ein Planer „Geprüft" wählt; die betroffenen Punkte tragen die Marke.
+    // `heftBefundeMarkiert` nur, wenn unten wirklich ein Punkt markiert ist.
+    heftBefundePlanText: 'Das hat die App beim Holen geraten. Prüfe diese Stellen.',
+    heftBefundeMarkiert: 'Betroffene Programmpunkte sind unten markiert.',
+    heftGeprueft: 'Geprüft',
+    heftGeraten: 'Beim Holen geraten',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).

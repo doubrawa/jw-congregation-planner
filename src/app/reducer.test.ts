@@ -3,6 +3,7 @@ import { aufgabenAbgeleitet, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppAction, AppState } from './context'
 import type { HydratePayload } from './context'
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import {
   buildDemoFsWeeks,
   buildDemoWeeks,
@@ -1054,6 +1055,43 @@ describe('Import', () => {
     expect(next.weeks.filter((w) => w.alt?.en).length).toBe(1)
     // Gibt es die Woche nicht mehr, ändert sich nichts.
     expect(reducer(verschoben, { type: 'mergeWeekAlt', start: '2099-01-05', alt: { en: ziel } })).toBe(verschoben)
+  })
+
+  it('mergeWeekAlt hängt an, wie sich eine nachgeholte Sprache gliedert — zu dem, was die Woche schon hatte (T163)', () => {
+    const vorher: Befund = { art: 'lied', abschnitt: 'lac' }
+    const fr: Befund = { art: 'gliederung', sprache: 'fr', ist: 'a', soll: 'b' }
+    const s = makeState()
+    const mit = { ...s, weeks: s.weeks.map((w, i) => (i === 0 ? { ...w, befunde: [vorher] } : w)) }
+    const next = reducer(mit, { type: 'mergeWeekAlt', start: mit.weeks[0]!.start, alt: {}, befunde: [fr] })
+    expect(next.weeks[0]!.befunde).toEqual([vorher, fr])
+    // Ohne neue Befunde bekommt keine Woche eine leere Liste.
+    const ohne = reducer(s, { type: 'mergeWeekAlt', start: s.weeks[0]!.start, alt: {}, befunde: [] })
+    expect(ohne.weeks[0]).not.toHaveProperty('befunde')
+  })
+})
+
+describe('heftBefundeGeprueft (T163, Review Nr. 4)', () => {
+  const BEFUNDE: Befund[] = [{ art: 'unbekannt', nr: 4, iid: 'i4', titel: 'Neu', form: 'Rollenspiel' }]
+  const mitBefunden = () => {
+    const s = makeState()
+    return { ...s, weeks: s.weeks.map((w) => ({ ...w, befunde: BEFUNDE })) }
+  }
+
+  it('nimmt die Befunde von dieser einen Woche — die übrigen bleiben dieselben Objekte', () => {
+    const s = mitBefunden()
+    const next = reducer(s, { type: 'heftBefundeGeprueft', start: s.weeks[1]!.start })
+    expect(next.weeks[1]).not.toHaveProperty('befunde')
+    // Positivkontrolle und Speichern: Unberührte Wochen sind identisch — die
+    // Persistenz schreibt, was sich als Objekt geändert hat.
+    expect(next.weeks[0]).toBe(s.weeks[0])
+    expect(next.weeks.filter((w, i) => w !== s.weeks[i])).toHaveLength(1)
+  })
+
+  it('ein zweites „Geprüft" ändert nichts — sonst ginge die Woche noch einmal hinaus', () => {
+    const s = mitBefunden()
+    const einmal = reducer(s, { type: 'heftBefundeGeprueft', start: s.weeks[0]!.start })
+    expect(reducer(einmal, { type: 'heftBefundeGeprueft', start: s.weeks[0]!.start })).toBe(einmal)
+    expect(reducer(s, { type: 'heftBefundeGeprueft', start: '2099-01-05' })).toBe(s)
   })
 })
 

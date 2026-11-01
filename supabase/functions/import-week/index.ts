@@ -304,8 +304,9 @@ Deno.serve(async (req: Request) => {
     if (germanWeek !== week) applyGoldSlots(week, germanWeek)
 
     // Was der Parser nicht kennt und darum geraten hat (befunde.ts) — die App
-    // zeigt es vor dem Übernehmen. Die Formen unter „Uns im Dienst verbessern"
-    // prüft die deutsche Fassung, von der auch die Plätze kommen.
+    // zeigt es vor dem Übernehmen und markiert es danach im Plan. Die Formen
+    // unter „Uns im Dienst verbessern" prüft die deutsche Fassung, von der auch
+    // die Plätze kommen.
     const befunde: Befund[] = [
       ...heftBefunde(week, germanWeek),
       ...(germanWeek !== week ? strukturBefunde(germanWeek, week, lang) : []),

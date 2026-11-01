@@ -13,6 +13,7 @@ import {
   useSyncExternalStore,
   type Dispatch,
 } from 'react'
+import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import type { Ansicht } from '../data/ansicht'
 import type { Anwesenheit } from '../data/anwesenheit'
 import type { Tausch, TauschAnfrage } from '../data/tausch'
@@ -539,9 +540,12 @@ export type AppAction =
   | { type: 'addImportedWeek'; week: Week } // die von jw.org geholte Woche
   // Nachgeladene Sprachvarianten — die Woche über ihre Kennung (T66), nicht über
   // den Index: Der Abruf dauert, und ein Nachladen dazwischen kann das
-  // Ladefenster verschieben.
-  | { type: 'mergeWeekAlt'; start: string; alt: Record<string, WeekVariant> }
+  // Ladefenster verschieben. `befunde`: wie sich die neuen Sprachen gliedern,
+  // wenn anders als die deutsche Fassung (T163).
+  | { type: 'mergeWeekAlt'; start: string; alt: Record<string, WeekVariant>; befunde?: Befund[] }
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
+  // Die geratenen Stellen der Woche sind geprüft: Kasten und Marken im Plan gehen (T163).
+  | { type: 'heftBefundeGeprueft'; start: string }
   | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
   // Aktuelle Woche; Bereich (Default: alles) und Umfang: die gezeigte
   // Zusammenkunft oder beide (T121, „Ganze Woche").

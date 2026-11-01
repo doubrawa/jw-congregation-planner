@@ -58,6 +58,8 @@ describe('isViewAction', () => {
     'fsRuleAdd',
     'addImportedWeek',
     'startImport',
+    // „Geprüft" nimmt die Befunde von der Woche (T163) — offline kämen sie beim nächsten Laden wieder.
+    'heftBefundeGeprueft',
     'changeReminder',
     'setCongLang',
     'linksAusgestellt',

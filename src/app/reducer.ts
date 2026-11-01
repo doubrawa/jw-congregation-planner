@@ -1038,13 +1038,36 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // verschoben, bekam die Nachbarwoche die Texte. Gibt es die Woche nicht
       // mehr, ändert sich nichts.
       if (!action.start || !state.weeks.some((w) => w.start === action.start)) return state
+      const befunde = action.befunde ?? []
       return {
         ...state,
-        weeks: state.weeks.map((w) => (w.start === action.start ? { ...w, alt: { ...w.alt, ...action.alt } } : w)),
+        weeks: state.weeks.map((w) =>
+          w.start !== action.start
+            ? w
+            : {
+                ...w,
+                alt: { ...w.alt, ...action.alt },
+                ...(befunde.length > 0 ? { befunde: [...(w.befunde ?? []), ...befunde] } : {}),
+              },
+        ),
       }
     }
     case 'stopImport':
       return { ...state, importing: false }
+    case 'heftBefundeGeprueft': {
+      // Geprüft ist geprüft: Die Woche verliert die Befunde ganz, mit ihnen
+      // Kasten und Marken im Plan. Ohne Befunde bleibt die Woche dieselbe —
+      // sonst schriebe ein zweiter Tipp sie noch einmal.
+      if (!state.weeks.some((w) => w.start === action.start && w.befunde)) return state
+      return {
+        ...state,
+        weeks: state.weeks.map((w) => {
+          if (w.start !== action.start) return w
+          const { befunde: _geprueft, ...ohne } = w
+          return ohne
+        }),
+      }
+    }
     case 'assign': {
       // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
       const sel = state.slotSel

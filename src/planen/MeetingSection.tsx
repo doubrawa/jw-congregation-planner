@@ -12,6 +12,7 @@ import { SONG_WORD } from '../../supabase/functions/_shared/i18n/translate-data.
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import { useT } from '../i18n/useT'
 import type { PartItem, Section, SlotAssignment } from '../data/types'
+import { geratenePunkte } from './heft-befunde'
 import { platzAnzeige } from './platz-anzeige'
 import { istGewaehlt } from './planen-raster'
 import { PlatzZeile } from './PlatzZeile'
@@ -106,6 +107,9 @@ export function MeetingSection({
 
   // Wer oben unter „Zu klären" steht, wird hier an seinem Platz rot.
   const konflikte = useKonflikte(tab)
+  // Was der Import geraten hat (T163): oben im Kasten, hier am Punkt selbst —
+  // über die Kennung, die auch ein Verschieben übersteht.
+  const geraten = geratenePunkte(state.weeks[state.week]?.befunde)
 
   /**
    * Die Platzreihen eines Programmpunkts: nur Hauptsaal — oder Hauptsaal und
@@ -264,6 +268,7 @@ export function MeetingSection({
                   {tpw(zusatz)}
                 </div>
               )}
+              {geraten.has(keyItem.iid) && <div className="prog-geraten">{t.heftGeraten}</div>}
               {canPartner && <PartnerKnopf si={si} ii={ii} hasPartner={hasPartner} />}
             </div>
             {dauer && (

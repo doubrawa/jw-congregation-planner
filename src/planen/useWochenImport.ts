@@ -4,7 +4,6 @@ import { useKalendertag } from '../app/useKalendertag'
 import { missingVariants } from '../data/localize'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import { fromIso, isoVonKalendertag, istVorbei, weekEndMs } from '../data/meeting-dates'
-import type { Week } from '../data/types'
 import { JW_TO_CONG } from '../i18n/langs'
 import { programmSpanne, useT } from '../i18n/useT'
 import { holenNach, loadedUntilMs } from '../data/holen'
@@ -49,10 +48,12 @@ export function useWochenImport(): {
    */
   holen: () => Promise<Geholt | null>
   /**
-   * Hängt eine geholte Woche an. Mit `zuteilen` öffnet sich ihr Plan, und die
-   * offenen Plätze der ganzen Woche werden automatisch besetzt.
+   * Hängt eine geholte Woche an, samt dem, was der Parser darin geraten hat —
+   * der Plan markiert es, bis ein Planer es geprüft hat. Mit `zuteilen` öffnet
+   * sich ihr Plan, und die offenen Plätze der ganzen Woche werden automatisch
+   * besetzt.
    */
-  uebernehmen: (week: Week, zuteilen: boolean) => void
+  uebernehmen: (geholt: Geholt, zuteilen: boolean) => void
   /** Bis wann Programme vorliegen, als Text — `null`, wenn keine Woche geladen ist. */
   geladenBis: string | null
   /** Dasselbe als Kalendertag (`loadedUntilMs`) — `null` ohne Kalenderdaten. */
@@ -163,7 +164,12 @@ export function useWochenImport(): {
       block.forEach((gap, j) => {
         const filled = geholt[j]
         if (filled?.ok && filled.week.alt) {
-          dispatch({ type: 'mergeWeekAlt', start: gap.start, alt: filled.week.alt })
+          // Von den Befunden zählt nur, wie sich die neuen Sprachen gliedern:
+          // Die übrigen gelten der Woche in der Versammlungssprache, und die
+          // kam schon mit ihren eigenen — samt Kennungen, die eine neu
+          // geparste Woche nicht mehr trägt.
+          const befunde = filled.befunde.filter((b) => b.art === 'gliederung' && gap.codes.includes(b.sprache))
+          dispatch({ type: 'mergeWeekAlt', start: gap.start, alt: filled.week.alt, befunde })
         }
       })
     }
@@ -186,7 +192,7 @@ export function useWochenImport(): {
     return null
   }
 
-  const uebernehmen = (week: Week, zuteilen: boolean): void => {
+  const uebernehmen = ({ week, befunde }: Geholt, zuteilen: boolean): void => {
     /*
      * Die Woche kommt ans Ende (`addImportedWeek`): Geholt wird immer die nach
      * der spätesten. Steht dieselbe schon da, hängt der Reducer nichts an und
@@ -194,7 +200,9 @@ export function useWochenImport(): {
      */
     const neu = !state.weeks.some((w) => w.start === week.start)
     const wi = state.weeks.length
-    dispatch({ type: 'addImportedWeek', week })
+    // Was der Parser geraten hat, bleibt an der Woche (`Week.befunde`) — bis
+    // zum 1.11.2026 ging es mit dem Blatt verloren.
+    dispatch({ type: 'addImportedWeek', week: befunde.length > 0 ? { ...week, befunde } : week })
     if (!zuteilen || !neu) return
     // Der Reducer arbeitet die Aktionen der Reihe nach ab: Der Sprung sieht die
     // neue Woche schon, das Zuteilen den Sprung. Woher das Planen kommt (T144):

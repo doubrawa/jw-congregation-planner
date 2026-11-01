@@ -65,14 +65,23 @@ const seite = (teile: Partial<typeof TEILE> = {}, kopf = '6.-12. Juli') =>
   Object.values({ ...TEILE, ...teile }).join('') +
   '</article>'
 
-/** Eine deutsche Seite parsen und prüfen, wie `import-week` es tut. */
-const befundeVon = (html: string): Befund[] => {
+/** Eine deutsche Seite parsen und prüfen, wie `import-week` es tut — samt der Woche, für die Kennungen. */
+const geparst = (html: string): { w: ImportedWeek; befunde: Befund[] } => {
   const w = parseWorkbookWeek(html)
-  return heftBefunde(w, w)
+  return { w, befunde: heftBefunde(w, w) }
 }
+const befundeVon = (html: string): Befund[] => geparst(html).befunde
 
 const punkte = (w: ImportedWeek, kind: string) =>
   w.mid.sections.find((s) => s.kind === kind)!.items.filter((i): i is ImportedPart => 'names' in i)
+
+/**
+ * Die Kennung des Punkts, dessen Titel so beginnt. Ein Befund zu einem Punkt
+ * trägt sie, und die App markiert ihn daran im Plan (Review Nr. 4,
+ * 1.11.2026) — die falsche Kennung markierte einen anderen Punkt.
+ */
+const kennung = (w: ImportedWeek, titel: string): string =>
+  w.mid.sections.flatMap((s) => s.items).find((i): i is ImportedPart => 'names' in i && i.title.startsWith(titel))!.iid
 const bereiche = (w: ImportedWeek, kind: string) => punkte(w, kind).map((p) => p.names.map((n) => n.bereichsKey).join('+'))
 
 describe('die gewöhnliche Woche', () => {
@@ -102,7 +111,9 @@ describe('neue Programmpunkte — ihre Plätze sind geraten', () => {
     const w = parseWorkbookWeek(seite({ dienst: TEILE.dienst + NEU_DE, leben: um(TEILE.leben, 1) }))
     // So kam der Punkt an: ein Platz, als hätte der Parser es gewusst.
     expect(punkte(w, 'dienst').at(-1)!.names).toEqual([{ name: '', bereichsKey: 'schulung' }])
-    expect(heftBefunde(w, w)).toEqual([{ art: 'unbekannt', nr: 7, titel: 'Etwas ganz Neues', form: 'Rollenspiel zu dritt' }])
+    expect(heftBefunde(w, w)).toEqual([
+      { art: 'unbekannt', nr: 7, iid: kennung(w, 'Etwas ganz Neues'), titel: 'Etwas ganz Neues', form: 'Rollenspiel zu dritt' },
+    ])
   })
 
   it('Gegenprobe: „Vortrag des Vorsitzenden" kennt der Parser — auch wo der Titel anderes sagt', () => {
@@ -123,7 +134,10 @@ describe('neue Programmpunkte — ihre Plätze sind geraten', () => {
       seite({ dienst: TEILE.dienst + punkt(DIENST, '7. Nova Afero', '(5 vim) Rolludo tri. Frob.'), leben }),
     )
     applyGoldSlots(fremd, deutsch)
-    expect(heftBefunde(fremd, deutsch)).toEqual([{ art: 'unbekannt', nr: 7, titel: 'Nova Afero', form: 'Rollenspiel zu dritt' }])
+    // Die Kennung ist die der Seite, die als Woche hinausgeht — nicht die der deutschen.
+    expect(heftBefunde(fremd, deutsch)).toEqual([
+      { art: 'unbekannt', nr: 7, iid: kennung(fremd, 'Nova Afero'), titel: 'Nova Afero', form: 'Rollenspiel zu dritt' },
+    ])
     // Ohne deutsche Fassung (`heft-pruefen` für eine weitere Sprache) bleibt
     // diese Prüfung aus — die deutsche Seite meldet sie schon.
     expect(heftBefunde(fremd, null)).toEqual([])
@@ -136,7 +150,9 @@ describe('neue Programmpunkte — ihre Plätze sind geraten', () => {
     // ihren Platz, sie den einer Besprechung, ohne Schriftstelle im Titel.
     expect(bereiche(w, 'schaetze')).toEqual(['vortrag', 'besprechung', 'bibellesung', 'besprechung'])
     expect(punkte(w, 'schaetze')[2]!.title).toBe('Bibellesung · Mus 13:1-14')
-    expect(heftBefunde(w, w)).toEqual([{ art: 'unbekannt', nr: 4, titel: 'Kurzer Rückblick', form: '2 Min.' }])
+    expect(heftBefunde(w, w)).toEqual([
+      { art: 'unbekannt', nr: 4, iid: kennung(w, 'Kurzer Rückblick'), titel: 'Kurzer Rückblick', form: '2 Min.' },
+    ])
   })
 
   it('… und vor ihr', () => {
@@ -144,19 +160,24 @@ describe('neue Programmpunkte — ihre Plätze sind geraten', () => {
       ueberschrift(SCHAETZE, 'SCHÄTZE AUS GOTTES WORT') + VORTRAG + GRABEN + punkt(SCHAETZE, '3. Kurzer Rückblick', '(2 Min.)') + BIBELLESUNG(4)
     const w = parseWorkbookWeek(seite({ schaetze, dienst: um(TEILE.dienst, 1), leben: um(TEILE.leben, 1) }))
     expect(bereiche(w, 'schaetze')).toEqual(['vortrag', 'besprechung', 'besprechung', 'bibellesung'])
-    expect(heftBefunde(w, w)).toEqual([{ art: 'unbekannt', nr: 3, titel: 'Kurzer Rückblick', form: '2 Min.' }])
+    expect(heftBefunde(w, w)).toEqual([
+      { art: 'unbekannt', nr: 3, iid: kennung(w, 'Kurzer Rückblick'), titel: 'Kurzer Rückblick', form: '2 Min.' },
+    ])
   })
 })
 
 describe('Bibellesung und Versammlungsbibelstudium', () => {
   it('eine Bibellesung ohne Schriftstelle und Quelle', () => {
     const schaetze = TEILE.schaetze.replace('(4 Min.) Mus 13:1-14 (th Lektion 2)', '(4 Min.)')
-    expect(befundeVon(seite({ schaetze }))).toEqual([{ art: 'bibellesung', abschnitt: 'schaetze' }])
+    const { w, befunde } = geparst(seite({ schaetze }))
+    // Die Kennung ist die des Punkts, der als Bibellesung gilt — der letzte.
+    expect(befunde).toEqual([{ art: 'bibellesung', abschnitt: 'schaetze', iid: kennung(w, 'Bibellesung') }])
   })
 
   it('… und eine mit Schriftstelle, aber ohne Quelle', () => {
     const schaetze = TEILE.schaetze.replace(' (th Lektion 2)', '')
-    expect(befundeVon(seite({ schaetze }))).toEqual([{ art: 'bibellesung', abschnitt: 'schaetze' }])
+    const { w, befunde } = geparst(seite({ schaetze }))
+    expect(befunde).toEqual([{ art: 'bibellesung', abschnitt: 'schaetze', iid: kennung(w, 'Bibellesung') }])
   })
 
   it('ein Punkt hinter dem Studium: Der letzte ist dann nicht der längste', () => {
@@ -164,7 +185,8 @@ describe('Bibellesung und Versammlungsbibelstudium', () => {
     // neue. Gemessen ist das Studium immer der längste (30 gegen höchstens 15).
     const w = parseWorkbookWeek(seite({ leben: TEILE.leben + punkt(LEBEN, '9. Hinweis', '(2 Min.)') }))
     expect(bereiche(w, 'lac')).toEqual(['besprechung', 'besprechung', 'studium+leser'])
-    expect(heftBefunde(w, w)).toEqual([{ art: 'studium', abschnitt: 'lac' }])
+    // Markiert wird der Punkt, der als Studium gilt: der neue am Ende.
+    expect(heftBefunde(w, w)).toEqual([{ art: 'studium', abschnitt: 'lac', iid: kennung(w, 'Hinweis') }])
   })
 
   it('Gegenprobe: ein weiterer Punkt vor dem Studium ist gewöhnlich', () => {
@@ -210,27 +232,31 @@ describe('Lieder, Abschnitte, Nummern', () => {
   it('ein Abschnitt mit fremder Farbklasse fällt weg — leer, und die Nummern springen', () => {
     // „gold" heißt eines Tages anders: Die Überschrift wird nicht erkannt, die
     // Punkte darunter auch nicht. Was bleibt, ist die Lücke.
-    expect(befundeVon(seite({ dienst: TEILE.dienst.replaceAll('gold-700', 'yellow-700') }))).toEqual([
+    const { w, befunde } = geparst(seite({ dienst: TEILE.dienst.replaceAll('gold-700', 'yellow-700') }))
+    expect(befunde).toEqual([
       { art: 'leer', abschnitt: 'dienst' },
-      { art: 'nummern', nr: 7 },
+      { art: 'nummern', nr: 7, iid: kennung(w, 'Örtliche Bedürfnisse') },
     ])
   })
 
   it('ein zusätzlicher Abschnitt mit neuer Farbe: Seine Punkte fehlen — die Lücke zeigt es', () => {
     const neu = ueberschrift('blue-700', 'NEUER ABSCHNITT') + punkt('blue-700', '7. Neuer Punkt', '(5 Min.)')
-    expect(befundeVon(seite({ dienst: TEILE.dienst + neu, leben: um(TEILE.leben, 1) }))).toEqual([{ art: 'nummern', nr: 8 }])
+    const { w, befunde } = geparst(seite({ dienst: TEILE.dienst + neu, leben: um(TEILE.leben, 1) }))
+    expect(befunde).toEqual([{ art: 'nummern', nr: 8, iid: kennung(w, 'Örtliche Bedürfnisse') }])
   })
 
   it('ein Sprung meldet sich einmal, nicht bei jedem Punkt dahinter', () => {
     // `heft-pruefen` schrieb bis zum 31.10.2026 jeden folgenden Punkt als
     // „steht an Stelle …" hin — fünf Zeilen für eine einzige Lücke.
     const schaetze = ueberschrift(SCHAETZE, 'SCHÄTZE AUS GOTTES WORT') + VORTRAG + BIBELLESUNG(3)
-    expect(befundeVon(seite({ schaetze }))).toEqual([{ art: 'nummern', nr: 3 }])
+    const { w, befunde } = geparst(seite({ schaetze }))
+    expect(befunde).toEqual([{ art: 'nummern', nr: 3, iid: kennung(w, 'Bibellesung') }])
   })
 
   it('ein Punkt ohne Minuten', () => {
     const schaetze = TEILE.schaetze.replace('(10 Min.)', '')
-    expect(befundeVon(seite({ schaetze }))).toEqual([{ art: 'unvollstaendig', nr: 1, titel: 'Erster Vortrag', fehlt: ['minuten'] }])
+    const { w, befunde } = geparst(seite({ schaetze }))
+    expect(befunde).toEqual([{ art: 'unvollstaendig', nr: 1, iid: kennung(w, 'Erster Vortrag'), titel: 'Erster Vortrag', fehlt: ['minuten'] }])
   })
 
   it('eine unlesbare Nummer fehlt — sie ist kein Sprung, und die Punkte dahinter bleiben still (Review 31.10.2026)', () => {
@@ -240,7 +266,7 @@ describe('Lieder, Abschnitte, Nummern', () => {
     const w = parseWorkbookWeek(seite({ schaetze }))
     expect(punkte(w, 'schaetze')[1]!.num).toBeUndefined() // Positivkontrolle: die Nummer ist wirklich weg
     expect(heftBefunde(w, w)).toEqual([
-      { art: 'unvollstaendig', nr: 2, titel: '2× Nach geistigen Schätzen graben', fehlt: ['nummer'] },
+      { art: 'unvollstaendig', nr: 2, iid: kennung(w, '2× Nach'), titel: '2× Nach geistigen Schätzen graben', fehlt: ['nummer'] },
     ])
   })
 
@@ -269,11 +295,11 @@ describe('befundAufDeutsch — für heft-pruefen und das Protokoll', () => {
       { art: 'zeitraum' },
       { art: 'lied', abschnitt: 'eroeffnung' },
       { art: 'leer', abschnitt: 'dienst' },
-      { art: 'nummern', nr: 7 },
-      { art: 'unvollstaendig', nr: 3, titel: 'Bibellesung', fehlt: ['nummer', 'minuten', 'plaetze'] },
-      { art: 'unbekannt', nr: 5, titel: 'Etwas Neues', form: 'Rollenspiel' },
-      { art: 'bibellesung', abschnitt: 'schaetze' },
-      { art: 'studium', abschnitt: 'lac' },
+      { art: 'nummern', nr: 7, iid: 'i7' },
+      { art: 'unvollstaendig', nr: 3, iid: 'i3', titel: 'Bibellesung', fehlt: ['nummer', 'minuten', 'plaetze'] },
+      { art: 'unbekannt', nr: 5, iid: 'i5', titel: 'Etwas Neues', form: 'Rollenspiel' },
+      { art: 'bibellesung', abschnitt: 'schaetze', iid: 'i3' },
+      { art: 'studium', abschnitt: 'lac', iid: 'i9' },
       { art: 'gliederung', sprache: 'en', ist: 'a', soll: 'b' },
     ]
     // Die Überschriften kommen aus der Woche — für das Protokoll die deutsche Fassung.
