@@ -9703,7 +9703,7 @@ Dateien per `functions download` gleich der Arbeitskopie. **Live seit
 
 ## Aufgenommen am 1. November 2026 (T164)
 
-### T164 · Das Handbuch aus der App öffnen 🔧 ✅ umgesetzt (1. November 2026)
+### T164 · Das Handbuch aus der App öffnen 🔧 ✅ umgesetzt und live (1. November 2026)
 
 „kann man die doku von der app aus öffnen?" — Antwort war: nein. Die
 Handbücher lagen nur im Repo, und die einzige Hilfe in der App war der Film
@@ -9759,6 +9759,9 @@ Suite 7636/7636, tsc, Lint. Laufzeit auf
 `/demo.html`: de hell (Admin, beide Verweise), alle 12 Sprachen bei 320 px
 und Stufe 1,45 ohne Überlauf (fr, ru, uk umbrechen auf zwei Zeilen), ar dunkel
 als Verkündiger (ein Verweis, Pfeil gespiegelt).
+
+**Live seit 1.11.2026 09:32** mit dem Push von `ae01f2a0` (Pages grün,
+`sw.js` → `shell-ae01f2a`). Keine Function betroffen.
 
 ## Was bewusst offen bleibt
 
