@@ -9701,6 +9701,65 @@ Dateien per `functions download` gleich der Arbeitskopie. **Live seit
 1.11.2026 07:45** mit dem Push von `9f4c4e5f` (Pages grün, `sw.js` →
 `shell-9f4c4e5`).
 
+## Aufgenommen am 1. November 2026 (T164)
+
+### T164 · Das Handbuch aus der App öffnen 🔧 ✅ umgesetzt (1. November 2026)
+
+„kann man die doku von der app aus öffnen?" — Antwort war: nein. Die
+Handbücher lagen nur im Repo, und die einzige Hilfe in der App war der Film
+„Erste Schritte". Entschieden hat der Betreiber (alle vier Empfehlungen):
+Verweise auf die GitHub-Ansicht, je Rolle, in jeder Sprache mit Hinweis, im
+Profil.
+
+- **Karte „Handbuch"** im Profil über „Erste Schritte" (`HandbuchKarte.tsx`):
+  „Für Verkündiger" für alle, „Für Planer" für alle, die planen dürfen
+  (`rechte.zuteilen` — Planer und Admin; Gruppenaufseher stehen im Handbuch
+  für Verkündiger, Abschnitt 10). Die Verweise öffnen sich außerhalb der App
+  (`_blank`, `noopener noreferrer`, `hreflang="de"`), in der Optik der
+  Verwaltungszeilen.
+- **Nur Deutsch**: Außerhalb des Deutschen sagt es der Titel selbst, je
+  Sprache als ganzer Satzteil — „User guide (in German)", „Guide d’utilisation
+  (en allemand)", „دليل الاستخدام (بالألمانية)".
+- **Adressen an einer Stelle** (`src/profil/handbuch.ts`);
+  `tests/handbuch-verweise.test.ts` prüft, dass die Dateien dort liegen und
+  jede Rolle auf das Handbuch zeigt, das `docs/user-guide/README.md` ihr
+  zuordnet.
+- Texte in 12 Sprachen: 3 neu (`handbuch` samt Hinweis, `handbuchVerkuendiger`,
+  `handbuchPlaner`, die Rollenwörter wie `rolleVerk`/`rollePlaner`). Handbuch
+  für Verkündiger, Abschnitt 7, und Planer-Vorspann; das Profilbild höher
+  aufgenommen (1200), es schnitt die Knöpfe schon vorher ab.
+
+**/simplify** (Winkel nacheinander): die Handbuch-Schlüssel hinter den Block
+„Erste Schritte" statt mitten hinein; `color`/`text-decoration` an
+`.profil-verweis` statt einer eigenen Regel `a.profil-verweis`; die
+Rollen-Probe in `handbuch-verweise.test.ts` mit einer Tabelle statt eines
+zusammengesetzten Satzes.
+
+**/code-review max** (Winkel nacheinander, dazu alle 12 Sprachen bei 320 px
+und Stufe 1,45 gemessen; 4 Befunde, 4 behoben — Nr. 4 kam bei den
+Gegenproben heraus):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | Der Hinweis setzte den Sprachnamen der App in Klammern — eine Listenform: „Guide d’utilisation (Allemand)", „Manuale (Tedesco)", „Manual (Germană)"; vor dem Nachladen kurz „(Deutsch)". Jetzt trägt jede Sprache ihren Titel samt Hinweis selbst („(en allemand)", „(in tedesco)", „(în germană)") |
+| 2 | behoben | Die Zeichenzeile unter „Fortschritt" und „161 der 162" standen auf dem Stand von T162 — T163 und T164 fehlten. Jetzt 165 Zeichen für 164 Aufgaben, „163 der 164" |
+| 3 | behoben | Die Karte war als einzige im Profil eine benannte Landmarke (`useId`, `aria-labelledby`) — jetzt wie die übrigen |
+| 4 | behoben | In den Proben liefert `dict(code)` für die zehn nachgeladenen Sprachen den englischen Rückfall: Die Probe „Hinweis in jeder Sprache" prüfte nur Englisch (die Gegenprobe am arabischen Titel blieb grün), ebenso seit T163 „jede Art hat einen eigenen Satz — in jeder Sprache" in `heft-befunde.test.ts`. Beide laden jetzt alle Wörterbücher (`loadOverlay`); ein doppelter französischer Satz wird nun rot |
+
+Verworfen: Hinweis „öffnet in neuem Fenster" (Empfehlung, kein Mangel; der
+Pfeil steht wie bei den Verwaltungszeilen), Verweis offline gesperrt (der
+Browser sagt es selbst, die App bleibt, wo sie war).
+
+Gegenproben (13, alle rot, auf grünem Grundstand): Karte fehlt, unter „Erste
+Schritte", Planer-Handbuch für alle oder nur für Admins, öffnet in der App,
+ohne `rel`, englischer oder arabischer Titel ohne Hinweis, Hinweis auch im
+Deutschen, Karte wieder als Landmarke, Verweise vertauscht, Pfad falsch,
+Adresse ohne Repo; dazu ein doppelter französischer Befund-Satz (T163).
+Suite 7636/7636, tsc, Lint. Laufzeit auf
+`/demo.html`: de hell (Admin, beide Verweise), alle 12 Sprachen bei 320 px
+und Stufe 1,45 ohne Überlauf (fr, ru, uk umbrechen auf zwei Zeilen), ar dunkel
+als Verkündiger (ein Verweis, Pfeil gespiegelt).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9728,7 +9787,7 @@ Dateien per `functions download` gleich der Arbeitskopie. **Live seit
 
 ## Fortschritt
 
-Stand 31. Oktober 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 1. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -9739,9 +9798,10 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
 10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
-29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑
+29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
+1. November ☑
 
-**161 der 162 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**163 der 164 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. **Offen ist eine:**
 
 | | Aufgabe | Stand |

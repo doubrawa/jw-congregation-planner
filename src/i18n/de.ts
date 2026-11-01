@@ -444,6 +444,12 @@ export const DE = {
     ersteSchritteFragen: 'Fragen? Sprich die Ältesten an.',
     ersteSchrittePause: 'Pause', ersteSchritteAbspielen: 'Abspielen', ersteSchritteNochmal: 'Nochmal ansehen',
     ersteSchritteZurueck: 'Zurück', ersteSchritteWeiter: 'Weiter',
+    // Das Handbuch im Profil (1.11.2026, `HandbuchKarte`): Verweise auf GitHub.
+    // Die Handbücher gibt es nur deutsch — jede andere Sprache sagt es im Titel
+    // selbst, in Klammern („User guide (in German)“).
+    handbuch: 'Handbuch',
+    handbuchVerkuendiger: 'Für Verkündiger',
+    handbuchPlaner: 'Für Planer',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt

@@ -171,8 +171,11 @@
   gap: 12px;
   width: 100%;
   min-height: 54px;
+  /* Auch als Verweis nach draußen (Handbuch): nicht in der Linkfarbe. */
+  color: inherit;
   font-weight: 600;
   text-align: start;
+  text-decoration: none;
 }
 
 .profil-verweis .zeichen {

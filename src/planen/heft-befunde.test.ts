@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import type { Week } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
 import { befundZeile, geratenePunkte, stellenIn, type Stellen } from './heft-befunde'
 
 /**
@@ -29,6 +29,11 @@ const OHNE: Stellen = { abschnitt: (kind) => kind, punkt: () => null }
 const zeile = (b: Befund, code: (typeof APP_LANGS)[number]['code'], stellen = OHNE) => befundZeile(b, dict(code), stellen, code)!
 
 describe('befundZeile', () => {
+  // Die Wörterbücher außer en kommen nachgeladen. Ohne das hier las `dict` für
+  // zehn Sprachen den englischen Rückfall, und „in jeder Sprache" prüfte nur
+  // Englisch (gefunden im Review vom 1.11.2026).
+  beforeAll(() => Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code))))
+
   it('jede Art hat einen eigenen Satz — in jeder Sprache der App', () => {
     for (const { code } of APP_LANGS) {
       const saetze = ALLE.map((b) => zeile(b, code).text)

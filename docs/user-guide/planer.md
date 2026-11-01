@@ -7,7 +7,8 @@ Versammlungseinstellungen pflegen.
 > Die Grundfunktionen (Anmelden, Programm ansehen, eigene Aufgaben bestätigen,
 > Abwesenheiten, Profil) sind im [**Handbuch für Verkündiger**](verkuendiger.md)
 > beschrieben und gelten für dich genauso. Dieses Handbuch ergänzt die
-> **Planer‑Funktionen**.
+> **Planer‑Funktionen**. Beide öffnest du auch aus der App: im **Profil** unter
+> **Handbuch**.
 
 > **Löschen fragt immer nach.** Der erste Tipp auf **✕** (oder **Entfernen**)
 > zeigt **Wirklich löschen?** – bei dem, was nur herausgenommen wird, etwa eine

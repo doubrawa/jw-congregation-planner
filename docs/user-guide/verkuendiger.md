@@ -613,8 +613,9 @@ statt der Kopfzeile der Pfeil zurück und **Alle gelesen**.
 
 Das **Profil** öffnest du über deinen Namen unten im Menü. Oben stehen deine
 Initialen, dein Name, deine Rolle und deine Gruppe; darunter stellst du
-persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5) und meldest
-dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
+persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5), öffnest
+dieses Handbuch und meldest dich ab. Admins finden am Handy hier auch
+**Personen** und **Einstellungen**.
 
 ![Profil](screenshots/verkuendiger-profil.png)
 
@@ -648,6 +649,10 @@ dich ab. Admins finden am Handy hier auch **Personen** und **Einstellungen**.
 - **App installieren** – steht da, solange dein Browser das Installieren
   anbietet (etwa Chrome auf Android) und die App noch nicht installiert ist
   (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
+- **Handbuch** – öffnet dieses Handbuch im Browser, außerhalb der App. Wer
+  planen darf, findet darunter auch das [Handbuch für Planer](planer.md). Die
+  Handbücher gibt es nur auf Deutsch; ist die App auf eine andere Sprache
+  gestellt, steht das im Titel der Karte (etwa „User guide (in German)“).
 - **Erste Schritte** – der kurze Film von der Startseite (Abschnitt 2), hier
   jederzeit wieder.
 - **Abmelden** – meldet dich auf diesem Gerät ab. Der erste Tipp fragt

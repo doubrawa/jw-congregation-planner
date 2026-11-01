@@ -17,6 +17,7 @@ import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { AnsichtKarte } from './AnsichtKarte'
 import { Diagnose } from './Diagnose'
+import { HandbuchKarte } from './HandbuchKarte'
 import './profil.css'
 
 /**
@@ -41,6 +42,7 @@ const FS_LABELS = {
  *    Push-Mitteilungen (auf dem iPhone erst als App, dann steht dort der Hinweis).
  *  - **Abwesenheiten**: die eigenen, die anstehen — und „Abwesenheit eintragen".
  *  - **Verwaltung** (Admins, nur am Handy — ab dem Tablet steht sie im Menü).
+ *  - **Handbuch**: für Verkündiger, wer planen darf auch für Planer (GitHub).
  *  - App installieren, der Film „Erste Schritte", Abmelden und der Stand der App.
  */
 export function ProfilScreen() {
@@ -54,7 +56,8 @@ export function ProfilScreen() {
   const scaleLabel = FS_LABELS[state.fontScale]
   // Konto-E-Mail (nur Produktion; die eigene Mitglieder-Zeile sieht jeder).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
-  const verwalten = erlaubteScreens(rechteVon(state)).includes('personen')
+  const rechte = rechteVon(state)
+  const verwalten = erlaubteScreens(rechte).includes('personen')
 
   // Web-Push (nur angemeldet): Schalter, wenn der Browser es kann; auf iOS im
   // Browser stattdessen Installations-Hinweis (dort erst als App möglich).
@@ -172,6 +175,9 @@ export function ProfilScreen() {
               </button>
             </section>
           )}
+
+          {/* Das Handbuch gleich über „Erste Schritte" — beides Hilfe. */}
+          <HandbuchKarte fuerPlaner={rechte.zuteilen} />
 
           <div className="profil-knoepfe">
             {angemeldet && installAvail && (

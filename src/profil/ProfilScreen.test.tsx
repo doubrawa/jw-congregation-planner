@@ -13,8 +13,9 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { FONT_SCALES, THEME_LIST } from '../data/constants'
 import { emptyQualifications } from '../data/helpers'
 import { APP_LANGS } from '../i18n/langs'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
 import type { Member, Person } from '../data/types'
+import { HANDBUCH } from './handbuch'
 
 /**
  * **Das Profil — der einzige Ort, an dem jeder Nutzer etwas einstellen kann.**
@@ -210,6 +211,71 @@ describe('Erste Schritte (22.10.2026)', () => {
       localStorage.removeItem('ersteSchritteWeg')
       vi.unstubAllGlobals()
     }
+  })
+})
+
+/**
+ * **Das Handbuch aus der App öffnen** (1.11.2026). Bis dahin führte kein Weg
+ * dorthin — der Betreiber fragte, und die Antwort war nein. Entschieden hat er:
+ * Verweise auf GitHub, im Profil neben „Erste Schritte", das Handbuch für
+ * Planer nur für die, die planen dürfen, und in jeder Sprache — mit dem
+ * Hinweis, dass es Deutsch ist.
+ */
+describe('Handbuch (1.11.2026)', () => {
+  /** Die Karte mit den Verweisen — an ihnen gefunden, der Titel hängt an der Sprache. */
+  const karte = (c: HTMLElement) => c.querySelector('a[hreflang="de"]')?.closest('section') ?? undefined
+  const verweise = (c: HTMLElement) =>
+    [...(karte(c)?.querySelectorAll('a') ?? [])].map((a) => [a.textContent, a.getAttribute('href')])
+
+  it('der Verkündiger findet sein Handbuch — es öffnet sich außerhalb der App', () => {
+    const { container } = zeige({ planner: false, zuteiler: false })
+    expect(verweise(container)).toEqual([[t.handbuchVerkuendiger, HANDBUCH.verkuendiger]])
+    const a = karte(container)!.querySelector('a')!
+    expect(a.getAttribute('target')).toBe('_blank')
+    expect(a.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(a.getAttribute('hreflang')).toBe('de')
+  })
+
+  it('wer planen darf, bekommt das Handbuch für Planer dazu — Planer wie Admin', () => {
+    for (const rechte of [{ planner: false, zuteiler: true }, { planner: true, zuteiler: false }]) {
+      expect(verweise(zeige(rechte).container), JSON.stringify(rechte)).toEqual([
+        [t.handbuchVerkuendiger, HANDBUCH.verkuendiger],
+        [t.handbuchPlaner, HANDBUCH.planer],
+      ])
+      cleanup()
+    }
+  })
+
+  it('steht über „Erste Schritte" — beides Hilfe', () => {
+    const { container } = zeige()
+    const film = knopf(container, t.ersteSchritte)!
+    expect(karte(container)!.compareDocumentPosition(film) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('auf Deutsch ohne Hinweis, in jeder anderen Sprache sagt der Titel, dass es Deutsch ist', () => {
+    expect(karte(zeige({ lang: 'de' }).container)?.querySelector('h2')?.textContent).toBe('Handbuch')
+    cleanup()
+    const en = dict('en')
+    const { container } = zeige({ lang: 'en', planner: false, zuteiler: false })
+    expect(karte(container)?.querySelector('h2')?.textContent).toBe('User guide (in German)')
+    expect(verweise(container)).toEqual([[en.handbuchVerkuendiger, HANDBUCH.verkuendiger]])
+  })
+
+  it('der Hinweis steht in jeder Sprache außer Deutsch — als ganzer Titel, in Klammern (Review 1.11.2026)', async () => {
+    // Zusammengesetzt aus dem Sprachnamen der App hieß es „(Allemand)",
+    // „(Tedesco)": Das sind Listenformen. Jetzt trägt jede Sprache ihren Titel
+    // samt Hinweis selbst — und keine darf ihn verlieren. Die Wörterbücher
+    // außer en kommen nachgeladen; ohne `loadOverlay` läse `dict` überall den
+    // englischen Rückfall (die Gegenprobe am arabischen Titel blieb so grün).
+    await Promise.all(APP_LANGS.map(({ code }) => loadOverlay(code)))
+    for (const { code } of APP_LANGS.filter((l) => l.code !== 'de')) {
+      expect(dict(code).handbuch, code).toMatch(/\S \(.+\)$/)
+    }
+    expect(t.handbuch).not.toContain('(')
+  })
+
+  it('eine Karte wie die übrigen im Profil — keine eigene Landmarke (Review 1.11.2026)', () => {
+    expect(karte(zeige().container)?.getAttribute('aria-labelledby')).toBeNull()
   })
 })
 
