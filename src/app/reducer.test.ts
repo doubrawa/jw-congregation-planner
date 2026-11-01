@@ -52,7 +52,6 @@ function makeState(over: Partial<AppState> = {}): AppState {
     fsBereich: 'treffpunkte',
     theme: 'auto',
     fontScale: 1,
-    abgelehnteGesuche: {},
     sitzungPruefen: false,
     planner: DEMO_PLANNER,
     zuteiler: false,
@@ -84,6 +83,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     absagen: [],
     anwesenheit: [],
     tauschAnfragen: [],
+    abgelehnteGesuche: [],
     notifs: [...DEMO_NOTIFICATIONS],
     slotSel: null,
     selectedPersonId: null,
@@ -2799,17 +2799,35 @@ describe('„Nein, danke" auf ein Ersatzgesuch', () => {
     expect(nein.confirmations).toBe(offen.confirmations)
   })
 
-  it('übersteht das Abmelden — gilt aber nur für die Person, die abgelehnt hat', () => {
+  it('kommt mit dem Laden des Kontos — auf jedem Gerät — und geht mit dem Abmelden (1.11.2026)', () => {
     const nein = reducer(abgesagt(springer[0]!), { type: 'gesuchAblehnen', key: KEY })
-    const danach = reducer(nein, { type: 'logout' })
-    expect(danach.abgelehnteGesuche).toEqual(nein.abgelehnteGesuche)
+    // Ein zweites Gerät desselben Kontos lädt die Antwort mit dem Bestand.
+    const tablet = abgesagt(springer[0]!, { abgelehnteGesuche: nein.abgelehnteGesuche })
+    expect(gesuchIn(tablet)?.abgelehnt).toBe(true)
+    expect(reducer(tablet, { type: 'login' }).confirmOpen).toBe(false)
+    // Abgemeldet gehört sie niemandem mehr; der nächste lädt seine eigenen.
+    expect(reducer(nein, { type: 'logout' }).abgelehnteGesuche).toEqual([])
+  })
 
-    // Am selben Gerät meldet sich jemand anderes an, der auch einspringen könnte.
-    expect(springer.length).toBeGreaterThan(1)
-    const andere = abgesagt(springer[1]!, { abgelehnteGesuche: nein.abgelehnteGesuche })
-    expect(gesuchIn(andere)).toBeDefined()
-    expect(gesuchIn(andere)?.abgelehnt).toBeUndefined()
-    expect(reducer(andere, { type: 'login' }).confirmOpen).toBe(true)
+  it('das Laden bringt die Antworten des Kontos — eine Momentaufnahme von davor ohne sie (1.11.2026)', () => {
+    // Wie ein frischer Start am Tablet: Der Zustand kennt noch nichts, der Server schon.
+    const nein = reducer(abgesagt(springer[0]!), { type: 'gesuchAblehnen', key: KEY })
+    const roh = abgesagt(springer[0]!)
+    const payload = { ...roh, notifications: [], empty: false, congregationId: 'c1', userId: 'u1' } as unknown as HydratePayload
+    const geladen = reducer(roh, { type: 'hydrate', payload: { ...payload, abgelehnteGesuche: nein.abgelehnteGesuche } })
+    expect(gesuchIn(geladen)?.abgelehnt).toBe(true)
+    expect(geladen.confirmOpen).toBe(false)
+    // Gegenprobe: ohne die Antworten liegt das Blatt beim Öffnen da …
+    const ohneAntwort = reducer(roh, { type: 'hydrate', payload: { ...payload, abgelehnteGesuche: [] } })
+    expect(ohneAntwort.confirmOpen).toBe(true)
+    // … und aus einer Momentaufnahme von davor bleibt kein alter Stand stehen.
+    const { abgelehnteGesuche: _a, ...alt } = { ...payload, abgelehnteGesuche: [] }
+    expect(reducer(nein, { type: 'hydrate', payload: alt as HydratePayload }).abgelehnteGesuche).toEqual([])
+  })
+
+  it('ein zweites „Nein, danke" auf dasselbe Gesuch ändert nichts — es ginge sonst noch einmal hinaus', () => {
+    const nein = reducer(abgesagt(springer[0]!), { type: 'gesuchAblehnen', key: KEY })
+    expect(reducer(nein, { type: 'gesuchAblehnen', key: KEY })).toBe(nein)
   })
 
   it('zieht der Absagende zurück und sagt wieder ab, bleibt es abgelehnt — sagt ein anderer ab, fragt das Blatt neu', () => {
@@ -2833,11 +2851,9 @@ describe('„Nein, danke" auf ein Ersatzgesuch', () => {
     expect(reducer(neuesGesuch, { type: 'login' }).confirmOpen).toBe(true)
   })
 
-  it('ein Gesuch, das es nicht gibt, oder ohne eigene Person: nichts geändert', () => {
+  it('ein Gesuch, das es nicht gibt: nichts geändert', () => {
     const s = abgesagt(springer[0]!)
     expect(reducer(s, { type: 'gesuchAblehnen', key: 'gibt-es-nicht' })).toBe(s)
-    const ohne = { ...s, personId: null }
-    expect(reducer(ohne, { type: 'gesuchAblehnen', key: KEY })).toBe(ohne)
   })
 })
 

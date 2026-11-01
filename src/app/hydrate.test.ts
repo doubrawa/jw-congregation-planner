@@ -45,6 +45,7 @@ const emptyData: CongregationData = {
   absagen: [],
   anwesenheit: [],
   tauschAnfragen: [],
+  abgelehnteGesuche: [],
   notifications: [],
   confirmations: {},
   sentLog: {},

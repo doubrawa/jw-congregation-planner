@@ -221,6 +221,15 @@
  *  109. Mitglied: mit einer Person ohne Konto gleich tauschen    → durch
  *  110. … sie „weiß Bescheid", „Getauscht" an Admin und Planer   → sichtbar
  *
+ * **Seit dem 1. November 2026 das „Nein, danke" auf ein Ersatzgesuch**
+ * (`abgelehnte_gesuche`): Jedes Konto sieht und schreibt nur seine eigenen
+ * Zeilen. Der Schlüssel liegt in einer Woche des Jahres 2000; die Probe räumt
+ * ihre Zeilen selbst weg.
+ *
+ *  111. Mitglied: „Nein, danke" sagen und es wiederfinden         → durch
+ *  112. Admin: das „Nein, danke" des Mitglieds sehen              → unsichtbar
+ *  113. Mitglied: ein „Nein, danke" im Namen des Admins           → abgewiesen
+ *
  * Die Anlage legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
  * je einem Platz eines Dienstes und eine Person ohne Konto, das Kennzeichen
  * im Vornamen. Mitglied und Gruppenaufseher schaltet die Probe für den Dienst
@@ -2388,6 +2397,46 @@ async function tauschProben(k) {
   }
 }
 
+/**
+ * (111)–(113) **„Nein, danke" auf ein Ersatzgesuch** (1.11.2026,
+ * `abgelehnte_gesuche`): Jedes Konto sieht und schreibt nur seine eigenen
+ * Zeilen — die Antwort ändert für niemanden sonst etwas. Der Schlüssel liegt in
+ * einer Woche des Jahres 2000: Bliebe doch eine Zeile stehen, nähme sie das
+ * Aufräumen am nächsten Montag mit.
+ */
+async function ablehnungProben(k) {
+  const { planer, mitglied, versammlung, marke } = k
+  console.log('\n„Nein, danke" auf ein Ersatzgesuch (seit 1.11.2026):')
+  const taskKey = `2000-01-03|we|helper|probe-${marke}|0`
+  const zeile = (uid) => ({ congregation_id: versammlung, user_id: uid, task_key: taskKey, abgesagt_von: marke })
+  // Wie die App: ein Upsert, das eine schon gegebene Antwort stehen lässt (`gesuchAblehnen` in data.ts).
+  const ablehnen = (wer, uid) =>
+    wer.rest('abgelehnte_gesuche?on_conflict=congregation_id,user_id,task_key,abgesagt_von', 'POST', zeile(uid), 'resolution=ignore-duplicates,return=minimal')
+  const sicht = (wer, uid) => async () => {
+    const r = await wer.rest(`abgelehnte_gesuche?select=user_id&task_key=eq.${encodeURIComponent(taskKey)}&user_id=eq.${uid}`)
+    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
+  }
+  const wegraeumen = () =>
+    Promise.all([mitglied, planer].map((wer) => wer.rest(`abgelehnte_gesuche?task_key=eq.${encodeURIComponent(taskKey)}`, 'DELETE', undefined, 'return=minimal')))
+  try {
+    const s = await ablehnen(mitglied, mitglied.uid)
+    const eigene = await sicht(mitglied, mitglied.uid)()
+    const e = bewerteVersuch(s.status, eigene.sichtbar, true, { leseStatus: eigene.status })
+    k.ergebnis(111, 'Mitglied: „Nein, danke" auf ein Gesuch sagen und es wiederfinden', e, e.durch ? 'der Weg steht offen' : 'ZU STRENG — das Konto kann nicht ablehnen')
+    const anlage = e.durch ? { ok: true } : { ok: false, grund: 'die eigene Ablehnung kam nicht an' }
+    await leseVersuch(k, 112, 'Admin: das „Nein, danke" des Mitglieds sehen', anlage, sicht(planer, mitglied.uid), false, [
+      'AUCH DAS!',
+      'unsichtbar — jedes Konto sieht nur seine eigenen',
+    ])
+    const f = await ablehnen(mitglied, planer.uid)
+    const fremd = await sicht(planer, planer.uid)()
+    const e113 = bewerteVersuch(f.status, fremd.sichtbar, false, { leseStatus: fremd.status })
+    k.ergebnis(113, 'Mitglied: ein „Nein, danke" im Namen des Admins schreiben', e113, e113.durch ? 'AUCH DAS!' : 'abgewiesen — schreiben nur für das eigene Konto')
+  } finally {
+    await wegraeumen()
+  }
+}
+
 /* ===================== Ausführung ========================================= */
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
@@ -2808,6 +2857,9 @@ export async function main(arg = process.argv.slice(2)) {
 
   // ---- 93) bis 110) Das Tauschen (31.10.2026) -----------------------------
   await tauschProben(k)
+
+  // ---- 111) bis 113) „Nein, danke" auf ein Ersatzgesuch (1.11.2026) --------
+  await ablehnungProben(k)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).

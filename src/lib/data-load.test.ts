@@ -35,6 +35,7 @@ import {
   substituteTake,
   wocheGeschrieben,
 } from './data'
+import { gesuchKennung } from './abgelehnte-gesuche'
 import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'
 import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
@@ -637,6 +638,24 @@ describe('Gründe (Sicherheits-Review 29.10.2026)', () => {
     const ohne = await loadCongregationData('u1')
     expect(ohne.ok && ohne.data.tauschAnfragen).toEqual([])
     expect(err).toHaveBeenCalledWith('[tausch_anfragen]', 'kaputt')
+    err.mockRestore()
+  })
+
+  it('das „Nein, danke" des Kontos (1.11.2026): als Kennungen wie im Zustand — scheitert es, lädt die App trotzdem', async () => {
+    // Nur die eigenen Zeilen kommen (RLS); hier gefiltert wird nur nach der Versammlung.
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const zeile = { task_key: '2026-09-07|mid|helper|mik|0', abgesagt_von: 'Max Platzhalter' }
+    seedResponses({ abgelehnte_gesuche: [{ data: [zeile], error: null }] })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.abgelehnteGesuche).toEqual([gesuchKennung({ key: zeile.task_key, declinedBy: zeile.abgesagt_von })])
+    expect(ausgewaehlt('abgelehnte_gesuche')).toEqual(['task_key, abgesagt_von'])
+    expect(store.filter).toContainEqual(['abgelehnte_gesuche', 'eq', 'congregation_id', 'c1'])
+
+    seedResponses({ abgelehnte_gesuche: [{ data: null, error: { message: 'kaputt' } }] })
+    const ohne = await loadCongregationData('u1')
+    expect(ohne.ok && ohne.data.abgelehnteGesuche).toEqual([])
+    expect(err).toHaveBeenCalledWith('[abgelehnte_gesuche]', 'kaputt')
     err.mockRestore()
   })
 

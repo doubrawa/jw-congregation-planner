@@ -48,6 +48,7 @@ import type {
   Week,
 } from '../data/types'
 import { supabase } from './supabase'
+import { type AbgelehnteGesuche, gesuchKennung } from './abgelehnte-gesuche'
 import { fehlerAntwort } from './function-antwort'
 import {
   type AbsenceRow,
@@ -592,6 +593,8 @@ export interface CongregationData {
   anwesenheit: Anwesenheit[]
   /** Offene Tausch-Anfragen (T153) — nur die, um die es den Angemeldeten geht (RLS). */
   tauschAnfragen: TauschAnfrage[]
+  /** „Nein, danke" des Kontos auf Ersatzgesuche (1.11.2026) — nur die eigenen Zeilen (RLS). */
+  abgelehnteGesuche: AbgelehnteGesuche
   notifications: Notification[]
   confirmations: ConfirmationMap
   reminders: Reminders
@@ -660,7 +663,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     .gte('start', verteilungAb)
     .order('start', { ascending: false })
 
-  const [cong, persons, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows, tauschRows] = await Promise.all([
+  const [cong, persons, services, groups, weeks, absences, gruende, notifs, confs, members, linkRows, fsRulesRows, fsWeeksRows, sentLogRows, besuchRows, vortragRows, trolleyRows, trolleyTerminRows, planRows, planEintragRows, absageRows, anwesenheitRows, tauschRows, abgelehntRows] = await Promise.all([
     supabase.from('congregations').select(CONG_SPALTEN.join(', ')).eq('id', congregationId).maybeSingle(),
     supabase.from('persons').select(PERSON_SPALTEN).eq('congregation_id', congregationId).order('created_at'),
     supabase.from('services').select('*').eq('congregation_id', congregationId).order('position'),
@@ -822,6 +825,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('bis', isoDay(new Date()))
       .order('bis'),
+    // „Nein, danke" auf Ersatzgesuche (1.11.2026): nur die eigenen Zeilen
+    // (RLS). Das Aufräumen nimmt sie nach ihrer Woche; vorgelegt wird
+    // Vergangenes ohnehin nicht.
+    supabase.from('abgelehnte_gesuche').select('task_key, abgesagt_von').eq('congregation_id', congregationId),
   ])
 
   // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
@@ -864,6 +871,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (anwesenheitRows.error) console.error('[anwesenheit]', anwesenheitRows.error.message)
   // Ebenso die Tausch-Anfragen (T153): Ohne sie fehlen nur die Karten dazu.
   if (tauschRows.error) console.error('[tausch_anfragen]', tauschRows.error.message)
+  // Und das „Nein, danke": Ohne es fragt das Blatt beim Öffnen nur noch einmal.
+  if (abgelehntRows.error) console.error('[abgelehnte_gesuche]', abgelehntRows.error.message)
 
   const serviceList = (services.data ?? []).map((r) => serviceFromRow(r as ServiceRow))
   const personList = ((persons.data ?? []) as unknown as PersonRow[]).map(personFromRow)
@@ -968,6 +977,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     absagen: absageRows.data.map(absageFromRow),
     anwesenheit: ((anwesenheitRows.data ?? []) as AnwesenheitRow[]).map(anwesenheitFromRow),
     tauschAnfragen: ((tauschRows.data ?? []) as TauschAnfrageRow[]).map(tauschAnfrageFromRow),
+    abgelehnteGesuche: ((abgelehntRows.data ?? []) as { task_key: string; abgesagt_von: string }[]).map((r) =>
+      gesuchKennung({ key: r.task_key, declinedBy: r.abgesagt_von }),
+    ),
     notifications: notificationsAus((notifs.data ?? []) as NotificationRow[], weekList, zeiten),
     confirmations,
     reminders,
@@ -2074,6 +2086,25 @@ export function saveConfirmation(
     supabase.from('confirmations').upsert(
       { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
       { onConflict: 'congregation_id,task_key,user_id' },
+    ),
+  )
+}
+
+/**
+ * **„Nein, danke" auf ein Ersatzgesuch** am Konto vermerken (1.11.2026) — das
+ * Blatt beim Öffnen legt es danach auf keinem Gerät mehr vor.
+ *
+ * Steht dieselbe Antwort schon da (ein zweites Fenster hat sie vor dem Laden
+ * gegeben), ist nichts zu tun: `ignoreDuplicates`, keine Dublette als Fehler.
+ * Weist die Datenbank sonst ab, wird nachgeladen wie bei jeder Zeile
+ * (`zeilenRun`).
+ */
+export function gesuchAblehnen(congregationId: string, userId: string, taskKey: string, abgesagtVon: string): void {
+  if (!supabase) return
+  void zeilenRun(
+    supabase.from('abgelehnte_gesuche').upsert(
+      { congregation_id: congregationId, user_id: userId, task_key: taskKey, abgesagt_von: abgesagtVon },
+      { onConflict: 'congregation_id,user_id,task_key,abgesagt_von', ignoreDuplicates: true },
     ),
   )
 }

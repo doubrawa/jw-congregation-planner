@@ -96,6 +96,8 @@ export const RLS_TABELLEN = [
   // Zoom-Ordner und wer zuteilt.
   { name: 'anwesenheit', spalte: 'congregation_id' },
   { name: 'tausch_anfragen', spalte: 'congregation_id' },
+  // „Nein, danke" auf Ersatzgesuche (1.11.2026): nur die eigenen Zeilen des Kontos.
+  { name: 'abgelehnte_gesuche', spalte: 'congregation_id' },
   { name: 'absences', spalte: 'congregation_id' },
   { name: 'notifications', spalte: 'congregation_id' },
   { name: 'confirmations', spalte: 'congregation_id' },

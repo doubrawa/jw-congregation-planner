@@ -1094,7 +1094,7 @@ export interface SubstituteReq {
   /** Wie `MyTask.lesersprache`: das Datum in der Sprache des Lesers. */
   lesersprache?: true
   /**
-   * Auf diesem Gerät mit „Nein, danke" beantwortet (`abgelehnte-gesuche.ts`):
+   * Vom Konto mit „Nein, danke" beantwortet (`abgelehnte-gesuche.ts`):
    * Das Blatt beim Öffnen legt es nicht mehr vor, unter „Freie Plätze" steht
    * es weiter.
    */

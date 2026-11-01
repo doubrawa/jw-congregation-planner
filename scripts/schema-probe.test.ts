@@ -1320,6 +1320,47 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(tabellen.tausch_anfragen ?? []).toEqual([])
   })
 
+  /**
+   * **Die Richtlinien von `abgelehnte_gesuche`** (1.11.2026): Jedes Konto liest,
+   * schreibt und löscht nur seine eigenen Zeilen. Nachgestellt wie RLS: Fremde
+   * Zeilen fallen beim Lesen weg, eine Zeile für ein anderes Konto weist die
+   * Datenbank ab.
+   */
+  const ablehnungRichtlinien = () =>
+    richtlinien((a, wer) => {
+      if (tabelleVon(a) !== 'abgelehnte_gesuche' || !wer) return undefined
+      if (a.method === 'GET') {
+        const fuer = new URLSearchParams(a.pfad.split('?')[1] ?? '').get('user_id')
+        return fuer === `eq.${wer}` ? undefined : { status: 200, json: [] }
+      }
+      if (a.method === 'POST' && (a.body as { user_id?: string } | undefined)?.user_id !== wer) {
+        return { status: 403, json: { code: '42501', message: 'new row violates row-level security policy for table "abgelehnte_gesuche"' } }
+      }
+      return undefined
+    })
+
+  it('mitgliedsrechte-probe („Nein, danke"): unter den Richtlinien aus schema.sql kommt jeder Fall zu seinem Urteil — und nichts bleibt stehen', async () => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const wache = ablehnungRichtlinien()
+    const { ausgabe, tabellen } = await fahre(wache.fahren(() => l.fahren(modul, '')), { ...l.umgebung, stoerung: wache.stoerung })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/· \(111\) .*\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen/)
+    expect(text).toMatch(/· \(112\) .*\n.*nicht sichtbar \(HTTP 200\) — unsichtbar — jedes Konto sieht nur seine eigenen/)
+    expect(text).toMatch(/· \(113\) .*\n.*nicht angekommen \(HTTP 403\) — abgewiesen — schreiben nur für das eigene Konto/)
+    expect(tabellen.abgelehnte_gesuche ?? []).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe („Nein, danke"): ohne Richtlinien schlagen (112) und (113) an — und auch dann bleibt nichts stehen', async () => {
+    // Gegenprobe: Die Attrappe kennt keine Richtlinien. So sähe es aus, wenn
+    // die Datenbank alles durchließe.
+    const { ausgabe, tabellen } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(/! \(112\) .*\n.*SICHTBAR \(HTTP 200\) — AUCH DAS!/)
+    expect(text).toMatch(/! \(113\) .*\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!/)
+    expect(tabellen.abgelehnte_gesuche ?? []).toEqual([])
+  })
+
   it('mitgliedsrechte-probe (Tauschen): kommt (94) doch an, geht die Anfrage über die Function wieder — direkt löschen darf sie niemand', async () => {
     const l = lauf('mitgliedsrechte-probe.mjs')
     const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>

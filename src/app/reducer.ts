@@ -384,7 +384,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
-        .map((req) => (gesuchKennung(me.id, req) in state.abgelehnteGesuche ? { ...req, abgelehnt: true as const } : req))
+        .map((req) => (state.abgelehnteGesuche.includes(gesuchKennung(req)) ? { ...req, abgelehnt: true as const } : req))
     : []
   // Unbesetzte Plätze gesendeter Wochen, die ich übernehmen kann (4.10.2026).
   // Nicht im Blatt beim Öffnen: Ein Angebot ist keine Pflicht wie eine
@@ -662,12 +662,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        * (`store.tsx`), das zweite ohne Grund.
        */
       return {
-        ...leererZustand({
-          theme: state.theme,
-          fontScale: state.fontScale,
-          lang: state.lang,
-          abgelehnteGesuche: state.abgelehnteGesuche,
-        }),
+        ...leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang }),
         keineVersammlung: action.keineVersammlung === true || state.keineVersammlung,
       }
     case 'navigate': {
@@ -1587,16 +1582,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     }
     case 'gesuchAblehnen': {
-      // Nur dieses Gerät merkt es sich (`abgelehnte-gesuche.ts`); niemand
-      // erfährt davon. Ob das Blatt danach noch etwas vorzulegen hat, rechnet
-      // die Ableitung — die Liste ist eine ihrer Quellen.
+      // Das Konto merkt es sich (`abgelehnte_gesuche`, `persist.ts`); sonst
+      // erfährt niemand davon. Ob das Blatt danach noch etwas vorzulegen hat,
+      // rechnet die Ableitung — die Liste ist eine ihrer Quellen.
       const req = state.substituteReqs.find((r) => r.key === action.key)
-      const me = eigenePerson(state)
-      if (!req || !me) return state
-      return {
-        ...state,
-        abgelehnteGesuche: { ...state.abgelehnteGesuche, [gesuchKennung(me.id, req)]: req.at ?? null },
-      }
+      if (!req || req.abgelehnt) return state
+      return { ...state, abgelehnteGesuche: [...state.abgelehnteGesuche, gesuchKennung(req)] }
     }
     case 'platzUebernehmen': {
       // Nur, was angeboten ist — dieselbe Liste, aus der der Knopf stammt. Ein
@@ -1879,6 +1870,8 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         // Und von vor dem 29.10.2026 die Anwesenden (T152) und die Tausch-Anfragen (T153).
         anwesenheit: p.anwesenheit ?? [],
         tauschAnfragen: p.tauschAnfragen ?? [],
+        // Und von vor dem 1.11.2026 das „Nein, danke" auf Ersatzgesuche.
+        abgelehnteGesuche: p.abgelehnteGesuche ?? [],
         notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie

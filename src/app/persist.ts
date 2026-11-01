@@ -18,6 +18,7 @@ import {
   deleteMemberRow,
   deleteNotifications,
   deleteServiceRow,
+  gesuchAblehnen,
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
@@ -1084,6 +1085,13 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // die Edge Function trägt ein und benachrichtigt Ursprungsperson + Planer.
       substituteTake(action.key)
       break
+    case 'gesuchAblehnen': {
+      // „Nein, danke" (1.11.2026): am Konto, damit es auf jedem Gerät gilt.
+      // Nur, wenn der Reducer es eben erst vermerkt hat.
+      const req = next.substituteReqs.find((r) => r.key === action.key)
+      if (req && next.abgelehnteGesuche !== prev.abgelehnteGesuche) gesuchAblehnen(congId, userId, req.key, req.declinedBy)
+      break
+    }
     case 'platzUebernehmen':
       // Ebenso: Den offenen Platz trägt die Edge Function ein, samt Zusage.
       platzFuellen(action.key)

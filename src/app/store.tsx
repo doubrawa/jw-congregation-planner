@@ -10,7 +10,6 @@ import { darstellungSpiegeln } from './darstellung'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
-import { abgelehnteMerken } from '../lib/abgelehnte-gesuche'
 import { mitLinkAnmelden } from '../lib/anmelden'
 import { type Abweisung, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
@@ -417,9 +416,6 @@ export function AppProvider({
     document.documentElement.style.setProperty('--fs', String(state.fontScale))
     localStorage.setItem('fontScale', String(state.fontScale))
   }, [state.fontScale])
-
-  // „Nein, danke" auf Ersatzgesuche merken — wie die Vorlieben je Gerät.
-  useEffect(() => abgelehnteMerken(state.abgelehnteGesuche), [state.abgelehnteGesuche])
 
   // App-Sprache merken + Schreibrichtung (RTL für Arabisch und Persisch)
   useEffect(() => {

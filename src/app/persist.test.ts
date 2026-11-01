@@ -69,6 +69,7 @@ vi.mock('../lib/data', async (importActual) => ({
   substituteSeek: vi.fn(),
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
+  gesuchAblehnen: vi.fn(),
   sendPlanEntzug: vi.fn(),
   platzFuellen: vi.fn(),
 }))
@@ -1765,6 +1766,29 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     persist(st(), st({ anmeldeLinks: [link] }), { type: 'linksAusgestellt', links: [link] })
     expect(data.deleteAnmeldeLink).not.toHaveBeenCalled()
     expect(data.saveMemberRow).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * **„Nein, danke" auf ein Ersatzgesuch geht ans Konto** (1.11.2026) — damit es
+ * auf jedem Gerät gilt. Bis dahin stand es nur im Speicher des Geräts.
+ */
+describe('„Nein, danke" auf ein Ersatzgesuch', () => {
+  const key = '2026-09-07|mid|helper|mik|0'
+  const gesuch = { key, svc: 'mik', title: 'Mikrofone', date: '', declinedBy: 'Max Platzhalter', schonHeute: [] }
+
+  it('schreibt Platz und Absagenden des Gesuchs — mit Versammlung und Konto', () => {
+    const prev = st({ substituteReqs: [gesuch], abgelehnteGesuche: [] })
+    const next = st({ substituteReqs: [{ ...gesuch, abgelehnt: true }], abgelehnteGesuche: ['x'] })
+    persist(prev, next, { type: 'gesuchAblehnen', key })
+    expect(data.gesuchAblehnen).toHaveBeenCalledWith('c1', 'u1', key, 'Max Platzhalter')
+  })
+
+  it('hat der Reducer nichts vermerkt (schon abgelehnt, Gesuch weg), geht nichts hinaus', () => {
+    const s = st({ substituteReqs: [gesuch], abgelehnteGesuche: ['x'] })
+    persist(s, s, { type: 'gesuchAblehnen', key })
+    persist(st({ substituteReqs: [gesuch] }), st({ substituteReqs: [gesuch], abgelehnteGesuche: ['x'] }), { type: 'gesuchAblehnen', key: 'weg' })
+    expect(data.gesuchAblehnen).not.toHaveBeenCalled()
   })
 })
 

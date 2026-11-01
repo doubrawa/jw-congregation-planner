@@ -657,6 +657,24 @@ create table if not exists public.tausch_anfragen (
     references public.persons (id, congregation_id) on delete cascade
 );
 
+-- „Nein, danke" auf ein Ersatzgesuch (1.11.2026): Das Blatt beim Öffnen der
+-- App legt das Gesuch danach nicht mehr vor — auf jedem Gerät des Kontos. Für
+-- ein paar Stunden stand die Antwort nur im Speicher des Geräts, und am Tablet
+-- fragte das Blatt, was am Handy schon beantwortet war.
+--
+-- Eine Zeile je Konto, Platz (`task_key`, ein Hilfsdienst) und Absagendem:
+-- Vergibt der Planer den Platz neu und sagt auch der Neue ab, ist das ein
+-- neues Gesuch. Lesen und schreiben darf nur das Konto selbst — die Antwort
+-- ändert für niemanden sonst etwas, gesucht wird weiter.
+create table if not exists public.abgelehnte_gesuche (
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  task_key        text not null check (task_key <> ''),
+  abgesagt_von    text not null,
+  created_at      timestamptz not null default now(),
+  primary key (congregation_id, user_id, task_key, abgesagt_von)
+);
+
 -- Trolleys (T121, Phase 7 — seit 14.10.2026; davor Stand und Schicht, siehe
 -- „Entfernt" unten). „Man steht mit dem Trolley ja nur 15 Minuten an einem
 -- Platz … was man eigentlich braucht, ist ein Terminplan, wo man sich
@@ -1817,6 +1835,28 @@ create policy tausch_anfragen_select on public.tausch_anfragen
     )
   );
 
+-- „Nein, danke" auf ein Ersatzgesuch (1.11.2026): Jedes Konto liest, schreibt
+-- und löscht nur seine eigenen Zeilen, auch der Planer keine fremden. Ändern
+-- gibt es nicht. Löschen braucht die App nicht — das Aufräumen nimmt die
+-- Zeilen nach ihrer Woche —, wohl aber die Mitgliedsrechte-Probe, die ihre
+-- Proben wieder wegräumt.
+alter table public.abgelehnte_gesuche enable row level security;
+
+revoke all on public.abgelehnte_gesuche from anon, authenticated;
+grant select, insert, delete on public.abgelehnte_gesuche to authenticated;
+
+drop policy if exists abgelehnte_gesuche_select on public.abgelehnte_gesuche;
+create policy abgelehnte_gesuche_select on public.abgelehnte_gesuche
+  for select using (congregation_id = public.my_congregation_id() and user_id = auth.uid());
+
+drop policy if exists abgelehnte_gesuche_insert on public.abgelehnte_gesuche;
+create policy abgelehnte_gesuche_insert on public.abgelehnte_gesuche
+  for insert with check (congregation_id = public.my_congregation_id() and user_id = auth.uid());
+
+drop policy if exists abgelehnte_gesuche_delete on public.abgelehnte_gesuche;
+create policy abgelehnte_gesuche_delete on public.abgelehnte_gesuche
+  for delete using (congregation_id = public.my_congregation_id() and user_id = auth.uid());
+
 -- Die Glocken-Zeile „Tausch angefragt" geht mit ihrer Anfrage (Review
 -- 30.10.2026) — gleich, wer die Anfrage löscht: die Function nach einer
 -- Antwort, das Aufräumen am Montag nach ihrem Tag oder eine Person, die geht
@@ -2188,6 +2228,9 @@ begin
         -- Eine Tausch-Anfrage, deren früherer Tag vorbei ist, beantwortet
         -- niemand mehr (T153). Die App zeigt sie ab dem Tag danach nicht mehr.
         ('tausch_anfragen', 'bis < $1', montag::timestamptz),
+        -- Ein „Nein, danke" auf ein Gesuch, dessen Woche vorbei ist, fragt
+        -- niemand mehr ab — die App legt Vergangenes ohnehin nicht vor.
+        ('abgelehnte_gesuche', 'coalesce(woche_im_schluessel(task_key), to_char(created_at, ''YYYY-MM-DD'')) < to_char($1, ''YYYY-MM-DD'')', montag::timestamptz),
         ('plaene', 'bis < $1', ein_jahr),
         ('plan_eintraege', 'datum < $1', ein_jahr),
         ('absagen', 'woche < $1', ein_jahr),

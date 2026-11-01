@@ -70,6 +70,7 @@ const OHNE_DATENBANK: Record<string, [() => unknown, unknown]> = {
   saveCongregationInfo: [() => data.saveCongregationInfo('c1', { name: 'X' }), undefined],
   saveSettings: [() => data.saveSettings('c1', {} as never), undefined],
   saveConfirmation: [() => data.saveConfirmation('c1', 'u1', 'k1', 'bestätigt'), undefined],
+  gesuchAblehnen: [() => data.gesuchAblehnen('c1', 'u1', 'k1', 'Max Platzhalter'), undefined],
   deleteConfirmationRows: [() => data.deleteConfirmationRows('c1', ['k1']), undefined],
   saveMemberRow: [() => data.saveMemberRow({ userId: 'u1' } as never), undefined],
   deleteMemberRow: [() => data.deleteMemberRow('u1'), undefined],

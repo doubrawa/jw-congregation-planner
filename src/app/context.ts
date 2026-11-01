@@ -118,6 +118,8 @@ export interface HydratePayload {
   anwesenheit?: Anwesenheit[]
   /** Offene Tausch-Anfragen von und an mich (T153). Fehlt in einer Momentaufnahme von davor. */
   tauschAnfragen?: TauschAnfrage[]
+  /** „Nein, danke" des Kontos auf Ersatzgesuche (1.11.2026). Fehlt in einer Momentaufnahme von davor. */
+  abgelehnteGesuche?: AbgelehnteGesuche
   notifications: Notification[]
   confirmations: ConfirmationMap
   sentLog: SentLog
@@ -163,8 +165,6 @@ export interface AppState {
   theme: Theme
   fontScale: FontScale // Schriftgrößen-Faktor (--fs), gerätebezogen wie theme
   lang: Lang // App-Sprache (UI)
-  /** Ersatzgesuche, auf die hier „Nein, danke" kam — je Person (`abgelehnte-gesuche.ts`). */
-  abgelehnteGesuche: AbgelehnteGesuche
 
   /* ---- Sitzung und Rechte ----------------------------------------------- */
   /**
@@ -275,6 +275,11 @@ export interface AppState {
    * (RLS). Geschrieben nur von der Edge Function `tauschen`.
    */
   tauschAnfragen: TauschAnfrage[]
+  /**
+   * Ersatzgesuche, auf die das Konto „Nein, danke" gesagt hat — das Blatt beim
+   * Öffnen legt sie nicht mehr vor, auf keinem Gerät (`abgelehnte-gesuche.ts`).
+   */
+  abgelehnteGesuche: AbgelehnteGesuche
   notifs: Notification[]
   confirmations: ConfirmationMap // Slot-Pfad → Status (nur Produktionsmodus)
   /**

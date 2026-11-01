@@ -182,6 +182,8 @@ export const LEEREN = [
   'anwesenheit',
   // Und offene Tausch-Anfragen (T153) — zu Plätzen in Wochen, die hier gehen.
   'tausch_anfragen',
+  // Und das „Nein, danke" auf Ersatzgesuche (1.11.2026) — ebenso.
+  'abgelehnte_gesuche',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

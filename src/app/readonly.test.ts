@@ -77,8 +77,6 @@ describe('isViewAction', () => {
     // Steht allein ein Ersatzgesuch da, ist der Hintergrund-Klick der einzige
     // Weg heraus — kein ✕, kein Escape.
     'closeConfirm',
-    // „Nein, danke" auf ein Ersatzgesuch — nur auf dem Gerät gemerkt.
-    'gesuchAblehnen',
     // Frisch geholte Mitteilungen anzeigen (useMitteilungenNachladen).
     'setNotifs',
   ]
@@ -88,6 +86,11 @@ describe('isViewAction', () => {
 
   it('behandelt Unbekanntes als Schreibzugriff (fail-safe für neue Aktionen)', () => {
     expect(isViewAction('irgendwasNeues' as AppAction['type'])).toBe(false)
+  })
+
+  it('„Nein, danke" auf ein Ersatzgesuch schreibt — seit es am Konto hängt, nicht am Gerät (1.11.2026)', () => {
+    // Offline ginge die Antwort verloren; der Hinweis „nur lesen" ist ehrlicher.
+    expect(isViewAction('gesuchAblehnen')).toBe(false)
   })
 })
 

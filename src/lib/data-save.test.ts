@@ -37,6 +37,7 @@ import {
   markNotificationsRead,
   notifyPlanners,
   persoenlichBescheid,
+  gesuchAblehnen,
   saveAbsence,
   saveConfirmation,
   saveCongregationInfo,
@@ -223,6 +224,15 @@ describe('Upsert-Schreiber (onConflict)', () => {
     saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
     expect(chain.from).toHaveBeenCalledWith('confirmations')
     expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ task_key: 'k1', status: 'bestätigt' }), { onConflict: 'congregation_id,task_key,user_id' })
+  })
+  it('gesuchAblehnen → abgelehnte_gesuche, eine schon gegebene Antwort ist kein Fehler (1.11.2026)', () => {
+    // Ein zweites Fenster desselben Kontos kann vor dem Laden dasselbe Gesuch ablehnen.
+    gesuchAblehnen('c1', 'u1', 'k1', 'Max Platzhalter')
+    expect(chain.from).toHaveBeenCalledWith('abgelehnte_gesuche')
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { congregation_id: 'c1', user_id: 'u1', task_key: 'k1', abgesagt_von: 'Max Platzhalter' },
+      { onConflict: 'congregation_id,user_id,task_key,abgesagt_von', ignoreDuplicates: true },
+    )
   })
   it('savePushSubscription → push_subscriptions upsert (endpoint)', () => {
     savePushSubscription('c1', 'u1', { endpoint: 'e', p256dh: 'p', auth: 'a' }, 'fr')
