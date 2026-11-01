@@ -871,7 +871,7 @@ export default {
   "tauschNiemand": "Teraz nikt nie może się z tobą zamienić.",
   "tauschHinweis": "Widać tu tylko osoby, które mogą w twoim terminie i w których terminie ty możesz, oraz mają uprawnienie do tego zadania. Plan zmienia się dopiero wtedy, gdy druga osoba się zgodzi — od razu dla was obojga.",
   "tauschFragtDich": "{name} pyta cię",
-  "tauschNeinDanke": "Nie, dziękuję",
+  "neinDanke": "Nie, dziękuję",
   "tauschToastAngefragt": "Wysłano prośbę",
   "tauschToastGetauscht": "Zamiana gotowa — oba zadania są potwierdzone",
   "tauschFehlerWeg": "Ta prośba już nie istnieje.",

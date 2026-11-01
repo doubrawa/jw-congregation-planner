@@ -77,6 +77,8 @@ describe('isViewAction', () => {
     // Steht allein ein Ersatzgesuch da, ist der Hintergrund-Klick der einzige
     // Weg heraus — kein ✕, kein Escape.
     'closeConfirm',
+    // „Nein, danke" auf ein Ersatzgesuch — nur auf dem Gerät gemerkt.
+    'gesuchAblehnen',
     // Frisch geholte Mitteilungen anzeigen (useMitteilungenNachladen).
     'setNotifs',
   ]

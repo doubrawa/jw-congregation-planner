@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { vorzulegendeGesuche } from '../app/reducer'
 import { Sheet } from '../components/Sheet'
 import { aufgabenZeilen, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
@@ -22,13 +23,17 @@ import './aufgaben.css'
  * hielt das Blatt, bis alles bestätigt war; wer gerade nur nachsehen wollte,
  * kam an nichts anderes heran. Beim nächsten Öffnen liegt es wieder da
  * (`login`), und die Zahl am Menüpunkt erinnert dazwischen.
+ *
+ * **„Nein, danke" beantwortet ein Gesuch** (1.11.2026): Danach fragt das Blatt
+ * nicht mehr danach. Mit „Später" allein lag es bis zum Termin bei jedem
+ * Öffnen wieder da. Übernehmen geht weiter unter „Freie Plätze".
  */
 export function OeffnenBlatt() {
   const { state, dispatch } = useApp()
   const i18n = useT()
   const { t } = i18n
   const offen = state.myTasks.filter((task) => task.status === 'offen')
-  const gesuche = state.substituteReqs
+  const gesuche = vorzulegendeGesuche(state.substituteReqs)
   const spaeter = () => dispatch({ type: 'closeConfirm' })
 
   return (
@@ -75,6 +80,9 @@ export function OeffnenBlatt() {
                 <div className="oeffnen-knoepfe">
                   <button type="button" className="knopf-dunkel" onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}>
                     {t.uebernehmen}
+                  </button>
+                  <button type="button" className="knopf-leise" onClick={() => dispatch({ type: 'gesuchAblehnen', key: req.key })}>
+                    {t.neinDanke}
                   </button>
                 </div>
               </div>

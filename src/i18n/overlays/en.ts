@@ -871,7 +871,7 @@ export default {
   "tauschNiemand": "Nobody can swap with you right now.",
   "tauschHinweis": "Only people who can make your day and whose day you can make are shown here — and only if they are approved for this duty. The schedule changes only when the other person agrees, for both of you at once.",
   "tauschFragtDich": "{name} is asking you",
-  "tauschNeinDanke": "No, thanks",
+  "neinDanke": "No, thanks",
   "tauschToastAngefragt": "Request sent",
   "tauschToastGetauscht": "Swapped — both assignments are confirmed",
   "tauschFehlerWeg": "This request no longer exists.",

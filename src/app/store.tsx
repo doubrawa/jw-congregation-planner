@@ -10,8 +10,9 @@ import { darstellungSpiegeln } from './darstellung'
 import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
+import { abgelehnteMerken } from '../lib/abgelehnte-gesuche'
 import { mitLinkAnmelden } from '../lib/anmelden'
-import { setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { type Abweisung, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
 import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
@@ -188,9 +189,12 @@ export function AppProvider({
       if (!uid) return
       laeuft = true
       const t = dict(stateRef.current.lang)
-      const text =
-        grund === 'nicht-gesucht' ? t.toastErsatzNichtMehrGesucht : grund === 'vergeben' ? t.toastPlatzSchonVergeben : t.toastSpeicherFehler
-      dispatch({ type: 'showToast', text })
+      // Je Grund ein Text — vollständig, damit ein neuer nicht still beim allgemeinen landet.
+      const texte = {
+        'nicht-gesucht': t.toastErsatzNichtMehrGesucht,
+        vergeben: t.toastPlatzSchonVergeben,
+      } satisfies Record<Abweisung, string>
+      dispatch({ type: 'showToast', text: grund ? texte[grund] : t.toastSpeicherFehler })
       void loadAndHydrate(dispatch, uid, { silent: true }).finally(() => {
         laeuft = false
       })
@@ -413,6 +417,9 @@ export function AppProvider({
     document.documentElement.style.setProperty('--fs', String(state.fontScale))
     localStorage.setItem('fontScale', String(state.fontScale))
   }, [state.fontScale])
+
+  // „Nein, danke" auf Ersatzgesuche merken — wie die Vorlieben je Gerät.
+  useEffect(() => abgelehnteMerken(state.abgelehnteGesuche), [state.abgelehnteGesuche])
 
   // App-Sprache merken + Schreibrichtung (RTL für Arabisch und Persisch)
   useEffect(() => {

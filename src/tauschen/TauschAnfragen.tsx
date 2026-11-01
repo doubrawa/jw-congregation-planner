@@ -64,7 +64,7 @@ function TauschAnfrageKarte({ anfrage }: { anfrage: TauschAnfrage }) {
           {t.tauschAktion}
         </button>
         <button type="button" className="knopf-umriss" disabled={tausch.laeuft} onClick={() => ausfuehren(() => tausch.ablehnen(anfrage))}>
-          {t.tauschNeinDanke}
+          {t.neinDanke}
         </button>
       </div>
       {fehler && (

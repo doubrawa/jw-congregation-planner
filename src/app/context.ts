@@ -22,6 +22,7 @@ import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planning'
 import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
 import type { Belegung } from '../data/weitere-plaene'
+import type { AbgelehnteGesuche } from '../lib/abgelehnte-gesuche'
 import type { Abschnitt } from './deeplink'
 import type {
   Anlass,
@@ -162,6 +163,8 @@ export interface AppState {
   theme: Theme
   fontScale: FontScale // Schriftgrößen-Faktor (--fs), gerätebezogen wie theme
   lang: Lang // App-Sprache (UI)
+  /** Ersatzgesuche, auf die hier „Nein, danke" kam — je Person (`abgelehnte-gesuche.ts`). */
+  abgelehnteGesuche: AbgelehnteGesuche
 
   /* ---- Sitzung und Rechte ----------------------------------------------- */
   /**
@@ -583,6 +586,7 @@ export type AppAction =
   | { type: 'openMyTask'; id: string } // eigenes Aufgaben-Aktions-Sheet öffnen
   | { type: 'closeMyTask' }
   | { type: 'takeSubstitute'; key: string } // Hilfsdienst-Ersatz übernehmen
+  | { type: 'gesuchAblehnen'; key: string } // „Nein, danke": das Blatt beim Öffnen fragt nicht mehr
   | { type: 'platzUebernehmen'; key: string } // einen offenen Platz selbst übernehmen (4.10.2026)
   | { type: 'openS89'; payload: S89Payload }
   | { type: 'closeS89' }

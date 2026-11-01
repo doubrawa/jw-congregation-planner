@@ -871,7 +871,7 @@ export default {
   "tauschNiemand": "لا يستطيع أحد التبادل معك الآن.",
   "tauschHinweis": "يظهر هنا فقط من يستطيع في يومك ومن تستطيع أنت في يومه، ومن هو مؤهل لهذه الخدمة. لا يتغير البرنامج إلا عندما يوافق الشخص الآخر، ولكليكما معًا.",
   "tauschFragtDich": "{name} يسألك",
-  "tauschNeinDanke": "لا، شكرًا",
+  "neinDanke": "لا، شكرًا",
   "tauschToastAngefragt": "تم إرسال الطلب",
   "tauschToastGetauscht": "تم التبادل — التعيينان مؤكدان",
   "tauschFehlerWeg": "هذا الطلب لم يعد موجودًا.",

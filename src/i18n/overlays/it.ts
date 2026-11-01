@@ -871,7 +871,7 @@ export default {
   "tauschNiemand": "Al momento nessuno può fare uno scambio con te.",
   "tauschHinweis": "Qui compare solo chi è disponibile nel tuo giorno e nel cui giorno sei disponibile tu, ed è abilitato per questo servizio. Il programma cambia solo quando l’altra persona accetta, per entrambi insieme.",
   "tauschFragtDich": "{name} ti chiede",
-  "tauschNeinDanke": "No, grazie",
+  "neinDanke": "No, grazie",
   "tauschToastAngefragt": "Richiesta inviata",
   "tauschToastGetauscht": "Scambio effettuato — entrambi gli incarichi sono confermati",
   "tauschFehlerWeg": "Questa richiesta non esiste più.",

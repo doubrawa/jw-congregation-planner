@@ -20,7 +20,7 @@ import {
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG, LABEL_WT_STUDIUM } from '../data/constants'
-import { displayName, isGuestRole, isNameless, isSong, istAusgefallen, ROLE_OWN_SPEAKER } from '../data/helpers'
+import { displayName, isGuestRole, isNameless, isQualified, isSong, istAusgefallen, ROLE_OWN_SPEAKER, serviceQualKey } from '../data/helpers'
 import { allePlaetze, platzKey } from '../data/plaetze'
 import { fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
 import { deriveMyTasks, punktKey, sentKey } from '../data/planning'
@@ -52,6 +52,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     fsBereich: 'treffpunkte',
     theme: 'auto',
     fontScale: 1,
+    abgelehnteGesuche: {},
     sitzungPruefen: false,
     planner: DEMO_PLANNER,
     zuteiler: false,
@@ -2750,6 +2751,93 @@ describe('Einspringen: takeSubstitute und platzUebernehmen', () => {
     expect(next.weeks[0]!.mid.helpers.mik![0]).toMatchObject({ pid: frei.id })
     expect(next.confirmations[KEY]).toBe('bestätigt')
     expect(next.toast?.text).toBe(t.toastUebernommenKonflikt)
+  })
+})
+
+/**
+ * **„Nein, danke" auf ein Ersatzgesuch** (1.11.2026). Bis dahin kannte das
+ * Blatt beim Öffnen nur „Später" — und legte dasselbe Gesuch bei jedem Laden
+ * wieder vor, bis zum Termin. Mit echten Wochen und einer echten Absage, damit
+ * das Gesuch so entsteht wie im Betrieb.
+ */
+describe('„Nein, danke" auf ein Ersatzgesuch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10)) // Montag der ersten Demo-Woche
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const woche = buildDemoWeeks()[0]!
+  const KEY = `${woche.start}|mid|helper|mik|0`
+  const belegt = woche.mid.helpers.mik![0]!.name
+  const springer = DEMO_PERSONS.filter((p) => displayName(p) !== belegt && isQualified(p, serviceQualKey('mik')))
+
+  /**
+   * Der Inhaber des Mikrofons hat abgesagt; `ich` könnte einspringen. Die
+   * eigenen Zuteilungen sind zugesagt — so hängt das Blatt allein am Gesuch.
+   */
+  function abgesagt(ich: Person, over: Partial<AppState> = {}): AppState {
+    const roh = neuAbgeleitet(makeState({ personId: ich.id, absences: [], confirmations: { [KEY]: 'verhindert' }, ...over }))
+    const zugesagt = Object.fromEntries(roh.myTasks.map((a) => [a.id, 'bestätigt' as const]))
+    return neuAbgeleitet({ ...roh, confirmations: { ...zugesagt, [KEY]: 'verhindert' } })
+  }
+  const gesuchIn = (s: AppState) => s.substituteReqs.find((r) => r.key === KEY)
+
+  it('das Blatt fragt nicht mehr — unter „Freie Plätze" steht das Gesuch weiter', () => {
+    const offen = reducer(abgesagt(springer[0]!), { type: 'login' })
+    // Gegenprobe: Ohne Ablehnung liegt das Blatt beim Öffnen da.
+    expect(gesuchIn(offen)?.abgelehnt).toBeUndefined()
+    expect(offen.confirmOpen).toBe(true)
+
+    const nein = reducer(offen, { type: 'gesuchAblehnen', key: KEY })
+    expect(gesuchIn(nein)?.abgelehnt).toBe(true)
+    // Es war das einzige: Das Blatt geht zu — und beim nächsten Öffnen bleibt es weg.
+    expect(nein.confirmOpen).toBe(false)
+    expect(reducer(nein, { type: 'login' }).confirmOpen).toBe(false)
+    // Niemand erfährt davon: Plan und Zusagen bleiben, wie sie waren.
+    expect(nein.weeks).toBe(offen.weeks)
+    expect(nein.confirmations).toBe(offen.confirmations)
+  })
+
+  it('übersteht das Abmelden — gilt aber nur für die Person, die abgelehnt hat', () => {
+    const nein = reducer(abgesagt(springer[0]!), { type: 'gesuchAblehnen', key: KEY })
+    const danach = reducer(nein, { type: 'logout' })
+    expect(danach.abgelehnteGesuche).toEqual(nein.abgelehnteGesuche)
+
+    // Am selben Gerät meldet sich jemand anderes an, der auch einspringen könnte.
+    expect(springer.length).toBeGreaterThan(1)
+    const andere = abgesagt(springer[1]!, { abgelehnteGesuche: nein.abgelehnteGesuche })
+    expect(gesuchIn(andere)).toBeDefined()
+    expect(gesuchIn(andere)?.abgelehnt).toBeUndefined()
+    expect(reducer(andere, { type: 'login' }).confirmOpen).toBe(true)
+  })
+
+  it('zieht der Absagende zurück und sagt wieder ab, bleibt es abgelehnt — sagt ein anderer ab, fragt das Blatt neu', () => {
+    const nein = reducer(abgesagt(springer[0]!), { type: 'gesuchAblehnen', key: KEY })
+    // Er kann doch („Doch bestätigen"): Mit der Absage geht das Gesuch.
+    const zurueck = neuAbgeleitet({ ...nein, confirmations: { ...nein.confirmations, [KEY]: 'bestätigt' } })
+    expect(gesuchIn(zurueck)).toBeUndefined()
+    // Und dann doch nicht: dasselbe Gesuch noch einmal — schon beantwortet.
+    const wiederAbgesagt = neuAbgeleitet({ ...zurueck, confirmations: { ...zurueck.confirmations, [KEY]: 'verhindert' } })
+    expect(gesuchIn(wiederAbgesagt)?.abgelehnt).toBe(true)
+    expect(reducer(wiederAbgesagt, { type: 'login' }).confirmOpen).toBe(false)
+
+    // Der Planer hat den Platz neu vergeben, und der Neue kann auch nicht.
+    const neu = DEMO_PERSONS.find((p) => p.id !== springer[0]!.id && displayName(p) !== belegt)!
+    const weeks = nein.weeks.map((w, i) =>
+      i === 0 ? { ...w, mid: { ...w.mid, helpers: { ...w.mid.helpers, mik: [{ name: displayName(neu), pid: neu.id }, ...w.mid.helpers.mik!.slice(1)] } } } : w,
+    )
+    const neuesGesuch = neuAbgeleitet({ ...nein, weeks })
+    expect(gesuchIn(neuesGesuch)?.declinedBy).toBe(displayName(neu))
+    expect(gesuchIn(neuesGesuch)?.abgelehnt).toBeUndefined()
+    expect(reducer(neuesGesuch, { type: 'login' }).confirmOpen).toBe(true)
+  })
+
+  it('ein Gesuch, das es nicht gibt, oder ohne eigene Person: nichts geändert', () => {
+    const s = abgesagt(springer[0]!)
+    expect(reducer(s, { type: 'gesuchAblehnen', key: 'gibt-es-nicht' })).toBe(s)
+    const ohne = { ...s, personId: null }
+    expect(reducer(ohne, { type: 'gesuchAblehnen', key: KEY })).toBe(ohne)
   })
 })
 

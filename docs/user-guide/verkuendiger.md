@@ -478,8 +478,10 @@ Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
   Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
   Zuteilungen erinnert, zeigt darunter den Bereich **Einspringen**. Mit
-  **Später** legst du das Blatt weg: Einspringen kannst du, müssen tust du es
-  nicht.
+  **Später** legst du das Blatt weg; beim nächsten Öffnen fragt es wieder.
+  Mit **Nein, danke** fragt es nach dieser Anfrage nicht mehr – auf diesem
+  Gerät. Niemand erfährt davon, und unter **Freie Plätze** kannst du sie
+  trotzdem noch übernehmen. Einspringen kannst du, müssen tust du es nicht.
 - Unter **Freie Plätze** im Menü, gleich unter **Meine Aufgaben** – dort steht
   der Bereich **Einspringen** ganz oben, solange die Anfrage offen ist. Die
   Zahl am Menüpunkt sagt, wie viel du gerade übernehmen könntest (Gesuche und

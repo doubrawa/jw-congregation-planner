@@ -131,6 +131,28 @@ describe('T69 — das Blatt beim Öffnen zeigt auch Ersatzgesuche', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'takeSubstitute', key: 'k1' })
   })
 
+  it('„Nein, danke" lehnt genau das Gesuch seiner Karte ab (1.11.2026)', () => {
+    // Bis dahin gab es nur „Später", und das Blatt fragte bei jedem Öffnen neu.
+    const { container, dispatch } = zeige({ myTasks: [], substituteReqs: [gesuch('k1'), gesuch('k2', 'Ton')] })
+    fireEvent.click(text(karten(container)[1]!, t.neinDanke)[0]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'gesuchAblehnen', key: 'k2' })
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'takeSubstitute' || c[0].type === 'closeConfirm')).toBe(false)
+  })
+
+  it('ein abgelehntes Gesuch steht nicht mehr im Blatt — die übrigen schon', () => {
+    const { container } = zeige({
+      myTasks: [aufgabe('t1')],
+      substituteReqs: [{ ...gesuch('k1'), abgelehnt: true }, gesuch('k2', 'Ton')],
+    })
+    expect(karten(container)).toHaveLength(2)
+    expect(container.textContent).not.toContain('Mikrofone')
+    expect(container.textContent).toContain('Ton')
+    cleanup()
+    // Alle abgelehnt: kein Abschnitt „Einspringen" unter den Zuteilungen.
+    const nurAbgelehnt = zeige({ myTasks: [aufgabe('t1')], substituteReqs: [{ ...gesuch('k1'), abgelehnt: true }] })
+    expect(nurAbgelehnt.container.querySelector('.oeffnen-gesuche')).toBeNull()
+  })
+
   it('was ich an dem Tag schon habe, steht vor dem Zusagen da', () => {
     const { container } = zeige({
       myTasks: [],

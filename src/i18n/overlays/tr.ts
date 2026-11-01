@@ -871,7 +871,7 @@ export default {
   "tauschNiemand": "Şu anda kimse seninle değişim yapamıyor.",
   "tauschHinweis": "Burada yalnızca senin gününde müsait olan, kendi gününde senin müsait olduğun ve bu görev için onaylı olan kişiler görünür. Plan ancak diğer kişi kabul ettiğinde, ikiniz için birlikte değişir.",
   "tauschFragtDich": "{name} sana soruyor",
-  "tauschNeinDanke": "Hayır, teşekkürler",
+  "neinDanke": "Hayır, teşekkürler",
   "tauschToastAngefragt": "İstek gönderildi",
   "tauschToastGetauscht": "Değişim yapıldı — iki görev de onaylandı",
   "tauschFehlerWeg": "Bu istek artık yok.",

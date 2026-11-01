@@ -14,6 +14,7 @@
 import { STANDARD_ERINNERUNGEN, STANDARD_ZEITEN } from '../data/vorgaben'
 import { asFontScale, asTheme, DEFAULT_FONT_SCALE, DEFAULT_THEME, type FontScale } from '../data/constants'
 import { APP_LANGS } from '../i18n/langs'
+import { abgelehnteLesen } from '../lib/abgelehnte-gesuche'
 import type { Lang, Theme } from '../data/types'
 import type { AppState } from './context'
 
@@ -31,18 +32,26 @@ function getInitialLang(): Lang {
 }
 
 export function initialState(): AppState {
-  return leererZustand({ theme: getInitialTheme(), fontScale: getInitialFontScale(), lang: getInitialLang() })
+  return leererZustand({
+    theme: getInitialTheme(),
+    fontScale: getInitialFontScale(),
+    lang: getInitialLang(),
+    abgelehnteGesuche: abgelehnteLesen(),
+  })
 }
 
-/** Was das Gerät sich merkt: Darstellung, Schriftgröße, Sprache. Es überdauert ein Abmelden. */
-export type Vorlieben = Pick<AppState, 'theme' | 'fontScale' | 'lang'>
+/**
+ * Was das Gerät sich merkt: Darstellung, Schriftgröße, Sprache und die
+ * abgelehnten Ersatzgesuche. Es überdauert ein Abmelden.
+ */
+export type Vorlieben = Pick<AppState, 'theme' | 'fontScale' | 'lang' | 'abgelehnteGesuche'>
 
 /**
  * **Der Zustand ohne Daten** — der Start der App und seit dem 16.10.2026 auch
  * das Abmelden (`logout`): Von der Sitzung davor bleibt nur, was dem Gerät
  * gehört (`Vorlieben`).
  */
-export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
+export function leererZustand({ theme, fontScale, lang, abgelehnteGesuche }: Vorlieben): AppState {
   return {
     screen: 'login',
     week: 0,
@@ -50,6 +59,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     fsBereich: 'treffpunkte',
     theme,
     fontScale,
+    abgelehnteGesuche,
     // Nach dem Abmelden steht fest: niemand. Beim Start mit Datenbank setzt der
     // Provider den Merker, denn erst er fragt nach (`store.tsx`).
     sitzungPruefen: false,

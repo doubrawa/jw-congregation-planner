@@ -19,6 +19,7 @@ import {
 import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
 import { eigenePerson, kontoGehtMit } from './eigene-person'
 import { leererZustand } from './init'
+import { gesuchKennung } from '../lib/abgelehnte-gesuche'
 import { deriveMyFsTasks, fsAddInst, fsAutoAssign, fsClear, fsDropPersonPid, fsGruppeEntfernen, fsRegelAussetzen, fsRemoveInst, fsRenameLeader, fsSetLeader, fsUpdateInst, fsVerwaisteZusagenAller, regenFsWeeks } from '../data/fs'
 import { neueWocheEinordnen } from '../data/neue-woche'
 import { aemterBeenden, displayName, isSong, linkFamily, mtab, nameVon, neuWennGeaendert, unlinkFamily } from '../data/helpers'
@@ -383,6 +384,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
     ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
         .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
+        .map((req) => (gesuchKennung(me.id, req) in state.abgelehnteGesuche ? { ...req, abgelehnt: true as const } : req))
     : []
   // Unbesetzte Plätze gesendeter Wochen, die ich übernehmen kann (4.10.2026).
   // Nicht im Blatt beim Öffnen: Ein Angebot ist keine Pflicht wie eine
@@ -463,7 +465,7 @@ function zusammenkunftDerWoche(state: AppState): MeetingKey {
 
 /**
  * Gibt es beim Öffnen etwas vorzulegen? (Bestätigung Pflicht, Einspringen
- * freiwillig.)
+ * freiwillig — und nur, solange niemand „Nein, danke" gesagt hat.)
  *
  * Eine Stelle für beide Seiten: Der Reducer entscheidet damit, ob `confirmOpen`
  * gesetzt bleibt, und die Hülle, ob sie das Blatt zeigt. Zwei Bedingungen, die
@@ -471,7 +473,12 @@ function zusammenkunftDerWoche(state: AppState): MeetingKey {
  * leeres Blatt da oder ein volles bleibt weg.
  */
 export function vorzulegen(myTasks: MyTask[], substituteReqs: SubstituteReq[]): boolean {
-  return myTasks.some((t) => t.status === 'offen') || substituteReqs.length > 0
+  return myTasks.some((t) => t.status === 'offen') || vorzulegendeGesuche(substituteReqs).length > 0
+}
+
+/** Die Ersatzgesuche, die das Blatt beim Öffnen zeigt: alle ohne „Nein, danke". */
+export function vorzulegendeGesuche(substituteReqs: readonly SubstituteReq[]): SubstituteReq[] {
+  return substituteReqs.filter((req) => !req.abgelehnt)
 }
 
 /**
@@ -519,6 +526,9 @@ function ableitungsQuellen(s: AppState): readonly unknown[] {
     // Heute ändert es sich nur beim Laden — der Wächter verlangt es trotzdem:
     // Was die Ableitung liest, steht hier.
     s.sentLog,
+    // „Nein, danke" auf ein Ersatzgesuch: Danach legt das Blatt es nicht mehr
+    // vor, und war es das letzte, geht das Blatt zu (`vorzulegen`).
+    s.abgelehnteGesuche,
   ]
 }
 
@@ -652,7 +662,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
        * (`store.tsx`), das zweite ohne Grund.
        */
       return {
-        ...leererZustand({ theme: state.theme, fontScale: state.fontScale, lang: state.lang }),
+        ...leererZustand({
+          theme: state.theme,
+          fontScale: state.fontScale,
+          lang: state.lang,
+          abgelehnteGesuche: state.abgelehnteGesuche,
+        }),
         keineVersammlung: action.keineVersammlung === true || state.keineVersammlung,
       }
     case 'navigate': {
@@ -1569,6 +1584,18 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
         myTaskId: null,
         toast: toastKey(state, clash ? 'toastUebernommenKonflikt' : 'toastUebernommen'),
+      }
+    }
+    case 'gesuchAblehnen': {
+      // Nur dieses Gerät merkt es sich (`abgelehnte-gesuche.ts`); niemand
+      // erfährt davon. Ob das Blatt danach noch etwas vorzulegen hat, rechnet
+      // die Ableitung — die Liste ist eine ihrer Quellen.
+      const req = state.substituteReqs.find((r) => r.key === action.key)
+      const me = eigenePerson(state)
+      if (!req || !me) return state
+      return {
+        ...state,
+        abgelehnteGesuche: { ...state.abgelehnteGesuche, [gesuchKennung(me.id, req)]: req.at ?? null },
       }
     }
     case 'platzUebernehmen': {

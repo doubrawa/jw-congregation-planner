@@ -61,6 +61,9 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
    * zu bestätigen gab.
    */
   'closeConfirm',
+  // „Nein, danke" auf ein Ersatzgesuch merkt sich nur das Gerät
+  // (`abgelehnte-gesuche.ts`) — wie „Später" auch offline.
+  'gesuchAblehnen',
   /*
    * Frisch geholte Mitteilungen anzeigen (`useMitteilungenNachladen`). Das ist
    * gelesen, nicht geschrieben — `persist` kennt die Aktion gar nicht. Gesperrt

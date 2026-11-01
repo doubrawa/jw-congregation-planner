@@ -905,7 +905,7 @@ export const DE = {
     tauschAktion: 'Tauschen', tauschGibstAb: 'Du gibst ab', tauschUebernimmstDafuer: 'Du übernimmst dafür',
     tauschUebernimmst: 'Du übernimmst', tauschAnfragen: 'Anfragen', tauschAngefragtBei: 'Angefragt bei {name}',
     tauschZurueckziehen: 'Zurückziehen', tauschSucht: 'Einen Moment …', tauschNiemand: 'Gerade kann niemand mit dir tauschen.',
-    tauschHinweis: 'Hier steht nur, wer an deinem Tag kann und an dessen Tag du kannst — und wer für den Dienst freigegeben ist. Erst wenn dein Gegenüber zusagt, ändert sich der Plan, für beide auf einmal.', tauschFragtDich: '{name} fragt dich', tauschNeinDanke: 'Nein, danke',
+    tauschHinweis: 'Hier steht nur, wer an deinem Tag kann und an dessen Tag du kannst — und wer für den Dienst freigegeben ist. Erst wenn dein Gegenüber zusagt, ändert sich der Plan, für beide auf einmal.', tauschFragtDich: '{name} fragt dich', neinDanke: 'Nein, danke',
     tauschToastAngefragt: 'Anfrage geschickt', tauschToastGetauscht: 'Getauscht — beide Plätze sind zugesagt', tauschFehlerWeg: 'Diese Anfrage gibt es nicht mehr.',
     tauschFehlerGeaendert: 'Das geht so nicht mehr — inzwischen hat sich der Plan geändert.', tauschFehlerSchonGefragt: 'Für diese Aufgabe läuft schon eine Anfrage.', notifTauschAngefragt: 'Tausch angefragt',
     notifGetauscht: 'Getauscht', notifTauschAbgelehnt: 'Tausch abgelehnt',

@@ -196,7 +196,7 @@ describe('Die Anfrage beim Gefragten', () => {
     const { dispatch } = zeige(<TauschAnfragen />, beiJonas())
     fireEvent.click(knopf(t.tauschAktion)!)
     await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'getauscht', tausch: ANFRAGE }))
-    fireEvent.click(knopf(t.tauschNeinDanke)!)
+    fireEvent.click(knopf(t.neinDanke)!)
     await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'tauschWeg', id: 'a1' }))
   })
 

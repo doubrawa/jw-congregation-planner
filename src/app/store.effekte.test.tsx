@@ -6,9 +6,12 @@ import type { ReactNode } from 'react'
 import type { AppAction } from './context'
 import type { LadeOptionen, StandOptionen } from './hydrate'
 import type { Abweisung } from '../lib/data'
+import type { Person, SubstituteReq } from '../data/types'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
+import { gesuchKennung } from '../lib/abgelehnte-gesuche'
+import { initialState } from './init'
 
 /**
  * **Was der Provider nebenher tut** — die Effekte, die keiner Aktion gehören.
@@ -1226,6 +1229,26 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
     })
     expect(dict('uk').navProfil).not.toBe(dict('en').navProfil)
     expect(dict('uk').navProfil).not.toBe(dict('de').navProfil)
+  })
+})
+
+describe('„Nein, danke" auf ein Ersatzgesuch merkt sich das Gerät (1.11.2026)', () => {
+  it('die Ablehnung landet im Speicher — und der nächste Start liest sie wieder', async () => {
+    konfiguriert.wert = false // ohne Datenbank: keine Sitzung, die den Zustand leert
+    const ich: Person = { id: 'p1', fn: 'Erika', ln: 'Muster', role: 'verkuendiger', priv: {} }
+    const gesuch: SubstituteReq = {
+      key: '2099-01-05|we|helper|ton|0', svc: 'ton', title: 'Ton', date: '', at: Date.UTC(2099, 0, 11),
+      declinedBy: 'Max Platzhalter', schonHeute: [],
+    }
+    const start = () => ({ ...initialState(), personId: ich.id, persons: [ich], substituteReqs: [gesuch] })
+    const { result } = renderHook(() => useApp(), {
+      wrapper: ({ children }: { children: ReactNode }) => <AppProvider start={start}>{children}</AppProvider>,
+    })
+    await act(async () => {
+      result.current.dispatch({ type: 'gesuchAblehnen', key: gesuch.key })
+    })
+    expect(JSON.parse(localStorage.getItem('abgelehnteGesuche') ?? '{}')).toEqual({ [gesuchKennung('p1', gesuch)]: gesuch.at })
+    expect(initialState().abgelehnteGesuche).toEqual(result.current.state.abgelehnteGesuche)
   })
 })
 
