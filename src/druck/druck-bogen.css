@@ -386,44 +386,40 @@
   margin-inline-end: 6px;
 }
 
-/* ---- Enger, wenn es sonst nicht auf ein Blatt passt (`Bogen`) --------- */
+/* ---- Enger, wenn ein Block sonst nicht auf ein Blatt passt (`Bogen`) -- */
 
 /* Eine Woche mit langen Namen bei den Hilfsdiensten lief um wenige Pixel auf
    ein zweites Blatt (1.11.2026). Gemessen an einer solchen Woche: rund 150 px
-   weniger. Was ohnehin passt, bleibt, wie es war. */
-.druck-blatt--eng {
+   weniger. Nur dieser Block — was ohnehin passt, bleibt, wie es war. */
+.druck-block--eng {
   line-height: 1.25;
 }
 
-.druck-blatt--eng .druck-punkt {
+.druck-block--eng .druck-punkt {
   padding: 3px 0 4px;
 }
 
-.druck-blatt--eng .druck-punkt-text {
+.druck-block--eng .druck-punkt-text {
   gap: 1px;
 }
 
-.druck-blatt--eng .druck-abschnitt-kopf {
+.druck-block--eng .druck-abschnitt-kopf {
   padding: 7px 0 3px;
 }
 
-.druck-blatt--eng .druck-hilfsdienste {
+.druck-block--eng .druck-hilfsdienste {
   padding-top: 14px;
 }
 
-.druck-blatt--eng .druck-dienst-zeile {
+.druck-block--eng .druck-dienst-zeile {
   padding: 3px 0 4px;
 }
 
-.druck-blatt--eng .druck-dienst-zeile--kopf {
+.druck-block--eng .druck-dienst-zeile--kopf {
   padding: 0 0 3px;
 }
 
-/* ---- Monat: zwei Wochen je Blatt, je Punkt eine Zeile ---------------- */
-
-.druck-blatt--monat {
-  --druck-abstand: 14px;
-}
+/* ---- Monat: je Woche ihr Kopf, darunter die Woche wie auf ihrem Bogen -- */
 
 .druck-monat-woche {
   display: flex;
@@ -450,79 +446,6 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--akzent);
-}
-
-.druck-monat-tage {
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
-  column-gap: 24px;
-  align-items: start;
-}
-
-.druck-knapp-tag {
-  display: flex;
-  flex-direction: column;
-}
-
-.druck-knapp-tag-titel {
-  padding-bottom: 3px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.druck-knapp-abschnitt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 0 1px;
-}
-
-.druck-knapp-abschnitt .druck-abschnitt-name,
-.druck-knapp-abschnitt .druck-lied {
-  font-size: 12px;
-}
-
-.druck-knapp-zeile {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 6px;
-  align-items: baseline;
-  padding: 0 0 1px;
-  border-top: 1px solid var(--linie);
-  font-size: 12px;
-  line-height: 1.22;
-}
-
-.druck-knapp-zeile > :first-child {
-  color: var(--tinte2);
-}
-
-.druck-knapp-zeile > :last-child {
-  font-weight: 600;
-  text-align: end;
-}
-
-.druck-rechts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.druck-hilfsdienste--knapp {
-  padding-top: 0;
-}
-
-.druck-hilfsdienste--knapp .druck-dienst-zeile {
-  grid-template-columns: 104px minmax(0, 1fr) minmax(0, 1fr);
-  padding: 1px 0 2px;
-  font-size: 12px;
-  line-height: 1.22;
-}
-
-.druck-hilfsdienste--knapp .druck-dienst-zeile--kopf {
-  padding: 0 0 4px;
-  font-size: 12px;
 }
 
 .druck-kongress {

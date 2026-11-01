@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Scan it with your phone camera, and you’re in. If that doesn’t work: open {adresse} and tap “{knopf}”.",
   "aenderungenInDerApp": "Changes appear in the app",
   "druckNochFrei": "still open – you can take on support duties in the app; otherwise, speak to the elders.",
-  "druckMit": "{a} with {b}",
   "s89DieserZettel": "Print this slip",
   "s89ZettelN": "Slips: {n}",
   "s89AuchPartner": "Also for assistants",

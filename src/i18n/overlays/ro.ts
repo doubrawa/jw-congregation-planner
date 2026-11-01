@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Scanează-l cu camera telefonului și ai acces. Dacă nu merge: deschide {adresse} și atinge „{knopf}”.",
   "aenderungenInDerApp": "Modificările apar în aplicație",
   "druckNochFrei": "încă liber – sarcinile de sprijin le poți prelua în aplicație, altfel vorbește cu bătrânii.",
-  "druckMit": "{a} cu {b}",
   "s89DieserZettel": "Tipărește acest bilețel",
   "s89ZettelN": "Bilețele: {n}",
   "s89AuchPartner": "Și pentru parteneri",

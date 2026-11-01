@@ -4,9 +4,6 @@ import { Logo } from '../bausteine/Logo'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import { fill, useT } from '../i18n/useT'
 
-/** Ein Bogen mit eigenem Abstand zwischen seinen Blöcken (`druck-blatt--<art>`). */
-export type BlattArt = 'monat'
-
 /**
  * **Ein A4-Blatt eines Druckbogens** (T121, Phase 9; Entwürfe `GDruck…`):
  * oben Versammlung, Titel, Zeitraum und Logo, unten der Stand und die
@@ -22,8 +19,6 @@ export function DruckBlatt({
   zeitraum,
   seite = 1,
   seiten = 1,
-  art,
-  eng = false,
   ueberlang = false,
   children,
 }: {
@@ -31,9 +26,6 @@ export function DruckBlatt({
   zeitraum: string
   seite?: number
   seiten?: number
-  art?: BlattArt
-  /** Enger gesetzt, damit ein Block doch auf ein Blatt passt (`Bogen`). */
-  eng?: boolean
   /** Der Inhalt ist höher als ein Blatt: keine feste Höhe, er läuft weiter statt abgeschnitten zu werden. */
   ueberlang?: boolean
   children: ReactNode
@@ -41,14 +33,8 @@ export function DruckBlatt({
   const { state } = useApp()
   const { t } = useT()
   const stand = fill(t.stand, { datum: gebundenesDatum(new Date(), state.lang, 'tagMonatJahr') })
-  const klassen = [
-    'druck-blatt',
-    art === 'monat' && 'druck-blatt--monat',
-    eng && 'druck-blatt--eng',
-    ueberlang && 'druck-blatt--ueberlang',
-  ].filter(Boolean)
   return (
-    <section className={klassen.join(' ')}>
+    <section className={ueberlang ? 'druck-blatt druck-blatt--ueberlang' : 'druck-blatt'}>
       <header className="druck-blatt-kopf">
         <div className="druck-blatt-kopf-text">
           <span className="druck-versammlung">{fill(t.congLabel, { name: state.congregation.name })}</span>

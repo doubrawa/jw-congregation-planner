@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "امسحها بكاميرا الهاتف فتدخل مباشرة. إذا لم ينجح ذلك: افتح {adresse} وانقر على «{knopf}».",
   "aenderungenInDerApp": "التغييرات تظهر في التطبيق",
   "druckNochFrei": "لا يزال شاغرًا – يمكنك تولّي خدمات المساندة عبر التطبيق، وفي غير ذلك تحدَّث إلى الشيوخ.",
-  "druckMit": "{a} مع {b}",
   "s89DieserZettel": "طباعة هذه البطاقة",
   "s89ZettelN": "البطاقات: {n}",
   "s89AuchPartner": "للمعاونين أيضًا",

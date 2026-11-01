@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Zeskanuj aparatem w telefonie i masz dostęp. Jeśli to nie działa: otwórz {adresse} i dotknij „{knopf}”.",
   "aenderungenInDerApp": "Zmiany są widoczne w aplikacji",
   "druckNochFrei": "jeszcze wolne – zadania pomocnicze możesz przejąć w aplikacji, w pozostałych sprawach zwróć się do starszych.",
-  "druckMit": "{a} i {b}",
   "s89DieserZettel": "Wydrukuj tę karteczkę",
   "s89ZettelN": "Karteczki: {n}",
   "s89AuchPartner": "Także dla pomocników",

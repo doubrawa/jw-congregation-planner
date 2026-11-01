@@ -266,12 +266,10 @@ export const DE = {
     // Unter dem Titel des Druck-Blatts der Zusammenkünfte (T121).
     druckZusammenkuenfte: 'Zusammenkünfte mit allen Zuteilungen.',
     // Druckbögen (T121, Phase 9): Fuß jedes Blatts hinter „Stand: …"; unter den
-    // Hilfsdiensten, was die gepunktete Linie heißt; auf dem Monatsbogen
-    // Schüler und Partner in einer Zeile.
+    // Hilfsdiensten, was die gepunktete Linie heißt.
     aenderungenInDerApp: 'Änderungen stehen in der App',
     // Seit T142 (25.10.2026) übernimmt man in der App nur Hilfsdienste — gepunktet sind auch Programmpunkte.
     druckNochFrei: 'noch frei – Hilfsdienste übernimmst du in der App, sonst sprich die Ältesten an.',
-    druckMit: '{a} mit {b}',
     // Bogen der Treffpunkte (Entwurf GDruckTreffpunkte): Überschriften, Spalten
     // und was gegenüber dem Grundplan anders ist — „statt {alt}" nennt Zeit und
     // Ort, die sonst gelten.

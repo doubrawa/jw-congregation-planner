@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Scanne-la avec l’appareil photo du téléphone, et tu as accès à l’application. Si ça ne marche pas\u00a0: ouvre {adresse} et touche «\u00a0{knopf}\u00a0».",
   "aenderungenInDerApp": "Les changements figurent dans l’application",
   "druckNochFrei": "encore libre – tu peux prendre les services auxiliaires dans l’application, sinon parle aux anciens.",
-  "druckMit": "{a} avec {b}",
   "s89DieserZettel": "Imprimer cette fiche",
   "s89ZettelN": "Fiches\u00a0: {n}",
   "s89AuchPartner": "Aussi pour les interlocuteurs",

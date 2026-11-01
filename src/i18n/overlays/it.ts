@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Scansionalo con la fotocamera del telefono e hai accesso. Se non funziona: apri {adresse} e tocca “{knopf}”.",
   "aenderungenInDerApp": "Le modifiche compaiono nell’app",
   "druckNochFrei": "ancora libero – i servizi di supporto puoi prenderli nell’app, altrimenti parla con gli anziani.",
-  "druckMit": "{a} con {b}",
   "s89DieserZettel": "Stampa questo foglietto",
   "s89ZettelN": "Foglietti: {n}",
   "s89AuchPartner": "Anche per ogni assistente",

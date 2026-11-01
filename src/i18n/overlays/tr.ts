@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Telefonun kamerasıyla tara, hemen giriş yapmış olursun. Olmazsa: {adresse} adresini aç ve “{knopf}” düğmesine dokun.",
   "aenderungenInDerApp": "Değişiklikler uygulamada görünür",
   "druckNochFrei": "henüz boş – yardımcı görevleri uygulamadan üstlenebilirsin, diğerleri için ihtiyarlarla konuş.",
-  "druckMit": "{a} ile {b}",
   "s89DieserZettel": "Bu kartı yazdır",
   "s89ZettelN": "{n} kart",
   "s89AuchPartner": "Yardımcılar için de",

@@ -7,7 +7,6 @@ import { setAnlass } from '../data/anlass'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
-import { isSong } from '../data/helpers'
 import type { FsInstance, FsRule, PartItem, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
 import { spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
 import { dict } from '../i18n/ui'
@@ -22,8 +21,8 @@ import { MonatsBogen, WochenBogen } from './ZusammenkunftBogen'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
- * **Die Druckbögen der Zusammenkünfte** (T121, Phase 9; Entwürfe
- * `GDruckWoche`, `GDruckMonat`): eigenes Papier statt des gedruckten
+ * **Die Druckbögen der Zusammenkünfte** (T121, Phase 9; Entwurf
+ * `GDruckWoche`, seit dem 1.11.2026 auch für den Monat): eigenes Papier statt des gedruckten
  * Bildschirms — beide Tage einer Woche auf einem Blatt, die Hilfsdienste
  * darunter, freie Plätze gepunktet zum Eintragen von Hand.
  */
@@ -184,9 +183,12 @@ describe('Das Schlussgebet am Wochenende auf dem Aushang (T133)', () => {
     const w = sonntag()
     ;(w.mid.sections[3]!.items[0] as PartItem).names[0]!.name = ''
     const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: [w] })
-    const gebete = [...container.querySelectorAll('.druck-knapp-zeile')].filter((z) => z.children[1]?.textContent === 'Gebet')
-    const letzte = gebete.slice(-2).map((z) => [z.children[2]?.textContent, z.querySelector('.druck-offen') !== null])
-    expect(letzte).toEqual([['', true], [t.schlussgebetVorOrt, false]])
+    // Der Punkt unter „Abschluss", je Tag: unter der Woche, dann am Wochenende.
+    const schluesse = [...container.querySelectorAll('[data-farbe]')]
+      .filter((a) => a.querySelector('.druck-abschnitt-name')?.textContent === LABEL_ABSCHLUSS)
+      .map((a) => a.querySelector('.druck-punkt')!)
+    const lage = schluesse.map((p) => [p.textContent?.includes(t.schlussgebetVorOrt), p.querySelector('.druck-offen') !== null])
+    expect(lage).toEqual([[false, true], [true, false]])
   })
 })
 
@@ -194,62 +196,39 @@ describe('Der Monatsbogen', () => {
   const MONTAGE = ['2026-08-31', '2026-09-07', '2026-09-14', '2026-10-05']
   const wochen = () => MONTAGE.map((start) => woche({ start, range: `Woche ab ${start}` }))
 
-  it('jede Woche, deren Montag im Monat liegt — knapp, je Punkt eine Zeile', () => {
+  it('jede Woche, deren Montag im Monat liegt — je mit ihrem Kopf, im Kopf des Blatts der Monat', () => {
     const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() })
     expect(texte(container, '.druck-monat-titel')).toEqual(['Woche ab 2026-09-07', 'Woche ab 2026-09-14'])
     expect(container.querySelector('.druck-blatt-kopf')?.textContent).toContain('September 2026')
   })
 
-  it('Schüler und Partner als „A mit B", Leiter und Leser als „A · Leser B" — fehlt einer, ist der Platz frei', () => {
-    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() })
-    const woche1 = container.querySelector('.druck-monat-woche')!
-    const zeilen = [...woche1.querySelectorAll('.druck-knapp-zeile')].map((z) => [...z.children].map((c) => c.textContent))
-    expect(zeilen).toContainEqual(['4', 'Gespräche beginnen', 'Sara Schul mit Paula Part'])
-    expect(zeilen).toContainEqual(['8', 'Versammlungsbibelstudium', 'Leo Leiter · Leser Lea Leser'])
-    const interesse = [...woche1.querySelectorAll('.druck-knapp-zeile')].find((z) => z.textContent?.includes('Interesse fördern'))!
-    expect(interesse.querySelector('.druck-offen')).not.toBeNull()
-    expect(interesse.textContent).not.toContain('Sina Solo')
-  })
-
-  it('der Partner ist sein Platz, nicht das Wort davor — auch mit anderer Beschriftung „A mit B"', () => {
-    // Wie beim Zuteilen (`planning.ts`) zählt `bereichsKey`; die Rolle ist nur
-    // die Beschriftung des Platzes.
-    const umbenannt = wochen().map((w) => ({
-      ...w,
-      mid: {
-        ...w.mid,
-        sections: w.mid.sections.map((s) => ({
-          ...s,
-          items: s.items.map((item) =>
-            isSong(item)
-              ? item
-              : { ...item, names: item.names.map((n) => (n.bereichsKey === 'schulungPartner' ? { ...n, rolle: 'Gesprächspartner' } : n)) },
-          ),
-        })),
-      },
-    }))
-    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: umbenannt })
-    const zeilen = [...container.querySelectorAll('.druck-monat-woche .druck-knapp-zeile')].map((z) => z.children[2]?.textContent)
-    expect(zeilen).toContain('Sara Schul mit Paula Part')
-  })
-
-  it('Eröffnung und Abschluss: je Person eine Zeile mit ihrer Rolle — das Lied steht im Kopf', () => {
-    const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() })
-    const woche1 = container.querySelector('.druck-monat-woche')!
-    const zeilen = [...woche1.querySelectorAll('.druck-knapp-zeile')].map((z) => z.children[1]?.textContent)
-    expect(zeilen.slice(0, 2)).toEqual(['Vorsitz', 'Gebet'])
-    expect(texte(woche1, '.druck-knapp-abschnitt .druck-lied')).toContain('Lied 12')
+  /**
+   * **Woche und Monat sehen gleich aus** (Betreiber, 1.11.2026). Bis dahin
+   * druckte der Monat eine eigene, knappe Fassung — je Punkt eine Zeile, ohne
+   * Dauer und Zusatz, Schüler und Partner als „A mit B". Verglichen wird das
+   * Markup selbst: Was die Woche auf ihrem Bogen zeigt, steht im Monat Zeichen
+   * für Zeichen genauso da.
+   */
+  it('eine Woche steht im Monat genau so da wie auf ihrem eigenen Bogen', () => {
+    const weeks = wochen()
+    const woche = zeige(<WochenBogen wi={1} />, { weeks }).container.querySelector('.druck-block')!.innerHTML
+    cleanup()
+    const monat = zeige(<MonatsBogen monat="2026-09" />, { weeks }).container
+    const ersteWoche = monat.querySelector('.druck-monat-woche')!
+    // Gegenprobe: Es ist wirklich die ausführliche Fassung, mit Rollen und Dauer.
+    expect(ersteWoche.querySelector('.druck-woche')).not.toBeNull()
+    expect(ersteWoche.textContent).toContain('Sara Schul Schüler · Paula Part Partner')
+    expect(ersteWoche.querySelector('.druck-monat-kopf + *')?.outerHTML).toBe(woche)
   })
 
   it('mit Zusätzlicher Klasse steht ihr Ratgeber da — wie im Wochenbogen (16.10.2026)', () => {
-    // Bis dahin standen im Monatsbogen die Plätze der Klasse, ihr Ratgeber nicht.
     const weeks = syncAuxSlots(wochen(), true).map((w) =>
       w.mid.auxRatgeber ? { ...w, mid: { ...w.mid, auxRatgeber: { ...w.mid.auxRatgeber, name: 'Rolf Rat' } } } : w,
     )
     const { container } = zeige(<MonatsBogen monat="2026-09" />, { weeks })
     const woche1 = container.querySelector('.druck-monat-woche')!
-    const zeilen = [...woche1.querySelectorAll('.druck-knapp-zeile')].map((z) => [...z.children].map((c) => c.textContent))
-    expect(zeilen).toContainEqual(['', `${t.auxKlasse} · ${t.auxRatgeber}`, 'Rolf Rat'])
+    const ratgeber = [...woche1.querySelectorAll('.druck-punkt')].find((p) => p.textContent?.includes(t.auxRatgeber))
+    expect(ratgeber?.textContent).toContain('Rolf Rat')
     // Gegenprobe: ohne Klasse keine solche Zeile.
     cleanup()
     const ohne = zeige(<MonatsBogen monat="2026-09" />, { weeks: wochen() }).container
@@ -263,7 +242,15 @@ describe('Der Monatsbogen', () => {
     expect(kongress.querySelector('.druck-anlass')?.textContent).toBe(t.kongress)
     expect(kongress.querySelector('.druck-kongress')?.textContent).toBe(t.kongressAusfall)
     expect(kongress.querySelector('.druck-hinweis')?.textContent).toContain(zahlBinden('Dienstag, 15. September'))
-    expect(kongress.querySelector('.druck-knapp-tag')).toBeNull()
+    expect(kongress.querySelector('.druck-woche')).toBeNull()
+  })
+
+  it('… und auf ihrem eigenen Bogen ebenso — statt zweier gestrichener Tage und leerer Hilfsdienste', () => {
+    const weeks = setAnlass(wochen(), 1, 'kongress')
+    const { container } = zeige(<WochenBogen wi={1} />, { weeks })
+    expect(container.querySelector('.druck-kongress')?.textContent).toBe(t.kongressAusfall)
+    expect(container.querySelector('.druck-hinweis')?.textContent).toContain(zahlBinden('Dienstag, 15. September'))
+    expect(container.querySelector('.druck-hilfsdienste')).toBeNull()
   })
 })
 
@@ -440,10 +427,10 @@ describe('Der Bogen der Trolleys', () => {
  * Höhen kommen deshalb hier aus `data-hoehe`.
  */
 describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
-  /** `data-hoehe`, auf einem eng gesetzten Blatt `data-eng`, wo es eine gibt. */
+  /** `data-hoehe`, in einem eng gesetzten Block `data-eng`, wo es eine gibt. */
   const blockHoehe = (el: Element): number => {
     const block = el.querySelector<HTMLElement>('[data-hoehe]')
-    const eng = el.closest('.druck-blatt--eng') && block?.dataset.eng
+    const eng = block?.closest('.druck-block--eng') && block.dataset.eng
     return Number(eng ?? block?.dataset.hoehe ?? 0)
   }
 
@@ -489,28 +476,37 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
   })
 
   /** Ein Block, der eng gesetzt `eng` hoch ist, sonst `hoehe`. */
-  const block = (hoehe: number, eng: number) => ({ key: 'w', inhalt: <div data-hoehe={hoehe} data-eng={eng}>Woche</div> })
+  const block = (key: string, hoehe: number, eng: number) => ({ key, inhalt: <div data-hoehe={hoehe} data-eng={eng}>{key}</div> })
+  const enge = (c: HTMLElement) => texte(c, '.druck-block--eng [data-hoehe]')
 
-  it('passt ein Block nur knapp nicht, rückt der Bogen zusammen — und bleibt auf einem Blatt (1.11.2026)', () => {
+  it('passt ein Block nur knapp nicht, rückt er zusammen — und bleibt auf einem Blatt (1.11.2026)', () => {
     // Die Woche mit langen Namen bei den Hilfsdiensten: 1030 normal, 880 eng; Platz 1010.
-    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1030, 880)]} />)
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block('Woche', 1030, 880)]} />)
     const alle = [...container.querySelectorAll('.druck-blatt')]
     expect(alle).toHaveLength(1)
-    expect(alle[0]!.classList.contains('druck-blatt--eng')).toBe(true)
+    expect(enge(container)).toEqual(['Woche'])
     expect(alle[0]!.classList.contains('druck-blatt--ueberlang')).toBe(false)
     expect(texte(container, '.druck-blatt-fuss')).toEqual([expect.stringContaining(zahlBinden('Seite 1 von 1'))])
   })
 
   it('was ohnehin passt, behält seinen Abstand', () => {
-    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1000, 880)]} />)
-    expect(container.querySelector('.druck-blatt--eng')).toBeNull()
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block('Woche', 1000, 880)]} />)
+    expect(enge(container)).toEqual([])
+  })
+
+  it('im Monat rückt nur die Woche zusammen, die nicht passt — die übrigen sehen aus wie auf ihrem Bogen', () => {
+    const { container } = zeige(
+      <Bogen titel="T" zeitraum="Z" bloecke={[block('W1', 900, 760), block('W2', 1030, 880), block('W3', 950, 800)]} />,
+    )
+    expect(enge(container)).toEqual(['W2'])
+    expect(blaetter(container)).toEqual([['W1'], ['W2'], ['W3']])
   })
 
   it('hilft auch das Zusammenrücken nicht, läuft der Block weiter — eng gesetzt, damit weniger hinüberläuft', () => {
-    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block(1400, 1200)]} />)
+    const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block('Woche', 1400, 1200)]} />)
     const [blatt] = [...container.querySelectorAll('.druck-blatt')]
     expect(blatt?.classList.contains('druck-blatt--ueberlang')).toBe(true)
-    expect(blatt?.classList.contains('druck-blatt--eng')).toBe(true)
+    expect(enge(container)).toEqual(['Woche'])
   })
 
   /** Eine Tabelle mit 30 Zeilen zu je 40 px. */

@@ -1254,7 +1254,7 @@ describe('Am Desktop', () => {
     window.print = vi.fn(() => {
       imDruck = {
         kopf: document.querySelector('.druck-bogen .druck-blatt-kopf')?.textContent ?? '',
-        tage: document.querySelectorAll('.druck-bogen .druck-knapp-tag').length,
+        tage: document.querySelectorAll('.druck-bogen .druck-tag-datum').length,
       }
     })
     // Gewählt war zuletzt das Wochenende — auf dem Bogen zählt das nicht.

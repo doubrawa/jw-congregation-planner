@@ -738,7 +738,6 @@ export default {
   "zettelAnleitung": "Escanéala con la cámara del teléfono y ya tienes acceso. Si no funciona: abre {adresse} y toca “{knopf}”.",
   "aenderungenInDerApp": "Los cambios aparecen en la aplicación",
   "druckNochFrei": "aún libre – los servicios de apoyo puedes asumirlos en la aplicación; si no, habla con los ancianos.",
-  "druckMit": "{a} con {b}",
   "s89DieserZettel": "Imprimir esta tarjeta",
   "s89ZettelN": "Tarjetas: {n}",
   "s89AuchPartner": "También para cada ayudante",
