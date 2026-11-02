@@ -75,7 +75,10 @@ export function KontoCard({ person }: { person: Person }) {
         >
           {link || member ? t.neuerLinkBtn : t.linkSenden}
         </button>
-        {!member && link && (
+        {/* Gleich den Zettel nur, wenn der alte Link nichts mehr taugt: Ein noch
+            gültiger ist womöglich schon verschickt, und ein Tipp hier machte ihn
+            still ungültig. Dann geht es über das Blatt, das es dazusagt. */}
+        {!member && link && !offen && (
           <button type="button" className="knopf-pille" aria-disabled={druck.laeuft || undefined} onClick={zettel}>
             {t.zettelDrucken}
           </button>

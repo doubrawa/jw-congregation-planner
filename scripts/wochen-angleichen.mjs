@@ -36,7 +36,16 @@
  * Ein zweiter Lauf muss „nichts abweichend" melden.
  */
 
-import { alsSkript, appCodeBereit, argumente, restKlient, versammlungHolen, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alsSkript,
+  appCodeBereit,
+  argumente,
+  restKlient,
+  StandVerfehlt,
+  versammlungHolen,
+  wocheSchreiben,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 
 export const GRUND_KLASSE = 'Zusätzliche Klasse'
 export const GRUND_TREFFPUNKTE_FEHLEN = 'Treffpunkte fehlen'
@@ -49,33 +58,21 @@ export function hindernis(gruende) {
   return gruende.includes(GRUND_TREFFPUNKTE_FEHLEN) || gruende.includes(GRUND_GRUNDPLAN) ? 'Gruppenaufseher abgewiesen' : ''
 }
 
-/** Tiefer Vergleich zweier JSON-Werte; die Reihenfolge der Schlüssel zählt nicht. */
-export function gleich(a, b) {
-  if (a === b) return true
-  if (Array.isArray(a) || Array.isArray(b)) {
-    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
-    return a.every((x, i) => gleich(x, b[i]))
-  }
-  const objekt = (x) => typeof x === 'object' && x !== null
-  if (!objekt(a) || !objekt(b)) return false
-  const ka = Object.keys(a)
-  if (ka.length !== Object.keys(b).length) return false
-  return ka.every((k) => Object.hasOwn(b, k) && gleich(a[k], b[k]))
-}
-
 /**
  * Die Funktionen der App, mit denen gerechnet wird — geladen, nicht abgeschrieben.
  * `ab` ist der Anfang ihres Ladefensters, gerechnet vom Tag `heute`.
  */
 export async function appFunktionen(heute = new Date()) {
   appCodeBereit()
-  const [aux, bindung, helfer, fs, zeilen, aufbewahrung] = await Promise.all([
+  const [aux, bindung, helfer, fs, zeilen, aufbewahrung, termine, inhalt] = await Promise.all([
     import('../src/data/aux-class.ts'),
     import('../src/data/namensbindung.ts'),
     import('../src/data/helpers.ts'),
     import('../src/data/fs.ts'),
     import('../src/lib/zeilen.ts'),
     import('../src/data/aufbewahrung.ts'),
+    import('../src/data/meeting-dates.ts'),
+    import('../supabase/functions/_shared/gleicher-inhalt.ts'),
   ])
   return {
     syncAuxSlots: aux.syncAuxSlots,
@@ -85,8 +82,12 @@ export async function appFunktionen(heute = new Date()) {
     fsLeiterBinden: fs.fsLeiterBinden,
     personFromRow: zeilen.personFromRow,
     fsRuleFromRow: zeilen.fsRuleFromRow,
-    gleich,
+    // Derselbe Vergleich wie beim Schreiben einer Woche (`gleicherInhalt`):
+    // Die Reihenfolge der Schlüssel zählt nicht, die der Listen schon.
+    gleich: inhalt.gleicherInhalt,
     ab: aufbewahrung.aufbewahrtAb(aufbewahrung.VERTEILUNG_WOCHEN, heute),
+    // Ab hier formen Klasse und Grundplan die Wochen — wie beim Laden der App (`wirktAb`).
+    wirktAb: termine.wirktAb(heute),
   }
 }
 
@@ -106,12 +107,14 @@ export function angleichen({ wochen, fsWochen, regeln, personen, auxClass }, app
 
   const roh = zeilen.map((r) => ({ ...r.data, start: r.start }))
   const geladen = app.normalizeChairKeys(app.pidsNachtragen(roh, persons))
-  const angeglichen = app.syncAuxSlots(geladen, auxClass)
+  const angeglichen = app.syncAuxSlots(geladen, auxClass, app.wirktAb)
 
-  const fsNachWoche = new Map(imFenster(fsWochen).map((r) => [r.start, r.data]))
-  const gespeichert = zeilen.map((r) => fsNachWoche.get(r.start))
+  const fsZeileNachWoche = new Map(imFenster(fsWochen).map((r) => [r.start, r]))
+  const gespeichert = zeilen.map((r) => fsZeileNachWoche.get(r.start)?.data)
   const fsRoh = gespeichert.map((d) => d ?? [])
-  const ausgerichtet = fsRules.length ? app.regenFsWeeks(zeilen.map((r) => r.start), fsRoh, fsRules) : fsRoh
+  const ausgerichtet = fsRules.length
+    ? app.regenFsWeeks(zeilen.map((r) => r.start), fsRoh, fsRules, { ab: app.wirktAb })
+    : fsRoh
   const fsAngeglichen = app.fsLeiterBinden(ausgerichtet, persons)
 
   return zeilen.map((r, i) => {
@@ -126,6 +129,7 @@ export function angleichen({ wochen, fsWochen, regeln, personen, auxClass }, app
     return {
       start: r.start,
       stand: r.updated_at,
+      fsStand: fsZeileNachWoche.get(r.start)?.updated_at ?? null,
       nachher: angeglichen[i],
       fsNachher: fsAngeglichen[i],
       woche: app.gleich(roh[i], angeglichen[i]) ? null : angeglichen[i],
@@ -148,7 +152,7 @@ export async function main(argv = process.argv.slice(2)) {
   const fenster = `start=gte.${app.ab}&order=start.desc`
   const [wochen, fsWochen, regeln, personen] = await Promise.all([
     rest(`weeks?select=start,data,updated_at&${meine}&${fenster}`),
-    rest(`fs_weeks?select=start,data&${meine}&${fenster}`),
+    rest(`fs_weeks?select=start,data,updated_at&${meine}&${fenster}`),
     rest(`fs_rules?select=*&${meine}&order=created_at`),
     rest(`persons?select=*&${meine}&order=created_at`),
   ])
@@ -179,29 +183,19 @@ export async function main(argv = process.argv.slice(2)) {
   let geschrieben = 0
   let verpasst = 0
   for (const e of abweichend) {
-    if (e.woche) {
-      const getroffen = await rest(
-        `weeks?${meine}&start=eq.${e.start}&updated_at=eq.${encodeURIComponent(e.stand)}&select=start`,
-        { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ data: e.woche }) },
-      )
-      if (!getroffen?.length) {
-        verpasst++
-        console.log(`  ${e.start}: inzwischen geändert — beim nächsten Lauf.`)
-        continue
+    // Beide nur auf dem gelesenen Stand (`wocheSchreiben`), Woche wie
+    // Treffpunkte.
+    try {
+      if (e.woche) await wocheSchreiben(rest, { cong: cong.id, start: e.start, stand: e.stand, data: e.woche })
+      if (e.treffpunkte) {
+        // Ohne Zeile ohne Stand — dann legt der Aufruf sie an.
+        await wocheSchreiben(rest, { tabelle: 'fs_weeks', cong: cong.id, start: e.start, stand: e.fsStand, data: e.treffpunkte })
       }
-    }
-    if (e.treffpunkte && e.neueTreffpunktZeile) {
-      await rest('fs_weeks', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ congregation_id: cong.id, start: e.start, data: e.treffpunkte }),
-      })
-    } else if (e.treffpunkte) {
-      await rest(`fs_weeks?${meine}&start=eq.${e.start}`, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ data: e.treffpunkte }),
-      })
+    } catch (err) {
+      if (!(err instanceof StandVerfehlt)) throw err
+      verpasst++
+      console.log(`  ${e.start}: inzwischen geändert — beim nächsten Lauf.`)
+      continue
     }
     geschrieben++
   }

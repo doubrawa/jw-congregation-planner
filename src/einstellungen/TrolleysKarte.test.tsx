@@ -1,4 +1,5 @@
 /** @vitest-environment happy-dom */
+import { useReducer } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { bestaetigen } from '../../tests/zwei-tipps'
@@ -31,6 +32,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
+import { reducer } from '../app/reducer'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { DEMO_TROLLEY_TERMINE, DEMO_TROLLEYS } from '../../tests/testdaten/testdaten'
 import { dict } from '../i18n/ui'
@@ -185,6 +187,14 @@ describe('Das Blatt: Name, Ort und Hinweis gelten beim Schließen', () => {
     fireEvent.click(knopf(blatt(), t.fertig))
     expect(aenderungen(dispatch)).toEqual([{ type: 'trolleyAendern', id: 'tr3', patch: { name: 'Saal-Trolley' } }])
   })
+
+  it('verschwindet das Blatt, ohne dass es jemand schließt, gilt das Getippte trotzdem', () => {
+    // Etwa, weil ein Tipp auf eine Mitteilung woandershin führt.
+    const { dispatch, unmount } = oeffne()
+    fireEvent.change(feld(t.trolleyOrtLbl), { target: { value: 'Depot' } })
+    unmount()
+    expect(aenderungen(dispatch)).toEqual([{ type: 'trolleyAendern', id: 'tr3', patch: { ort: 'Depot' } }])
+  })
 })
 
 describe('Das Blatt: kommende Termine und Entfernen', () => {
@@ -240,5 +250,77 @@ describe('Das Blatt: kommende Termine und Entfernen', () => {
     })
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'trolleyEntfernt', id: 'tr3' })
     expect(blatt().querySelector('[role="alert"]')?.textContent).toBe(t.trolleyFehlerNetz)
+  })
+
+  it('wer nach dem Tippen entfernt, übernimmt nichts mehr — was weg ist, braucht keinen neuen Ort', async () => {
+    trolley.trolleyEntfernen.mockResolvedValue({ ok: true })
+    const { dispatch } = oeffne()
+    fireEvent.change(feld(t.trolleyOrtLbl), { target: { value: 'Depot' } })
+    fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
+    await act(async () => {
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
+    })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'trolleyEntfernt', id: 'tr3' })
+    expect(blatt(), 'das Blatt ist noch offen').toBeNull()
+    expect(aenderungen(dispatch)).toEqual([])
+  })
+})
+
+describe('Das Blatt über dem echten Reducer', () => {
+  /** Die Karte über dem echten Reducer — `zustand()` liest, was daraus wurde. */
+  function echt() {
+    const start: AppState = {
+      ...demoZustand(),
+      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+      trolleys: DEMO_TROLLEYS, trolleyTermine: DEMO_TROLLEY_TERMINE,
+    }
+    let aktuell = start
+    function Buehne() {
+      const [state, dispatch] = useReducer(reducer, start)
+      aktuell = state
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <TrolleysKarte tabelle={false} />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container } = render(<Buehne />)
+    fireEvent.click(zeilen(container)[2]!)
+    return () => aktuell
+  }
+
+  /*
+   * Mit dem Erfolg nimmt `trolleyEntfernt` den Trolley aus dem Zustand, und
+   * mit ihm hängt das Blatt aus — womöglich, bevor die Antwort im Blatt
+   * ankommt. Übernähme es dabei, was getippt ist, stünde statt „entfernt" der
+   * Hinweis da, der Name dürfe nicht leer sein.
+   */
+  it('verschwindet das Blatt mit dem entfernten Trolley, übernimmt es nichts', async () => {
+    trolley.trolleyEntfernen.mockResolvedValue({ ok: true })
+    const zustand = echt()
+    fireEvent.change(feld(t.nameLbl), { target: { value: '' } })
+    fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
+    await act(async () => {
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
+    })
+    expect(zustand().trolleys.map((x) => x.id)).not.toContain('tr3')
+    expect(zustand().toast?.text).toBe(t.toastTrolleyEntfernt)
+  })
+
+  it('scheitert das Entfernen, gilt beim Schließen weiter, was getippt ist', async () => {
+    trolley.trolleyEntfernen.mockResolvedValue({ ok: false, fehler: 'netz' })
+    const zustand = echt()
+    fireEvent.change(feld(t.trolleyOrtLbl), { target: { value: 'Depot' } })
+    fireEvent.click(knopf(blatt(), t.trolleyEntfernen))
+    await act(async () => {
+      bestaetigen(knopf(blatt(), t.loeschenSicher))
+    })
+    fireEvent.click(knopf(blatt(), t.fertig))
+    expect(zustand().trolleys.find((x) => x.id === 'tr3')?.ort).toBe('Depot')
   })
 })

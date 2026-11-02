@@ -151,14 +151,27 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
   it('zurückgesetzt: Zeit/Ort auf Regelwerte zurück, Leiter bleibt', () => {
     const built = buildFsWeeks(KENN.slice(0, 1), RULE, { '0|r1': 'A. Leiter' })
     const edited = built.map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
-    const reset = regenFsWeeks(KENN, edited, RULE, () => true)
+    const reset = regenFsWeeks(KENN, edited, RULE, { zuruecksetzen: () => true })
     expect(reset[0]![0]!.place).toBe('Königreichssaal')
     expect(reset[0]![0]!.leader).toBe('A. Leiter')
   })
+  /*
+   * **Ab der laufenden Woche** (`wirktAb`): Die Treffpunkte davor fanden so
+   * statt, wie sie dastehen — ein neuer Ort im Grundplan schreibt die
+   * Vergangenheit nicht um.
+   */
+  it('die Wochen vor `ab` bleiben dieselben, die ab `ab` richten sich nach der Regel', () => {
+    const built = buildFsWeeks(KENN.slice(0, 3), RULE)
+    const neu = regenFsWeeks(KENN.slice(0, 3), built, [{ ...RULE[0]!, place: 'Markt' }], { zuruecksetzen: () => true, ab: KENN[1] })
+    expect(neu[0]).toBe(built[0])
+    expect(neu[1]![0]!.place).toBe('Markt')
+    expect(neu[2]![0]!.place).toBe('Markt')
+  })
+
   it('zurückgesetzt wird nur, wen die Frage meint — die übrigen behalten ihre Woche (5.10.2026)', () => {
     const regeln: FsRule[] = [...RULE, { id: 'r2', grp: 'g2', wd: 6, time: '09:15', place: 'Saal', monthly: 0, skipCong: false }]
     const edited = buildFsWeeks(KENN.slice(0, 1), regeln).map((wk) => wk.map((i) => ({ ...i, place: 'Anderswo' })))
-    const [woche] = regenFsWeeks(KENN, edited, regeln, (inst) => inst.ruleId === 'r1')
+    const [woche] = regenFsWeeks(KENN, edited, regeln, { zuruecksetzen: (inst) => inst.ruleId === 'r1' })
     expect(woche?.find((i) => i.ruleId === 'r1')?.place).toBe('Königreichssaal')
     expect(woche?.find((i) => i.ruleId === 'r2')?.place).toBe('Anderswo')
   })
@@ -168,7 +181,7 @@ describe('regenFsWeeks (Neu-Ausrichtung)', () => {
     // kostete die Zusage, und ein Namensvetter erbte sie (`dieselbePerson`).
     const mitId = [[{ ...buildFsWeeks(KENN.slice(0, 1), RULE)[0]![0]!, leader: 'Anton Muster', lpid: 'p1' }]]
     for (const zuruecksetzen of [true, false]) {
-      const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], () => zuruecksetzen)
+      const [woche] = regenFsWeeks(KENN, mitId, [{ ...RULE[0]!, place: 'Markt' }], { zuruecksetzen: () => zuruecksetzen })
       expect(woche?.[0], `zuruecksetzen=${zuruecksetzen}`).toMatchObject({ leader: 'Anton Muster', lpid: 'p1' })
     }
   })
@@ -609,8 +622,21 @@ describe('fsVerwaisteZusagen — wann eine Treffpunkt-Zusage verfällt', () => {
     expect(fsVerwaisteZusagen([anton()], [anton({ leader: 'Anton Muster-Neu' })], MONTAG)).toEqual([])
   })
 
-  it('Zeit oder Ort geändert: bleibt — der Leiter ist derselbe', () => {
-    expect(fsVerwaisteZusagen([anton()], [anton({ time: '10:00', place: 'Markt' })], MONTAG)).toEqual([])
+  /*
+   * Ein neuer Termin ist eine neue Frage: Zugesagt hat der Leiter zu einem
+   * anderen Tag, einer anderen Uhrzeit, einem anderen Ort. Er bleibt
+   * eingeteilt und sagt neu zu.
+   */
+  it.each([
+    ['Uhrzeit', { time: '10:00' }],
+    ['Ort', { place: 'Markt' }],
+    ['Wochentag', { wd: 5 }],
+  ])('%s geändert: die Zusage verfällt — der Leiter bleibt', (_was, patch) => {
+    expect(fsVerwaisteZusagen([anton()], [anton(patch)], MONTAG)).toEqual([SCHLUESSEL])
+  })
+
+  it('Gegenprobe: derselbe Termin mit derselben Person — die Zusage bleibt', () => {
+    expect(fsVerwaisteZusagen([anton()], [anton()], MONTAG)).toEqual([])
   })
 
   it('Altdaten ohne Person-Id: der Name entscheidet', () => {

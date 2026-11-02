@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { dict } from '../i18n/ui'
 import { DatePicker } from './DatePicker'
+import { useEscape } from './useEscape'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
@@ -153,6 +154,26 @@ describe('Der Datumswähler', () => {
     fireEvent.click(container.querySelector('.dp-field')!)
     fireEvent.mouseDown(document.body)
     expect(container.querySelector('.dp-pop')).toBeNull()
+  })
+
+  it('in einem Blatt schließt Escape erst den Kalender — das Blatt bleibt offen', () => {
+    // Horchten beide auf dieselbe Taste, schlösse ein Druck beide: Wer nur den
+    // Kalender wegdrücken wollte, stünde samt Formular wieder draußen.
+    const blattZu = vi.fn()
+    function Blatt() {
+      useEscape(blattZu)
+      return (
+        <DatePicker value="" onChange={vi.fn()} locale="de-DE" placeholder={t.datumPh} ariaLabel={t.von}
+          prevLabel={t.a11yPrevMonth} nextLabel={t.a11yNextMonth} />
+      )
+    }
+    const { container } = render(<Blatt />)
+    fireEvent.click(container.querySelector('.dp-field')!)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(container.querySelector('.dp-pop')).toBeNull()
+    expect(blattZu).not.toHaveBeenCalled()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(blattZu).toHaveBeenCalledTimes(1)
   })
 
   it('ein Klick INS Popup schließt nicht — sonst käme man nie zum Tag', () => {

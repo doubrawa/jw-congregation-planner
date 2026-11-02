@@ -23,8 +23,18 @@ g[STORE] ??= [] as SentPush[]
 
 export const sent = g[STORE] as SentPush[]
 
+/** Wie der Push-Dienst je Gerät antwortet — ohne Angabe sofort mit Erfolg. */
+type Antwort = (endpoint: string) => Promise<void>
+const ANTWORT = '__testPushAntwort'
+
 export function reset(): void {
   sent.length = 0
+  g[ANTWORT] = null
+}
+
+/** Den Push-Dienst anders antworten lassen: gar nicht, mit einem Fehlerstatus. */
+export function antwortet(wie: Antwort): void {
+  g[ANTWORT] = wie
 }
 
 const webpush = {
@@ -33,7 +43,7 @@ const webpush = {
   },
   sendNotification(sub: { endpoint: string }, payload: string): Promise<void> {
     sent.push({ endpoint: sub.endpoint, payload })
-    return Promise.resolve()
+    return (g[ANTWORT] as Antwort | null)?.(sub.endpoint) ?? Promise.resolve()
   },
 }
 

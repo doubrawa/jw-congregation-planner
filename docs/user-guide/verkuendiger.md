@@ -42,9 +42,15 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
   tippe auf der Anmeldeseite auf **Zettel scannen**. Geht das nicht, tippst du
-  über **Code eintippen** den Code unter dem QR‑Code ein. Die App zeigt dir
-  dann, wem der Code gehört; erst **Anmelden** meldet an. So merkst du es, wenn
-  du den Zettel eines anderen erwischt hast.
+  über **Code eintippen** den Code unter dem QR‑Code ein.
+- **Beim Eintippen** gibst du nur die acht Zeichen ein – die Lücke in der Mitte
+  setzt die App selbst. Dann tippst du auf **Weiter**. Die App zeigt dir, wem
+  der Code gehört; erst **Anmelden** meldet an. So merkst du es, wenn du den
+  Zettel eines anderen erwischt hast. Ein gescannter Code braucht kein
+  **Weiter**.
+- **Meldet sich ein Gerät mit deinem Zugang an**, erfährst du es: als
+  Mitteilung **Neue Anmeldung** und per Push auf deinen anderen Geräten. Warst
+  du das nicht, sag es den Ältesten.
 - Ein Link gilt **ein Jahr** und lässt sich mehrmals benutzen: auf Handy und
   Tablet, und auch, wenn du einmal abgemeldet bist. Heb Zettel oder Nachricht
   deshalb auf. Ein angemeldetes Gerät bleibt angemeldet. Ist beides weg oder
@@ -468,7 +474,10 @@ Sagt jemand einen Hilfsdienst ab, den **du** übernehmen könntest, bekommst du
 eine Mitteilung („Ersatz gesucht") und – falls aktiviert – eine Push-Nachricht.
 Die Anfrage geht **nur an die, die für diesen Dienst freigegeben und an dem Tag
 nicht abwesend sind** – du bekommst also nichts angeboten, was nicht zu dir
-passt.
+passt. Stehst du in derselben Zusammenkunft schon in diesem Dienst, etwa am
+anderen Mikrofon, bekommst du sie auch nicht: Ein zweiter Platz brächte dem
+Dienst niemanden dazu. Es gelten dieselben Regeln wie bei den freien Plätzen
+(siehe unten).
 
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 

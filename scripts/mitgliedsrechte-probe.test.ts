@@ -545,7 +545,7 @@ describe('Rechte-Stufen: welche Gruppe die eigene ist und welche die fremde', ()
 describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', () => {
   const tag0 = ersterMontagAb('2099-01-01')
   const a = stufenAnlage({
-    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
+    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', adminName: 'Probe Admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
   })
 
   /** Was ein Versuch an den Treffpunkten der Anlage ändert: `<Kennung>.<Feld>`. */
@@ -559,8 +559,14 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
   it('wer was versucht, und was herauskommen soll', () => {
     expect(a.fsVersuche.map((v) => `${v.nr} ${v.wer} ${v.erwartet ? 'durch' : 'abgewiesen'}`)).toEqual([
       '42 zuteiler durch', '43 zuteiler durch', '44 aufseher abgewiesen', '45 aufseher abgewiesen',
-      '46 aufseher abgewiesen', '47 aufseher durch', '48 aufseher durch', '49 mitglied abgewiesen',
+      '46 aufseher abgewiesen', '47 aufseher durch', '48 aufseher durch', '114 aufseher abgewiesen', '49 mitglied abgewiesen',
     ])
+  })
+
+  it('der fremde Treffpunkt leitet der Admin, mit Namen und ohne Id — (48) bindet ihn an sich selbst, (114) an einen anderen', () => {
+    const fremd = a.treffpunkte.find((t) => t.grp === 'g-fremd')
+    expect(fremd).toMatchObject({ leader: 'Probe Admin' })
+    expect(fremd).not.toHaveProperty('lpid')
   })
 
   it('jeder Versuch ändert einen Treffpunkt in einem Feld — der Leiter kommt mit seiner Person, (48) mit der eines fremden', () => {
@@ -572,6 +578,7 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
       46: ['PROBE-1-fs-versammlung.place'],
       47: ['PROBE-1-fs-eigen.place'],
       48: ['PROBE-1-fs-eigen.place', 'PROBE-1-fs-fremd.lpid'],
+      114: ['PROBE-1-fs-fremd.lpid'],
       49: ['PROBE-1-fs-versammlung.place'],
     })
   })
@@ -641,7 +648,7 @@ describe('Was der Planer anlegt (40, 80): die Regeln, die mit den Rechten nichts
   const tag0 = ersterMontagAb('2099-01-01')
   const a = verwaltungAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, personId: '00000000-0000-4000-8000-0000000000aa' })
   const stufen = stufenAnlage({
-    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
+    marke: 'PROBE-1', versammlung: 'c', tag0, adminPid: 'p-admin', adminName: 'Probe Admin', zuteilerPid: 'p-zuteiler', eigeneGruppe: 'g-eigen', fremdeGruppe: 'g-fremd',
   })
 
   it('die Woche an einem Montag, hinter allem anderen der Probe — mit dem Kennzeichen im Zeitraum', () => {

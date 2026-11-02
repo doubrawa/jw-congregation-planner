@@ -6,10 +6,12 @@ import { idAufloeser } from '../data/helpers'
 import { kennungVon, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, Person } from '../data/types'
 
-/** Was von einer Zuteilung gebraucht wird, um sie einer Person zuzuordnen. */
+/** Was von einer Zuteilung gebraucht wird, um sie einer Person und ihrem Platz zuzuordnen. */
 interface Zugeteilt {
   name?: string
   pid?: string
+  /** Der Bereich des Platzes — manche Konflikte treffen nur einen (`Conflict.bereich`). */
+  bereichsKey?: string | null
 }
 
 export interface Konflikte {
@@ -32,16 +34,20 @@ export interface Konflikte {
  * den abwesenden Ordner im Banner stehen, während sein Chip unmarkiert blieb.
  *
  * Steht eine Person in mehreren, gilt die Abwesenheit: Sie sagt, warum der
- * Platz so nicht bleiben kann.
+ * Platz so nicht bleiben kann. Ein Konflikt, der nur einen Bereich trifft
+ * (`Conflict.bereich`, das unpassende Paar), gilt nur an dessen Plätzen — ihr
+ * Hilfsdienst am selben Abend steht deshalb nicht in Frage.
  */
 export function machKonfliktVon(persons: Person[], conflicts: Conflict[]): (z: Zugeteilt | undefined) => Conflict | undefined {
   const werIst = idAufloeser(persons)
-  const je = new Map<string, Conflict>()
-  for (const c of conflicts) {
-    const vorher = je.get(c.kennung)
-    if (!vorher || (c.kind === 'absent' && vorher.kind !== 'absent')) je.set(c.kennung, c)
+  const je = new Map<string, Conflict[]>()
+  for (const c of conflicts) je.set(c.kennung, [...(je.get(c.kennung) ?? []), c])
+  return (z) => {
+    if (!z?.name) return undefined
+    const kennung = werIst(z as { name: string; pid?: string }) ?? kennungVon(z.name)
+    const hier = (je.get(kennung) ?? []).filter((c) => !c.bereich || c.bereich === z.bereichsKey)
+    return hier.find((c) => c.kind === 'absent') ?? hier[0]
   }
-  return (z) => (z?.name ? je.get(werIst(z as { name: string; pid?: string }) ?? kennungVon(z.name)) : undefined)
 }
 
 /** Der Zustand, für den `speicher` gilt — an den Referenzen erkannt. */

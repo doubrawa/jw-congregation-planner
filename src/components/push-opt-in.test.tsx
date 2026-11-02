@@ -10,6 +10,7 @@ import {
   type AppState,
   useStaticStore,
 } from '../app/context'
+import { speicherSperren } from '../../tests/ohne-speicher'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict } from '../i18n/ui'
 import type { Dispatch } from 'react'
@@ -307,6 +308,18 @@ describe('Die Karte auf den Mitteilungen', () => {
   it('weggeklickt fragt sie auch nichts an', () => {
     fireEvent.click(zeigeKarte().container.querySelector('.push-karte-weg')!)
     expect(push.subscribePush).not.toHaveBeenCalled()
+  })
+
+  it('sperrt der Browser den Speicher, steht sie trotzdem da — und das ✕ blendet sie aus', () => {
+    const freigeben = speicherSperren()
+    try {
+      const { container } = zeigeKarte()
+      expect(karte(container)).not.toBeNull()
+      fireEvent.click(container.querySelector('.push-karte-weg')!)
+      expect(karte(container)).toBeNull()
+    } finally {
+      freigeben()
+    }
   })
 })
 

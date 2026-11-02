@@ -16,7 +16,7 @@ import {
   gruppeInWochenUmbenennen,
   ohneDienstZusagen,
 } from '../data/dienste'
-import { currentWeekIndex, istVorbei, naechsteZusammenkunft } from '../data/meeting-dates'
+import { currentWeekIndex, istVorbei, naechsteZusammenkunft, wirktAb } from '../data/meeting-dates'
 import { eigenePerson, kontoGehtMit } from './eigene-person'
 import { leererZustand } from './init'
 import { gesuchKennung } from '../lib/abgelehnte-gesuche'
@@ -382,7 +382,6 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   const abwesend = me ? abwesenheitenVon(state.absences, state.weeks, state.congregation.times) : undefined
   const substituteReqs = me
     ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
-        .filter((req) => !istVorbei(req.at)) // niemand springt für gestern ein
         .map((req) => markieren(req, req.key))
         .map((req) => (state.abgelehnteGesuche.includes(gesuchKennung(req)) ? { ...req, abgelehnt: true as const } : req))
     : []
@@ -608,8 +607,8 @@ function nachrichtAtom(nachricht: string | undefined): string {
 }
 
 /**
- * Zusagen abräumen, deren Treffpunkt jetzt jemand anderes leitet
- * (`fsVerwaisteZusagen`).
+ * Zusagen abräumen, deren Treffpunkt jetzt jemand anderes leitet oder an einem
+ * anderen Termin liegt (`fsVerwaisteZusagen`).
  *
  * **An einer Stelle für alle Wege**, nicht in jeder Aktion: zuteilen,
  * automatisch zuteilen, leeren, einen Treffpunkt löschen, eine Regel ändern,
@@ -926,7 +925,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'removeGroup': {
       // Ihre Treffpunkte gehen mit — sonst erzeugte der Grundplan sie weiter,
       // ohne dass sie irgendwo noch zu löschen wären (`fsGruppeEntfernen`).
-      const { fsRules, fsWeeks } = fsGruppeEntfernen(state.fsRules, state.fsWeeks, action.id)
+      const { fsRules, fsWeeks } = fsGruppeEntfernen(state.fsRules, state.fsWeeks, action.id, wochenKennungen(state), wirktAb())
       return {
         ...state,
         groups: state.groups.filter((g) => g.id !== action.id),
@@ -1204,6 +1203,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
         fsWeeks: fsAddInst(state.fsWeeks, state.week, action.inst),
         toast: toastKey(state, 'toastFsAdd'),
       }
+    /*
+     * Der Grundplan formt die Wochen **ab der laufenden** (`wirktAb`): Die davor
+     * haben so stattgefunden, wie sie dastehen.
+     */
     case 'fsRuleAdd': {
       const rule: FsRule = {
         // Eindeutig statt zeitgestempelt: `r${Date.now()}` vergab zwei Regeln
@@ -1219,7 +1222,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules, { ab: wirktAb() }),
         toast: toastKey(state, 'toastFsRuleAdd'),
       }
     }
@@ -1228,14 +1231,14 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       // Zeit und Ort gehen nur bei den Treffpunkten dieser Regel auf die Regel
       // zurück; die übrigen behalten, was ihre Woche hat (`regenFsWeeks`).
       const dieseRegel = (inst: FsInstance) => inst.ruleId === action.id
-      return { ...state, fsRules, fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules, dieseRegel) }
+      return { ...state, fsRules, fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules, { zuruecksetzen: dieseRegel, ab: wirktAb() }) }
     }
     case 'fsRuleRemove': {
       const fsRules = state.fsRules.filter((r) => r.id !== action.id)
       return {
         ...state,
         fsRules,
-        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules),
+        fsWeeks: regenFsWeeks(wochenKennungen(state), state.fsWeeks, fsRules, { ab: wirktAb() }),
         toast: toastKey(state, 'toastFsRuleDel'),
       }
     }
@@ -1756,11 +1759,12 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setAuxClass':
       // Beim Einschalten bekommen alle Schuelerteile ihre zweite Platzreihe.
       // Beim Ausschalten bleibt sie stehen (nur unsichtbar) — sonst waere die
-      // Planung mehrerer Wochen mit einem Fehlgriff weg.
+      // Planung mehrerer Wochen mit einem Fehlgriff weg. Beides ab der
+      // laufenden Woche: Die davor fanden so statt, wie sie dastehen.
       return {
         ...state,
         auxClass: action.on,
-        weeks: syncAuxSlots(state.weeks, action.on),
+        weeks: syncAuxSlots(state.weeks, action.on, wirktAb()),
         toast: toastKey(state, action.on ? 'toastAuxAn' : 'toastAuxAus'),
       }
     case 'setCongLang': {
@@ -1794,7 +1798,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       }
     case 'hydrate': {
       const p = action.payload
-      const weeks = syncAuxSlots(p.weeks, p.auxClass)
+      const weeks = syncAuxSlots(p.weeks, p.auxClass, wirktAb())
       // Auf die laufende Woche springen. Bisher stand hier die ÄLTESTE geladene
       // Woche — nach dem Login zeigte die App damit ein bis zu ein Jahr altes
       // Programm. Fällt heute in keine geladene Woche (frische Versammlung,

@@ -67,6 +67,7 @@ import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { uebersetzerFuer } from '../_shared/zuteilungen.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 import { platzFuellen } from './fuellen.ts'
+import { HINDERNIS_STATUS, stehtImDienst, uebernahmeHindernis } from '../_shared/freie-plaetze.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -291,18 +292,16 @@ Deno.serve(async (req: Request) => {
        */
       congregationId?: string
       taskKey?: string
-      /** Nur bei 'fill': der Kalendertag des Geräts („YYYY-MM-DD"), siehe `heuteUtc`. */
+      /** Bei 'fill' und 'take': der Kalendertag des Geräts („YYYY-MM-DD"), siehe `heuteUtc`. */
       heute?: string
     } | null
-    // Einen freien Platz selbst übernehmen (4.10.2026) — ein eigener Weg mit
-    // eigenen Regeln (`fuellen.ts`): kein Ersatzgesuch, aber ein gesendeter Plan.
-    // „Heute" ist der Tag des Geräts, soweit glaubhaft: In UTC wäre zwischen
-    // Mitternacht und 02:00 noch der Vortag, und eine Zusammenkunft vom Abend
-    // ließe sich noch übernehmen (5.10.2026).
-    if (payload?.action === 'fill') {
-      const heute = new Date(heuteUtc(payload.heute)).toISOString().slice(0, 10)
-      return await platzFuellen(rest, userId, String(payload.taskKey ?? ''), heute)
-    }
+    // „Heute" ist der Tag des Geräts, soweit glaubhaft (für 'fill' und 'take'):
+    // In UTC wäre zwischen Mitternacht und 02:00 noch der Vortag, und eine
+    // Zusammenkunft vom Abend ließe sich noch übernehmen.
+    const heute = new Date(heuteUtc(payload?.heute)).toISOString().slice(0, 10)
+    // Einen freien Platz selbst übernehmen — ein eigener Weg mit eigenen Regeln
+    // (`fuellen.ts`): kein Ersatzgesuch, aber ein gesendeter Plan.
+    if (payload?.action === 'fill') return await platzFuellen(rest, userId, String(payload.taskKey ?? ''), heute)
     const parts = parseKey(payload?.taskKey ?? '')
     if (
       !parts ||
@@ -327,8 +326,8 @@ Deno.serve(async (req: Request) => {
       rest.get<{ start: string; data: Week; updated_at: string }[]>(
         `weeks?select=start,data,updated_at&congregation_id=eq.${wert(cong)}&start=eq.${wert(parts.woche)}`,
       ),
-      rest.get<{ key: string; name: string }[]>(
-        `services?select=key,name&congregation_id=eq.${wert(cong)}`,
+      rest.get<{ key: string; name: string; groups?: boolean }[]>(
+        `services?select=key,name,groups&congregation_id=eq.${wert(cong)}`,
       ),
       rest.get<Person[]>(`persons?select=id,fn,ln,priv&congregation_id=eq.${wert(cong)}`),
       rest.get<Sub[]>(
@@ -348,7 +347,8 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'meeting-cancelled' }, 409)
     }
 
-    const svcName = services.find((s) => s.key === parts.svc)?.name ?? parts.svc
+    const svc = services.find((s) => s.key === parts.svc) ?? { key: parts.svc, name: parts.svc }
+    const svcName = svc.name
     // Wochentag und Uhrzeit dieser einen Zusammenkunft — einmal gerechnet und
     // zweimal gebraucht: für die Abwesenheitsprüfung (welcher Kalendertag?)
     // und für den Termin im Nachrichtentext (welcher Tag steht da?).
@@ -379,8 +379,21 @@ Deno.serve(async (req: Request) => {
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
     const tagISO = terminTag(weekRows[0]?.start ?? '', versatz)
-    const qualKey = `svc:${parts.svc}`
     const personById = new Map(persons.map((p) => [p.id, p]))
+    /**
+     * Darf diese Person den Platz übernehmen? — dieselbe Regel wie die App
+     * (`uebernahmeHindernis`): Bereich, noch kein Platz dieses Dienstes (auch
+     * nicht dieser: Dort steht noch, wer abgesagt hat), nicht vorbei, an dem
+     * Tag da.
+     */
+    const reihe = meeting.helpers?.[parts.svc] ?? []
+    const hindernisFuer = (p: Person, lage: { abwesend: boolean; vorbei: boolean }) =>
+      uebernahmeHindernis({
+        svc,
+        hatBereich: (bereich) => Boolean(p.priv?.[bereich]),
+        imDienst: stehtImDienst(reihe, { id: p.id, name: displayName(p) }),
+        ...lage,
+      })
     const kontoFuer = kontoAufloeser(members, persons)
     const subsByUser = abosJeKonto(subsRows)
 
@@ -450,19 +463,16 @@ Deno.serve(async (req: Request) => {
       const declinedBy = slot.name ?? ''
       const abwesende = await abwesendeAm(cong, tagISO)
       /*
-       * Der Absagende selbst wird nicht gefragt — **über die Id**, wo der Platz
-       * eine trägt.
-       *
-       * Über den Namen fiel auch sein Namensvetter heraus: ausgerechnet der,
-       * der ihn am ehesten vertreten könnte (gleiche Qualifikation, gleiche
-       * Versammlung). Der Client zeigt ihm das Gesuch (`deriveSubstituteReqs`
-       * fragt `gehoertZu`) — dann muss es ihn auch erreichen, sonst sieht er in
-       * der App etwas, wovon er nie erfahren hat.
+       * Das Gesuch erreicht, wer den Platz übernehmen dürfte — dieselbe Regel,
+       * nach der die App es ihm zeigt (`deriveSubstituteReqs`); sonst sähe er
+       * in der App etwas, wovon er nie erfahren hat, oder bekäme eine
+       * Nachricht zu einem Platz, den er nicht nehmen darf. Der Absagende steht
+       * noch auf dem Platz und fällt damit heraus — über die Id, wo der Platz
+       * eine trägt: Über den Namen fiele sein Namensvetter mit heraus,
+       * ausgerechnet der, der ihn am ehesten vertreten könnte.
        */
-      const istAbsager = (p: Person): boolean =>
-        slot.pid ? p.id === slot.pid : displayName(p) === declinedBy
       const peers = persons
-        .filter((p) => p.priv?.[qualKey] && !abwesende.has(p.id) && !istAbsager(p))
+        .filter((p) => hindernisFuer(p, { abwesend: abwesende.has(p.id), vorbei: false }) === null)
         .map((p) => kontoFuer(p.id, displayName(p)))
         .filter((u): u is string => Boolean(u) && u !== userId)
       await notifyUsers(
@@ -491,7 +501,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // action === 'take'
-    if (!callerPerson || !callerPerson.priv?.[qualKey]) return json({ error: 'not-qualified' }, 403)
+    if (!callerPerson) return json({ error: 'not-qualified' }, 403)
     const callerName = displayName(callerPerson)
     const originalName = slot.name ?? ''
     /*
@@ -500,7 +510,15 @@ Deno.serve(async (req: Request) => {
      * Verdrängte erfahren, dass sein Platz weg ist.
      */
     const originalPid = slot.pid
-    if (originalName === callerName) return json({ ok: true, already: true }) // idempotent
+    // Schon seiner — ein zweiter Aufruf nach einem Aussetzer: nichts zu tun. Id vor Name.
+    if (stehtImDienst([slot], { id: callerPerson.id, name: callerName })) return json({ ok: true, already: true })
+    // Dieselbe Regel wie in der App (`deriveSubstituteReqs`): Ein Knopf ist
+    // keine Rechteprüfung.
+    const hindernis = hindernisFuer(callerPerson, {
+      abwesend: (await abwesendeAm(cong, tagISO)).has(callerPerson.id),
+      vorbei: tagISO !== null && tagISO < heute,
+    })
+    if (hindernis) return json({ error: hindernis }, HINDERNIS_STATUS[hindernis])
 
     // Einspringen setzt voraus, dass jemand da war und abgesagt hat.
     //

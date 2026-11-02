@@ -13,20 +13,16 @@ import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
  * ausgegeben — auf Deutsch, in allen anderen App-Sprachen, ohne Fehler und ohne
  * dass irgendwo etwas rot würde.
  *
- * Die Titel entstehen an **sechs** Stellen, fünf davon außerhalb der App:
+ * Die Titel entstehen an mehreren Stellen, die meisten außerhalb der App:
  *
  *  - `src/app/reducer.ts` — Import und Verhinderung,
- *  - `supabase/functions/send-reminders/texte.ts` — die Erinnerung und die
- *    Sammelmeldung an die Planer,
- *  - `supabase/functions/substitute/texte.ts` — Ersatz gesucht/gefunden,
- *  - `supabase/functions/send-plan/texte.ts` — „Plan senden" und der Entzug
- *    einer bestätigten Zuteilung (T99),
- *  - `supabase/functions/trolley/texte.ts` — die Trolley-Termine (T121): für
- *    den Partner eingetragen, abgesagt, Partner gefunden, entfällt,
+ *  - die `texte.ts` jeder Edge Function, die in die Glocke schreibt
+ *    (`TITEL_…`) — Erinnerung, Ersatz, „Plan senden" und Entzug, Trolleys,
+ *    Tausch, neue Anmeldung; gefunden, nicht aufgezählt (`FUNCTION_TEXTE`),
  *  - `tests/testdaten/testdaten.ts` — der Bestand der Entwicklerseite (er
  *    sieht aus wie echte Daten und wird auch so angezeigt).
  *
- * Fünf Quellen, eine Tabelle, und niemand, der sie zusammenhält: Genau diese
+ * Viele Quellen, eine Tabelle, und niemand, der sie zusammenhält: Genau diese
  * Bauart hat hier schon zweimal zu einem stillen Auseinanderlaufen geführt
  * (B8, T40). Deshalb liest diese Prüfung die Titel aus dem **Quelltext** der
  * Erzeuger, statt sie abzuschreiben.
@@ -82,23 +78,20 @@ function titelAusKonstanten(datei: string): string[] {
   return [...text.matchAll(/export const TITEL_\w+ = '([^']+)'/g)].map((m) => m[1] ?? '')
 }
 
-const titelAusErsatz = (): string[] => titelAusKonstanten('substitute/texte.ts')
-const titelAusPlan = (): string[] => titelAusKonstanten('send-plan/texte.ts')
-const titelAusTrolley = (): string[] => titelAusKonstanten('trolley/texte.ts')
-const titelAusTausch = (): string[] => titelAusKonstanten('tauschen/texte.ts')
 /**
- * Beide Titel der Erinnerungs-Function: die persönliche Erinnerung und die
- * Sammelmeldung an die Planer, die seit T99 ebenfalls in die Glocke geht.
+ * **Jede `texte.ts` einer Function, die Glocken-Titel führt** — gefunden, nicht
+ * aufgezählt. Hier stand eine Liste von Hand, und eine neue Function
+ * (`anmelden`, die neue Anmeldung) fehlte darin: Ihr Titel galt dann als
+ * „niemand erzeugt", und bliebe er ohne Schlüssel, stünde er deutsch in jeder
+ * Glocke.
  */
-const titelAusErinnerung = (): string[] => titelAusKonstanten('send-reminders/texte.ts')
+const FUNCTION_TEXTE = Object.keys(EDGE)
+  .filter((p) => /\/functions\/[^/_][^/]*\/texte\.ts$/.test(p) && /export const TITEL_/.test(EDGE[p] ?? ''))
+  .map((p) => p.slice(p.indexOf('/functions/') + '/functions/'.length))
 
 const ALLE_ERZEUGTEN = [
   ...titelAusReducer(),
-  ...titelAusErinnerung(),
-  ...titelAusErsatz(),
-  ...titelAusPlan(),
-  ...titelAusTrolley(),
-  ...titelAusTausch(),
+  ...FUNCTION_TEXTE.flatMap(titelAusKonstanten),
   ...DEMO_NOTIFICATIONS.map((n) => n.title),
 ]
 
@@ -138,14 +131,16 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
       damit ein Muster ins Leere greift.
     */
     expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
-    // Die Erinnerung, die Sammelmeldung an die Planer und „Trolley morgen" (T121).
-    expect(titelAusErinnerung().length, 'send-reminders/texte.ts').toBe(3)
-    expect(titelAusErsatz().length, 'substitute/texte.ts').toBe(2)
-    // Zuteilung und Entzug.
-    expect(titelAusPlan().length, 'send-plan/texte.ts').toBe(2)
-    expect(titelAusTrolley().length, 'trolley/texte.ts').toBe(4)
-    // Angefragt, getauscht, abgelehnt (T153).
-    expect(titelAusTausch().length, 'tauschen/texte.ts').toBe(3)
+    // Die Suche findet die Functions, die es gibt — mindestens diese.
+    expect(FUNCTION_TEXTE).toEqual(
+      expect.arrayContaining(['anmelden/texte.ts', 'send-plan/texte.ts', 'send-reminders/texte.ts', 'substitute/texte.ts']),
+    )
+    // Und in jeder liest das Muster jeden Titel, der dort steht — auch über
+    // eine Umformatierung hinweg fiele keiner still heraus.
+    for (const datei of FUNCTION_TEXTE) {
+      const stehen = quelle(datei).match(/export const TITEL_\w+\s*=/g) ?? []
+      expect(titelAusKonstanten(datei), datei).toHaveLength(stehen.length)
+    }
     expect(DEMO_NOTIFICATIONS.length, 'Demo-Bestand').toBeGreaterThan(0)
   })
 

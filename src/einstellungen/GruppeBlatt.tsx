@@ -4,6 +4,7 @@ import { useApp } from '../app/context'
 import { BlattFeld } from '../bausteine/BlattFeld'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
+import { useUebernehmen } from '../components/useUebernehmen'
 import { amtBesetzen, amtKandidaten, type GruppenAmt, personCompare, personLabel } from '../data/helpers'
 import type { Group } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -24,8 +25,9 @@ const FOLGE_TEXT = {
  * viele zu ihr gehören. Darunter steht, was mit ihr verloren ginge, und
  * „Gruppe entfernen" (zwei Tipps, wie jedes Löschen).
  *
- * **Der Name gilt beim Schließen**, wie bei der Person: Ein halb getippter Name
- * stünde sonst schon in den Plänen. Leer oder doppelt bleibt der alte, und ein
+ * **Der Name gilt beim Schließen**, wie bei der Person — auch, wenn das Blatt
+ * einfach verschwindet (`useUebernehmen`): Ein halb getippter Name stünde sonst
+ * schon in den Plänen. Leer oder doppelt bleibt der alte, und ein
  * Hinweis sagt warum — die geplante Reinigung kennt die Gruppe nur beim Namen
  * (`gruppeInWochenUmbenennen`). Im Feld steht der Name, wie man ihn liest
  * (`tu`); wer ihn nicht anfasst, lässt den kanonischen stehen — „Gruppe 1"
@@ -49,12 +51,14 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
   // Was beim Schließen statt des neuen Namens gilt — und schon am Feld steht.
   const fehler = leer ? t.toastNameLeer : dublette ? fill(t.toastNameNichtGeaendert, { name: tu(dublette.name) }) : null
 
-  const schliessen = () => {
+  const blatt = useUebernehmen(() => {
     const neu = name.trim()
-    if (neu !== gelesen) {
-      if (fehler) dispatch({ type: 'showToast', text: fehler })
-      else update({ name: neu })
-    }
+    if (neu === gelesen) return
+    if (fehler) dispatch({ type: 'showToast', text: fehler })
+    else update({ name: neu })
+  })
+  const schliessen = () => {
+    blatt.uebernehmen()
     onClose()
   }
 
@@ -143,6 +147,7 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
           className="knopf-umriss knopf-entfernen"
           text={t.gruppeEntfernen}
           onEntfernen={() => {
+            blatt.verwerfen()
             dispatch({ type: 'removeGroup', id: gruppe.id })
             onClose()
           }}

@@ -15,6 +15,7 @@
 
 import type { Meeting, PartItem, ProgramItem, SlotAssignment, Week } from './types'
 import { hatAuxKlasse, isSong, programmPlaetze, raeume, slotsOf } from './helpers'
+import { wocheDavor } from './meeting-dates'
 
 /**
  * Bereiche der **Schulungsaufgaben** — dieselbe Menge macht einen Punkt zum
@@ -98,24 +99,31 @@ export function angleichen(item: PartItem): SlotAssignment[] {
  * abschaltet, verliert sonst die Planung mehrerer Wochen. Neu einzuteilen ist
  * dann nur der Ratgeber.
  */
-export function syncAuxSlots(weeks: Week[], an: boolean): Week[] {
-  return an ? einschalten(weeks) : ausschalten(weeks)
+export function syncAuxSlots(
+  weeks: Week[],
+  an: boolean,
+  /** Erste Woche, für die der Schalter gilt (`wirktAb`) — die davor bleiben, wie sie stattfanden. */
+  ab = '',
+): Week[] {
+  return an ? einschalten(weeks, ab) : ausschalten(weeks, ab)
 }
 
 /** Marke entfernen — ohne die Besetzung der Klasse anzutasten. */
-function ausschalten(weeks: Week[]): Week[] {
-  if (!weeks.some((w) => hatAuxKlasse(w.mid))) return weeks
+function ausschalten(weeks: Week[], ab: string): Week[] {
+  const betroffen = (w: Week) => hatAuxKlasse(w.mid) && !wocheDavor(w.start, ab)
+  if (!weeks.some(betroffen)) return weeks
   return weeks.map((week) => {
-    if (!hatAuxKlasse(week.mid)) return week
+    if (!betroffen(week)) return week
     const mid = { ...week.mid }
     delete mid.auxRatgeber
     return { ...week, mid }
   })
 }
 
-function einschalten(weeks: Week[]): Week[] {
+function einschalten(weeks: Week[], ab: string): Week[] {
   let geaendert = false
   const naechste = weeks.map((week) => {
+    if (wocheDavor(week.start, ab)) return week
     const mid = week.mid
     let midGeaendert = false
     const sections = mid.sections.map((section) => {

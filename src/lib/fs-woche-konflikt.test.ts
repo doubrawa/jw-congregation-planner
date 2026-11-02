@@ -16,51 +16,44 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * Woche geführt.
  */
 
+/**
+ * Ein Aufruf von `treffpunkte_speichern`, mit den verfallenen Zusagen in
+ * derselben Transaktion: ohne Stand legt sie an, mit Stand ändert sie nur
+ * unter dieser Bedingung.
+ */
 interface Aufruf {
   op: 'insert' | 'update' | 'select'
+  funktion: string
   payload?: Record<string, unknown>
   filter: Record<string, unknown>
+  verfallen: unknown
 }
 
 const stub = vi.hoisted(() => ({
   aufrufe: [] as Aufruf[],
   antworten: [] as Array<{ data: unknown; error: unknown }>,
 }))
-const fromMock = vi.hoisted(() => vi.fn())
+const rpcMock = vi.hoisted(() => vi.fn())
 
-vi.mock('./supabase', () => ({ supabase: { from: fromMock } }))
+vi.mock('./supabase', () => ({ supabase: { rpc: rpcMock } }))
 
 import { saveFsWeek, setKonfliktMelder, setSchreibfehlerMelder } from './data'
 import type { FsInstance } from '../data/types'
 
-function chain() {
-  const aufruf: Aufruf = { op: 'select', filter: {} }
-  const c: Record<string, unknown> = {}
-  c.insert = (p: Record<string, unknown>) => {
-    aufruf.op = 'insert'
-    aufruf.payload = p
-    return c
-  }
-  c.update = (p: Record<string, unknown>) => {
-    aufruf.op = 'update'
-    aufruf.payload = p
-    return c
-  }
-  c.select = () => c
-  c.eq = (k: string, v: unknown) => {
-    aufruf.filter[k] = v
-    return c
-  }
-  c.maybeSingle = () => c
-  c.then = (resolve: (v: unknown) => void) => {
-    stub.aufrufe.push(aufruf)
-    resolve(stub.antworten.shift() ?? { data: null, error: null })
-  }
-  return c
+function rpc(funktion: string, args: Record<string, unknown>) {
+  const wo = { congregation_id: args.p_cong, start: args.p_start }
+  stub.aufrufe.push({
+    op: args.p_stand == null ? 'insert' : 'update',
+    funktion,
+    payload: { data: args.p_data, ...wo },
+    filter: args.p_stand == null ? wo : { ...wo, updated_at: args.p_stand },
+    verfallen: args.p_verfallen,
+  })
+  return Promise.resolve(stub.antworten.shift() ?? { data: [], error: null })
 }
 
-const ok = (stand: string) => ({ data: { updated_at: stand }, error: null })
-const leer = { data: null, error: null }
+const ok = (stand: string) => ({ data: [{ stand }], error: null })
+const leer = { data: [], error: null }
 const treffpunkte = (leiter: string): FsInstance[] => [
   { id: 'i1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: leiter } as FsInstance,
 ]
@@ -72,8 +65,8 @@ let konflikte = 0
 let schreibfehler = 0
 
 beforeEach(() => {
-  fromMock.mockReset()
-  fromMock.mockImplementation(chain)
+  rpcMock.mockReset()
+  rpcMock.mockImplementation(rpc)
   stub.aufrufe = []
   stub.antworten = []
   konflikte = 0

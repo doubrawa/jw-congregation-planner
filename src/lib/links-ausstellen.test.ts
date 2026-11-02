@@ -18,11 +18,11 @@ vi.mock('./supabase', () => ({
 const { alsAnmeldeLink, linksAusstellen } = await import('./links-ausstellen')
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`)
-const link = (personId: string) => ({
+const link = (personId: string, code = 'K7RD 2QWM') => ({
   personId,
   url: 'https://versammlung.app/#anmelden=x',
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-  code: 'K7RD-2QWM',
+  code,
   gueltigBis: '2026-11-14T09:00:00.000Z',
 })
 /** Der Server stellt für jede Id einen Link aus. */
@@ -42,6 +42,12 @@ describe('Links ausstellen', () => {
     const r = await linksAusstellen(ids(2))
     expect(invoke).toHaveBeenCalledWith('send-invite', { body: { personIds: ids(2) } })
     expect(r).toEqual({ links: ids(2).map((id) => link(id)), fehler: false })
+  })
+
+  it('der Code kommt gegliedert wie auf dem Zettel — auch wenn ein älterer Stand der Function den Bindestrich schickt', async () => {
+    invoke.mockResolvedValue({ data: { links: [link(ids(1)[0]!, 'K7RD-2QWM')] }, error: null })
+    const r = await linksAusstellen(ids(1))
+    expect(r.links.map((l) => l.code)).toEqual(['K7RD 2QWM'])
   })
 
   it('viele Personen gehen in Teilen hinaus — höchstens 100 je Aufruf, alle kommen an', async () => {

@@ -12,7 +12,7 @@ import { onTestFinished, vi } from 'vitest'
  * Eigenschaft löschen lässt; das übernimmt `onTestFinished`. jsdom dagegen
  * ruft die Methode am Prototyp auf.
  */
-export function speicherSpion<M extends 'getItem' | 'setItem'>(methode: M) {
+export function speicherSpion<M extends 'getItem' | 'setItem' | 'removeItem'>(methode: M) {
   if (!('happyDOM' in window)) return vi.spyOn(Storage.prototype, methode)
   const vorher = localStorage[methode]
   onTestFinished(() => {

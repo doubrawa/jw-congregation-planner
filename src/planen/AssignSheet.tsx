@@ -122,7 +122,10 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
   const { t, tp, tu } = useT()
   const rawWeek = state.weeks[sel.wi]
   const { week, tpw, sprache } = useProgWeek(rawWeek)
-  const rolle = sel.labelRolle ? tu(sel.labelRolle) : ''
+  // Den Raum nennen — sonst sieht man beim Zuteilen nicht, ob man gerade den
+  // Hauptsaal oder die Zusätzliche Klasse besetzt.
+  const raum = sel.kind === 'part' && sel.aux ? t.auxKlasse : ''
+  const rolle = [sel.labelRolle ? tu(sel.labelRolle) : '', raum].filter(Boolean).join(' · ')
   const mitRolle = (titel: string) => [titel, rolle].filter(Boolean).join(' · ')
 
   if (sel.kind === 'fs') {
@@ -134,7 +137,7 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
 
   const datum = rawWeek ? gebundenesDatum(meetingDate(rawWeek, sel.tab, state.congregation.times), state.lang, 'tag') : ''
   if (sel.kind !== 'part') {
-    const label = mitRolle(tu(sel.label))
+    const label = sel.kind === 'ratgeber' ? `${t.auxKlasse} · ${t.auxRatgeber}` : mitRolle(tu(sel.label))
     return {
       label,
       titel: label,

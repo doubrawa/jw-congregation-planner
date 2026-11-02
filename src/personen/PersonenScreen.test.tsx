@@ -93,7 +93,7 @@ const ausgestellt = (personId: string): AusgestellterLink => ({
   personId,
   url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-  code: 'K7RD-2QWM',
+  code: 'K7RD 2QWM',
   gueltigBis: '2026-11-14T09:00:00.000Z',
 })
 // Bernd hat ein Konto, Clara einen gültigen Link, Anton nichts.
@@ -777,7 +777,7 @@ describe('Links senden', () => {
     await waitFor(() => expect(kopiert).toHaveBeenCalledTimes(1))
     expect(linksAusstellen).toHaveBeenCalledWith(['p-d'])
     expect(kopiert.mock.calls[0]![0]).toMatch(/^Hallo Dora,\n/)
-    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD-2QWM\n')
+    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD 2QWM\n')
     expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Dora' }))
     await waitFor(() => expect(listenZeilen(b)[1]).toEqual(['Dora Dahl', t.markeKopiert, t.kopierenBtn]))
     // Die übrigen bleiben, wie sie waren — und auf Zetteln stehen nur noch sie.

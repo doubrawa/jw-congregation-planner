@@ -1,11 +1,9 @@
 /**
  * **Eine nachgebaute Service-Worker-Umgebung.**
  *
- * `public/sw.js` war die einzige Datei dieses Projekts, an der nichts geprüft
- * werden konnte — und ausgerechnet dort sind die Fehlerbilder am teuersten: ein
- * kaputter Offline-Start und Benachrichtigungen, die nicht ankommen. Genau
- * deshalb blieben zwei bekannte Befunde (V9, V10) den ganzen Tag liegen: Eine
- * Änderung ohne Nachweis wäre dort die schlechteste aller Möglichkeiten.
+ * In `public/sw.js` sind die Fehlerbilder am teuersten: ein kaputter
+ * Offline-Start und Benachrichtigungen, die nicht ankommen. Beide melden sich
+ * nicht — eine Änderung dort braucht deshalb einen Nachweis.
  *
  * Der Worker ist einfaches JavaScript und braucht nur eine Handvoll Globale.
  * Sie stehen hier — klein gehalten, aber mit dem Verhalten, auf das der Worker
@@ -23,6 +21,8 @@ import { fileURLToPath } from 'node:url'
 /** Eine Antwort, wie der Worker sie erwartet. */
 export interface FakeResponse {
   ok: boolean
+  /** HTTP-Status; eine undurchsichtige Antwort (`opaque`) hat 0. */
+  status: number
   type?: string
   url?: string
   /** Kopfzeile `Vary` — nur `Origin` wird ausgewertet (siehe `FakeCache.match`). */
@@ -39,8 +39,15 @@ export function swQuelle(): string {
   return readFileSync(fileURLToPath(new URL('../public/sw.js', import.meta.url)), 'utf8')
 }
 
-export function antwort(url: string, ok = true, type = 'basic', inhalt = '', vary?: string): FakeResponse {
-  const res: FakeResponse = { ok, type, url, vary, text: () => Promise.resolve(inhalt), clone: () => res }
+export function antwort(
+  url: string,
+  ok = true,
+  type = 'basic',
+  inhalt = '',
+  vary?: string,
+  status = type === 'opaque' ? 0 : ok ? 200 : 404,
+): FakeResponse {
+  const res: FakeResponse = { ok, status, type, url, vary, text: () => Promise.resolve(inhalt), clone: () => res }
   return res
 }
 
@@ -55,22 +62,32 @@ class FakeCache {
   private readonly holen: (url: string) => Promise<FakeResponse>
 
   /**
-   * `add` holt wie das Original über das Netz und legt nur Erfolgreiches ab.
-   * Bis zum 1.10.2026 legte es ungefragt eine leere Antwort ab — dann wusste
-   * der Prüfstand nicht, was in einer abgelegten Datei steht, und ein Worker,
-   * der `index.html` liest, ließ sich gar nicht prüfen.
+   * `add` und `addAll` holen wie das Original über das Netz und legen nur
+   * Erfolgreiches ab. So weiß der Prüfstand, was in einer abgelegten Datei
+   * steht, und ein Worker, der `index.html` liest, lässt sich prüfen.
    */
   constructor(holen: (url: string) => Promise<FakeResponse>) {
     this.holen = holen
   }
 
-  async add(request: { url: string }): Promise<void> {
-    const res = await this.holen(request.url)
-    if (!res.ok) throw new TypeError(`Cache.add: ${request.url} antwortete nicht ok`)
-    this.eintraege.set(request.url, res)
-    // Ein `new Request(…)` im Worker trägt keinen `Origin` — anders als das
-    // Modul-Skript der Seite.
-    this.herkunft.set(request.url, undefined)
+  add(request: { url: string }): Promise<void> {
+    return this.addAll([request])
+  }
+  /** Wie das Original **ganz oder gar nicht**: Fehlt eine Antwort, wird nichts abgelegt. */
+  async addAll(requests: Array<{ url: string }>): Promise<void> {
+    const antworten = await Promise.all(
+      requests.map(async ({ url }) => {
+        const res = await this.holen(url)
+        if (!res.ok) throw new TypeError(`Cache.addAll: ${url} antwortete nicht ok`)
+        return [url, res] as const
+      }),
+    )
+    for (const [url, res] of antworten) {
+      this.eintraege.set(url, res)
+      // Ein `new Request(…)` im Worker trägt keinen `Origin` — anders als das
+      // Modul-Skript der Seite.
+      this.herkunft.set(url, undefined)
+    }
   }
   put(request: FakeAnfrage, res: FakeResponse): Promise<void> {
     this.eintraege.set(adresse(request), res)

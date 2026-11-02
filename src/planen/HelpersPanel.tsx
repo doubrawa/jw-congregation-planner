@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
-import { mtab, serviceQualKey } from '../data/helpers'
+import { mtab } from '../data/helpers'
+import { auswahlFuer } from '../data/plaetze'
 import { platzName, useT } from '../i18n/useT'
 import type { Meeting, Service } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
@@ -25,19 +26,8 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
   const konflikte = useKonflikte(tab)
 
   const openHelperSlot = (service: Service, pos: number) => {
-    dispatch({
-      type: 'openSlot',
-      sel: {
-        kind: 'helper',
-        wi: state.week,
-        tab,
-        svc: service.key,
-        pos,
-        label: service.name,
-        priv: service.groups ? null : serviceQualKey(service.key),
-        groups: Boolean(service.groups),
-      },
-    })
+    const slot = meeting.helpers[service.key]?.[pos]
+    dispatch({ type: 'openSlot', sel: auswahlFuer({ art: 'helper', slot, svc: service, pos }, state.week, tab) })
   }
 
   return (

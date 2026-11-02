@@ -1,26 +1,23 @@
 // =============================================================================
-// substitute, Aufruf 'fill': einen freien Platz selbst übernehmen (4.10.2026)
+// substitute, Aufruf 'fill': einen freien Platz selbst übernehmen
 // =============================================================================
 //   { action: 'fill', taskKey, heute? }
 //
 // Unter „Freie Plätze" bietet die App unbesetzte Hilfsdienste an, für die der
 // Leser den Aufgabenbereich hat (`src/data/offene-plaetze.ts`). Ein Tipp trägt
-// ihn ein — **direkt**, ohne Rückfrage beim Planer (Betreiber, 4.10.2026),
-// und mit Zusage, wie beim Einspringen.
+// ihn ein — **direkt**, ohne Rückfrage beim Planer (Betreiber), und mit
+// Zusage, wie beim Einspringen.
 //
 // Über die Service-Role, weil Wochen und Bestätigungen sonst nur der Planer
-// schreibt. Damit ist das hier die Rechteprüfung, nicht der Knopf: Jede Regel,
-// nach der die App anbietet, steht hier noch einmal — und was hier abgewiesen
-// wird, schreibt nichts.
+// schreibt. Damit ist das hier die Rechteprüfung, nicht der Knopf — und was
+// hier abgewiesen wird, schreibt nichts.
 //
-//  - der Platz ist ein **Hilfsdienst** (Betreiber, 25.10.2026: „aufgaben weist
-//    der planer zu") — bis dahin auch Programmpunkte und der Ratgeber;
-//  - Mitglied, mit eigener Person, für den Dienst freigegeben und dort nicht
-//    schon auf einem anderen Platz;
-//  - der Platz ist leer und wird überhaupt angeboten (`angebotsBereich`, keine
-//    Reinigung);
-//  - der Plan der Woche ist gesendet, die Zusammenkunft fällt nicht aus, liegt
-//    nicht zurück, und die Person ist an dem Tag nicht abwesend.
+//  - der Platz ist ein **Hilfsdienst** (Betreiber: „aufgaben weist der planer
+//    zu") und leer;
+//  - der Plan der Woche ist gesendet, und die Zusammenkunft fällt nicht aus;
+//  - Mitglied mit eigener Person, und die darf ihn übernehmen — dieselbe
+//    Regel, nach der die App anbietet (`uebernahmeHindernis`: Bereich, noch
+//    kein Platz des Dienstes, nicht vorbei, nicht abwesend).
 //
 // Geschrieben wird die ganze Woche mit Vergleiche-und-Tausche auf ihren Stand
 // (`updated_at`, `_shared/woche-schreiben.ts`), wie der Client speichert (T39):
@@ -31,7 +28,7 @@
 import { json, type Rest, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
-import { angebotsBereich } from '../_shared/freie-plaetze.ts'
+import { HINDERNIS_STATUS, stehtImDienst, uebernahmeHindernis } from '../_shared/freie-plaetze.ts'
 import { istAusgefallenFuer, personDisplayName, terminTag, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import type { ServiceRow, Week } from '../_shared/zuteilungen.ts'
 
@@ -99,20 +96,21 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   if (!svc || teile.pos >= svc.count) return json({ error: 'slot-not-found' }, 404)
   const reihe = ((meeting.helpers ??= {})[teile.svc] ??= [])
   if (reihe[teile.pos]?.name) return json({ error: 'slot-taken' }, 409)
-  const bereich = angebotsBereich(svc)
-  if (!bereich) return json({ error: 'not-offered' }, 403)
 
   const person = persons[0]
-  if (!person || !person.priv?.[bereich]) return json({ error: 'not-qualified' }, 403)
-  // Schon auf einem anderen Platz desselben Dienstes — dieselbe Regel wie
-  // `offenePlaetze` im Client, Id vor Name: Ein zweiter Platz brächte niemanden dazu.
+  if (!person) return json({ error: 'not-qualified' }, 403)
   const name = personDisplayName(person.fn, person.ln)
-  if (reihe.some((s) => (s?.pid ? s.pid === person.id : s?.name === name))) return json({ error: 'not-offered' }, 403)
-
   const zeiten = zeitenAus(congRows[0])
   const tag = terminTag(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
-  if (tag && tag < heute) return json({ error: 'past' }, 409)
-  if (tag && absences.some((a) => a.from_date <= tag && tag <= a.to_date)) return json({ error: 'absent' }, 409)
+  // Dieselbe Regel wie `offenePlaetze` im Client (`uebernahmeHindernis`).
+  const hindernis = uebernahmeHindernis({
+    svc,
+    hatBereich: (bereich) => Boolean(person.priv?.[bereich]),
+    imDienst: stehtImDienst(reihe, { id: person.id, name }),
+    vorbei: tag !== null && tag < heute,
+    abwesend: tag !== null && absences.some((a) => a.from_date <= tag && tag <= a.to_date),
+  })
+  if (hindernis) return json({ error: hindernis }, HINDERNIS_STATUS[hindernis])
 
   // Wie `assignSlot` im Client: Lücken davor als leere Plätze auffüllen.
   while (reihe.length <= teile.pos) reihe.push({ name: '' })

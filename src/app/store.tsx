@@ -11,7 +11,8 @@ import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { mitLinkAnmelden } from '../lib/anmelden'
-import { type Abweisung, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { type Abweisung, setEntzugMelder, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { merken } from '../lib/geraetespeicher'
 import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
 import { clearSnapshot } from '../lib/snapshot'
 import { supabase } from '../lib/supabase'
@@ -27,7 +28,7 @@ import {
 } from './context'
 import { pushAboAbgleichen } from '../lib/push-abo'
 import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
-import { sitzungBeendet } from './sitzung'
+import { aktuelleSitzung, sitzungBeendet } from './sitzung'
 import { useKalendertag } from './useKalendertag'
 import { initialState } from './init'
 import { ausstehendesSchreiben, persist } from './persist'
@@ -159,6 +160,14 @@ export function AppProvider({
     return () => setSchreibfehlerMelder(null)
   }, [dispatch])
 
+  // Die Nachricht über einen Entzug ging nicht hinaus (`sendPlanEntzug`):
+  // Gespeichert ist die Änderung, nur weiß der Betroffene nichts davon — das
+  // soll der Planer erfahren, damit er es ihm selbst sagt.
+  useEffect(() => {
+    setEntzugMelder(() => dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastEntzugNichtGemeldet }))
+    return () => setEntzugMelder(null)
+  }, [dispatch])
+
   // Schreibkonflikt: ein anderer Planer hat dieselbe Woche zuerst gespeichert
   // (T39). Bis hierher wurde nichts überschrieben — der geschützte Schreibvorgang
   // hat schlicht keine Zeile getroffen. Jetzt gilt es, den Bildschirm wieder mit
@@ -276,7 +285,13 @@ export function AppProvider({
     if (!supabase) return
     const client = supabase
     const token = anmeldeAdresse().token
-    let geladenFuer: string | null = null
+    /**
+     * Welches Konto in welcher Sitzung (`sitzung.ts`) schon geladen ist. Die
+     * Sitzung gehört dazu: Ein Abmelden ohne `SIGNED_OUT` (offline mit
+     * abgelaufenem Token, `abmelden.ts`) beginnt trotzdem eine neue — und eine
+     * neue Anmeldung desselben Kontos lädt dann wieder.
+     */
+    let geladenFuer: { userId: string; sitzung: number } | null = null
     /** Für wen gerade geladen wird — ein zweiter Anstoß lädt nicht daneben. */
     let laedtFuer: string | null = null
     let vorbei = false
@@ -289,7 +304,7 @@ export function AppProvider({
       (stateRef.current.staleAt !== null || stateRef.current.dataStatus === 'error')
     /** Die Daten dieses Kontos laden — still, wenn sein letzter Stand dasteht. */
     const ladenBeginnen = (userId: string): void => {
-      geladenFuer = userId
+      geladenFuer = { userId, sitzung: aktuelleSitzung() }
       laedtFuer = userId
       // Steht der letzte Stand dieses Kontos, kommen die frischen Daten still
       // darüber: kein Startbild, die gewählte Woche bleibt, und scheitert es,
@@ -301,7 +316,7 @@ export function AppProvider({
     }
     /** Ein Konto meldet sich (Prüfung beim Start, `SIGNED_IN`): einmal laden, offline nicht. */
     const laden = (userId: string): void => {
-      if (userId === geladenFuer) return
+      if (geladenFuer?.userId === userId && geladenFuer.sitzung === aktuelleSitzung()) return
       // Offline wäre jeder Versuch vergeblich (oben). Bis das Netz zurück ist,
       // steht der letzte Stand, ohne ihn die Fehlerseite.
       if (navigator.onLine === false) {
@@ -405,7 +420,7 @@ export function AppProvider({
   // Darstellung auf <html> spiegeln und merken (Muster aus index.html);
   // „Automatisch" folgt dem Gerät, solange die App offen ist.
   useEffect(() => {
-    localStorage.setItem('theme', state.theme)
+    merken('theme', state.theme)
     return darstellungSpiegeln(state.theme)
   }, [state.theme])
 
@@ -414,12 +429,12 @@ export function AppProvider({
   // Gerät ein. index.html setzt denselben Wert vor dem ersten Paint.
   useEffect(() => {
     document.documentElement.style.setProperty('--fs', String(state.fontScale))
-    localStorage.setItem('fontScale', String(state.fontScale))
+    merken('fontScale', String(state.fontScale))
   }, [state.fontScale])
 
   // App-Sprache merken + Schreibrichtung (RTL für Arabisch und Persisch)
   useEffect(() => {
-    localStorage.setItem('lang', state.lang)
+    merken('lang', state.lang)
     document.documentElement.lang = state.lang
     document.documentElement.dir = isRTL(state.lang) ? 'rtl' : 'ltr'
   }, [state.lang])

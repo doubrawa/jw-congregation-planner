@@ -34,8 +34,11 @@ export const LINK_PARAMETER = 'anmelden'
  */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
-/** Länge des Codes zum Eintippen: 8 Zeichen, 40 Bit. Angezeigt als `XXXX-XXXX`. */
+/** Länge des Codes zum Eintippen: 8 Zeichen, 40 Bit. Angezeigt als `XXXX XXXX`. */
 export const CODE_LAENGE = 8
+
+/** Eine Gruppe des angezeigten Codes: zweimal vier Zeichen. */
+const GRUPPE = CODE_LAENGE / 2
 
 /** Ein neuer Code zum Eintippen, ohne Trennstrich. */
 export function neuerCode(): string {
@@ -66,10 +69,20 @@ export function codeNormal(eingabe: string): string {
     .join('')
 }
 
-/** Der Code zum Lesen: `K7RD2QWM` → `K7RD-2QWM`. */
+/**
+ * Ein Code, auch ein angefangener, in seinen zwei Gruppen: `K7RD2Q` →
+ * `K7RD 2Q`. Getrennt durch ein Leerzeichen, nicht durch einen Bindestrich:
+ * Den hielten manche für einen Teil des Codes und tippten ihn mit.
+ */
+export function codeGruppiert(eingabe: string): string {
+  const c = codeNormal(eingabe).slice(0, CODE_LAENGE)
+  return c.length > GRUPPE ? `${c.slice(0, GRUPPE)} ${c.slice(GRUPPE)}` : c
+}
+
+/** Der Code zum Lesen: `K7RD2QWM` → `K7RD 2QWM`. Nimmt auch die frühere Form mit Bindestrich. */
 export function codeAnzeige(code: string): string {
   const c = codeNormal(code)
-  return c.length === CODE_LAENGE ? `${c.slice(0, 4)}-${c.slice(4)}` : c
+  return c.length === CODE_LAENGE ? codeGruppiert(c) : c
 }
 
 /** Ist das ein vollständiger Code? (Prüft die Form, nicht ob es ihn gibt.) */

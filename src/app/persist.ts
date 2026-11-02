@@ -8,6 +8,7 @@
 import { fsTaskKeyWoche } from '../data/fs'
 import { entzogeneAller, type EntzogeneZuteilung } from '../data/plan-versand'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { geaenderteFelder } from '../../supabase/functions/_shared/gleicher-inhalt.ts'
 import {
   deleteAbsenceRow,
   deleteConfirmationRows,
@@ -47,10 +48,12 @@ import {
   substituteWithdraw,
   sendPlanEntzug,
   platzFuellen,
+  type Zeilenstand,
 } from '../lib/data'
 import { ANWESENDE_FELDER, anwesenheitDer } from '../data/anwesenheit'
 import { helperKeyParts } from '../data/planning'
 import { supabase } from '../lib/supabase'
+import { mitverfolgen } from '../lib/schreiben-unterwegs'
 import type { FsInstance, Person, Trolley, Week } from '../data/types'
 import { type AppAction, type AppState, OHNE_ENTZUG } from './context'
 import { kontoGehtMit } from './eigene-person'
@@ -234,9 +237,13 @@ function vorgemerktes(tabelle: WochenTabelle, woche: string): Danach[] {
 function mitVorgemerktem(tabelle: WochenTabelle, woche: string, schreiben: Promise<boolean>): void {
   const danach = vorgemerktes(tabelle, woche)
   if (danach.length === 0) return
-  void Promise.resolve(schreiben).then((geschrieben) => {
-    for (const f of danach) f(geschrieben === true)
-  })
+  // Unterwegs, bis auch das Vorgemerkte losgegangen ist: Wer auf das Schreiben
+  // wartet (Nachladen, Abmelden), wartet sonst nur auf die Woche.
+  mitverfolgen(
+    Promise.resolve(schreiben).then((geschrieben) => {
+      for (const f of danach) f(geschrieben === true)
+    }),
+  )
 }
 
 /** In welcher Woche welcher Tabelle ein Platz liegt — `null`, wo der Schlüssel keine nennt. */
@@ -246,17 +253,73 @@ function wocheDesPlatzes(key: string): { tabelle: WochenTabelle; woche: string }
   return { tabelle: 'tab' in teile ? 'woche' : 'treffpunkte', woche: teile.woche }
 }
 
-/** Verfallene Zusagen der Zusammenkünfte: je Woche gelöscht, sobald sie geschrieben ist. */
-function zusagenNachDemSchreiben(congId: string, keys: readonly string[]): void {
+/*
+ * **Verfallene Zusagen gehen mit ihrer Woche hinaus — in derselben
+ * Transaktion** (`woche_speichern`). Ginge ihr Löschen als eigener Aufruf
+ * verloren (App geschlossen, Netz weg), erbte der neue Inhaber die Zusage des
+ * alten. Je Woche gesammelt, bis ihr Bündler schreibt; der nimmt mit, was bis
+ * dahin zusammenkam.
+ */
+const verfallenJeWoche: Record<WochenTabelle, Map<string, { congId: string; keys: Set<string> }>> = {
+  woche: new Map(),
+  treffpunkte: new Map(),
+}
+
+function verfallenSammeln(congId: string, tabelle: WochenTabelle, woche: string, keys: readonly string[]): void {
+  const eintrag = verfallenJeWoche[tabelle].get(woche) ?? { congId, keys: new Set<string>() }
+  for (const k of keys) eintrag.keys.add(k)
+  verfallenJeWoche[tabelle].set(woche, eintrag)
+}
+
+function verfallenVormerken(congId: string, tabelle: WochenTabelle, woche: string, keys: readonly string[]): void {
+  if (keys.length === 0) return
+  verfallenSammeln(congId, tabelle, woche, keys)
+  dieserAufruf.push([tabelle, woche])
+}
+
+/**
+ * **Eine Woche schreiben und mit ihr, was an ihr verfallen ist.** Geht das
+ * Schreiben nicht durch, bleibt es für das nächste Schreiben derselben Woche
+ * liegen — sonst nähme jenes den neuen Inhaber ohne sie mit, und er erbte die
+ * Zusage des Alten. Lädt die App danach neu (ein Konflikt), fällt es mit allem
+ * übrigen Wartenden weg (`wartendesVerwerfen`): Dann gilt der geladene Stand.
+ */
+function mitVerfallenen(
+  congId: string,
+  tabelle: WochenTabelle,
+  woche: string,
+  schreiben: (verfallen: readonly string[]) => Promise<boolean>,
+): Promise<boolean> {
+  const eintrag = verfallenJeWoche[tabelle].get(woche)
+  verfallenJeWoche[tabelle].delete(woche)
+  const verfallen = eintrag ? [...eintrag.keys] : []
+  const ergebnis = schreiben(verfallen)
+  if (verfallen.length > 0) {
+    void Promise.resolve(ergebnis).then((geschrieben) => {
+      if (geschrieben !== true) verfallenSammeln(congId, tabelle, woche, verfallen)
+    })
+  }
+  return ergebnis
+}
+
+/** Was für diese Woche verfallen ist, ohne Schreiben — für sich gelöscht (`liegenGebliebenesAusfuehren`). */
+function verfallenNehmen(tabelle: WochenTabelle, woche: string): string[] {
+  const eintrag = verfallenJeWoche[tabelle].get(woche)
+  verfallenJeWoche[tabelle].delete(woche)
+  return eintrag ? [...eintrag.keys] : []
+}
+
+/** Verfallene Zusagen der Zusammenkünfte: je Woche vorgemerkt für ihr Schreiben. */
+function zusagenMitDerWoche(congId: string, keys: readonly string[]): void {
   const jeWoche = new Map<string, string[]>()
   for (const key of keys) {
     const woche = wocheDesPlatzes(key)?.woche ?? ''
     jeWoche.set(woche, [...(jeWoche.get(woche) ?? []), key])
   }
   for (const [woche, liste] of jeWoche) {
-    // Ohne Woche im Schlüssel gibt es kein Schreiben, auf das zu warten wäre.
+    // Ohne Woche im Schlüssel gibt es kein Schreiben, das sie mitnehmen könnte.
     if (!woche) deleteConfirmationRows(congId, liste)
-    else nachDemSchreiben('woche', woche, (geschrieben) => geschrieben && deleteConfirmationRows(congId, liste))
+    else verfallenVormerken(congId, 'woche', woche, liste)
   }
 }
 
@@ -300,14 +363,19 @@ function vorgemerktesVerwerfen(): void {
   for (const tabelle of ['woche', 'treffpunkte'] as const) {
     for (const liste of vorgemerkt[tabelle].values()) for (const f of liste) f(false)
     vorgemerkt[tabelle].clear()
+    // Die Zusagen gehören zu Fassungen, die nicht mehr hinausgehen.
+    verfallenJeWoche[tabelle].clear()
   }
 }
 
 // congId ist über die Sitzung stabil, wird aber je Save mitgeführt, damit der
-// Writer keine implizite Abhängigkeit auf App-State hat.
-const personSaves = createDebouncedWriter<string, { congId: string; person: Person }>(
+// Writer keine implizite Abhängigkeit auf App-State hat. Hinaus geht nur, was
+// sich gegenüber `vorher` geändert hat (`savePerson`) — gebündelt bleibt der
+// älteste `vorher`, sonst fehlte, was die ersten Tastenanschläge geändert haben.
+const personSaves = createDebouncedWriter<string, { congId: string; person: Person; vorher: Person | undefined }>(
   SAVE_DELAY,
-  (_id, { congId, person }) => savePerson(congId, person),
+  (_id, { congId, person, vorher }) => savePerson(congId, person, vorher),
+  (alt, neu) => ({ ...neu, vorher: alt.vorher }),
 )
 
 /**
@@ -316,13 +384,13 @@ const personSaves = createDebouncedWriter<string, { congId: string; person: Pers
  * gewählt), ginge sie sonst hinterher und nähme zurück, was jetzt dazukam (den
  * Haushalt, gleich danach gewählt).
  */
-function personSofort(congId: string, person: Person): void {
-  personSaves.sofort(person.id, { congId, person })
+function personSofort(congId: string, person: Person, vorher: Person | undefined): void {
+  personSaves.sofort(person.id, { congId, person, vorher })
 }
 // Gebündelt wird je **Woche**, nicht je Index (T66): der Schlüssel ist ihre
 // Kennung, und der schiebt sich nicht, wenn sich die geladene Menge ändert.
 const weekSaves = createDebouncedWriter<string, { congId: string; week: Week }>(SAVE_DELAY, (woche, { congId, week }) =>
-  mitVorgemerktem('woche', woche, saveWeek(congId, week)),
+  mitVorgemerktem('woche', woche, mitVerfallenen(congId, 'woche', woche, (verfallen) => saveWeek(congId, week, verfallen))),
 )
 // Nur die geänderten Felder (`geaenderteFelder`) — gesammelt über die
 // Tastenanschläge, die neueste Fassung je Feld.
@@ -331,13 +399,6 @@ const congSaves = createDebouncedWriter<'info', { congId: string; info: Partial<
   (_key, { congId, info }) => saveCongregationInfo(congId, info),
   (alt, neu) => ({ ...neu, info: { ...alt.info, ...neu.info } }),
 )
-
-/** Die Felder, die sich zwischen zwei Ständen geändert haben (Referenzvergleich, eine Ebene). */
-function geaenderteFelder<T extends object>(vorher: T, nachher: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(nachher).filter(([k, v]) => vorher[k as keyof T] !== v),
-  ) as Partial<T>
-}
 
 /**
  * Die Einstellungen der Versammlung — nur, was diese Aktion geändert hat
@@ -365,7 +426,12 @@ function einstellungenSpeichern(congId: string, prev: AppState, next: AppState):
  */
 const fsWeekSaves = createDebouncedWriter<string, { congId: string; insts: FsInstance[] }>(
   SAVE_DELAY,
-  (woche, { congId, insts }) => mitVorgemerktem('treffpunkte', woche, saveFsWeek(congId, woche, insts)),
+  (woche, { congId, insts }) =>
+    mitVorgemerktem(
+      'treffpunkte',
+      woche,
+      mitVerfallenen(congId, 'treffpunkte', woche, (verfallen) => saveFsWeek(congId, woche, insts, verfallen)),
+    ),
 )
 
 /** Welcher Bündler eine Woche dieser Tabelle schreibt. */
@@ -381,7 +447,10 @@ const WOCHEN_SCHREIBER: Record<WochenTabelle, Pick<DebouncedWriter<string, unkno
  */
 function liegenGebliebenesAusfuehren(): void {
   for (const [tabelle, woche] of dieserAufruf.splice(0)) {
-    if (!vorgemerkt[tabelle].has(woche) || WOCHEN_SCHREIBER[tabelle].wartet(woche)) continue
+    if (WOCHEN_SCHREIBER[tabelle].wartet(woche)) continue
+    // Verfallene Zusagen ohne Schreiben ihrer Woche: dann eben für sich.
+    const verfallen = verfallenJeWoche[tabelle].get(woche)
+    if (verfallen) deleteConfirmationRows(verfallen.congId, verfallenNehmen(tabelle, woche))
     for (const f of vorgemerktes(tabelle, woche)) f(true)
   }
 }
@@ -579,11 +648,13 @@ const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubs
 
 /**
  * **Was sich in einer Liste geändert hat, in die Datenbank** — jeder Eintrag,
- * der an seiner Stelle nicht mehr derselbe ist, mit seinem Index als Position.
+ * der neu ist, sich geändert oder seine Stelle gewechselt hat, mit seinem Index
+ * als Position und dem, was vorher in seiner Zeile stand (`Zeilenstand`, über
+ * die Kennung gefunden): Hinaus gehen nur die geänderten Spalten (`savePerson`).
  *
  * Der Reducer bildet Listen ab oder filtert sie; unberührte Einträge behalten
- * ihre Referenz. Steht an Index `i` ein anderes Objekt als vorher, ist es
- * verschoben oder geändert — beides muss hinaus, sonst nichts.
+ * ihre Referenz. Ein anderes Objekt ist geändert, eine andere Stelle
+ * verschoben — beides muss hinaus, sonst nichts.
  *
  * Verschoben wird nach einem Löschen: `position` ist der Index in der Liste
  * (Dienste wie Gruppen). Wird aus der Mitte gelöscht, rutscht alles dahinter
@@ -600,12 +671,21 @@ const OHNE_WOCHENSCHREIBEN: readonly AppAction['type'][] = ['hydrate', 'takeSubs
 function geaenderteSchreiben<T>(
   vorher: readonly T[],
   nachher: readonly T[],
-  schreiben: (eintrag: T, position: number) => void,
+  kennung: (eintrag: T) => string,
+  schreiben: (eintrag: T, position: number, alt: Zeilenstand<T> | undefined) => void,
 ): void {
-  for (let i = 0; i < nachher.length; i++) {
-    const eintrag = nachher[i]
-    if (eintrag !== undefined && vorher[i] !== eintrag) schreiben(eintrag, i)
-  }
+  const alt = new Map(vorher.map((eintrag, position) => [kennung(eintrag), { eintrag, position }]))
+  nachher.forEach((eintrag, position) => {
+    const davor = alt.get(kennung(eintrag))
+    if (!davor || davor.eintrag !== eintrag || davor.position !== position) schreiben(eintrag, position, davor)
+  })
+}
+
+/** Wo ein Eintrag vorher stand und wie er aussah — `undefined`, wenn es ihn nicht gab. */
+function zeilenstandIn<T>(liste: readonly T[], passt: (eintrag: T) => boolean): Zeilenstand<T> | undefined {
+  const position = liste.findIndex(passt)
+  const eintrag = liste[position]
+  return eintrag === undefined ? undefined : { eintrag, position }
 }
 
 /** Wie `wocheSpeichern`, nur gebündelt — für Änderungen je Tastenanschlag. */
@@ -712,13 +792,9 @@ const FS_GEBUENDELT: readonly AppAction['type'][] = [
   'updatePerson',
 ]
 
-/** Die in einer Woche verfallenen Zusagen vormerken — gelöscht wird erst, wenn die Woche geschrieben ist. */
+/** Die in einer Woche verfallenen Zusagen vormerken — sie gehen mit dem Schreiben der Woche hinaus. */
 function fsZusagenVormerken(congId: string, woche: string, verwaist: ReadonlyMap<string, string[]>): void {
-  const keys = verwaist.get(woche)
-  if (!keys?.length) return
-  nachDemSchreiben('treffpunkte', woche, (geschrieben) => {
-    if (geschrieben) deleteConfirmationRows(congId, keys)
-  })
+  verfallenVormerken(congId, 'treffpunkte', woche, verwaist.get(woche) ?? [])
 }
 
 /**
@@ -860,7 +936,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   const wochenSchreiben = !OHNE_WOCHENSCHREIBEN.includes(action.type)
   // Vor jedem Schreiben vormerken, was an den Wochen hängt (`nachDemSchreiben`)
   // — das Schreiben einer Woche nimmt mit, was bis dahin vorgemerkt ist.
-  if (wochenSchreiben) zusagenNachDemSchreiben(congId, verfallen.meeting)
+  if (wochenSchreiben) zusagenMitDerWoche(congId, verfallen.meeting)
   // Nicht nach `hydrate` und nicht nach einem Tausch — warum, steht an
   // `OHNE_ENTZUG`; der Reducer fragt dieselbe Liste (siehe unten).
   if (!OHNE_ENTZUG.has(action.type)) entzugNachDemSchreiben(entzogeneAller(prev, next))
@@ -912,18 +988,18 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (next.persoenlich !== prev.persoenlich) persoenlichBescheid(action.key, action.name, action.ja)
       break
     case 'addPerson':
-      personSofort(congId, action.person)
+      personSofort(congId, action.person, undefined)
       break
     case 'updatePerson': {
       // Auto-Speichern mit Debounce: Tipp-Änderungen werden gebündelt
       const p = next.persons.find((x) => x.id === action.id)
       // Einen doppelten oder leeren Namen nimmt „Person bearbeiten" gar nicht
       // erst an (T110, seit T121 Phase 6b) — was hier ankommt, darf hinaus.
-      if (p) personSaves.schedule(p.id, { congId, person: p })
+      if (p) personSaves.schedule(p.id, { congId, person: p, vorher: prev.persons.find((x) => x.id === action.id) })
       // Ein Gruppenwechsel beendet das Amt in der alten Gruppe (`aemterBeenden`)
       // — die Gruppe ist eine eigene Zeile. Ohne sie stünde er nach dem
       // nächsten Laden wieder als ihr Aufseher da und plante sie weiter.
-      geaenderteSchreiben(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
+      geaenderteSchreiben(prev.groups, next.groups, (g) => g.id, (grp, pos, alt) => saveGroupRow(congId, grp, pos, alt))
       // Die Namensänderung in den Wochen (renameInWeeks) und in den
       // Treffpunkten (fsRenameLeader) schreibt der Block unter dem Switch,
       // **gebündelt** (`GEBUENDELT`, `FS_GEBUENDELT`). Ein Nachname mit zwölf
@@ -936,7 +1012,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Rechte stehen in derselben Zeile.
       if ('plannerVorgemerkt' in action.patch || 'zuteilerVorgemerkt' in action.patch) {
         for (const m of next.members) {
-          if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m)
+          if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m, prev.members.find((x) => x.userId === m.userId))
         }
       }
       break
@@ -964,13 +1040,11 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       // Der Haushalt ist eine eigene Zeile, auf die `persons.fam` zeigt — er
       // muss also **vor** den Personen dastehen. `saveFamily` hält diese
       // Reihenfolge ein; sie ist der einzige Grund, warum es die Funktion gibt.
+      // Was von ihnen gebündelt wartet, bleibt: Es trägt nur seine eigenen
+      // Spalten, `fam` ist nicht dabei.
       const haushalt = geaendert.find((p) => p.fam)?.fam
-      if (haushalt) {
-        // Was von ihnen gebündelt wartet, steckt in diesem Stand schon — und
-        // ginge hinterher mit dem alten Haushalt hinaus (`personSofort`).
-        for (const p of geaendert) personSaves.cancel(p.id)
-        saveFamily(congId, haushalt, geaendert)
-      } else for (const p of geaendert) personSofort(congId, p)
+      if (haushalt) saveFamily(congId, haushalt, geaendert)
+      else for (const p of geaendert) personSofort(congId, p, prev.persons.find((q) => q.id === p.id))
       // Der letzte Haushalt, den niemand mehr trägt, verschwindet. Ohne das
       // bliebe eine leere Zeile stehen, an der nie wieder jemand hängt.
       const verwaist = new Set(
@@ -999,23 +1073,23 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'changeServiceCount': {
       const idx = next.services.findIndex((s) => s.key === action.key)
       const svc = next.services[idx]
-      if (svc) saveService(congId, svc, idx)
+      if (svc) saveService(congId, svc, idx, zeilenstandIn(prev.services, (s) => s.key === action.key))
       break
     }
     case 'moveService':
       // Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.
-      geaenderteSchreiben(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      geaenderteSchreiben(prev.services, next.services, (s) => s.key, (svc, pos, alt) => saveService(congId, svc, pos, alt))
       break
     case 'removeService': {
       deleteServiceRow(congId, action.key)
-      geaenderteSchreiben(prev.services, next.services, (svc, pos) => saveService(congId, svc, pos))
+      geaenderteSchreiben(prev.services, next.services, (s) => s.key, (svc, pos, alt) => saveService(congId, svc, pos, alt))
       // Die drei Spuren des Dienstes (data/dienste.ts) hat der Reducer aus dem
       // Zustand genommen — die Bereiche gehen hier an die Datenbank, die
       // Platzreihen und Zusagen im Block unter dem Switch. Nur die wirklich
       // geänderten Personen: unveränderte behalten ihre Referenz, und die
       // Listen sind indexgleich (`dienstBereichEntfernen` bildet der Reihe
       // nach ab).
-      geaenderteSchreiben(prev.persons, next.persons, (p) => personSofort(congId, p))
+      geaenderteSchreiben(prev.persons, next.persons, (p) => p.id, (p, _pos, alt) => personSofort(congId, p, alt?.eintrag))
       break
     }
     case 'addGroup':
@@ -1027,12 +1101,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     case 'updateGroup': {
       const idx = next.groups.findIndex((g) => g.id === action.id)
       const group = next.groups[idx]
-      if (group) saveGroupRow(congId, group, idx)
+      if (group) saveGroupRow(congId, group, idx, zeilenstandIn(prev.groups, (g) => g.id === action.id))
       break
     }
     case 'removeGroup':
       deleteGroupRow(action.id)
-      geaenderteSchreiben(prev.groups, next.groups, (grp, pos) => saveGroupRow(congId, grp, pos))
+      geaenderteSchreiben(prev.groups, next.groups, (g) => g.id, (grp, pos, alt) => saveGroupRow(congId, grp, pos, alt))
       // Mitglieder der Gruppe haben grp=null bekommen → mitschreiben
       for (const p of next.persons) {
         if (prev.persons.find((q) => q.id === p.id)?.grp === action.id) savePersonGroup(p)
@@ -1112,7 +1186,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
     }
     case 'updateMember': {
       const member = next.members.find((m) => m.userId === action.userId)
-      if (member) saveMemberRow(member)
+      if (member) saveMemberRow(member, prev.members.find((m) => m.userId === action.userId))
       break
     }
     case 'removeMember': {

@@ -43,9 +43,9 @@ import {
   fsSort,
   restKlient,
   versammlungHolen,
+  wocheSchreiben,
   WOCHENTAG_NAMEN,
   zugangsdaten,
-  zusagenLoeschen,
 } from './gemeinsam.mjs'
 
 /**
@@ -191,16 +191,18 @@ export async function main(argv = process.argv.slice(2)) {
 
   // Wochen zusammenführen — je Woche die neue Liste berechnen.
   const wochen = await rest(`weeks?select=start&congregation_id=eq.${cong.id}&order=start`)
-  const fsWochen = await rest(`fs_weeks?select=start,data&congregation_id=eq.${cong.id}&order=start`)
-  const alteNach = new Map(fsWochen.map((w) => [w.start, w.data]))
+  // Mit dem Stand: Geschrieben wird nur, solange die Woche noch so dasteht (`wocheSchreiben`).
+  const fsWochen = await rest(`fs_weeks?select=start,data,updated_at&congregation_id=eq.${cong.id}&order=start`)
+  const zeileNach = new Map(fsWochen.map((w) => [w.start, w]))
   const plan = wochen.map((w) => {
-    const alt = alteNach.get(w.start) ?? []
+    const zeile = zeileNach.get(w.start)
+    const alt = zeile?.data ?? []
     const umbenannt = []
     const neu = wocheNeu(w.start, regeln, alt, (altId, neuId) => umbenannt.push([altId, neuId]))
     // Was weder bleibt noch in einer Regel aufgeht, entfällt — samt Zusage.
     const bleibt = new Set([...neu.map((i) => i.id), ...umbenannt.map(([altId]) => altId)])
     const entfallen = alt.filter((o) => !bleibt.has(o.id))
-    return { start: w.start, alt, neu, neuzeile: !alteNach.has(w.start), umbenannt, entfallen }
+    return { start: w.start, stand: zeile?.updated_at ?? null, alt, neu, neuzeile: !zeile, umbenannt, entfallen }
   })
 
   console.log('\nWochen:')
@@ -229,19 +231,17 @@ export async function main(argv = process.argv.slice(2)) {
   appCodeBereit()
   const { fsKey } = await import('../supabase/functions/_shared/aufgaben-schluessel.ts')
   for (const p of plan) {
-    if (p.neuzeile) {
-      await rest('fs_weeks', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ congregation_id: cong.id, start: p.start, data: p.neu }),
-      })
-    } else {
-      await rest(`fs_weeks?congregation_id=eq.${cong.id}&start=eq.${p.start}`, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ data: p.neu }),
-      })
-    }
+    // Die Woche nur auf dem gelesenen Stand, und mit ihr in einer Transaktion
+    // die Zusagen der entfallenen Treffpunkte. Ohne Zeile ohne Stand — dann
+    // legt der Aufruf sie an.
+    await wocheSchreiben(rest, {
+      tabelle: 'fs_weeks',
+      cong: cong.id,
+      start: p.start,
+      stand: p.stand,
+      data: p.neu,
+      verfallen: p.entfallen.map((o) => fsKey(p.start, o.id)),
+    })
     // Die Zusagen folgen ihrem Treffpunkt — nach dem Schreiben der Woche, wie
     // in der App. Die neue Kennung ist frisch (`r<uuid>`), unter ihr steht
     // noch keine.
@@ -252,7 +252,6 @@ export async function main(argv = process.argv.slice(2)) {
         body: JSON.stringify({ task_key: fsKey(p.start, neuId) }),
       })
     }
-    await zusagenLoeschen(rest, cong.id, p.entfallen.map((o) => fsKey(p.start, o.id)))
   }
   console.log(`\nGeschrieben: ${regeln.length} Regel(n), ${plan.length} Woche(n) neu zusammengesetzt.`)
 }

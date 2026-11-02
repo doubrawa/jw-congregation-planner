@@ -35,18 +35,29 @@ function aendert(input: RequestInfo | URL, init?: RequestInit): boolean {
 export function verfolgterFetch(basis?: typeof fetch): typeof fetch {
   return (input, init) => {
     const antwort = (basis ?? globalThis.fetch)(input, init)
-    if (aendert(input, init)) {
-      begonnen++
-      // Ob er gelingt, ist hier gleich — nur, dass er angekommen ist.
-      const fertig = antwort.then(
-        () => undefined,
-        () => undefined,
-      )
-      unterwegs.add(fertig)
-      void fertig.then(() => unterwegs.delete(fertig))
-    }
+    if (aendert(input, init)) mitverfolgen(antwort)
     return antwort
   }
+}
+
+/**
+ * **Was gleich schreiben wird, schon jetzt als unterwegs führen** — die
+ * Schreibwege in `lib/data.ts` melden sich hier an, sobald sie losgehen. Am
+ * `fetch` allein bliebe eine Lücke, in der das Warten schon vorbei wäre: eine
+ * Schreibkette, die noch auf ihren Vorgänger wartet; ein Aufruf, dessen
+ * `fetch` erst nach dem Token kommt (supabase-js holt es vorher, nach einer
+ * Stunde übers Netz); was erst nach dem Schreiben einer Woche hinausgeht
+ * (`nachDemSchreiben` in `persist.ts`).
+ */
+export function mitverfolgen(arbeit: PromiseLike<unknown>): void {
+  begonnen++
+  // Ob sie gelingt, ist hier gleich — nur, dass sie angekommen ist.
+  const fertig = Promise.resolve(arbeit).then(
+    () => undefined,
+    () => undefined,
+  )
+  unterwegs.add(fertig)
+  void fertig.then(() => unterwegs.delete(fertig))
 }
 
 /** Wie viele ändernde Aufrufe bisher losgingen — das Nachladen vergleicht vorher und nachher. */

@@ -130,6 +130,24 @@ describe('syncAuxSlots', () => {
     item.aux = item.aux!.map((s) => Object.fromEntries(Object.entries({ ...s, name: 'Elke Brandt', pid: 'p7' }).reverse()) as unknown as typeof s)
     expect(syncAuxSlots(einmal, true)).toBe(einmal)
   })
+
+  /*
+   * **Ab der laufenden Woche** (`wirktAb`): Die Wochen davor fanden so statt,
+   * wie sie dastehen — mit Klasse oder ohne. Sonst nähme ein Ausschalten heute
+   * dem vergangenen Jahr seine Klasse, und die Auswertung zählte sie nicht mehr.
+   */
+  it('Ein- und Ausschalten lassen die Wochen vor `ab` stehen', () => {
+    const vorbei = { ...woche([teil('schulung')]), start: '2026-08-31' }
+    const kommt = woche([teil('schulung')]) // 7.9.
+    const an = syncAuxSlots([vorbei, kommt], true, '2026-09-07')
+    expect(an[0]).toBe(vorbei)
+    expect(hatAuxKlasse(an[1]!.mid)).toBe(true)
+
+    const beideAn = syncAuxSlots([vorbei, kommt], true)
+    const aus = syncAuxSlots(beideAn, false, '2026-09-07')
+    expect(hatAuxKlasse(aus[0]!.mid)).toBe(true)
+    expect(hatAuxKlasse(aus[1]!.mid)).toBe(false)
+  })
 })
 
 describe('Ausschalten beendet die Klasse überall', () => {

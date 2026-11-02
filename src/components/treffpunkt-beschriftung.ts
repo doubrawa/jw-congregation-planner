@@ -24,7 +24,11 @@ export function treffpunktTagLabel(kennung: string, wd: number, lang: string): s
   return tag ? gebundenesDatum(tag, lang, 'tag') : wochentagNameAusWd(wd, lang)
 }
 
-/** Versammlungstreffpunkt oder der Name seiner Gruppe (übersetzt). */
+/**
+ * Versammlungstreffpunkt oder der Name seiner Gruppe (übersetzt). Gibt es die
+ * Gruppe nicht mehr, steht ihr Treffpunkt nur noch in Wochen vor dem Entfernen
+ * (`fsGruppeEntfernen`) — dann ohne Namen, als Predigtdienstgruppe.
+ */
 export function treffpunktTitel(
   inst: Pick<FsInstance, 'grp'>,
   groups: readonly Group[],
@@ -32,7 +36,7 @@ export function treffpunktTitel(
 ): string {
   if (inst.grp == null) return i18n.t.fsVers
   const gruppe = groups.find((g) => g.id === inst.grp)
-  return gruppe ? i18n.tu(gruppe.name) : inst.grp
+  return gruppe ? i18n.tu(gruppe.name) : i18n.t.gruppeLbl
 }
 
 /** Die Worte der Häufigkeiten einer Regel (`FsRule.monthly`): jede Woche, der n-te Wochentag im Monat. */

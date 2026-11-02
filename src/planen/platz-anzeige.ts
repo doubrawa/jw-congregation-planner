@@ -38,7 +38,7 @@ export function platzAnzeige(
   slot: SlotAssignment | undefined,
   stand: ZusageStand | null,
   konflikt: Conflict | undefined,
-  t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
+  t: GrundTexte,
   absage?: string,
 ): PlatzAnzeige {
   const lage = lageVon(slot, stand?.stufe ?? null, konflikt !== undefined)
@@ -46,17 +46,17 @@ export function platzAnzeige(
   return { lage, hinweis, status: stand?.label }
 }
 
+/** Die Wörter für den Grund am Platz. */
+type GrundTexte = Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt' | 'paarPasstNicht'>
+
 /**
  * **Warum ein Platz ein Problem ist**: abwesend (am Treffpunkt: an seinem Tag),
- * sonst eine Doppelbelegung, sonst die Absage — beim Planen am Platz wie in
- * den Zusagen der Woche.
+ * ein Paar, das nicht zueinander passt, sonst eine Doppelbelegung, sonst die
+ * Absage — beim Planen am Platz wie in den Zusagen der Woche.
  */
-export function problemGrund(
-  konflikt: Conflict | undefined,
-  t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
-  absage: string = t.zusageAbgesagt,
-): string {
+export function problemGrund(konflikt: Conflict | undefined, t: GrundTexte, absage: string = t.zusageAbgesagt): string {
   if (konflikt?.kind === 'absent' || konflikt?.kind === 'fsAbsent') return t.abwesendChip
+  if (konflikt?.kind === 'partner') return t.paarPasstNicht
   return konflikt ? t.sheetSchonHeute : absage
 }
 
@@ -74,7 +74,7 @@ export function leiterAnzeige(
   inst: FsInstance,
   stand: (inst: FsInstance) => ZusageStand,
   konflikt: Conflict | undefined,
-  t: Pick<Dict, 'abwesendChip' | 'sheetSchonHeute' | 'zusageAbgesagt'>,
+  t: GrundTexte,
 ): PlatzAnzeige {
   return platzAnzeige(
     inst.leader ? { name: inst.leader } : undefined,

@@ -12,6 +12,7 @@ import type { RechteStufe } from '../data/rechte'
 import type { Lang, QualificationKey, Role } from '../data/types'
 import EN_OVERLAY from './overlays/en'
 import { DE } from './de'
+import { einmalNachladen } from './nachladen'
 
 // DE bleibt Teil der öffentlichen ui-API (Tests, Dict-Basis).
 export { DE }
@@ -56,18 +57,14 @@ export function loadOverlay(lang: Lang): Promise<boolean> {
   if (lang === 'de' || OVERLAY[lang]) return Promise.resolve(false)
   const loader = OVERLAY_MODULES[`./overlays/${lang}.ts`]
   if (!loader) return Promise.resolve(false)
-  let pending = overlayLoading.get(lang)
-  if (!pending) {
-    pending = loader().then((m) => {
+  return einmalNachladen(overlayLoading, lang, () =>
+    loader().then((m) => {
       OVERLAY[lang as Exclude<Lang, 'de'>] = m.default
-      overlayLoading.delete(lang)
       zusammengefuehrt.clear()
       overlayGen++
       return true
-    })
-    overlayLoading.set(lang, pending)
-  }
-  return pending
+    }),
+  )
 }
 
 /**
@@ -186,9 +183,22 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   'Tausch angefragt': 'notifTauschAngefragt',
   Getauscht: 'notifGetauscht',
   'Tausch abgelehnt': 'notifTauschAbgelehnt',
+  // Ein Gerät hat sich mit dem Zugang eines bestehenden Kontos angemeldet
+  // (Function `anmelden`).
+  'Neue Anmeldung': 'notifNeueAnmeldung',
   // Abgelegt wie die vier oben: An die Eingetragenen einer Zeugnis-Schicht
   // (5. bis 14.10.2026, Stand und Schicht) — sie fiel aus, oder Uhrzeit bzw.
   // Ort hatten sich geändert. Seit den Trolleys gibt es keine Schichten mehr.
   'Schicht fällt aus': 'notifOzAusfall',
   'Schicht geändert': 'notifOzGeaendert',
+}
+
+/**
+ * **Mitteilungen mit festem Text.** Ein Rumpf besteht sonst aus Atomen
+ * (Dienst, Termin, Name), die der Fragment-Übersetzer einzeln überträgt; ein
+ * ganzer Satz kennt er nicht. Steht ein fester Satz im Rumpf, schlägt die Glocke
+ * ihn hier im Wörterbuch nach — wie den Titel in `NOTIF_TITLE_KEY`.
+ */
+export const NOTIF_TEXT_KEY: Record<string, keyof Dict> = {
+  'Mit deinem Zugang wurde ein Gerät angemeldet. Warst du das nicht, sag es bitte den Ältesten.': 'notifNeueAnmeldungText',
 }

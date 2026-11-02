@@ -116,6 +116,9 @@ export function wochenPraefixe(woche: string): [string, string] {
   return [`${woche}|`, `fs|${woche}|`]
 }
 
+/** Eine Platznummer, wie `punktKey` und `helferKey` sie schreiben: eine Zahl ohne führende Null. */
+const PLATZNUMMER = /^(0|[1-9][0-9]*)$/
+
 /**
  * Einen Schlüssel zerlegen — `null` bei jeder Form, die hier nicht steht.
  *
@@ -130,11 +133,11 @@ export function wochenPraefixe(woche: string): [string, string] {
  * nur, wenn gar keine Treffpunkt-Wochen bestehen, und schon damals lief er ins
  * Leere.
  *
- * **Die Platznummer ist eine Ziffernfolge, nichts sonst** — genau wie in der
- * SQL-Fassung. Früher las `Number()` auch „0.0" oder „+0" als Platz 0, während
- * die Datenbank dieselbe Schreibweise als unbekannte Form durchließ: So ließ
- * sich eine Absage für einen fremden Platz anlegen, die `substitute` dann für
- * echt hielt.
+ * **Die Platznummer steht, wie die App sie schreibt** (`PLATZNUMMER`) — genau
+ * wie in der SQL-Fassung. „0.0", „+0" oder „01" sind ein bekannter Platz in
+ * fremder Schreibweise: Durchgelassen, stünde neben der Zusage zu „…|1" eine
+ * zweite zu „…|01", die jeder Vergleich der Schlüssel für einen anderen Platz
+ * hält — und eine Absage, die `substitute` für echt nähme.
  */
 export function schluesselTeile(key: string): SchluesselTeile | null {
   const p = String(key ?? '').split('|')
@@ -148,7 +151,7 @@ export function schluesselTeile(key: string): SchluesselTeile | null {
   const tab = p[1]
   if (!istWochenKennung(woche) || (tab !== 'mid' && tab !== 'we')) return null
   if (p.length === 3 && p[2] === 'ratgeber') return { art: 'ratgeber', woche, tab }
-  if (p.length !== 5 || !/^\d+$/.test(p[4] ?? '')) return null
+  if (p.length !== 5 || !PLATZNUMMER.test(p[4] ?? '')) return null
   if (p[2] === 'helper') return { art: 'helper', woche, tab, svc: p[3] ?? '', pos: Number(p[4]) }
   if (p[2] === 'part' || p[2] === 'aux') {
     return { art: p[2], woche, tab, iid: p[3] ?? '', ni: Number(p[4]) }

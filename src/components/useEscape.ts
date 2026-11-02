@@ -30,12 +30,17 @@ const stapel: Array<object> = []
  *
  * Über eine Ref, damit ein bei jedem Render neu erzeugtes `onEscape` den
  * Effekt nicht ab- und wieder anmeldet.
+ *
+ * `aktiv`: für Overlays, die mit ihrem Baustein schon dastehen, aber erst
+ * später aufgehen (der Kalender im Datumswähler). Sie kommen erst beim Öffnen
+ * auf den Stapel — und liegen damit über dem Blatt, in dem sie stehen.
  */
-export function useEscape(onEscape: () => void): void {
+export function useEscape(onEscape: () => void, aktiv = true): void {
   const handler = useRef(onEscape)
   handler.current = onEscape
 
   useEffect(() => {
+    if (!aktiv) return
     // Eine Marke je Einhängung — sie sagt, an welcher Stelle des Stapels dieses
     // Blatt liegt. Die Funktion selbst taugte dafür nicht: Zwei Blätter mit
     // demselben Verhalten wären dieselbe Marke.
@@ -56,5 +61,5 @@ export function useEscape(onEscape: () => void): void {
       const i = stapel.lastIndexOf(marke)
       if (i >= 0) stapel.splice(i, 1)
     }
-  }, [])
+  }, [aktiv])
 }

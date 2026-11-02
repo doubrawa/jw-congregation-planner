@@ -25,6 +25,7 @@ import { LanguageSheet } from '../components/LanguageSheet'
 import { HilfsdienstBlatt } from '../einstellungen/HilfsdienstBlatt'
 import { S89Sheet } from '../components/S89Sheet'
 import { EinstellungenScreen } from '../einstellungen/EinstellungenScreen'
+import { anmeldungInAdresse } from '../login/anmelde-adresse'
 import { LoginScreen } from '../login/LoginScreen'
 import { DashboardScreen } from '../dashboard/DashboardScreen'
 import { AlleGelesen } from '../mitteilungen/AlleGelesen'
@@ -37,6 +38,7 @@ import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
 import { useApp, type Toast } from './context'
+import { neuLaden } from './neu-laden'
 import { eigenePerson, rolleUndGruppe } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
@@ -140,7 +142,17 @@ export function AppShell() {
         history.replaceState(history.state, '', location.pathname + location.search)
       }
     }
-    const onHash = () => applyFrom(location.hash)
+    const onHash = () => {
+      // Ein Anmelde-Link oder Zettel-Code in die schon offene App — der
+      // Messenger öffnet ihn oft im selben Tab, und dann wechselt nur der Hash.
+      // Gelesen wird die Adresse beim Start (`anmelde-adresse.ts`), also neu
+      // laden; sonst bliebe der Vorgänger angemeldet.
+      if (anmeldungInAdresse(location.hash)) {
+        void neuLaden()
+        return
+      }
+      applyFrom(location.hash)
+    }
     window.addEventListener('hashchange', onHash)
 
     const sw = navigator.serviceWorker

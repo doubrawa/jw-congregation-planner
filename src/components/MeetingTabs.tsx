@@ -42,6 +42,8 @@ interface MeetingTabsProps {
  *
  * Vorgelesen wird „Versammlung Dienstag, 8.9. · 19:00" (`versammlungTag`): Der
  * Wochentag allein unterschiede die Karten, sagte aber nicht, wofür sie stehen.
+ * Bei einer ausgefallenen folgt „entfällt" (`druckEntfaellt`) — das
+ * Durchstreichen liest kein Vorleseprogramm vor.
  */
 export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
@@ -68,7 +70,7 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
             type="button"
             className={tab === key ? 'meeting-tab is-active' : 'meeting-tab'}
             aria-pressed={tab === key}
-            aria-label={`${fill(t.versammlungTag, { tag: name })}, ${wann}`}
+            aria-label={[fill(t.versammlungTag, { tag: name }), wann, ...(aus ? [t.druckEntfaellt] : [])].join(', ')}
             onClick={() => onChange(key)}
           >
             <span className="meeting-tab-name">{aus ? <s>{name}</s> : name}</span>

@@ -63,7 +63,7 @@ describe('angleichen', () => {
   })
 
   it('eine Woche ohne die eingeschaltete Klasse: angleichen — abgewiesen wird seit dem 15.10.2026 niemand mehr', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
+    const [e] = angleichen({ wochen: [zeile('2026-09-07')], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([GRUND_KLASSE])
     expect(hindernis(e!.gruende)).toBe('')
     expect(e?.woche?.mid.auxRatgeber).toBeDefined()
@@ -71,14 +71,14 @@ describe('angleichen', () => {
   })
 
   it('eine Woche, die schon dasteht wie geladen: nichts zu tun', async () => {
-    const angeglichen = syncAuxSlots([probeWoche('2026-08-24') as never], true)[0]
-    const [e] = angleichen({ wochen: [zeile('2026-08-24', angeglichen)], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
+    const angeglichen = syncAuxSlots([probeWoche('2026-09-07') as never], true)[0]
+    const [e] = angleichen({ wochen: [zeile('2026-09-07', angeglichen)], fsWochen: [], regeln: [], personen: [], auxClass: true }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([])
     expect(e?.woche).toBeNull()
   })
 
   it('keine Treffpunkt-Zeile, aber ein Grundplan: anlegen — sonst weist der Trigger den Gruppenaufseher ab', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: false }, await appFunktionen(HEUTE))
+    const [e] = angleichen({ wochen: [zeile('2026-09-07')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: false }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([GRUND_TREFFPUNKTE_FEHLEN])
     expect(hindernis(e!.gruende)).toBe('Gruppenaufseher abgewiesen')
     expect(e?.neueTreffpunktZeile).toBe(true)
@@ -88,7 +88,7 @@ describe('angleichen', () => {
   it('ein Treffpunkt ohne Regel fällt weg, wie beim Laden', async () => {
     const verwaist = [{ id: 'weg', ruleId: 'gibt-es-nicht', grp: G1, wd: 3, time: '18:00', place: 'Weg', leader: '' }]
     const [e] = angleichen(
-      { wochen: [zeile('2026-08-24')], fsWochen: [{ start: '2026-08-24', data: verwaist }], regeln: [REGEL], personen: [], auxClass: false },
+      { wochen: [zeile('2026-09-07')], fsWochen: [{ start: '2026-09-07', data: verwaist }], regeln: [REGEL], personen: [], auxClass: false },
       await appFunktionen(HEUTE),
     )
     expect(e?.gruende).toEqual([GRUND_GRUNDPLAN])
@@ -96,8 +96,16 @@ describe('angleichen', () => {
     expect(e?.treffpunkte?.some((i: { id: string }) => i.id === 'weg')).toBe(false)
   })
 
+  it('eine Woche vor der laufenden gleicht es nicht an — wie die App beim Laden (`wirktAb`)', async () => {
+    // Am 7.9. ist der 31.8. vorbei: ohne Klasse und ohne Treffpunkt-Zeile, und so bleibt sie.
+    const [e] = angleichen({ wochen: [zeile('2026-08-31')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: true }, await appFunktionen(HEUTE))
+    expect(e?.gruende).toEqual([])
+    expect(e?.woche).toBeNull()
+    expect(e?.treffpunkte).toBeNull()
+  })
+
   it('ohne Grundplan und ohne Zeile: keine leere Treffpunkt-Zeile', async () => {
-    const [e] = angleichen({ wochen: [zeile('2026-08-24')], fsWochen: [], regeln: [], personen: [], auxClass: false }, await appFunktionen(HEUTE))
+    const [e] = angleichen({ wochen: [zeile('2026-09-07')], fsWochen: [], regeln: [], personen: [], auxClass: false }, await appFunktionen(HEUTE))
     expect(e?.gruende).toEqual([])
     expect(e?.treffpunkte).toBeNull()
   })
@@ -113,7 +121,7 @@ describe('main', () => {
 
   const bestand = () => ({
     congregations: [{ id: C, name: 'Probe', aux_class: true }],
-    weeks: [zeile('2026-08-24'), zeile('2026-08-31')],
+    weeks: [zeile('2026-09-07'), zeile('2026-09-14')],
     fs_rules: [REGEL],
   })
   const schreibend = (aufrufe: Aufruf[]) => aufrufe.filter((a) => a.method !== 'GET').map((a) => `${a.method} ${tabelleVon(a)}`)
@@ -122,15 +130,18 @@ describe('main', () => {
     const { aufrufe, ausgabe } = await fahre(() => main(['--trocken']), { bestand: bestand() })
     expect(schreibend(aufrufe)).toEqual([])
     const text = ausgabe.join('\n')
-    expect(text).toContain(`2026-08-24  ${GRUND_KLASSE}, ${GRUND_TREFFPUNKTE_FEHLEN}  ← Gruppenaufseher abgewiesen`)
+    expect(text).toContain(`2026-09-07  ${GRUND_KLASSE}, ${GRUND_TREFFPUNKTE_FEHLEN}  ← Gruppenaufseher abgewiesen`)
     expect(text).toContain('nichts geschrieben')
   })
 
   it('gleicht an — die Wochen auf ihren Stand — und ein zweiter Lauf findet nichts mehr', async () => {
     const erster = await fahre(() => main([]), { bestand: bestand() })
-    expect(schreibend(erster.aufrufe)).toEqual(['PATCH weeks', 'POST fs_weeks', 'PATCH weeks', 'POST fs_weeks'])
-    const patch = erster.aufrufe.find((a) => a.method === 'PATCH')!
-    expect(new URL(`https://x/${patch.pfad}`).searchParams.get('updated_at')).toBe(`eq.${STAND}`)
+    expect(schreibend(erster.aufrufe)).toEqual([
+      'POST rpc/woche_speichern', 'POST rpc/treffpunkte_speichern', 'POST rpc/woche_speichern', 'POST rpc/treffpunkte_speichern',
+    ])
+    const staende = erster.aufrufe.filter((a) => a.method === 'POST').map((a) => (a.body as { p_stand: string | null }).p_stand)
+    // Die Woche auf ihren Stand; die Treffpunkt-Zeile gab es noch nicht.
+    expect(staende).toEqual([STAND, null, STAND, null])
 
     // Was der erste Lauf hinterlassen hat, ist der Bestand des zweiten.
     const { tabellen } = erster
@@ -141,11 +152,11 @@ describe('main', () => {
 
   it('hat inzwischen jemand gespeichert, bleibt die Woche — samt ihren Treffpunkten', async () => {
     const { aufrufe, ausgabe } = await fahre(() => main([]), {
-      bestand: { ...bestand(), weeks: [zeile('2026-08-24')] },
+      bestand: { ...bestand(), weeks: [zeile('2026-09-07')] },
       // Der Vergleich auf den Stand trifft nichts: ein anderer war schneller.
-      stoerung: (a) => (a.method === 'PATCH' && tabelleVon(a) === 'weeks' ? { status: 200, json: [] } : undefined),
+      stoerung: (a) => (tabelleVon(a) === 'rpc/woche_speichern' ? { status: 200, json: [] } : undefined),
     })
-    expect(schreibend(aufrufe)).toEqual(['PATCH weeks'])
+    expect(schreibend(aufrufe)).toEqual(['POST rpc/woche_speichern'])
     expect(ausgabe.join('\n')).toContain('inzwischen geändert')
   })
 })

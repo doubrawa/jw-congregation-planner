@@ -3,6 +3,7 @@ import { fromIso, isoDay } from '../data/meeting-dates'
 import { Chevron } from './Chevron'
 import { gebundenesDatum } from './datum-anzeige'
 import { imMonat, monatPlus, monatsRaster, monatVon, wochentagKuerzel } from './kalender'
+import { useEscape } from './useEscape'
 import './datepicker.css'
 
 /**
@@ -33,21 +34,18 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
     if (open) setView(monatVon(value))
   }, [open, value])
 
-  // Klick außerhalb / Escape schließt das Popup.
+  // Escape gehört dem offenen Kalender, nicht dem Blatt, in dem er steht: Ein
+  // Druck schließt nur ihn, der nächste das Blatt (`useEscape` mit `open`).
+  useEscape(() => setOpen(false), open)
+
+  // Ein Klick außerhalb schließt das Popup.
   useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
     document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
   // Über `datum-anzeige`: einmal gebaute Formate, Zahl und Wort gebunden (T128).

@@ -44,7 +44,14 @@
  * Idempotent: Ein zweiter Lauf meldet „0 zu ändern".
  */
 
-import { alleZeilen, alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import {
+  alleZeilen,
+  alsSkript,
+  argumente,
+  restKlient,
+  wocheSchreiben,
+  zugangsdaten,
+} from './gemeinsam.mjs'
 
 /**
  * Art eines Abschnitts unter der Woche: gespeichert (`kind`) oder an der Farbe,
@@ -142,7 +149,7 @@ export async function main(argv = process.argv.slice(2)) {
   const filter = arg.cong ? `&congregation_id=eq.${arg.cong}` : ''
   // Alle Wochen aller Versammlungen — seitenweise (`alleZeilen`): Mehr als 1000
   // gäbe PostgREST in einer Abfrage nicht heraus, und es fielen die neuesten weg.
-  const rows = await alleZeilen(rest, `weeks?select=congregation_id,start,data&order=congregation_id.asc,start.asc${filter}`)
+  const rows = await alleZeilen(rest, `weeks?select=congregation_id,start,data,updated_at&order=congregation_id.asc,start.asc${filter}`)
   if (!rows?.length) { console.error('Keine Wochen gefunden.'); process.exit(1) }
 
   const zuSchreiben = []
@@ -160,12 +167,10 @@ export async function main(argv = process.argv.slice(2)) {
     return
   }
 
+  // Nur auf dem gelesenen Stand (`wocheSchreiben`): Was ein Planer während des
+  // Laufs ändert, bleibt stehen — das Skript bricht dann ab, statt es zu überschreiben.
   for (const w of zuSchreiben) {
-    await rest(`weeks?congregation_id=eq.${w.congregation_id}&start=eq.${w.start}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ data: w.data }),
-    })
+    await wocheSchreiben(rest, { cong: w.congregation_id, start: w.start, stand: w.updated_at, data: w.data })
   }
   console.log(`\n${zuSchreiben.length} Wochen geschrieben. Zur Kontrolle noch einmal mit --trocken: „0 zu ändern".`)
 }

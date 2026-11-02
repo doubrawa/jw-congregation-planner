@@ -80,8 +80,25 @@ function chainFor(table: string) {
   return chain
 }
 
+/**
+ * Die Funktionen, die eine Woche schreiben, mit den verfallenen Zusagen in
+ * einer Transaktion. Im Protokoll stehen sie wie ein Schreiben in die
+ * Tabellen: Ein Stand steht als `eq updated_at`, eine Antwort `{ updated_at }`
+ * kommt als `[{ stand }]` zurück.
+ */
+const WOCHEN_FUNKTION: Record<string, string> = { woche_speichern: 'weeks', treffpunkte_speichern: 'fs_weeks' }
+
 /** Ein Funktionsaufruf: die nächste hinterlegte Antwort, sonst eine leere Liste. Mitgeschrieben als `rpc/<name>`. */
-function rpcFor(name: string) {
+function rpcFor(name: string, args: Record<string, unknown> = {}) {
+  const tabelle = WOCHEN_FUNKTION[name]
+  if (tabelle) {
+    if (args.p_stand != null) store.filter.push([tabelle, 'eq', 'updated_at', args.p_stand])
+    const antwort = (store.responses[tabelle] ?? []).shift() ?? { data: null, error: null }
+    return Promise.resolve(antwort).then((r: { data: unknown; error: unknown }) => {
+      const zeile = r.data as { updated_at?: string } | null
+      return { data: zeile?.updated_at ? [{ stand: zeile.updated_at }] : [], error: r.error }
+    })
+  }
   store.filter.push([`rpc/${name}`, 'rpc', '', null])
   return Promise.resolve((store.responses[`rpc/${name}`] ?? []).shift() ?? { data: [], error: null })
 }

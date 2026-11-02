@@ -755,10 +755,22 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
 describe('Die Zusätzliche Klasse ist ein eigener Platz, kein zweiter Hauptsaal', () => {
   const mitKlasse = () => syncAuxSlots([woche('2026-09-07')], true)
 
-  it('der Kopf nennt den Raum in der Sprache des Lesers', () => {
-    const sel: SlotSelection = { ...SEL_SCHUELER, aux: true, labelRolle: 'Zusätzliche Klasse' } as SlotSelection
-    const { container } = zeige(sel, { weeks: mitKlasse(), auxClass: true })
-    expect(container.querySelector('.sheet-title')?.textContent).toContain('Zusätzliche Klasse')
+  it('der Kopf nennt den Raum in der Sprache des Lesers — aus `aux`, nicht aus der Auswahl', () => {
+    // Die Auswahl trägt keine Wörter (`auswahlFuer`): So nennt jeder Weg ins
+    // Blatt den Raum, auch „Zuteilen" in den Zusagen der Woche.
+    const sel: SlotSelection = { ...SEL_SCHUELER, aux: true } as SlotSelection
+    const { container } = zeige(sel, { weeks: mitKlasse(), auxClass: true, lang: 'en' })
+    expect(container.querySelector('.sheet-title')?.textContent).toContain(dict('en').auxKlasse)
+    // Gegenprobe: Der Hauptsaal nennt keinen Raum.
+    cleanup()
+    const haupt = zeige(SEL_SCHUELER, { weeks: mitKlasse(), auxClass: true, lang: 'en' })
+    expect(haupt.container.querySelector('.sheet-title')?.textContent).not.toContain(dict('en').auxKlasse)
+  })
+
+  it('der Ratgeber: Raum und Rolle setzt das Blatt', () => {
+    const sel: SlotSelection = { kind: 'ratgeber', wi: 0, tab: 'mid', label: '', priv: 'ratgeber', groups: false }
+    const { container } = zeige(sel, { weeks: mitKlasse(), auxClass: true, lang: 'en' })
+    expect(container.querySelector('.sheet-title')?.textContent).toBe(`${dict('en').auxKlasse} · ${dict('en').auxRatgeber}`)
   })
 
   it('wer im Hauptsaal steht, gilt in der Klasse als „an diesem Tag schon"', () => {

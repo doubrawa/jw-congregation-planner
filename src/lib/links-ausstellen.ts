@@ -5,6 +5,7 @@
  * die App seit dem 31.10.2026 keine mehr.
  */
 
+import { codeAnzeige } from '../../supabase/functions/_shared/anmeldung.ts'
 import type { AnmeldeLink } from '../data/types'
 import { supabase } from './supabase'
 
@@ -15,7 +16,7 @@ export interface AusgestellterLink {
   url: string
   /** Der Link im QR-Code des Zettels (`#code=`). */
   zettelUrl: string
-  /** Der Code zum Eintippen, gegliedert wie auf dem Zettel („K7RD-2QWM"). */
+  /** Der Code zum Eintippen, gegliedert wie auf dem Zettel („K7RD 2QWM"). */
   code: string
   gueltigBis: string
 }
@@ -42,7 +43,9 @@ export async function linksAusstellen(personIds: readonly string[]): Promise<Aus
       console.error('[send-invite]', error?.message ?? 'Antwort ohne Links')
       return { ...ergebnis, fehler: true }
     }
-    ergebnis.links.push(...antwort.links)
+    // Gegliedert wird hier, für Zettel und Nachricht zugleich: Ein älterer Stand
+    // der Function schickt den Code noch mit Bindestrich.
+    ergebnis.links.push(...antwort.links.map((l) => ({ ...l, code: codeAnzeige(l.code) })))
   }
   return ergebnis
 }

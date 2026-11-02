@@ -190,6 +190,15 @@ const fakeFetch = async (
       // Dublette **ganz** scheitert oder nur sie überspringt.
       headers: init?.headers ?? {},
     })
+    // Ein DELETE auf das Tagebuch nimmt die Zeilen heraus und nennt sie — so
+    // antwortet PostgREST mit `return=representation`.
+    if (method === 'DELETE' && path.startsWith('assignment_log')) {
+      const trifft = (z: { task_key: string; name: string }) =>
+        z.task_key === filterWert(path, 'task_key') && z.name === filterWert(path, 'name')
+      const weg = log.filter(trifft)
+      log = log.filter((z) => !trifft(z))
+      return jsonRes(weg)
+    }
     return new Response(null, { status: 204 })
   }
 
@@ -605,6 +614,8 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
         { id: 'r1', grp: 'g1', wd: 6, time: '09:30', place: 'Saal', leader: 'Bernd Cohn', lpid: 'p-bernd' },
         { id: 'r2', grp: 'g2', wd: 6, time: '10:00', place: 'Park', leader: 'Bernd Cohn', lpid: 'p-bernd' },
       ]
+      // Anna wusste von der Leitung: „Plan senden" hatte sie ihr gemeldet.
+      log = [{ task_key: `fs|${WOCHE}|r1`, name: 'Anna Berg' }]
     })
 
     it('meldet den Entzug einer Treffpunkt-Leitung seiner Gruppe', async () => {
@@ -612,6 +623,26 @@ describe('Eine zurückgezogene Zusage erreicht den Betroffenen sofort', () => {
       const zeilen = zeilenIn('notifications')
       expect(zeilen).toHaveLength(1)
       expect(zeilen[0]).toMatchObject({ user_id: U_ANNA, title: TITEL_ENTZUG })
+      expect(log).toEqual([])
+    })
+
+    /*
+     * Wem er den Entzug schickt, entscheidet das Tagebuch, nicht sein Rumpf —
+     * sonst schickte er jedem eine Nachricht über einen Platz, von dem der nie
+     * wusste, mit Bezeichnung und Termin nach Belieben.
+     */
+    it('nur, wer im Tagebuch stand: wem nichts gemeldet war, dem meldet er auch keinen Entzug', async () => {
+      log = []
+      expect((await fsEntzug('r1')).status).toBe(200)
+      expect(zeilenIn('notifications')).toEqual([])
+      expect(sentPush).toEqual([])
+    })
+
+    it('ein Eintrag desselben Platzes unter anderem Namen zählt nicht', async () => {
+      log = [{ task_key: `fs|${WOCHE}|r1`, name: 'Bernd Cohn' }]
+      expect((await fsEntzug('r1')).status).toBe(200)
+      expect(zeilenIn('notifications')).toEqual([])
+      expect(log).toEqual([{ task_key: `fs|${WOCHE}|r1`, name: 'Bernd Cohn' }])
     })
 
     it('nicht für eine fremde Gruppe, nicht für eine Zusammenkunft', async () => {
@@ -1120,6 +1151,8 @@ describe('Ein gestrichener Treffpunkt gehört weiter seiner Gruppe', () => {
     authUser = U_AUFSEHER // leitet g1
     fsWoche = [] // beide Treffpunkte in dieser Woche gestrichen
     fsRegeln = [{ id: 'r1', grp: 'g1' }, { id: 'r2', grp: 'g2' }]
+    // Gemeldet war Anna die Leitung — sonst meldet der Aufseher keinen Entzug.
+    log = [{ task_key: `fs|${WOCHE}|r1`, name: 'Anna Berg' }]
   })
 
   it('der Aufseher meldet den Entzug — die Gruppe kommt aus der Regel', async () => {
@@ -1158,6 +1191,24 @@ describe('Das Tagebuch kennt die Person auch ohne Id im Platz', () => {
     expect(eintraege.find((e) => e.task_key === KEY_ANNA)).toMatchObject({ person_id: 'p-anna', user_id: U_ANNA })
     expect(eintraege.find((e) => e.name === 'Gast Platzhalter')).toMatchObject({ person_id: null, user_id: null })
   })
+
+  /*
+   * `assignment_log.person_id` ist ein Fremdschlüssel. Steht in der Woche noch
+   * die Id einer gelöschten Person, wiese sie den ganzen Stapel ab — das
+   * Tagebuch bliebe leer, und erinnert würde an nichts.
+   */
+  it('eine Id, die es nicht mehr gibt, kommt nicht ins Tagebuch — auch nicht über einen Namensvetter', async () => {
+    const w = frischeWoche() as { mid: { sections: { items: unknown[] }[] } }
+    w.mid.sections[0]!.items = [
+      { iid: 'i1', title: 'Bibellesung', names: [{ name: 'Anna Berg', pid: 'p-geloescht' }] },
+      punkt('i3', 'Gebet', 'Bernd Cohn'),
+    ]
+    woche = w
+    expect((await plan()).status).toBe(200)
+    const eintraege = zeilenIn('assignment_log')
+    expect(eintraege.find((e) => e.task_key === KEY_ANNA)).toMatchObject({ name: 'Anna Berg', person_id: null })
+    expect(eintraege.find((e) => e.name === 'Bernd Cohn')).toMatchObject({ person_id: 'p-bernd' })
+  })
 })
 
 describe('Fehlt eine Nebentabelle, geht der Plan trotzdem hinaus', () => {
@@ -1176,17 +1227,22 @@ describe('Fehlt eine Nebentabelle, geht der Plan trotzdem hinaus', () => {
     expect(protokoll).toHaveBeenCalledWith(expect.stringContaining('fs_weeks nicht lesbar'))
   })
 
-  it('ohne lesbares Tagebuch wird gesendet — lieber eine Wiederholung als ein Ausfall', async () => {
+  /*
+   * **Das Tagebuch ist keine Nebentabelle.** Ohne es schickte „Plan senden"
+   * allen dieselbe Nachricht noch einmal, und „Jetzt erinnern" fände niemanden,
+   * der von seinem Platz weiß — und meldete Erfolg. Also scheitert der Aufruf,
+   * und der Planer versucht es noch einmal.
+   */
+  it.each([
+    ['Plan senden', () => plan()],
+    ['Jetzt erinnern', () => ruf({ action: 'erinnern', weekStart: WOCHE })],
+  ])('ohne lesbares Tagebuch scheitert %s — nichts geht hinaus', async (_was, aufruf) => {
     log = [{ task_key: KEY_ANNA, name: 'Anna Berg' }] // Anna weiß schon
-    // Positivkontrolle: Mit lesbarem Tagebuch bleibt sie draußen.
-    await plan()
-    expect(zeilenIn('notifications').map((z) => z.user_id)).toEqual([U_BERND])
-
-    writes = []
     kaputt = new Set(['assignment_log'])
-    expect((await plan()).status).toBe(200)
-    expect(zeilenIn('notifications').map((z) => z.user_id).sort()).toEqual([U_ANNA, U_BERND].sort())
-    expect(protokoll).toHaveBeenCalledWith(expect.stringContaining('assignment_log nicht lesbar'))
+    const res = await aufruf()
+    expect(res.status).toBe(500)
+    expect(writes).toEqual([])
+    expect(sentPush).toEqual([])
   })
 
   it('scheitert eine tragende Abfrage, antwortet die Function 500 — ohne Pfad und Rumpf von PostgREST', async () => {

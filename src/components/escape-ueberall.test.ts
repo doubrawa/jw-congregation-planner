@@ -25,18 +25,15 @@ describe('Overlays lassen sich mit Escape schließen', () => {
   }) as Record<string, string>
 
   /**
-   * Wer kein `useEscape` braucht — jeder Eintrag mit seinem Grund.
+   * Wer kein `useEscape` braucht — jeder Eintrag mit seinem Grund. Leer: Wer
+   * Escape nur in einem Zustand braucht, sagt es `useEscape` (`aktiv`) — wie
+   * der Datumswähler mit seinem Kalender. So liegt er auch im Stapel richtig.
    *
-   * Der Eintrag regelt Escape **selbst**, weil er den Effekt an einen Zustand
-   * binden muss (`useEscape` kennt kein „nur wenn offen"). Dass er es wirklich
-   * tut, prüft der zweite Test — sonst wäre diese Liste ein bequemer Ort, um
-   * eine echte Lücke abzulegen. Bis zum 13.10.2026 stand hier auch das Gerüst
-   * mit der Schublade; die ist seitdem ein eigener Baustein, der nur offen
-   * gezeichnet wird, und nimmt `useEscape` wie jedes Blatt.
+   * Regelt ein Eintrag Escape **selbst**, prüft der zweite Test, dass er es
+   * wirklich tut — sonst wäre diese Liste ein bequemer Ort, um eine echte
+   * Lücke abzulegen.
    */
-  const AUSNAHMEN: Record<string, string> = {
-    'DatePicker.tsx': 'Kein modaler Dialog, sondern ein Popup — Escape hängt dort am `open`-Zustand.',
-  }
+  const AUSNAHMEN: Record<string, string> = {}
 
   /** Bausteine, die einen Dialog zeichnen — Prüfstände zählen nicht mit. */
   const dialoge = Object.entries(QUELLEN).filter(

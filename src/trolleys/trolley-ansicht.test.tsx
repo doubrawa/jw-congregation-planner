@@ -244,6 +244,27 @@ describe('am Desktop: die Woche als Raster, das Formular rechts', () => {
     expect(seite.querySelector('.dp-field')?.textContent).toBe(zehnter)
     expect(knopf(seite, 'Trolley 2')?.getAttribute('aria-pressed')).toBe('true')
   })
+
+  it('die Meldung des Servers gilt der abgeschickten Eingabe — ein Klick ins Raster nimmt sie weg', async () => {
+    // Sonst stünde „keine Verbindung" über einem Tag, für den nie jemand
+    // abgeschickt hat.
+    trolley.trolleyEintragen.mockResolvedValue({ ok: false, fehler: 'netz' })
+    const { container } = zeige()
+    const frei = (passt: (label: string) => boolean) =>
+      [...container.querySelectorAll<HTMLButtonElement>('.trolley-woche-frei')].find((b) => {
+        const label = b.getAttribute('aria-label') ?? ''
+        return label.includes('Trolley 2') && passt(label)
+      })!
+    const seite = container.querySelector('aside.trolley-seite')!
+    fireEvent.click(frei((l) => l.startsWith('Donnerstag')))
+    fireEvent.click(knopf(seite, t.trolleyPartnerGesucht)!)
+    await act(async () => {
+      fireEvent.click(knopf(seite.querySelector('.sheet-fuss-ende')!, t.trolleyEintragen)!)
+    })
+    expect(seite.querySelector('[role="alert"]')?.textContent).toBe(t.trolleyFehlerNetz)
+    fireEvent.click(frei((l) => !l.startsWith('Donnerstag')))
+    expect(seite.querySelector('[role="alert"]')).toBeNull()
+  })
 })
 
 /**

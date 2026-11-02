@@ -50,6 +50,21 @@ describe('relativeZeit: die Stufen', () => {
     expect(relativeZeit(vor(3 * TAG), 'en', JETZT)).toBe(zahlBinden('3 days ago'))
   })
 
+  describe('ab einem Tag zählen die Kalendertage, nicht 24-Stunden-Blöcke', () => {
+    // Örtlich gebaut, damit die Probe in jeder Zeitzone dasselbe misst:
+    // Samstag, 12., bis Montag, 14. September 2026.
+    const am = (tag: number, stunde: number) => new Date(2026, 8, tag, stunde)
+    const her = (von: Date, bis: Date) => relativeZeit(von.toISOString(), 'de', bis.getTime())
+
+    it('Samstagabend, gelesen am Montagmorgen, ist vorgestern — 35 Stunden runden auf einen Tag', () => {
+      expect(her(am(12, 20), am(14, 7))).toBe('vorgestern')
+    })
+
+    it('Sonntag früh, gelesen am Montagabend, ist gestern — 46 Stunden runden auf zwei', () => {
+      expect(her(am(13, 1), am(14, 23))).toBe('gestern')
+    })
+  })
+
   it('gerundet wird, nicht abgeschnitten', () => {
     // 90 Minuten sind „vor 2 Stunden" — wie im abgelösten Code.
     expect(relativeZeit(vor(90 * MINUTE), 'en', JETZT)).toBe(zahlBinden('2 hours ago'))

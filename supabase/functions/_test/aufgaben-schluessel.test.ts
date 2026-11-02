@@ -101,9 +101,13 @@ describe('was kein Schlüssel ist, wird nicht geraten', () => {
     // Schlüssel ihrer Form ist seither eine unbekannte.
     ['Vortrag auswärts (entfernt)', `va|${WOCHE}|v1a2`],
     ['Tagebuch-Schlüssel (Platz + Name)', `${ratgeberKey(WOCHE, 'mid')} Max Muster`],
-    // Platz 0 in Verkleidung: `Number()` las beides als 0, die Datenbank ließ es durch.
+    // Ein bekannter Platz in fremder Schreibweise: Neben der Zusage zu „…|1"
+    // stünde eine zweite zu „…|01", die jeder Vergleich für einen anderen hält.
     ['Platznummer als Kommazahl', `${WOCHE}|mid|helper|mik|0.0`],
     ['Platznummer mit Vorzeichen', `${WOCHE}|mid|part|k3f9x|+0`],
+    ['Platznummer mit führender Null (Hilfsdienst)', `${WOCHE}|mid|helper|mik|01`],
+    ['Platznummer mit führender Null (Programmpunkt)', `${WOCHE}|we|part|k3f9x|00`],
+    ['Platznummer mit führender Null (Klasse)', `${WOCHE}|mid|aux|k3f9x|007`],
   ])('%s', (_was, key) => {
     expect(schluesselTeile(key)).toBeNull()
   })

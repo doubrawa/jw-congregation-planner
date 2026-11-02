@@ -333,6 +333,28 @@ describe('useSwipeWeek', () => {
     expect(onNext).not.toHaveBeenCalled()
   })
 
+  it('kommt ein zweiter Finger dazu, federt der schon verschobene Streifen zurück', () => {
+    // Der zweite Finger meldet sich mit einem eigenen touchstart. Bliebe der
+    // Streifen stehen, hinge die Woche halb über der Nachbarwoche.
+    const { el, onNext } = setup()
+    touch(el, 'touchstart', [[300, 300]])
+    touch(el, 'touchmove', [[200, 300]])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('-100px')
+    touch(el, 'touchstart', [[200, 300], [260, 400]])
+    expect(el.style.getPropertyValue('--week-shift')).toBe('0px')
+    touch(el, 'touchend', [[200, 300]])
+    fertig()
+    expect(onNext).not.toHaveBeenCalled()
+  })
+
+  it('ein Tipp, während es noch blättert, hält das Blättern nicht auf', () => {
+    const { el, onNext } = setup()
+    swipe(el, [200, 300], [100, 300])
+    touch(el, 'touchstart', [[200, 300]])
+    fertig()
+    expect(onNext).toHaveBeenCalledTimes(1)
+  })
+
   it('senkrechtes Scrollen blättert NICHT, auch wenn es dabei seitlich verrutscht', () => {
     // dx = -80 liegt über der Blätter-Schwelle; entscheidend ist, dass dy weit
     // größer ist. Ohne die Winkel-Regel würde diese Scrollbewegung blättern.

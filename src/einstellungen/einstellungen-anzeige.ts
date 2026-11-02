@@ -2,6 +2,7 @@ import type { AppState } from '../app/context'
 import { zeitspanne } from '../components/datum-anzeige'
 import { fsGruppeEntfernen } from '../data/fs'
 import { isQualified, personCompare, reinigungsGruppen, serviceQualKey } from '../data/helpers'
+import { wirktAb } from '../data/meeting-dates'
 import { rechteDerPerson } from '../data/rechte'
 import type { Group, Lang, MeetingTime, Member, Person, Reminders, Service, Trolley } from '../data/types'
 import type { Dict } from '../i18n/ui'
@@ -124,12 +125,13 @@ export type GruppenFolge = 'mitglieder' | 'treffpunkte' | 'besuche' | 'plaene'
  * hat keine Folgen — erfunden wird keine.
  */
 export function gruppenFolgen(
-  daten: Pick<AppState, 'persons' | 'fsRules' | 'fsWeeks' | 'gruppenbesuche' | 'planEintraege'>,
+  daten: Pick<AppState, 'persons' | 'fsRules' | 'fsWeeks' | 'weeks' | 'gruppenbesuche' | 'planEintraege'>,
   gruppeId: string,
 ): GruppenFolge[] {
   const folgen: GruppenFolge[] = []
   if (daten.persons.some((p) => p.grp === gruppeId)) folgen.push('mitglieder')
-  const rest = fsGruppeEntfernen(daten.fsRules, daten.fsWeeks, gruppeId)
+  const kennungen = daten.weeks.map((w) => w.start)
+  const rest = fsGruppeEntfernen(daten.fsRules, daten.fsWeeks, gruppeId, kennungen, wirktAb())
   if (rest.fsRules !== daten.fsRules || rest.fsWeeks !== daten.fsWeeks) folgen.push('treffpunkte')
   if (daten.gruppenbesuche.some((b) => b.grp === gruppeId)) folgen.push('besuche')
   // Ihre Zeiträume in den weiteren Plänen bleiben, nur ohne Gruppe (`removeGroup`).

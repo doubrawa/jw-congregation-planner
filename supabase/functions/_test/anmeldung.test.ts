@@ -11,6 +11,7 @@ import {
   CODE_LAENGE,
   codeAnzeige,
   codeAus,
+  codeGruppiert,
   codeNormal,
   codeUrl,
   codeVollstaendig,
@@ -43,8 +44,19 @@ describe('Code zum Eintippen', () => {
     expect(codeVollstaendig('K7RD')).toBe(false)
   })
 
-  it('angezeigt in zwei Vierergruppen', () => {
-    expect(codeAnzeige('K7RD2QWM')).toBe('K7RD-2QWM')
+  it('angezeigt in zwei Vierergruppen — getrennt durch eine Lücke, nicht durch einen Bindestrich, den mancher mittippte', () => {
+    expect(codeAnzeige('K7RD2QWM')).toBe('K7RD 2QWM')
+    // Die frühere Form, wie sie ein älterer Stand der Function noch schickt.
+    expect(codeAnzeige('K7RD-2QWM')).toBe('K7RD 2QWM')
+    expect(codeAnzeige('K7RD')).toBe('K7RD')
+  })
+
+  it('auch ein angefangener Code steht in Gruppen — mehr als acht Zeichen fallen weg', () => {
+    expect(codeGruppiert('k7r')).toBe('K7R')
+    expect(codeGruppiert('k7rd')).toBe('K7RD')
+    expect(codeGruppiert('k7rd2')).toBe('K7RD 2')
+    expect(codeGruppiert('K7RD-2QWM')).toBe('K7RD 2QWM')
+    expect(codeGruppiert('K7RD2QWMXX')).toBe('K7RD 2QWM')
   })
 })
 

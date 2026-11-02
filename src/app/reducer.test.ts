@@ -1398,6 +1398,28 @@ describe('autoAssign / clearAssignments', () => {
 })
 
 describe('Treffpunkte-Instanzen', () => {
+  // Die Demo-Wochen liegen im September 2026, und der Grundplan formt nur die
+  // ab der laufenden (`wirktAb`) — die Uhr steht davor.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T10:00:00') })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /*
+   * **Vergangenes bleibt, wie es war.** Eine Grundplan-Änderung formt die
+   * Wochen ab der laufenden; die davor haben so stattgefunden.
+   */
+  it('eine Grundplan-Änderung lässt die Wochen vor der laufenden stehen', () => {
+    const s = makeState()
+    // Heute ist die zweite Woche die laufende.
+    vi.setSystemTime(new Date(`${s.weeks[1]!.start}T10:00:00`))
+    const danach = reducer(s, { type: 'fsRuleUpdate', id: 'r1', patch: { place: 'Neu' } })
+    expect(danach.fsWeeks[0]).toBe(s.fsWeeks[0])
+    expect(danach.fsWeeks[1]!.find((i) => i.id === 'r1')?.place).toBe('Neu')
+  })
+
   it('fsInstUpdate ändert Zeit/Ort der Woche', () => {
     const s = makeState()
     const inst = s.fsWeeks[0]![0]!
@@ -2605,10 +2627,12 @@ describe('Treffpunkt-Zusagen verfallen mit dem Leiter', () => {
     expect(next.confirmations).toEqual({ [ANDERER]: 'bestätigt' })
   })
 
-  it('Zeit oder Ort geändert: dieselbe Person, die Zusage bleibt', () => {
+  it('Zeit oder Ort geändert: dieselbe Person, aber neu zu sagen — die Zusage verfällt', () => {
+    // Zugesagt hat der Leiter zu einem anderen Termin; er bleibt eingeteilt.
     const s = zugesagt()
     const next = reducer(s, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
-    expect(next.confirmations).toBe(s.confirmations)
+    expect(next.fsWeeks[0]!.find((i) => i.id === 'tp1')?.leader).toBe(s.fsWeeks[0]!.find((i) => i.id === 'tp1')?.leader)
+    expect(Object.keys(next.confirmations)).toEqual(Object.keys(s.confirmations).filter((k) => !k.endsWith('|tp1')))
   })
 
   it('der Leiter wird umbenannt: dieselbe Person, die Zusage bleibt', () => {

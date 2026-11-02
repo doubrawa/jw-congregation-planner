@@ -27,6 +27,7 @@ import { applyGoldSlots, mitLiedNummer, parseWorkbookWeek, type ImportedWeek } f
 import { articleTitle, songs, studyIssueSlugs, studySynopses } from './study.ts'
 import { gedaechtnismahlWoche } from './gedaechtnismahl.ts'
 import { BASE, discoverWeeks, localizedUrl, UA } from './hefte.ts'
+import { seitenCache } from './seiten-cache.ts'
 
 declare const Deno: {
   serve: (handler: (req: Request) => Promise<Response> | Response) => void
@@ -39,8 +40,8 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const DIENST_SCHLUESSEL = dienstSchluessel(Deno.env.get('SUPABASE_SECRET_KEYS'), SERVICE_KEY)
 const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 
-const TTL = 10 * 60 * 1000
-const cache = new Map<string, { at: number; text: string }>()
+// Zehn Minuten, höchstens 50 Seiten — eine Woche in einer Sprache sind drei.
+const cache = seitenCache({ max: 50, ttlMs: 10 * 60 * 1000 })
 
 /**
  * Nur jw.org, nur https.
@@ -74,12 +75,12 @@ async function fetchText(url: string): Promise<string> {
   // Arbeitshefts tragen Umlaute. `fetch` zerlegt ohnehin nach denselben
   // Regeln — Ziel und Prüfung meinen also dieselbe Adresse.
   if (!istJwOrg(url)) throw new Error(`Adresse ausserhalb von jw.org: ${url}`)
-  const hit = cache.get(url)
-  if (hit && Date.now() - hit.at < TTL) return hit.text
+  const gemerkt = cache.holen(url)
+  if (gemerkt !== null) return gemerkt
   const res = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'de' } })
   if (!res.ok) throw new Error(`HTTP ${res.status} bei ${url}`)
   const text = await res.text()
-  cache.set(url, { at: Date.now(), text })
+  cache.merken(url, text)
   return text
 }
 

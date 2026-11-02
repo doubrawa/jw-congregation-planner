@@ -11,6 +11,7 @@ import { dict } from '../i18n/ui'
 import { NBSP, zahlBinden } from '../i18n/zahl-binden'
 import { emptyQualifications } from '../data/helpers'
 import type { Group, Notification, Person, SlotSelection } from '../data/types'
+import { mitverfolgen } from '../lib/schreiben-unterwegs'
 
 /**
  * **Das App-Gerüst — die Hälfte der Rechteprüfung, die niemand gesehen hat.**
@@ -979,6 +980,61 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
       window.dispatchEvent(new HashChangeEvent('hashchange'))
     })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' })
+  })
+
+  /*
+   * Ein zweiter Anmelde-Link, im selben Tab geöffnet (der Messenger tut das
+   * oft): Nur der Hash wechselt, die Seite lädt nicht neu. Gelesen wird die
+   * Adresse aber beim Start — ohne Neuladen bliebe der Vorgänger angemeldet.
+   * Neu geladen wird erst, wenn hinaus ist, was wartet (`neuLaden`).
+   *
+   * happy-dom sammelt die Hash-Wechsel der Fälle davor und stellt sie erst mit
+   * dem nächsten Zeitgeber zu — vorher abholen, sonst träfen sie die Attrappe.
+   */
+  const zeitgeber = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))))
+  it.each([
+    ['ein Anmelde-Link', `#anmelden=${'T'.repeat(43)}`, true],
+    ['ein Zettel-Code', '#code=K7RD2QWM', true],
+    ['Gegenprobe: ein Sprungziel', '#go=aufgaben', false],
+    ['Gegenprobe: ein unvollständiger Code', '#code=K7RD', false],
+  ])('%s in die schon offene App lädt sie neu: %s → %s', async (_fall, hash, neu) => {
+    zeige()
+    await zeitgeber()
+    const reload = vi.fn()
+    const echt = window.location
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...echt, reload, pathname: '/', search: '', hash } })
+    try {
+      act(() => {
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+      })
+      await zeitgeber()
+      expect(reload).toHaveBeenCalledTimes(neu ? 1 : 0)
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: echt })
+    }
+  })
+
+  it('ein Anmelde-Link lädt erst neu, wenn angekommen ist, was unterwegs war', async () => {
+    zeige()
+    await zeitgeber()
+    let ankommen!: () => void
+    mitverfolgen(new Promise<void>((weiter) => (ankommen = weiter)))
+    const reload = vi.fn()
+    const echt = window.location
+    const hash = `#anmelden=${'T'.repeat(43)}`
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...echt, reload, pathname: '/', search: '', hash } })
+    try {
+      act(() => {
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+      })
+      await zeitgeber()
+      expect(reload).not.toHaveBeenCalled()
+      ankommen()
+      await zeitgeber()
+      expect(reload).toHaveBeenCalledTimes(1)
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: echt })
+    }
   })
 
   it('ein Link ohne Bereich springt nirgendwohin — wie alle Pushes bisher', () => {

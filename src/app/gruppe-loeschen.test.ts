@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reducer } from './reducer'
 import type { AppState } from './context'
 import { fsGruppeEntfernen, fsTaskKey, regenFsWeeks } from '../data/fs'
@@ -56,6 +56,10 @@ function stand(over: Partial<AppState> = {}): AppState {
     planEintraege: [],
     // Die Zusagen gehören dazu: Verschwindet ein Treffpunkt, verfällt seine.
     confirmations: {},
+    // Mit ihnen leitet der Reducer die Aufgaben neu ab, und die kommenden
+    // fragen das Versand-Tagebuch.
+    sentLog: {},
+    persoenlich: {},
     ...over,
   } as AppState
 }
@@ -67,6 +71,15 @@ const treffpunkteVon = (fsWeeks: FsInstance[][], grp: string): FsInstance[] =>
   fsWeeks.flat().filter((inst) => inst.grp === grp)
 
 describe('Eine Predigtdienstgruppe löschen', () => {
+  // Die Demo-Wochen liegen im September 2026, und mit der Gruppe gehen nur die
+  // Treffpunkte ab der laufenden Woche (`wirktAb`) — die Uhr steht davor.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T10:00:00') })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('ihre Mitglieder stehen danach ohne Gruppe da — und die Warnung nennt genau sie', () => {
     const vorher = stand()
     const mitglieder = vorher.persons.filter((p) => p.grp === 'g1').map((p) => p.id)
@@ -209,6 +222,16 @@ describe('Eine Predigtdienstgruppe löschen', () => {
     // Der leere String bleibt gutmütig behandelt (Altbestand), sagt über den
     // Wächter aber nichts mehr aus — deshalb steht er nur daneben.
     expect(fsGruppeEntfernen(vorher.fsRules, vorher.fsWeeks, '').fsRules).toBe(vorher.fsRules)
+  })
+
+  it('in den Wochen vor der laufenden bleiben ihre Treffpunkte stehen — dort hat sie sich getroffen', () => {
+    const vorher = stand()
+    // Heute ist die zweite Woche die laufende.
+    vi.setSystemTime(new Date(`${vorher.weeks[1]!.start}T10:00:00`))
+    const nachher = loeschen(vorher, 'g1')
+    expect(nachher.fsWeeks[0]).toBe(vorher.fsWeeks[0])
+    expect(treffpunkteVon(nachher.fsWeeks.slice(1), 'g1')).toEqual([])
+    expect(treffpunkteVon([vorher.fsWeeks[0]!], 'g1').length, 'Vorgabe: g1 trifft sich in Woche 0').toBeGreaterThan(0)
   })
 })
 

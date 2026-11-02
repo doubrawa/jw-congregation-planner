@@ -10,8 +10,10 @@
 //  - `first` Tage vor der Zusammenkunft: erste Erinnerung (Push + Glocke)
 //  - `last` Tage vorher: letzte Erinnerung (Push + Glocke; 0 = am Tag selbst)
 //  - `repeat`: an allen Tagen dazwischen zusätzlich täglich per Push
-//  - bestätigte und verhinderte Zuteilungen lösen nichts aus; ebenso externe
-//    Slots (Gastredner/Kreisaufseher) und Gruppen-Rotationen (Reinigung).
+//  - erinnert wird nur an Plätze, die „Plan senden" gemeldet hat (Versand-
+//    Tagebuch `assignment_log`); bestätigte und verhinderte lösen nichts aus,
+//    ebenso externe Slots (Gastredner/Kreisaufseher) und Gruppen-Rotationen
+//    (Reinigung).
 //  - Zusammenkunftstag und -zeit stehen als Werte in der Versammlung
 //    (mid_wd/mid_time/we_wd/we_time); eine Abweichung der Woche schlägt sie.
 //  - Personen mit fälliger letzter Erinnerung, die nicht per Push erreichbar
@@ -119,6 +121,42 @@ async function loadSentToday(todayISO: string, cong: string): Promise<Set<string
   }
 }
 
+/** Eine Zeile des Versand-Tagebuchs, wie „Plan senden" sie schreibt. */
+interface TagebuchZeile {
+  task_key: string
+  name: string
+  person_id: string | null
+  persoenlich_at: string | null
+}
+
+/**
+ * **Die Zeilen des Tagebuchs zu einem Platz und seiner Person** — Id zuerst,
+ * wie überall (`kontoAufloeser`). Trägt der Platz eine Id, entscheidet sie;
+ * der Name nur bei Zeilen, die keine Id tragen. Nach einer Umbenennung steht
+ * im Platz der neue Name, im Tagebuch der, unter dem gemeldet wurde: Über den
+ * Namen allein gälte der Platz als nie gemeldet, und die Erinnerungen blieben
+ * bis zum nächsten „Plan senden" aus.
+ */
+function tagebuchAufloeser(zeilen: readonly TagebuchZeile[]): (taskKey: string, p: Pending) => TagebuchZeile[] {
+  const jeSchluessel = (wer: (z: TagebuchZeile) => string | null) => {
+    const m = new Map<string, TagebuchZeile[]>()
+    for (const z of zeilen) {
+      const w = wer(z)
+      if (!w) continue
+      const k = tagebuchSchluessel(z.task_key, w)
+      m.set(k, [...(m.get(k) ?? []), z])
+    }
+    return m
+  }
+  const nachId = jeSchluessel((z) => z.person_id)
+  const nachName = jeSchluessel((z) => z.name)
+  return (taskKey, { name, pid }) => {
+    const ueberName = nachName.get(tagebuchSchluessel(taskKey, name)) ?? []
+    if (!pid) return ueberName
+    return [...(nachId.get(tagebuchSchluessel(taskKey, pid)) ?? []), ...ueberName.filter((z) => !z.person_id)]
+  }
+}
+
 /** Aufbewahrungsfrist der Glocken-Mitteilungen (Tage). */
 const NOTIFICATION_RETENTION_DAYS = 30
 
@@ -178,6 +216,13 @@ function wochenFenster(todayUTC: number, rem: Rhythmus): [string, string] {
   const tag = (versatz: number): string =>
     new Date(todayUTC + versatz * 864e5).toISOString().slice(0, 10)
   return [tag(-7), tag(Math.max(rem.first, rem.last))]
+}
+
+/** Zeilen je Versammlung — für Einfügungen, die je Versammlung für sich gelingen sollen. */
+function jeVersammlung<Z extends { congregation_id: string }>(zeilen: readonly Z[]): Z[][] {
+  const gruppen = new Map<string, Z[]>()
+  for (const z of zeilen) gruppen.set(z.congregation_id, [...(gruppen.get(z.congregation_id) ?? []), z])
+  return [...gruppen.values()]
 }
 
 /* ---- Versand ------------------------------------------------------------- */
@@ -246,7 +291,7 @@ Deno.serve(async (req: Request) => {
     let failed = 0
     let skipped = 0 // heute bereits benachrichtigt (Doppel-Versand-Sperre)
     const preview: Push[] = []
-    const notifRows: unknown[] = []
+    const notifRows: Array<{ congregation_id: string } & Record<string, unknown>> = []
     const sendQueue: Array<{ push: Push; subs: SubscriptionRow[] }> = []
     // Was in diesem Lauf gesendet wird → nach echtem Versand ins reminder_log.
     const logRows: { congregation_id: string; user_id: string; kind: string }[] = []
@@ -346,30 +391,32 @@ Deno.serve(async (req: Request) => {
         return [[], []]
       })
       /*
-       * **Wem der Planer schon persönlich Bescheid gegeben hat** (T121,
-       * entschieden am 14.10.2026): Wer ohne Konto im Versand-Tagebuch steht,
-       * den hakt der Planer in den Zusagen der Woche ab (`persoenlich_at`).
-       * Der Haken zählt wie eine Zusage — und wer abgehakt ist, gehört nicht
-       * mehr in die Meldung „nicht erreichbar". Fehlt die Spalte (Schema nicht
-       * eingespielt), meldet der Lauf wie bisher alle.
+       * **Das Versand-Tagebuch der Wochen im Fenster**: was „Plan senden"
+       * gemeldet hat, und wem der Planer persönlich Bescheid gegeben hat.
        *
-       * Wie die Zusagen nur die Wochen im Fenster. Bis zum 16.10.2026 kamen
-       * alle Haken der Versammlung; jede Woche kommen welche dazu, und nach
-       * ein, zwei Jahren lagen sie über der Zeilengrenze — wer abgehakt war,
-       * stand still wieder als „nicht erreichbar" da.
+       * Erinnert wird nur an Gemeldetes: Wer von einem Platz nichts erfahren
+       * hat, soll ihn auch nicht bestätigen müssen. Ein Platz, den der Planer
+       * nach dem Senden neu besetzt hat, wartet so auf das nächste „Plan
+       * senden".
+       *
+       * Den Haken „weiß Bescheid" (`persoenlich_at`, T121) setzt der Planer
+       * bei dem, der ohne Konto im Tagebuch steht. Er zählt wie eine Zusage —
+       * wer abgehakt ist, gehört nicht in die Meldung „nicht erreichbar".
+       *
+       * Wie die Zusagen nur die Wochen im Fenster: Ganz gelesen lägen die
+       * Zeilen nach ein, zwei Jahren über der Zeilengrenze von PostgREST, und
+       * was dahinter steht, fehlte still. Scheitert das Lesen, fällt die
+       * Versammlung heute aus (unten) — ohne Tagebuch ist nicht zu sagen,
+       * woran erinnert werden darf.
        */
-      const bescheid = await zeilenJePraefix<{ task_key: string; name: string; persoenlich_at: string | null }>(
+      const tagebuch = await zeilenJePraefix<TagebuchZeile>(
         klient,
         cong.id,
         'assignment_log',
-        'task_key,name,persoenlich_at',
+        'task_key,name,person_id,persoenlich_at',
         praefixe,
       )
-        .then((zeilen) => new Set(zeilen.filter((z) => z.persoenlich_at).map((z) => tagebuchSchluessel(z.task_key, z.name))))
-        .catch((err): Set<string> => {
-          console.error(`assignment_log.persoenlich_at nicht lesbar: ${(err as Error).message}`)
-          return new Set()
-        })
+      const imTagebuch = tagebuchAufloeser(tagebuch)
       const conf = new Map(confs.map((c) => [c.task_key, c.status]))
       // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
       // `_shared/konten.ts`).
@@ -401,6 +448,8 @@ Deno.serve(async (req: Request) => {
        * persönlich erinnern.
        */
       const vormerken = (pend: Pending, kind: 'main' | 'repeat', days: number, entry: MitKey): void => {
+        const zeilen = imTagebuch(entry.key, pend)
+        if (zeilen.length === 0) return
         const userId = userOf(pend)
         const reachable = userId != null && (subsByUser.get(userId)?.length ?? 0) > 0
         if (userId) {
@@ -409,7 +458,7 @@ Deno.serve(async (req: Request) => {
             mainByUser.set(userId, [...(mainByUser.get(userId) ?? []), entry])
           }
         }
-        if (!reachable && days === rem.last && !bescheid.has(tagebuchSchluessel(entry.key, pend.name))) {
+        if (!reachable && days === rem.last && !zeilen.some((z) => z.persoenlich_at)) {
           unreachable.push({ name: pend.name, eintrag: entry })
         }
       }
@@ -662,11 +711,16 @@ Deno.serve(async (req: Request) => {
       sent += erg.gesendet
       expired += erg.abgelaufen
       failed += erg.fehlgeschlagen
-      await klient.insert('notifications', notifRows)
+      // Je Versammlung eine Anfrage, nebeneinander: Ein INSERT ist ganz oder
+      // gar nicht, und eine abgewiesene Zeile (ein eben gelöschtes Konto) nähme
+      // sonst jeder anderen Versammlung ihre Glocken und ihre Einträge.
+      await Promise.all(jeVersammlung(notifRows).map((zeilen) => klient.insert('notifications', zeilen)))
       // Versand-Tagebuch schreiben, damit ein zweiter Lauf heute nicht doppelt
       // sendet. Nach dem eigentlichen Versand — scheitert das Schreiben, wurde
       // immerhin gesendet (schlimmstenfalls eine Wiederholung, nie Verlust).
-      await klient.insert('reminder_log', logRows)
+      // Was ein Lauf daneben schon eingetragen hat, bleibt stehen
+      // (`ignoreDuplicates`); sonst verwürfe eine Dublette den ganzen Stapel.
+      await Promise.all(jeVersammlung(logRows).map((zeilen) => klient.insert('reminder_log', zeilen, { ignoreDuplicates: true })))
       // Wartung im selben Lauf: alte Mitteilungen nach Aufbewahrungsfrist löschen
       await pruneNotifications()
     }

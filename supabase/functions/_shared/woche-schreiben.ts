@@ -1,12 +1,13 @@
 // =============================================================================
 // Eine Woche schreiben, solange sie auf dem gelesenen Stand ist
 // =============================================================================
-// Für jede Edge Function, die eine Woche ändert — heute `substitute` (ein
-// freier Platz wird übernommen; bis zum 15.10.2026 auch `zuteilen`). Dieselbe Regel wie
-// `schreibeWoche` im Client (T39): geschrieben wird nur mit der Bedingung
-// `updated_at = <Stand>`.
+// Für jede Edge Function, die eine Woche ändert: `substitute` (ein freier Platz
+// wird übernommen) und `tauschen` (zwei Plätze in einer Woche; zwei Wochen
+// gehen zusammen über `wochen_tauschen`). Dieselbe Regel wie `schreibeWoche` im
+// Client (T39): geschrieben wird nur mit der Bedingung `updated_at = <Stand>`.
 // =============================================================================
 
+import { gleicherInhalt } from './gleicher-inhalt.ts'
 import { type Rest, wert } from './rest.ts'
 
 /**
@@ -14,22 +15,16 @@ import { type Rest, wert } from './rest.ts'
  * `null`, wenn inzwischen ein anderer geschrieben hat.
  *
  * Trifft der erste Versuch nicht, folgt **ein** zweiter mit derselben
- * Bedingung. Er fängt einen Aussetzer ab (Netz, Zeitüberschreitung) — ein
- * falscher Konfliktalarm verwürfe die Arbeit des Planers oder den Tipp dessen,
- * der einen Platz übernimmt. Hat inzwischen ein anderer geschrieben, trifft
- * auch er nicht, und der Client lädt nach.
+ * Bedingung — nie ohne sie, sonst ginge lautlos verloren, was ein anderer
+ * zwischen den beiden Versuchen geschrieben hat. Er fängt einen Aussetzer ab
+ * (Netz, Zeitüberschreitung; auch ein Netzfehler zählt als verfehlter
+ * Versuch): Ein falscher Konfliktalarm verwürfe die Arbeit des Planers oder
+ * den Tipp dessen, der einen Platz übernimmt.
  *
- * Bis zum 5.10.2026 stand der Ablauf zweimal da (`zuteilen/woche.ts`,
- * `substitute/fuellen.ts`), und der zweite Versuch schrieb **ohne** Bedingung,
- * sobald beim Nachsehen noch der alte Stand dastand. Schrieb genau zwischen
- * Nachsehen und zweitem Versuch ein anderer, ging seine Änderung lautlos
- * verloren.
- *
- * **Auch ein Netzfehler zählt als verfehlter Versuch.** Ein abgebrochenes
- * `fetch` wirft, statt eine Antwort zu liefern; bis zum 14.10.2026 flog der
- * Wurf hier durch, an der Wiederholung vorbei, und die Function antwortete
- * mit 500. Der Client lädt darauf genauso nach wie bei einem Konflikt — die
- * Arbeit war weg, obwohl der zweite Versuch sie gerettet hätte.
+ * Verfehlt auch der zweite, wird nachgesehen: Steht in der Woche schon, was
+ * geschrieben werden sollte, ist es geschrieben. So endet ein erster Versuch,
+ * der ankam, dessen Antwort aber unterwegs verloren ging — der zweite verfehlt
+ * dann den neuen Stand, den der erste selbst gesetzt hat.
  */
 export async function wocheSchreiben(
   rest: Rest,
@@ -38,9 +33,8 @@ export async function wocheSchreiben(
   stand: string,
   data: unknown,
 ): Promise<string | null> {
-  const pfad =
-    `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(woche)}` +
-    `&updated_at=eq.${wert(stand)}&select=updated_at`
+  const zeile = `weeks?congregation_id=eq.${wert(cong)}&start=eq.${wert(woche)}`
+  const pfad = `${zeile}&updated_at=eq.${wert(stand)}&select=updated_at`
   const versuchen = async (): Promise<string | null> => {
     try {
       return (await rest.patchZeilen<{ updated_at: string }>(pfad, { data }))?.[0]?.updated_at ?? null
@@ -49,5 +43,17 @@ export async function wocheSchreiben(
       return null
     }
   }
-  return (await versuchen()) ?? versuchen()
+  return (await versuchen()) ?? (await versuchen()) ?? (await schonGeschrieben(rest, zeile, data))
+}
+
+/** Der Stand der Woche, wenn sie schon enthält, was geschrieben werden sollte — sonst `null`. */
+async function schonGeschrieben(rest: Rest, zeile: string, data: unknown): Promise<string | null> {
+  try {
+    const [jetzt] = await rest.get<{ updated_at: string; data: unknown }[]>(`${zeile}&select=updated_at,data`)
+    // Verglichen wird, was als JSON hinausging: Ein `undefined` kommt dort gar nicht erst an.
+    return jetzt && gleicherInhalt(jetzt.data, JSON.parse(JSON.stringify(data))) ? jetzt.updated_at : null
+  } catch (err) {
+    console.error('wocheSchreiben, Nachsehen:', err instanceof Error ? err.message : String(err))
+    return null
+  }
 }

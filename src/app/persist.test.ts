@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ausstehendesSchreiben, persist } from './persist'
+import { schreibenAbwarten } from '../lib/schreiben-unterwegs'
 import type { AppAction, AppState } from './context'
 import {
   buildDemoFsWeeks,
@@ -118,6 +119,11 @@ function st(over: Partial<AppState> = {}): AppState {
 }
 
 beforeEach(() => {
+  // `persist` behält über seine Aufrufe hinweg, was noch hinausgehen soll —
+  // auch die Zusagen eines gescheiterten Schreibens. Jedes Beispiel beginnt
+  // wie nach dem Laden ohne sie.
+  const leer = st()
+  persist(leer, leer, { type: 'hydrate', payload: {} } as unknown as AppAction)
   vi.clearAllMocks()
   vi.useFakeTimers()
   // Die Wochen gelingen — erst danach geht hinaus, was an ihnen hängt (16.10.2026).
@@ -160,16 +166,21 @@ describe('Zuteilen', () => {
   // `persist` liest nur ab, was im neuen Zustand fehlt (`verfalleneZusagen`).
   const VERFALLEN = '2026-09-07|mid|part|dw3|0'
 
-  it('assign (Programmpunkt) → saveWeek + verfallene Bestätigung abräumen', async () => {
+  /*
+   * **Die verfallene Zusage geht mit der Woche hinaus — in einer Transaktion**
+   * (`woche_speichern`). Folgte ihr Löschen als zweiter Aufruf und ginge der
+   * verloren (App geschlossen, Netz weg), erbte der Neue die Zusage des Alten.
+   */
+  it('assign (Programmpunkt) → saveWeek, und die verfallene Zusage geht mit', async () => {
     const prev = st({
       slotSel: { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' },
       confirmations: { [VERFALLEN]: 'bestätigt' },
     })
     const next = st()
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [VERFALLEN])
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   /*
@@ -191,7 +202,27 @@ describe('Zuteilen', () => {
     expect(data.sendPlanEntzug).not.toHaveBeenCalled()
   })
 
-  it('vor der Antwort der Datenbank geht weder das Löschen noch ein Entzug hinaus', async () => {
+  it('scheitert das Schreiben der Woche, geht die verfallene Zusage mit ihrem nächsten Schreiben', async () => {
+    // Das Netz war kurz weg. Ginge das nächste Schreiben derselben Woche ohne
+    // sie, stünde der Neue in der Datenbank — mit der Zusage des Alten.
+    vi.mocked(data.saveWeek).mockResolvedValueOnce(false)
+    const sel = { kind: 'part', wi: 0, tab: 'mid', si: 1, ii: 1, ni: 0, priv: null, groups: false, label: 'X' } as const
+    const weeks = buildDemoWeeks()
+    const erste = [{ ...weeks[0]! }, ...weeks.slice(1)]
+    persist(st({ weeks, slotSel: sel, confirmations: { [VERFALLEN]: 'bestätigt' } }), st({ weeks: erste }), { type: 'assign', name: 'A' })
+    expect(vi.mocked(data.saveWeek).mock.calls[0]?.[2]).toEqual([VERFALLEN])
+    await geschrieben()
+    const zweite = [{ ...erste[0]! }, ...erste.slice(1)]
+    persist(st({ weeks: erste, slotSel: sel }), st({ weeks: zweite }), { type: 'assign', name: 'B' })
+    expect(data.saveWeek).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(data.saveWeek).mock.calls[1]?.[2]).toEqual([VERFALLEN])
+    // Gelungen: Danach geht sie nicht noch einmal mit.
+    await geschrieben()
+    persist(st({ weeks: zweite, slotSel: sel }), st({ weeks: [{ ...zweite[0]! }, ...zweite.slice(1)] }), { type: 'assign', name: 'C' })
+    expect(vi.mocked(data.saveWeek).mock.calls[2]?.[2]).toEqual([])
+  })
+
+  it('das Löschen folgt dem Schreiben nicht mehr als eigener Aufruf — auch nicht nach der Antwort', async () => {
     // Je geschriebener Woche eine Antwort, die noch aussteht.
     const antworten: Array<(ok: boolean) => void> = []
     vi.mocked(data.saveWeek).mockImplementation(() => new Promise((weiter) => void antworten.push(weiter)))
@@ -200,11 +231,26 @@ describe('Zuteilen', () => {
       confirmations: { [VERFALLEN]: 'bestätigt' },
     })
     persist(prev, st(), { type: 'assign', name: 'A' })
-    await geschrieben()
-    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(vi.mocked(data.saveWeek).mock.calls[0]?.[2]).toEqual([VERFALLEN])
     for (const antworte of antworten) antworte(true)
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+  })
+
+  it('zwei Änderungen derselben Woche vor dem Schreiben: Beide verfallenen Zusagen gehen mit dem einen Schreiben', () => {
+    // Gebündelt (`setAbweichung` kommt je Tastenanschlag) schreibt der Bündler
+    // die Woche erst nach kurzer Ruhe — und nimmt dann mit, was bis dahin verfiel.
+    const zweite = '2026-09-07|mid|part|dw3|1'
+    const weeks = buildDemoWeeks()
+    const geaendert = [{ ...weeks[0]! }, ...weeks.slice(1)]
+    const aktion = { type: 'setAbweichung', wi: 0, tab: 'mid', patch: {} } as unknown as AppAction
+    persist(st({ weeks, confirmations: { [VERFALLEN]: 'bestätigt' } }), st({ weeks: geaendert }), aktion)
+    persist(st({ weeks: geaendert, confirmations: { [zweite]: 'bestätigt' } }), st({ weeks: [{ ...geaendert[0]! }, ...weeks.slice(1)] }), aktion)
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(600)
+    expect(data.saveWeek).toHaveBeenCalledTimes(1)
+    expect([...(vi.mocked(data.saveWeek).mock.calls[0]?.[2] ?? [])].sort()).toEqual([VERFALLEN, zweite].sort())
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('assign (Treffpunkt-Leiter) → saveFsWeek statt saveWeek', () => {
@@ -215,17 +261,17 @@ describe('Zuteilen', () => {
     const prev = st({ weeks, slotSel: { kind: 'fs', wi: 0, instId: 'x', label: '', priv: null, groups: false } })
     const next = st({ weeks })
     persist(prev, next, { type: 'assign', name: 'A' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[0]?.start, next.fsWeeks[0])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[0]?.start, next.fsWeeks[0], [])
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
-  it('autoAssign → saveWeek + verfallene Bestätigungen abräumen', async () => {
+  it('autoAssign → saveWeek, und die verfallenen Zusagen gehen mit', async () => {
     const prev = st({ confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st()
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [VERFALLEN])
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   /*
@@ -238,10 +284,9 @@ describe('Zuteilen', () => {
     const prev = st({ planner: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
     const next = st({ planner: false, zuteiler: true })
     persist(prev, next, { type: 'autoAssign' })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
-    // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`).
-    await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [VERFALLEN])
+    // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`
+    // gilt auch in `woche_speichern`).
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [VERFALLEN])
   })
 
   it('hydrate löscht nichts — ein frischer Bestand ist kein Entzug', () => {
@@ -310,18 +355,14 @@ describe('Treffpunkte', () => {
     return fsWeeks
   }
   const FS_SEL = { kind: 'fs', wi: 0, instId: 'tp1', label: '', priv: null, groups: false } as const
-  /** Welcher Aufruf kam zuerst? (Reihenfolge über die Mock-Aufrufnummern) */
-  const zuerst = (a: { mock: { invocationCallOrder: number[] } }, b: { mock: { invocationCallOrder: number[] } }) =>
-    (a.mock.invocationCallOrder[0] ?? Infinity) < (b.mock.invocationCallOrder[0] ?? Infinity)
 
-  it('ein Leiterwechsel löscht die Zusage des Vorgängers — gleich nach dem Schreiben der Woche', async () => {
+  it('ein Leiterwechsel löscht die Zusage des Vorgängers — mit dem Schreiben der Woche, in einer Transaktion', async () => {
     const prev = st({ slotSel: FS_SEL, fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [KEY]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Bernd Brand', 'p-b'), confirmations: {} })
     persist(prev, next, { type: 'assign', name: 'Bernd Brand', pid: 'p-b' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', next.fsWeeks[0])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', next.fsWeeks[0], [KEY])
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
-    expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('scheitert das Schreiben der Treffpunkt-Woche, behält der alte Leiter seine Zusage (16.10.2026)', async () => {
@@ -362,10 +403,9 @@ describe('Treffpunkte', () => {
     expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(600)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [], [KEY])
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
-    expect(zuerst(vi.mocked(data.saveFsWeek), vi.mocked(data.deleteConfirmationRows))).toBe(true)
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('… und geht beim Verlassen der Ansicht gemeinsam mit der Woche hinaus', async () => {
@@ -375,9 +415,7 @@ describe('Treffpunkte', () => {
     const next = st({ fsWeeks: ohneTreffpunkt, fsRules: [], confirmations: {} })
     persist(prev, next, { type: 'fsRuleRemove', id: 'r-weg' })
     persist(next, next, { type: 'navigate', screen: 'start' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [])
-    await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [KEY])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', [], [KEY])
   })
 
   it('bleibt der Leiter derselbe, wird nichts gelöscht — auch nicht bei neuer Uhrzeit', () => {
@@ -406,7 +444,7 @@ describe('Treffpunkte', () => {
     expect(data.saveFsWeek).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
     expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', vorher.fsWeeks[0])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', '2026-09-07', vorher.fsWeeks[0], [])
   })
 
   /*
@@ -446,25 +484,33 @@ describe('Treffpunkte', () => {
     const prev = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a'), confirmations: { [meeting]: 'bestätigt' } })
     const next = st({ fsWeeks: mitLeiter('Anton Alt', 'p-a', '15:00'), confirmations: {} })
     persist(prev, next, { type: 'fsInstUpdate', wi: 0, id: 'tp1', patch: { time: '15:00' } })
-    await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [meeting])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [meeting])
     expect(data.saveFsWeek).not.toHaveBeenCalled()
+  })
+
+  it('ändert sich die Woche einer verfallenen Zusage gar nicht, geht das Löschen für sich hinaus', () => {
+    // Nichts schreibt die Woche, das die Zusage mitnehmen könnte — verloren gehen soll sie trotzdem nicht.
+    const meeting = '2026-09-07|mid|part|k3f9x|0'
+    const weeks = buildDemoWeeks()
+    persist(st({ weeks, confirmations: { [meeting]: 'bestätigt' } }), st({ weeks, confirmations: {} }), { type: 'autoAssign' })
+    expect(data.saveWeek).not.toHaveBeenCalled()
+    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [meeting])
   })
 
   it('fsInstUpdate/Remove speichern die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'fsInstUpdate', wi: 2, id: 'x', patch: {} })
     vi.advanceTimersByTime(600)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[2]?.start, next.fsWeeks[2])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[2]?.start, next.fsWeeks[2], [])
     vi.clearAllMocks()
     persist(st(), next, { type: 'fsInstRemove', wi: 3, id: 'x' })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[3]?.start, next.fsWeeks[3])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[3]?.start, next.fsWeeks[3], [])
   })
 
   it('fsInstAdd speichert die aktuelle Woche', () => {
     const next = st({ week: 1 })
     persist(st({ week: 1 }), next, { type: 'fsInstAdd', inst: {} as never })
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[1]?.start, next.fsWeeks[1])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', next.weeks[1]?.start, next.fsWeeks[1], [])
   })
 
   // Gebündelt: der Ort ist ein Freitextfeld, und ohne Bündelung ging je
@@ -600,7 +646,7 @@ describe('Gruppenbesuche (T120)', () => {
     // B2 ist unverändert (dieselbe Referenz) und geht nicht noch einmal hinaus.
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [B1], [])
     expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, geaendert)
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, geaendert, [])
     expect(data.saveWeek).not.toHaveBeenCalled()
   })
 
@@ -617,8 +663,8 @@ describe('Gruppenbesuche (T120)', () => {
     })
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [verlegt], [])
     expect(data.saveFsWeek).toHaveBeenCalledTimes(2)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, naechste[1])
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[2]?.start, naechste[2])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[1]?.start, naechste[1], [])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', weeks[2]?.start, naechste[2], [])
   })
 
   it('ein entfernter Besuch wird gelöscht, nicht überschrieben', () => {
@@ -672,7 +718,7 @@ describe('Vortragsplan (T122)', () => {
     const next = st({ planner: false, zuteiler: true, weeks, vortraege })
     persist(prev, next, UEBERNEHMEN)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [])
     expect(data.saveVortraege).not.toHaveBeenCalled()
   })
 })
@@ -940,7 +986,7 @@ describe('LAC / Import / Vortrag', () => {
     ] as AppAction[]) {
       vi.clearAllMocks()
       persist(st(), next, action)
-      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0])
+      expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [])
     }
   })
 
@@ -948,13 +994,13 @@ describe('LAC / Import / Vortrag', () => {
     const neu = { range: 'Neu' } as Week
     const next = st({ weeks: [...buildDemoWeeks(), neu] })
     persist(st(), next, { type: 'addImportedWeek', week: neu })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1))
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks.at(-1), [])
   })
 
   it('mergeWeekAlt speichert die betroffene Woche', () => {
     const next = st()
     persist(st(), next, { type: 'mergeWeekAlt', start: next.weeks[1]!.start!, alt: {} })
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', next.weeks[1], [])
   })
 })
 
@@ -1027,18 +1073,36 @@ describe('Index außerhalb des Fensters', () => {
 })
 
 describe('Personen (inkl. Debounce)', () => {
-  it('addPerson → savePerson sofort', () => {
+  it('addPerson → savePerson sofort, ohne Vorher: Die Zeile ist neu', () => {
     const p = DEMO_PERSONS[0]!
     persist(st(), st(), { type: 'addPerson', person: p })
-    expect(data.savePerson).toHaveBeenCalledWith('c1', p)
+    expect(data.savePerson).toHaveBeenCalledWith('c1', p, undefined)
   })
 
-  it('updatePerson schreibt gebündelt (Debounce, nach 600 ms)', () => {
+  it('updatePerson schreibt gebündelt (Debounce, nach 600 ms) — gegen den Stand davor', () => {
     const p = DEMO_PERSONS[0]!
-    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
+    const neu = { ...p, female: true }
+    persist(st(), st({ persons: [neu, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
     expect(data.savePerson).not.toHaveBeenCalled() // noch nicht
     vi.advanceTimersByTime(600)
-    expect(data.savePerson).toHaveBeenCalledWith('c1', p)
+    expect(data.savePerson).toHaveBeenCalledWith('c1', neu, p)
+  })
+
+  /*
+   * Hinaus gehen nur die geänderten Spalten (`savePerson`). Im Bündel zählt
+   * deshalb der **älteste** Stand: Verglichen mit dem nach dem ersten
+   * Tastenanschlag fehlte, was dieser geändert hat.
+   */
+  it('mehrere Änderungen in einem Bündel: der neueste Stand gegen den ältesten', () => {
+    const p = DEMO_PERSONS[0]!
+    const mit = (person: typeof p) => st({ persons: [person, ...DEMO_PERSONS.slice(1)] })
+    const erst = { ...p, ln: 'A' }
+    const dann = { ...erst, female: true }
+    persist(mit(p), mit(erst), { type: 'updatePerson', id: p.id, patch: { ln: 'A' } })
+    persist(mit(erst), mit(dann), { type: 'updatePerson', id: p.id, patch: { female: true } })
+    vi.advanceTimersByTime(600)
+    expect(data.savePerson).toHaveBeenCalledTimes(1)
+    expect(data.savePerson).toHaveBeenCalledWith('c1', dann, p)
   })
 
   /*
@@ -1065,7 +1129,7 @@ describe('Personen (inkl. Debounce)', () => {
 
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', neuer2, [])
   })
 
   /*
@@ -1086,7 +1150,7 @@ describe('Personen (inkl. Debounce)', () => {
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', zugeteilt)
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', zugeteilt, [])
   })
 
   /*
@@ -1118,9 +1182,10 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('beim Verlassen der App geht hinaus, was wartet (`ausstehendesSchreiben`)', () => {
     const p = DEMO_PERSONS[0]!
-    persist(st(), st({ persons: [p, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
+    const neu = { ...p, female: true }
+    persist(st(), st({ persons: [neu, ...DEMO_PERSONS.slice(1)] }), { type: 'updatePerson', id: p.id, patch: { female: true } })
     ausstehendesSchreiben()
-    expect(data.savePerson).toHaveBeenCalledWith('c1', p)
+    expect(data.savePerson).toHaveBeenCalledWith('c1', neu, p)
     vi.advanceTimersByTime(600)
     expect(data.savePerson).toHaveBeenCalledTimes(1)
   })
@@ -1136,11 +1201,11 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('updatePerson mit Planer-Recht (zuteiler) spiegelt ebenso — dieselbe Zeile, beide Rechte', () => {
     const p = DEMO_PERSONS[0]!
-    const next = st({
-      members: [{ userId: 'm1', email: '', personId: p.id, planner: false, zuteiler: true }],
-    })
-    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { zuteilerVorgemerkt: true } })
-    expect(data.saveMemberRow).toHaveBeenCalledWith(next.members[0]!)
+    const konto = { userId: 'm1', email: '', personId: p.id, planner: false, zuteiler: false }
+    const next = st({ members: [{ ...konto, zuteiler: true }] })
+    persist(st({ members: [konto] }), next, { type: 'updatePerson', id: p.id, patch: { zuteilerVorgemerkt: true } })
+    // Mit dem Stand davor: Hinaus geht nur das Recht, das sich geändert hat.
+    expect(data.saveMemberRow).toHaveBeenCalledWith(next.members[0]!, konto)
   })
 
   it('Verlassen der Ansicht holt die gebündelten Saves sofort nach', () => {
@@ -1163,7 +1228,7 @@ describe('Personen (inkl. Debounce)', () => {
     const aktion = { type: 'updatePerson', id: 'p1', patch: { grp: 'g2' } } as const
     persist(vorher, reducer(vorher, aktion), aktion)
     expect(data.saveGroupRow).toHaveBeenCalledTimes(1)
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...DEMO_GROUPS[0]!, overseerId: null }, 0)
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...DEMO_GROUPS[0]!, overseerId: null }, 0, { eintrag: DEMO_GROUPS[0], position: 0 })
   })
 
   it('jede andere Änderung an der Person schreibt keine Gruppe', () => {
@@ -1275,14 +1340,13 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
   })
 
   /*
-   * **Sofort neben gebündelt** (15.10.2026): Eine Änderung an der Person (bis
-   * zum 31.10.2026 hier die E-Mail-Adresse, eben getippt) wartet gebündelt — mit
-   * dem alten Haushalt. Wird gleich danach eine Familie
-   * gewählt, schreibt das die Person sofort; die wartende Fassung ging bis
-   * dahin 600 ms später hinterher und nahm den Haushalt in der Datenbank
-   * zurück.
+   * **Sofort neben gebündelt**: Eine Änderung an der Person wartet gebündelt —
+   * mit dem alten Haushalt. Wird gleich danach eine Familie gewählt, geht der
+   * Haushalt sofort hinaus (`saveFamily` schreibt an den Personen nur `fam`),
+   * die wartende Änderung hinterher, mit ihren eigenen Spalten. Den Haushalt
+   * nimmt sie nicht zurück: Ihr Vorher und ihr Nachher tragen denselben.
    */
-  it('was von der Person gebündelt wartete, geht nicht hinter dem Haushalt her', () => {
+  it('was von der Person gebündelt wartete, geht hinter dem Haushalt her — ohne ihn zurückzunehmen', () => {
     const p1 = st().persons.find((p) => p.id === 'p1')!
     const geaendert = st({ persons: st().persons.map((p) => (p.id === 'p1' ? { ...p, female: true } : p)) })
     persist(st(), geaendert, { type: 'updatePerson', id: 'p1', patch: { female: true } })
@@ -1290,12 +1354,15 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
       persons: geaendert.persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p)),
     })
     persist(geaendert, verbunden, { type: 'setFamily', id: 'p1', memberId: 'p2', add: true })
-    vi.advanceTimersByTime(600)
     expect(data.saveFamily).toHaveBeenCalledWith('c1', 'h1', expect.arrayContaining([{ ...p1, female: true, fam: 'h1' }]))
-    expect(data.savePerson).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(600)
+    expect(data.savePerson).toHaveBeenCalledTimes(1)
+    const [, nachher, vorher] = vi.mocked(data.savePerson).mock.calls[0]!
+    expect(nachher).toEqual({ ...p1, female: true })
+    expect(vorher?.fam).toBe(nachher.fam)
   })
 
-  it('ohne neuen Haushalt dasselbe — die Person geht einmal hinaus, mit beidem', () => {
+  it('ohne neuen Haushalt geht die Person einmal hinaus, mit beidem — gegen den Stand vor beidem', () => {
     const beide = st().persons.map((p) => (p.id === 'p1' || p.id === 'p2' ? { ...p, fam: 'h1' } : p))
     const geaendert = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, female: true } : p)) })
     persist(st({ persons: beide }), geaendert, { type: 'updatePerson', id: 'p1', patch: { female: true } })
@@ -1303,7 +1370,11 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
     persist(geaendert, getrennt, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
     vi.advanceTimersByTime(600)
     expect(data.savePerson).toHaveBeenCalledTimes(1)
-    expect(data.savePerson).toHaveBeenCalledWith('c1', expect.objectContaining({ id: 'p1', female: true, fam: null }))
+    expect(data.savePerson).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ id: 'p1', female: true, fam: null }),
+      beide.find((p) => p.id === 'p1'),
+    )
   })
 
   it('wohnt noch jemand darin, bleibt die Zeile stehen', () => {
@@ -1312,7 +1383,7 @@ describe('Haushalte: erst die Zeile, dann die Person', () => {
     const next = st({ persons: beide.map((p) => (p.id === 'p1' ? { ...p, fam: null } : p)) })
     persist(prev, next, { type: 'setFamily', id: 'p1', memberId: 'p1', add: false })
     expect(data.deleteHouseholdRow).not.toHaveBeenCalled()
-    expect(data.savePerson).toHaveBeenCalledWith('c1', mitFam('p1', null))
+    expect(data.savePerson).toHaveBeenCalledWith('c1', mitFam('p1', null), mitFam('p1', 'h1'))
   })
 })
 
@@ -1355,10 +1426,10 @@ describe('Ein gelöschter Dienst nimmt seine drei Spuren mit', () => {
     // Die Wochen mit der Platzreihe — gebündelt wie jede Wochen-Änderung.
     vi.advanceTimersByTime(600)
     expect(vi.mocked(data.saveWeek).mock.calls.length).toBeGreaterThan(0)
-    // Und die Bestätigungen dieser Plätze — sobald ihre Woche geschrieben ist.
-    await geschrieben()
-    const keys = vi.mocked(data.deleteConfirmationRows).mock.calls[0]?.[1] ?? []
+    // Und die Bestätigungen dieser Plätze — mit dem Schreiben ihrer Woche.
+    const keys = vi.mocked(data.saveWeek).mock.calls.flatMap((c) => c[2] ?? [])
     expect(keys.some((k) => k.includes('|helper|ton|'))).toBe(true)
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
   })
 })
 
@@ -1389,9 +1460,10 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     persist(st(), st({ services: [...DEMO_SERVICES, svc] }), { type: 'addService', service: svc })
     expect(data.saveService).toHaveBeenCalledWith('c1', svc, DEMO_SERVICES.length)
     vi.clearAllMocks()
-    const key = DEMO_SERVICES[0]!.key
-    persist(st(), st(), { type: 'changeServiceCount', key, delta: 1 })
-    expect(data.saveService).toHaveBeenCalledWith('c1', expect.objectContaining({ key }), 0)
+    const [erster, ...rest] = DEMO_SERVICES
+    const mehr = { ...erster!, count: erster!.count + 1 }
+    persist(st(), st({ services: [mehr, ...rest] }), { type: 'changeServiceCount', key: mehr.key, delta: 1 })
+    expect(data.saveService).toHaveBeenCalledWith('c1', mehr, 0, { eintrag: erster, position: 0 })
     persist(st(), st(), { type: 'removeService', key: 'x' })
     expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'x')
   })
@@ -1403,8 +1475,8 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     const [a, b, c] = [dienst('a'), dienst('b'), dienst('c')] as const
     persist(st({ services: [a, b, c] }), st({ services: [b, a, c] }), { type: 'moveService', key: a.key, dir: 1 })
     expect(data.saveService).toHaveBeenCalledTimes(2)
-    expect(data.saveService).toHaveBeenCalledWith('c1', b, 0)
-    expect(data.saveService).toHaveBeenCalledWith('c1', a, 1)
+    expect(data.saveService).toHaveBeenCalledWith('c1', b, 0, { eintrag: b, position: 1 })
+    expect(data.saveService).toHaveBeenCalledWith('c1', a, 1, { eintrag: a, position: 0 })
   })
 
   it('addGroup / updateGroup / removeGroup (inkl. grp-Auflösung)', () => {
@@ -1421,7 +1493,8 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     persist(st({ groups: [g0] }), st({ groups: [g0, g] }), { type: 'addGroup', group: g })
     expect(data.saveGroupRow).toHaveBeenCalledWith('c1', g, 1) // hinten angehängt
     persist(st({ groups: [g0, g] }), st({ groups: [g0, { ...g, overseerId: 'p1' }] }), { type: 'updateGroup', id: 'g9', patch: { overseerId: 'p1' } })
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, overseerId: 'p1' }, 1) // bleibt, wo sie war
+    // Bleibt, wo sie war — und mit dem Stand davor: Hinaus geht nur der Aufseher.
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', { ...g, overseerId: 'p1' }, 1, { eintrag: g, position: 1 })
     // removeGroup: ein Mitglied hatte grp='g9', jetzt null → savePersonGroup
     const before = { id: 'pm', grp: 'g9' } as never
     const after = { id: 'pm', grp: null } as never
@@ -1451,8 +1524,8 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     expect(data.deleteGroupRow).toHaveBeenCalledWith('b')
     // „a" steht weiter auf 0 und wird nicht angefasst.
     expect(data.saveGroupRow).toHaveBeenCalledTimes(2)
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[1], 1)
-    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[2], 2)
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[1], 1, { eintrag: nachher[1], position: 2 })
+    expect(data.saveGroupRow).toHaveBeenCalledWith('c1', nachher[2], 2, { eintrag: nachher[2], position: 3 })
   })
 
   it('dasselbe bei den Diensten — dieselbe Nummerierung, dieselbe Lücke', () => {
@@ -1464,8 +1537,8 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
 
     expect(data.deleteServiceRow).toHaveBeenCalledWith('c1', 'a')
     expect(data.saveService).toHaveBeenCalledTimes(2)
-    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[0], 0)
-    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[1], 1)
+    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[0], 0, { eintrag: nachher[0], position: 1 })
+    expect(data.saveService).toHaveBeenCalledWith('c1', nachher[1], 1, { eintrag: nachher[1], position: 2 })
   })
 
   /*
@@ -1662,7 +1735,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     vi.mocked(data.saveWeek).mockClear()
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', vorher.weeks[0])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', vorher.weeks[0], [])
   })
 
   it('updateCongregation speichert die Wochen, deren Endzeit mitgewandert ist', () => {
@@ -1683,7 +1756,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(data.saveWeek).not.toHaveBeenCalled()
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1) // nur die eine geänderte
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', weeks[1], [])
   })
 
   it('zwei Zeitänderungen kurz nacheinander schreiben jede Woche einmal — mit dem letzten Stand (T118)', () => {
@@ -1699,7 +1772,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     persist(mit(w1, '18:30'), mit(w2, '18:15'), { type: 'updateCongregation', patch: { times: zeiten('18:15') } })
     vi.advanceTimersByTime(600)
     expect(data.saveWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1])
+    expect(data.saveWeek).toHaveBeenCalledWith('c1', w2[1], [])
   })
 
   it('updateCongregation ohne Zeitänderung schreibt keine Woche', () => {
@@ -1737,13 +1810,14 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
 
     expect(data.saveSettings).toHaveBeenCalled()
     expect(data.saveWeek).toHaveBeenCalledTimes(geaendert.length)
-    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w)
+    for (const w of geaendert) expect(data.saveWeek).toHaveBeenCalledWith('c1', w, [])
   })
 
   it('updateMember / removeMember', () => {
-    const m = { userId: 'm1', email: '', personId: null, planner: true, zuteiler: false }
-    persist(st({ members: [m] }), st({ members: [m] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })
-    expect(data.saveMemberRow).toHaveBeenCalledWith(m)
+    const m = { userId: 'm1', email: '', personId: null, planner: false, zuteiler: false }
+    const admin = { ...m, planner: true }
+    persist(st({ members: [m] }), st({ members: [admin] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })
+    expect(data.saveMemberRow).toHaveBeenCalledWith(admin, m)
     persist(st(), st(), { type: 'removeMember', userId: 'm1' })
     expect(data.deleteMemberRow).toHaveBeenCalledWith('m1')
   })
@@ -1993,6 +2067,22 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
         datum: expect.any(String),
       },
     ])
+  })
+
+  it('wer auf das Schreiben wartet (Nachladen, Abmelden, Neuladen), wartet auch auf die Meldung daran', async () => {
+    let antworte!: (ok: boolean) => void
+    vi.mocked(data.saveWeek).mockImplementation(() => new Promise((weiter) => (antworte = weiter)))
+    const vorher = wocheMitKlasse()
+    const nachher = wocheMitKlasse()
+    const punkt = nachher.mid.sections[0]?.items[0] as { names: { name: string; pid?: string }[] }
+    punkt.names[0] = { name: 'B. Neu', pid: 'pB' }
+    persist(mitWoche(vorher), mitWoche(nachher), { type: 'assign', name: 'B. Neu' })
+    const gemeldet = schreibenAbwarten().then(() => vi.mocked(data.sendPlanEntzug).mock.calls.length)
+    // Die Antwort kommt erst, nachdem das Warten begann.
+    await Promise.resolve()
+    await Promise.resolve()
+    antworte(true)
+    expect(await gemeldet).toBe(1)
   })
 
   it('scheitert das Schreiben der Woche, erfährt niemand einen Entzug — der Platz ist ja noch seiner (16.10.2026)', async () => {

@@ -75,14 +75,27 @@ export function useZettelDruck(): ZettelDruck {
     if (laeuft || personen.length === 0) return []
     setLaeuft(true)
     try {
+      /*
+       * **Erst laden, dann ausstellen**, wie bei der Nachricht
+       * (`linkTexteLaden`): Ein neuer Link ersetzt den alten samt Zettel. Fehlt
+       * nach einem Deploy der alte Teil der App, oder reißt das Netz, wären die
+       * Links sonst ersetzt, und gedruckt würde nichts — ohne Meldung.
+       */
+      const lang = sprachDerVersammlung(state.congLang)
+      let zettelSatz: (typeof import('./zettel-satz'))['zettelSatz']
+      try {
+        ;[{ zettelSatz }] = await Promise.all([import('./zettel-satz'), loadOverlay(lang)])
+      } catch (err) {
+        console.error('[zettel]', err)
+        dispatch({ type: 'showToast', text: t.linkFehler })
+        return []
+      }
       const r = await ausstellen(personen.map((p) => p.id))
       if (!r) return []
       if (r.links.length === 0) {
         dispatch({ type: 'showToast', text: t.linkFehler })
         return []
       }
-      const lang = sprachDerVersammlung(state.congLang)
-      const [{ zettelSatz }] = await Promise.all([import('./zettel-satz'), loadOverlay(lang)])
       const neu = zettelSatz(r.links, {
         namen: new Map(personen.map((p) => [p.id, displayName(p)])),
         lang,

@@ -12,12 +12,13 @@
 
 import { STANDARD_ERINNERUNGEN } from '../data/vorgaben'
 import { kurzeZeit, zeitenAus } from '../../supabase/functions/_shared/planung.ts'
+import { geaenderteFelder } from '../../supabase/functions/_shared/gleicher-inhalt.ts'
 import { fsLeiterBinden, regenFsWeeks } from '../data/fs'
 import { sentKey, taskKeyVorbei } from '../data/planning'
 import type { EntzogeneZuteilung } from '../data/plan-versand'
 import { pidsNachtragen } from '../data/namensbindung'
 import { normalizeChairKeys } from '../data/helpers'
-import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
+import { isoDay, montagVon, tagNach, wirktAb } from '../data/meeting-dates'
 import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import { taktVon } from '../data/weitere-plaene'
 import type {
@@ -48,6 +49,7 @@ import type {
   Week,
 } from '../data/types'
 import { supabase } from './supabase'
+import { mitverfolgen } from './schreiben-unterwegs'
 import { type AbgelehnteGesuche, gesuchKennung } from './abgelehnte-gesuche'
 import { fehlerAntwort } from './function-antwort'
 import {
@@ -345,9 +347,16 @@ export function anmeldeLinkAusZeile(r: AnmeldeLinkRow): AnmeldeLink {
   return { personId: r.person_id, gueltigBis: r.gueltig_bis, erstelltAt: r.erstellt_at, gesendetAt: r.gesendet_at, benutztAt: r.benutzt_at }
 }
 
-const NOTIF_TYPES: NotificationType[] = ['zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert']
-const asNotifType = (t: string): NotificationType =>
-  NOTIF_TYPES.includes(t as NotificationType) ? (t as NotificationType) : 'gesendet'
+/** Jede Art genau einmal — über den Typ, damit eine neue Art hier nicht fehlen kann. */
+const NOTIF_TYPES: Readonly<Record<NotificationType, true>> = {
+  zuteilung: true,
+  erinnerung: true,
+  gesendet: true,
+  import: true,
+  verhindert: true,
+  anmeldung: true,
+}
+const asNotifType = (t: string): NotificationType => (Object.hasOwn(NOTIF_TYPES, t) ? (t as NotificationType) : 'gesendet')
 
 /* ---- Mapper Row ↔ App ---------------------------------------------------- */
 
@@ -942,8 +951,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   // wird beim ersten Schreiben angelegt.
   fsWochen.setzen(fsZeilen.flatMap((r): Array<[string, string]> => (r.updated_at ? [[r.start, r.updated_at]] : [])))
   const storedFsWeeks: FsInstance[][] = weekList.map((w) => fsNachWoche.get(w.start) ?? [])
+  // Ab der laufenden Woche (`wirktAb`): Die Treffpunkte davor fanden so statt,
+  // wie sie gespeichert sind.
   const ausgerichtet = fsRules.length
-    ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules)
+    ? regenFsWeeks(weekList.map((w) => w.start), storedFsWeeks, fsRules, { ab: wirktAb() })
     : storedFsWeeks
   // Leiter ohne `lpid` an ihre Person binden — dasselbe, was `pidsNachtragen`
   // eine Bildschirmhöhe weiter oben für die Zusammenkünfte tut. Ohne das bliebe
@@ -1033,9 +1044,14 @@ function schreibfehler(error: { message: string }): void {
   melder?.()
 }
 
-async function run(promise: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
-  const { error } = await promise
-  if (error) schreibfehler(error)
+/** Ein Schreiben abschicken und weitergehen — einen Fehler meldet es selbst, und bis zur Antwort gilt es als unterwegs. */
+function run(promise: PromiseLike<{ error: { message: string } | null }>): Promise<void> {
+  const arbeit = (async () => {
+    const { error } = await promise
+    if (error) schreibfehler(error)
+  })()
+  mitverfolgen(arbeit)
+  return arbeit
 }
 
 /** Ein Fehler aus PostgREST — `code` ist der SQLSTATE, bei Netzfehlern leer. */
@@ -1089,6 +1105,7 @@ function schreibSchlange(): (schreiben: Schreiben) => void {
     schlange = schlange
       .then(() => zeilenRun(schreiben()))
       .catch((err: unknown) => schreibfehler({ message: err instanceof Error ? err.message : String(err) }))
+    mitverfolgen(schlange)
   }
 }
 
@@ -1202,6 +1219,8 @@ export function setKonfliktMelder(fn: Konfliktmelder | null): void {
 function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
   const staende = new Map<string, string>()
   const kette = new Map<string, Promise<void>>()
+  /** Die Datenbank-Funktion, die die Woche samt ihren verfallenen Zusagen in einer Transaktion schreibt (`schema.sql`). */
+  const funktion = tabelle === 'weeks' ? 'woche_speichern' : 'treffpunkte_speichern'
 
   /**
    * Eine Woche schreiben und dabei den Stand prüfen.
@@ -1214,42 +1233,41 @@ function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
    *     Recht ist weg, der Trigger `fs_weeks_pruefen` weist ab) → melden, die
    *     App lädt nach. Überschrieben wurde nichts.
    *
-   * Bis zum 5.10.2026 stand zwischen 2 und 3 ein Schritt: nachsehen und, wenn
-   * dort noch der eigene Stand stand, **ohne** Bedingung schreiben — gegen einen
-   * falschen Konfliktalarm, für den es keinen bekannten Auslöser gibt. Er
-   * öffnete genau das Fenster, das die Bedingung schließen soll: Was ein anderer
-   * zwischen Nachsehen und Schreiben speicherte, ging lautlos verloren. Die Edge
-   * Functions schreiben nach derselben Regel (`_shared/woche-schreiben.ts`).
+   * Ohne Bedingung geschrieben wird nie, auch nicht nach einem Nachsehen, das
+   * noch den eigenen Stand fand: Was ein anderer zwischen Nachsehen und
+   * Schreiben speicherte, ginge lautlos verloren. Die Edge Functions schreiben
+   * nach derselben Regel (`_shared/woche-schreiben.ts`).
    *
    * `geladen`: die Ladung, aus der der Inhalt stammt (`ladung`). Wurde seither
    * neu geladen, geht er nicht mehr hinaus.
    *
+   * `verfallen`: die Zusagen, die mit dieser Fassung nicht mehr gelten — der
+   * Platz hat den Inhaber gewechselt. Sie gehen in derselben Transaktion
+   * (`woche_speichern`): Ginge ihr Löschen als zweiter Aufruf verloren, erbte
+   * der Neue die Zusage des Alten.
+   *
    * `true`: Die Woche steht so in der Datenbank. Erst dann darf geschehen, was
-   * an ihr hängt — das Löschen verfallener Zusagen, die Meldung „zurückgezogen"
-   * (`persist.ts`, 16.10.2026).
+   * sonst an ihr hängt — die Meldung „zurückgezogen" (`persist.ts`).
    */
-  async function schreiben(congregationId: string, woche: string, data: unknown, geladen: number): Promise<boolean> {
+  async function schreiben(
+    congregationId: string,
+    woche: string,
+    data: unknown,
+    verfallen: readonly string[],
+    geladen: number,
+  ): Promise<boolean> {
     if (!supabase) return false
     if (geladen !== ladung) {
       konfliktMelder?.()
       return false
     }
-    const stand = staende.get(woche)
-    const { data: zeile, error } =
-      stand === undefined
-        ? await supabase
-            .from(tabelle)
-            .insert({ congregation_id: congregationId, start: woche, data })
-            .select('updated_at')
-            .maybeSingle()
-        : await supabase
-            .from(tabelle)
-            .update({ data })
-            .eq('congregation_id', congregationId)
-            .eq('start', woche)
-            .eq('updated_at', stand)
-            .select('updated_at')
-            .maybeSingle()
+    const { data: zeilen, error } = await supabase.rpc(funktion, {
+      p_cong: congregationId,
+      p_start: woche,
+      p_stand: staende.get(woche) ?? null,
+      p_data: data,
+      p_verfallen: [...verfallen],
+    })
     if (error) {
       if (standVeraltet(error)) {
         console.error('[persistenz]', error.message)
@@ -1257,8 +1275,9 @@ function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
       } else schreibfehler(error)
       return false
     }
-    if (zeile) {
-      standMerken(staende, woche, zeile.updated_at as string, geladen)
+    const zeile = (Array.isArray(zeilen) ? zeilen[0] : null) as { stand?: string } | null | undefined
+    if (zeile?.stand) {
+      standMerken(staende, woche, zeile.stand, geladen)
       return true
     }
     konfliktMelder?.()
@@ -1284,17 +1303,18 @@ function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
      * Anhängen, sonst risse ein Fehlschlag die Kette ab, und die Woche schriebe
      * nie wieder; gemeldet wird er als Schreibfehler.
      */
-    speichern(congregationId: string, woche: string, data: unknown): Promise<boolean> {
+    speichern(congregationId: string, woche: string, data: unknown, verfallen: readonly string[] = []): Promise<boolean> {
       if (!supabase || !woche) return Promise.resolve(false)
       const vorher = kette.get(woche) ?? Promise.resolve()
       const geladen = ladung
       const ergebnis = vorher.then(() =>
-        schreiben(congregationId, woche, data, geladen).catch((err: unknown) => {
+        schreiben(congregationId, woche, data, verfallen, geladen).catch((err: unknown) => {
           schreibfehler({ message: err instanceof Error ? err.message : String(err) })
           return false
         }),
       )
       kette.set(woche, ergebnis.then(() => {}))
+      mitverfolgen(ergebnis)
       return ergebnis
     },
   }
@@ -1309,8 +1329,8 @@ const fsWochen = wochenTabelle('fs_weeks')
  * unmittelbar in die Tabelle (`weeks_write`); bis zum 15.10.2026 ging die Woche
  * eines Planers über die Edge Function `zuteilen`.
  */
-export function saveWeek(congregationId: string, week: Week): Promise<boolean> {
-  return wochen.speichern(congregationId, week.start, week)
+export function saveWeek(congregationId: string, week: Week, verfallen: readonly string[] = []): Promise<boolean> {
+  return wochen.speichern(congregationId, week.start, week, verfallen)
 }
 
 /**
@@ -1324,27 +1344,53 @@ export async function wocheGeschrieben(woche: string): Promise<void> {
   await Promise.all([wochen.kette.get(woche), fsWochen.kette.get(woche)])
 }
 
-export function savePerson(congregationId: string, person: Person): void {
-  if (!supabase) return
-  void run(personenSchreiben(supabase, congregationId, [person]))
+/** Was vorher in der Zeile eines Eintrags stand, der eine Position hat (Gruppe, Dienst). */
+export interface Zeilenstand<T> {
+  eintrag: T
+  position: number
+}
+
+type Schreibantwort = PromiseLike<{ error: { message: string } | null }>
+
+/**
+ * **Eine Zeile schreiben: ohne `vorher` ganz, sonst nur, was sich geändert
+ * hat** (`geaenderteFelder`) — und gar nichts, wenn sich nichts geändert hat.
+ *
+ * Ganz geschrieben, nähme jede Spalte mit, was nur auf diesem Bildschirm noch
+ * alt ist: Ändern zwei zugleich verschiedene Felder derselben Zeile, nähme der
+ * Spätere dem Früheren seine Änderung still zurück. Und hat ein anderer die
+ * Zeile inzwischen gelöscht, trifft das Ändern nichts, statt sie wie ein
+ * Upsert wieder anzulegen.
+ */
+function zeileSchreiben<Z extends object>(
+  zeile: Z,
+  vorher: Z | undefined,
+  schreiben: { ganz: (zeile: Z) => Schreibantwort; spalten: (spalten: Partial<Z>) => Schreibantwort },
+): void {
+  if (!vorher) {
+    void run(schreiben.ganz(zeile))
+    return
+  }
+  const spalten = geaenderteFelder(vorher, zeile)
+  if (Object.keys(spalten).length > 0) void run(schreiben.spalten(spalten))
 }
 
 /**
- * **Personen schreiben.** Ein Upsert liest jede Spalte, die es schreibt:
- * PostgREST macht daraus `on conflict (id) do update set x = excluded.x`, und
- * dafür verlangt Postgres das Leserecht an der Spalte — auch beim Admin.
- * `personToRow` schreibt deshalb nur Spalten der Freigabe in `schema.sql`.
- * Vom 30. bis 31.10.2026 lag `persons.mail` außerhalb, und die Datenbank wies
- * jedes Speichern einer Person ab (42501); seit dem 31.10.2026 gibt es die
- * Spalte nicht mehr.
+ * Eine Person schreiben — neu ganz, sonst nur, was sich gegenüber `vorher`
+ * geändert hat (`zeileSchreiben`).
+ *
+ * Das Upsert der neuen liest jede Spalte, die es schreibt: PostgREST macht
+ * daraus `on conflict (id) do update set x = excluded.x`, und dafür verlangt
+ * Postgres das Leserecht an der Spalte — auch beim Admin. `personToRow`
+ * schreibt deshalb nur Spalten der Freigabe in `schema.sql`.
  */
-async function personenSchreiben(
-  client: NonNullable<typeof supabase>,
-  congregationId: string,
-  personen: readonly Person[],
-): Promise<{ error: { message: string } | null }> {
-  const { error } = await client.from('persons').upsert(personen.map((p) => personToRow(p, congregationId)))
-  return { error }
+export function savePerson(congregationId: string, person: Person, vorher?: Person): void {
+  const db = supabase
+  if (!db) return
+  zeileSchreiben(personToRow(person, congregationId), vorher && personToRow(vorher, congregationId), {
+    ganz: (zeile) => db.from('persons').upsert(zeile),
+    spalten: (spalten) => db.from('persons').update(spalten).eq('id', person.id),
+  })
 }
 
 /**
@@ -1495,8 +1541,8 @@ export function savePlanEintraege(congregationId: string, eintraege: PlanEintrag
  * entsteht nur auf einem veralteten Stand, die Oberfläche bietet beides nicht
  * an — also wird nachgeladen.
  */
-export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[]): Promise<boolean> {
-  return fsWochen.speichern(congregationId, woche, insts)
+export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[], verfallen: readonly string[] = []): Promise<boolean> {
+  return fsWochen.speichern(congregationId, woche, insts, verfallen)
 }
 
 export function deletePersonRow(id: string): void {
@@ -1504,13 +1550,14 @@ export function deletePersonRow(id: string): void {
   void run(supabase.from('persons').delete().eq('id', id))
 }
 
-export function saveService(congregationId: string, service: Service, position: number): void {
-  if (!supabase) return
-  void run(
-    supabase
-      .from('services')
-      .upsert(serviceToRow(service, congregationId, position), { onConflict: 'congregation_id,key' }),
-  )
+/** Einen Dienst schreiben — neu ganz, sonst nur, was sich gegenüber `vorher` geändert hat (`zeileSchreiben`). */
+export function saveService(congregationId: string, service: Service, position: number, vorher?: Zeilenstand<Service>): void {
+  const db = supabase
+  if (!db) return
+  zeileSchreiben(serviceToRow(service, congregationId, position), vorher && serviceToRow(vorher.eintrag, congregationId, vorher.position), {
+    ganz: (zeile) => db.from('services').upsert(zeile, { onConflict: 'congregation_id,key' }),
+    spalten: (spalten) => db.from('services').update(spalten).eq('congregation_id', congregationId).eq('key', service.key),
+  })
 }
 
 export function deleteServiceRow(congregationId: string, key: string): void {
@@ -1536,10 +1583,17 @@ export function deleteServiceRow(congregationId: string, key: string): void {
  * `position` ist der Index in `state.groups`, genau wie bei den Diensten
  * (`saveService`): Die Liste steht in Ladereihenfolge, und neue Gruppen hängen
  * sich hinten an.
+ *
+ * Neu geht die ganze Zeile hinaus, sonst nur, was sich gegenüber `vorher`
+ * geändert hat (`zeileSchreiben`).
  */
-export function saveGroupRow(congregationId: string, group: Group, position: number): void {
-  if (!supabase) return
-  void run(supabase.from('groups').upsert(groupToRow(group, congregationId, position)))
+export function saveGroupRow(congregationId: string, group: Group, position: number, vorher?: Zeilenstand<Group>): void {
+  const db = supabase
+  if (!db) return
+  zeileSchreiben(groupToRow(group, congregationId, position), vorher && groupToRow(vorher.eintrag, congregationId, vorher.position), {
+    ganz: (zeile) => db.from('groups').upsert(zeile),
+    spalten: (spalten) => db.from('groups').update(spalten).eq('id', group.id),
+  })
 }
 
 export function deleteGroupRow(id: string): void {
@@ -1561,6 +1615,9 @@ export function savePersonGroup(person: Person): void {
  * ginge die Person vor ihm hinaus, wiese die Datenbank sie ab. Alle übrigen
  * Schreibwege hier sind bewusst „abschicken und weitergehen" — dieser eine hat
  * eine Reihenfolge, also steht sie an einer Stelle.
+ *
+ * An den Personen geht nur `fam` hinaus, je Haushalt eine Anfrage. Was sonst
+ * an ihnen wartet, schreibt ihr eigener Weg (`savePerson`).
  */
 export function saveFamily(congregationId: string, haushalt: string, personen: Person[]): void {
   if (!supabase) return
@@ -1571,7 +1628,13 @@ export function saveFamily(congregationId: string, haushalt: string, personen: P
         .from('households')
         .upsert({ id: haushalt, congregation_id: congregationId })
       if (error) return { error }
-      return await personenSchreiben(client, congregationId, personen)
+      const jeHaushalt = new Map<string | null, string[]>()
+      for (const p of personen) jeHaushalt.set(p.fam ?? null, [...(jeHaushalt.get(p.fam ?? null) ?? []), p.id])
+      for (const [fam, ids] of jeHaushalt) {
+        const { error: fehler } = await client.from('persons').update({ fam }).in('id', ids)
+        if (fehler) return { error: fehler }
+      }
+      return { error: null }
     })(),
   )
 }
@@ -1773,14 +1836,18 @@ export function substituteSeek(taskKey: string): void {
 export function substituteTake(taskKey: string): void {
   if (!supabase) return
   const geladen = ladung
-  void supabase.functions.invoke('substitute', { body: { action: 'take', taskKey } }).then(async ({ data, error }) => {
-    if (!error) {
-      standDerFunctionUebernehmen(data, geladen)
-      return
-    }
-    console.error('[substitute/take]', error.message)
-    konfliktMelder?.((await fehlerAntwort(error))?.error === 'not-sought' ? 'nicht-gesucht' : undefined)
-  })
+  // Der Kalendertag des Geräts geht mit, wie beim freien Platz (`platzFuellen`).
+  const heute = isoDay(new Date())
+  mitverfolgen(
+    supabase.functions.invoke('substitute', { body: { action: 'take', taskKey, heute } }).then(async ({ data, error }) => {
+      if (!error) {
+        standDerFunctionUebernehmen(data, geladen)
+        return
+      }
+      console.error('[substitute/take]', error.message)
+      konfliktMelder?.((await fehlerAntwort(error))?.error === 'not-sought' ? 'nicht-gesucht' : undefined)
+    }),
+  )
 }
 
 /**
@@ -1830,14 +1897,16 @@ export function platzFuellen(taskKey: string): void {
   if (!supabase) return
   const heute = isoDay(new Date())
   const geladen = ladung
-  void supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(async ({ data, error }) => {
-    if (!error) {
-      standDerFunctionUebernehmen(data, geladen)
-      return
-    }
-    console.error('[substitute/fill]', error.message)
-    konfliktMelder?.((await fehlerAntwort(error))?.error === 'slot-taken' ? 'vergeben' : undefined)
-  })
+  mitverfolgen(
+    supabase.functions.invoke('substitute', { body: { action: 'fill', taskKey, heute } }).then(async ({ data, error }) => {
+      if (!error) {
+        standDerFunctionUebernehmen(data, geladen)
+        return
+      }
+      console.error('[substitute/fill]', error.message)
+      konfliktMelder?.((await fehlerAntwort(error))?.error === 'slot-taken' ? 'vergeben' : undefined)
+    }),
+  )
 }
 
 /**
@@ -1954,24 +2023,39 @@ export function sendPlanEntzug(entzuege: EntzogeneZuteilung[]): void {
   if (!supabase || entzuege.length === 0) return
   // **Kein `run()`**: Dessen Fehlerweg meldet „Änderung konnte nicht gespeichert
   // werden" — hier ist aber nichts zu speichern, sondern eine Nachricht zu
-  // schicken. Der Planer bekäme eine Warnung über einen Verlust, den es nicht
-  // gab, während seine Änderung längst in der Datenbank steht.
-  void supabase.functions
-    .invoke('send-plan', {
-      body: {
-        action: 'entzug',
-        entzuege: entzuege.map((z) => ({
-          taskKey: z.key,
-          name: z.name,
-          pid: z.pid,
-          label: z.label,
-          datum: z.datum,
-        })),
-      },
-    })
-    .then(({ error }) => {
-      if (error) console.error('[send-plan/entzug]', error.message)
-    })
+  // schicken. Gespeichert ist die Änderung längst; der Planer erfährt, dass
+  // der Betroffene nichts davon weiß, und sagt es ihm selbst (`entzugMelder`).
+  mitverfolgen(
+    supabase.functions
+      .invoke('send-plan', {
+        body: {
+          action: 'entzug',
+          entzuege: entzuege.map((z) => ({
+            taskKey: z.key,
+            name: z.name,
+            pid: z.pid,
+            label: z.label,
+            datum: z.datum,
+          })),
+        },
+      })
+      .then(({ error }) => {
+        if (!error) return
+        console.error('[send-plan/entzug]', error.message)
+        entzugMelder?.()
+      }),
+  )
+}
+
+/**
+ * Meldung „die Nachricht über einen Entzug ging nicht hinaus". Wie beim
+ * Schreibfehler kennt diese Schicht weder Dispatch noch Sprache; wer es
+ * anzeigt, meldet sich hier an (store.tsx).
+ */
+let entzugMelder: (() => void) | null = null
+
+export function setEntzugMelder(fn: (() => void) | null): void {
+  entzugMelder = fn
 }
 
 /** Eine Glocken-Zeile gelesen — die angetippte (`mitteilungGelesen`). */
@@ -2127,14 +2211,13 @@ export function deleteConfirmationRows(congregationId: string, taskKeys: string[
 
 /* ---- Mitglieder & Anmelde-Links (nur Admins, RLS-geschützt) -------------- */
 
-export function saveMemberRow(member: Member): void {
-  if (!supabase) return
-  void run(
-    supabase
-      .from('members')
-      .update({ person_id: member.personId, planner: member.planner, zuteiler: member.zuteiler })
-      .eq('user_id', member.userId),
-  )
+/** Ein Konto schreiben — mit `vorher` nur, was sich geändert hat (`zeileSchreiben`). Die Zeile gibt es immer schon. */
+export function saveMemberRow(member: Member, vorher?: Member): void {
+  const db = supabase
+  if (!db) return
+  const zeile = (m: Member) => ({ person_id: m.personId, planner: m.planner, zuteiler: m.zuteiler })
+  const aendern = (spalten: Partial<ReturnType<typeof zeile>>) => db.from('members').update(spalten).eq('user_id', member.userId)
+  zeileSchreiben(zeile(member), vorher && zeile(vorher), { ganz: aendern, spalten: aendern })
 }
 
 export function deleteMemberRow(userId: string): void {

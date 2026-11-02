@@ -204,6 +204,26 @@ describe('platzAuswahl — vom Schlüssel zur Stelle im Programm', () => {
     expect(platzAuswahl(weeks, DIENSTE, helferKey(MONTAG, 'mid', 'mik', 1))).toMatchObject({ kind: 'helper', svc: 'mik', pos: 1 })
   })
 
+  /*
+   * „Zuteilen" in den Zusagen der Woche öffnet das Blatt über diesen Weg. Er
+   * baute die Auswahl ohne Qualifikation, Gruppe und Redner-Flag — angeboten
+   * wurde dann jeder. Seither dieselbe Auswahl wie aus dem Programm
+   * (`auswahlFuer`).
+   */
+  it('trägt, was das Blatt braucht: die Qualifikation, die Gruppe, den Redner', () => {
+    const mid = dienstag()
+    mid.helpers.rein = [{ name: 'Gruppe 1' }]
+    const weeks = [woche({ mid })]
+    expect(platzAuswahl(weeks, DIENSTE, punktKey(MONTAG, 'mid', 'k4', 1))).toMatchObject({
+      priv: 'leser', label: 'Versammlungsbibelstudium', labelRolle: 'Leser', groups: false, guest: false,
+    })
+    expect(platzAuswahl(weeks, DIENSTE, helferKey(MONTAG, 'mid', 'mik', 1))).toMatchObject({
+      priv: serviceQualKey('mik'), label: 'Mikrofone', groups: false,
+    })
+    expect(platzAuswahl(weeks, DIENSTE, helferKey(MONTAG, 'mid', 'rein', 0))).toMatchObject({ priv: null, groups: true })
+    expect(platzAuswahl(weeks, DIENSTE, punktKey(MONTAG, 'we', 'v1', 0))).toMatchObject({ priv: 'vortrag', guest: true })
+  })
+
   it('null für einen Platz, den es nicht (mehr) gibt', () => {
     expect(platzAuswahl([woche()], DIENSTE, punktKey(MONTAG, 'mid', 'weg', 0))).toBeNull()
     expect(platzAuswahl([woche()], DIENSTE, helferKey(MONTAG, 'mid', 'mik', 5))).toBeNull() // jenseits der Platzzahl

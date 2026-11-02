@@ -84,6 +84,7 @@ const OHNE_DATENBANKWEG = new Set([
   'anmeldeLinkAusZeile',
   'setSchreibfehlerMelder',
   'setKonfliktMelder',
+  'setEntzugMelder',
   'ladungJetzt',
   'tauschStaendeUebernehmen',
 ])

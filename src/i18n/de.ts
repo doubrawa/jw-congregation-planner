@@ -42,6 +42,8 @@ export const DE = {
     zettelHinweisTippen: 'Tippe den Code von deinem Zettel ein. Ist der Zettel weg, bekommst du von den Ältesten einen neuen. Am Handy scannst du einfach den QR-Code.',
     zettelScannen: 'Zettel scannen', codeEintippen: 'Code eintippen', mitCodeAnmelden: 'Mit Code anmelden',
     codeLbl: 'Code', codeHinweis: 'Der Code steht auf deinem Zettel unter dem QR-Code.',
+    // Vor der Prüfung des getippten Codes; danach heißt der Knopf `anmeldenKnopf`.
+    codeWeiter: 'Weiter',
     codePasst: 'Der Code passt',
     codeNichtDu: 'Das bist nicht du? Dann frag bitte in deiner Versammlung nach.',
     codeUnbekannt: 'Diesen Code gibt es nicht. Prüfe ihn bitte noch einmal.',
@@ -566,6 +568,8 @@ export const DE = {
     heftGeraten: 'Beim Holen geraten',
     aktuellLbl: 'Aktuell:', entfernen: 'Entfernen', abwesendChip: 'Abwesend',
     sheetSchonHeute: 'An diesem Tag schon',
+    // Der Grund am Platz eines Gesprächspartners, der nicht zum Führer passt (`konfliktPartner`).
+    paarPasstNicht: 'Passt nicht als Paar',
     // {w} = Breite des Auslastungs-Fensters (LOAD_WEEKS in data/auslastung.ts).
     // Nicht ausschreiben: beim letzten Wechsel von 4 auf 5 blieben ar/fa/ur
     // bei der alten Zahl stehen, ohne dass es jemandem auffiel.
@@ -812,6 +816,8 @@ export const DE = {
     // Der Server wies das Übernehmen ab (`Abweisung` in lib/data.ts).
     toastErsatzNichtMehrGesucht: 'Nicht übernommen · für diesen Hilfsdienst wird kein Ersatz mehr gesucht',
     toastPlatzSchonVergeben: 'Nicht eingetragen · den Platz hat schon jemand übernommen',
+    // Die Nachricht „Zuteilung zurückgezogen" ging nicht hinaus (`sendPlanEntzug`).
+    toastEntzugNichtGemeldet: 'Gespeichert · wer die Zuteilung hatte, wurde nicht benachrichtigt — bitte selbst Bescheid geben',
     notifVerhindert: 'Verhinderung gemeldet',
     // Konten & Mitglieder
     laedt: 'Lädt …',
@@ -831,6 +837,8 @@ export const DE = {
     konfliktAbsent: '{name} ist abwesend, aber eingeteilt · {tab}',
     konfliktDouble: '{name} ist {n}× in einer Zusammenkunft · {tab}',
     konfliktHelperTask: '{name} hat Hilfsdienst und Aufgabe am selben Tag · {tab}',
+    // Gesprächsführer und Partner, die nicht zueinander passen (`partnerGenderOk`).
+    konfliktPartner: '{name} passt nicht als Partner zu {zu} — gleiches Geschlecht oder Familie · {tab}',
     // Zählzeile der Warnung „mehrfach vergebene feste Rollen" (Personen).
     // Hier stand daneben die Warnung vor doppelten Anzeigenamen — mit T110
     // entfallen, weil ein doppelter Name sich nicht mehr speichern lässt.
@@ -907,6 +915,11 @@ export const DE = {
     tauschToastAngefragt: 'Anfrage geschickt', tauschToastGetauscht: 'Getauscht — beide Plätze sind zugesagt', tauschFehlerWeg: 'Diese Anfrage gibt es nicht mehr.',
     tauschFehlerGeaendert: 'Das geht so nicht mehr — inzwischen hat sich der Plan geändert.', tauschFehlerSchonGefragt: 'Für diese Aufgabe läuft schon eine Anfrage.', notifTauschAngefragt: 'Tausch angefragt',
     notifGetauscht: 'Getauscht', notifTauschAbgelehnt: 'Tausch abgelehnt',
+    // Ein Gerät hat sich mit dem Link oder Code eines bestehenden Kontos
+    // angemeldet (Function `anmelden`): Titel und Text der Glocke, wörtlich wie
+    // im Push (`anmelden/texte.ts`).
+    notifNeueAnmeldung: 'Neue Anmeldung',
+    notifNeueAnmeldungText: 'Mit deinem Zugang wurde ein Gerät angemeldet. Warst du das nicht, sag es bitte den Ältesten.',
     // Ohne App-Konto (30.10.2026): mündlich absprechen, dann gleich tauschen.
     tauschOhneKonto: 'Ohne App-Konto — vorher persönlich absprechen', tauschDirektSicher: 'Abgesprochen? Tauschen',
     tauschHinweisOhneKonto: 'Wer kein App-Konto hat, sieht keine Anfrage. Sprecht euch persönlich ab — dann tauschst du gleich selbst.',

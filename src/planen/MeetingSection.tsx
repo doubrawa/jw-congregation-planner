@@ -4,7 +4,7 @@ import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { istSchuelerteil } from '../data/aux-class'
 import { dauerAbtrennen, rolleMitHerkunft, istArt, istCoPunkt, isGuestRole, isSong, liedImKopf, mtab, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, hatLiedPlatz, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
-import { isSpeakerRole } from '../data/helpers'
+import { auswahlFuer } from '../data/plaetze'
 import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
@@ -129,32 +129,7 @@ export function MeetingSection({
     slot: SlotAssignment,
     aux = false,
   ) => {
-    // Rolle und Raum stehen getrennt vom Titel: beide gehören in die Sprache
-    // des Lesers, der Titel in die der Versammlung (siehe SlotSelection.label).
-    // Im Sheet-Titel den Raum nennen — sonst sieht man beim Zuteilen nicht, ob
-    // man gerade den Hauptsaal oder die Zusätzliche Klasse besetzt.
-    const rolle = rolleMitHerkunft(slot) ?? ''
-    const raum = aux ? t.auxKlasse : ''
-    dispatch({
-      type: 'openSlot',
-      sel: {
-        kind: 'part',
-        wi: state.week,
-        tab,
-        si,
-        ii,
-        ni,
-        aux: aux || undefined,
-        label: item.title,
-        labelRolle: [rolle, raum].filter(Boolean).join(' · ') || undefined,
-        priv: slot.bereichsKey ?? null,
-        groups: false,
-        // `isSpeakerRole`, nicht `isGuestRole`: das Flag öffnet die
-        // Freitext-Felder und muss deshalb auch beim **eigenen** Redner gesetzt
-        // sein — sonst gäbe es keinen Weg zurück zum Gastredner (T29).
-        guest: isSpeakerRole(slot.rolle),
-      },
-    })
+    dispatch({ type: 'openSlot', sel: auswahlFuer({ art: 'programm', slot, section, si, item, ii, ni, aux }, state.week, tab) })
   }
 
   // Die Lieder stehen rechts im Kopf, wie beim Ansehen: eigene Liedzeilen (nur

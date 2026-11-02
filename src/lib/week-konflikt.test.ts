@@ -19,51 +19,44 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * ist zugleich die Reihenfolge, die im Betrieb entsteht.
  */
 
+/**
+ * Ein Aufruf von `woche_speichern` — die App schreibt jede Woche über diese
+ * Datenbank-Funktion, mit den verfallenen Zusagen in derselben Transaktion:
+ * ohne Stand legt sie an (`insert`), mit Stand ändert sie nur unter dieser
+ * Bedingung (`update`, `filter.updated_at`).
+ */
 interface Aufruf {
   op: 'insert' | 'update' | 'select'
+  funktion: string
   payload?: Record<string, unknown>
   filter: Record<string, unknown>
+  verfallen: unknown
 }
 
 const stub = vi.hoisted(() => ({
   aufrufe: [] as Aufruf[],
   antworten: [] as Array<{ data: unknown; error: unknown }>,
 }))
-const fromMock = vi.hoisted(() => vi.fn())
+const rpcMock = vi.hoisted(() => vi.fn())
 
-vi.mock('./supabase', () => ({ supabase: { from: fromMock } }))
+vi.mock('./supabase', () => ({ supabase: { rpc: rpcMock } }))
 
 import { saveWeek, setKonfliktMelder, setSchreibfehlerMelder } from './data'
 import type { Week } from '../data/types'
 
-function chain() {
-  const aufruf: Aufruf = { op: 'select', filter: {} }
-  const c: Record<string, unknown> = {}
-  c.insert = (p: Record<string, unknown>) => {
-    aufruf.op = 'insert'
-    aufruf.payload = p
-    return c
-  }
-  c.update = (p: Record<string, unknown>) => {
-    aufruf.op = 'update'
-    aufruf.payload = p
-    return c
-  }
-  c.select = () => c
-  c.eq = (k: string, v: unknown) => {
-    aufruf.filter[k] = v
-    return c
-  }
-  c.maybeSingle = () => c
-  c.then = (resolve: (v: unknown) => void) => {
-    stub.aufrufe.push(aufruf)
-    resolve(stub.antworten.shift() ?? { data: null, error: null })
-  }
-  return c
+function rpc(funktion: string, args: Record<string, unknown>) {
+  stub.aufrufe.push({
+    op: args.p_stand == null ? 'insert' : 'update',
+    funktion,
+    payload: { data: args.p_data, congregation_id: args.p_cong, start: args.p_start },
+    filter: args.p_stand == null ? {} : { updated_at: args.p_stand },
+    verfallen: args.p_verfallen,
+  })
+  return Promise.resolve(stub.antworten.shift() ?? { data: [], error: null })
 }
 
-const ok = (stand: string) => ({ data: { updated_at: stand }, error: null })
-const leer = { data: null, error: null }
+const ok = (stand: string) => ({ data: [{ stand }], error: null })
+const leer = { data: [], error: null }
 
 /**
  * Eine Woche mit Inhalt `range` und der Kennung `start`.
@@ -89,8 +82,8 @@ let konflikte = 0
 let schreibfehler = 0
 
 beforeEach(() => {
-  fromMock.mockReset()
-  fromMock.mockImplementation(chain)
+  rpcMock.mockReset()
+  rpcMock.mockImplementation(rpc)
   stub.aufrufe = []
   stub.antworten = []
   konflikte = 0
@@ -234,7 +227,7 @@ describe('Echte Schreibfehler bleiben Schreibfehler', () => {
    * las „Zugeteilt", und gespeichert war nichts.
    */
   it('eine Ausnahme beim Schreiben wird gemeldet, und die Woche schreibt danach weiter', async () => {
-    fromMock.mockImplementationOnce(() => {
+    rpcMock.mockImplementationOnce(() => {
       throw new Error('kaputt')
     })
     stub.antworten = [ok('S1')]
@@ -267,5 +260,32 @@ describe('Gelungen oder nicht', () => {
   it('ein Datenbankfehler: false', async () => {
     stub.antworten = [{ data: null, error: { code: '08006', message: 'connection failure' } }]
     await expect(saveWeek('c1', woche('erste', '2026-03-23'))).resolves.toBe(false)
+  })
+})
+
+/*
+ * **Die verfallenen Zusagen gehen mit**: Die Woche und das Löschen der
+ * Zusagen, die mit ihr nicht mehr gelten, sind ein Aufruf — eine Transaktion
+ * in der Datenbank. Folgte das Löschen als zweiter Aufruf und ginge der
+ * verloren, erbte der neue Inhaber die Zusage des alten.
+ */
+describe('Woche und Zusagen in einem Aufruf', () => {
+  it('die verfallenen Zusagen reisen mit dem Schreiben der Woche', async () => {
+    stub.antworten = [ok('S1')]
+    await saveWeek('c1', woche('erste', '2026-03-30'), ['2026-03-30|mid|part|a1|0'])
+    expect(stub.aufrufe).toHaveLength(1)
+    expect(stub.aufrufe[0]).toMatchObject({ funktion: 'woche_speichern', verfallen: ['2026-03-30|mid|part|a1|0'] })
+  })
+
+  it('ohne verfallene Zusagen geht eine leere Liste mit — gelöscht wird dann nichts', async () => {
+    stub.antworten = [ok('S1')]
+    await saveWeek('c1', woche('erste', '2026-04-06'))
+    expect(stub.aufrufe[0]?.verfallen).toEqual([])
+  })
+
+  it('die Versammlung und die Kennung der Woche nennt der Aufruf selbst', async () => {
+    stub.antworten = [ok('S1')]
+    await saveWeek('c1', woche('erste', '2026-04-13'))
+    expect(stub.aufrufe[0]?.payload).toMatchObject({ congregation_id: 'c1', start: '2026-04-13' })
   })
 })

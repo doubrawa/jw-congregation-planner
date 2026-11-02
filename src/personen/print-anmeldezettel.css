@@ -141,11 +141,15 @@
     gap: 0.5mm;
   }
 
-  /* Groß und gesperrt wie im Feld der Anmeldeseite — Zeichen für Zeichen vergleichbar. */
+  /* Groß und gesperrt wie im Feld der Anmeldeseite — Zeichen für Zeichen
+     vergleichbar. Die Vierergruppen trennt eine breite Lücke, kein Bindestrich:
+     Den tippte sonst mancher mit. */
   .anmelde-code {
     font-size: 15pt;
     font-weight: 700;
     letter-spacing: 0.08em;
+    word-spacing: 0.4em;
+    white-space: nowrap;
   }
 
   .anmelde-anleitung {

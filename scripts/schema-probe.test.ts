@@ -309,7 +309,7 @@ const LAEUFE: Record<string, Lauf[]> = {
       titel: 'Beschriftung nachtragen',
       fahren: (m) => m.main!([]),
       umgebung: { bestand: { weeks: [{ congregation_id: C, start: '2026-08-24', data: probeWoche('2026-08-24') }] } },
-      erwartet: ['GET weeks', 'PATCH weeks'],
+      erwartet: ['GET weeks', 'POST rpc/woche_speichern'],
     },
   ],
 
@@ -334,7 +334,7 @@ const LAEUFE: Record<string, Lauf[]> = {
           ],
         },
       },
-      erwartet: ['GET weeks', 'PATCH weeks'],
+      erwartet: ['GET weeks', 'POST rpc/woche_speichern'],
     },
   ],
 
@@ -371,14 +371,15 @@ const LAEUFE: Record<string, Lauf[]> = {
         bestand: {
           congregations: [{ id: C, name: 'Probe', aux_class: true }],
           // Eine Woche ohne die Zusätzliche Klasse und ohne Treffpunkt-Zeile,
-          // dazu eine Regel — sonst gäbe es nichts anzugleichen.
-          weeks: [{ congregation_id: C, start: '2026-08-24', data: probeWoche('2026-08-24'), updated_at: '2026-08-20T10:00:00.000000+00:00' }],
+          // dazu eine Regel — sonst gäbe es nichts anzugleichen. Die laufende:
+          // Die Wochen davor gleicht es nicht an, wie die App beim Laden (`wirktAb`).
+          weeks: [{ congregation_id: C, start: '2026-09-07', data: probeWoche('2026-09-07'), updated_at: '2026-08-20T10:00:00.000000+00:00' }],
           fs_rules: [
             { id: k(61), congregation_id: C, grp: G1, wd: 6, time: '09:30:00', place: 'Probe-Ort', monthly: 0, skip_cong: false, aus: null, created_at: '2026-01-01T00:00:00Z' },
           ],
         },
       },
-      erwartet: ['GET congregations', 'GET weeks', 'GET fs_weeks', 'GET fs_rules', 'GET persons', 'PATCH weeks', 'POST fs_weeks'],
+      erwartet: ['GET congregations', 'GET weeks', 'GET fs_weeks', 'GET fs_rules', 'GET persons', 'POST rpc/woche_speichern', 'POST rpc/treffpunkte_speichern'],
     },
   ],
 
@@ -401,7 +402,7 @@ const LAEUFE: Record<string, Lauf[]> = {
           fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: [] }],
         },
       },
-      erwartet: ['DELETE fs_rules', 'POST fs_rules', 'PATCH fs_weeks', 'POST fs_weeks'],
+      erwartet: ['DELETE fs_rules', 'POST fs_rules', 'POST rpc/treffpunkte_speichern'],
     },
   ],
 
@@ -444,7 +445,7 @@ const LAEUFE: Record<string, Lauf[]> = {
           fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: [] }],
         },
       },
-      erwartet: ['PATCH fs_weeks', 'POST fs_weeks'],
+      erwartet: ['POST rpc/treffpunkte_speichern'],
     },
   ],
 
@@ -471,7 +472,7 @@ const LAEUFE: Record<string, Lauf[]> = {
       },
       // Abwesenheiten und die Zeiten der Versammlung für den festen
       // Studienleiter (18.10.2026).
-      erwartet: ['GET congregations', 'GET persons', 'GET absences', 'GET weeks', 'GET services', 'PATCH weeks'],
+      erwartet: ['GET congregations', 'GET persons', 'GET absences', 'GET weeks', 'GET services', 'POST rpc/woche_speichern'],
     },
   ],
 
@@ -1092,11 +1093,15 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   })
 
   const fsStart = stufenAnlage({
-    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, zuteilerPid: P3, eigeneGruppe: G1, fremdeGruppe: G2,
+    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, adminName: 'Probe Admin', zuteilerPid: P3, eigeneGruppe: G1, fremdeGruppe: G2,
   }).fsStart
 
   it('mitgliedsrechte-probe (Rechte-Stufen): eine Treffpunkt-Woche, die nicht von der Probe ist, bleibt unberührt', async () => {
-    const echt = { congregation_id: C, start: fsStart, data: [{ id: 'r-echt', ruleId: 'r-echt', grp: null, wd: 6, time: '09:30', place: 'Probe-Ort', leader: '' }] }
+    // Mit eigenem Stand: Bliebe nur der Inhalt gleich, wäre trotzdem geschrieben worden.
+    const echt = {
+      congregation_id: C, start: fsStart, updated_at: '2026-01-05T10:00:00.000000+00:00',
+      data: [{ id: 'r-echt', ruleId: 'r-echt', grp: null, wd: 6, time: '09:30', place: 'Probe-Ort', leader: '' }],
+    }
     const { ausgabe, tabellen, aufrufe } = await mitBestand({ fs_weeks: [echt] })
     expect(tabellen.fs_weeks).toEqual([echt])
     expect(aufrufe.filter((a) => a.method !== 'GET' && tabelleVon(a) === 'fs_weeks')).toEqual([])
@@ -1778,7 +1783,7 @@ describe('Importe: Der feste Leiter des Wachtturm-Studiums kommt in die Woche (1
     const { tabellen, aufrufe } = await fahreImport('wochenplanung-importieren.mjs', {
       persons: PERSONEN, weeks: [wocheZeile()], services: [],
     })
-    expect(aufrufe.some((a) => a.method === 'PATCH' && tabelleVon(a) === 'weeks')).toBe(true)
+    expect(aufrufe.some((a) => tabelleVon(a) === 'rpc/woche_speichern')).toBe(true)
     expect(leiterIn(tabellen.weeks![0]!.data)).toMatchObject({ pid: P1 })
   })
 
@@ -1863,7 +1868,8 @@ describe('Migrationen über alle Wochen lesen seitenweise (16.10.2026)', () => {
       },
     }
     const { aufrufe } = await fahre(() => modul.main!([]), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, weeks: [...alte, neueste] } })
-    expect(aufrufe.filter((a) => a.method === 'PATCH').map((a) => a.pfad)).toEqual([`weeks?congregation_id=eq.${C}&start=eq.2026-08-24`])
+    const geschrieben = aufrufe.filter((a) => a.method !== 'GET').map((a) => [tabelleVon(a), (a.body as { p_start?: string }).p_start])
+    expect(geschrieben).toEqual([['rpc/woche_speichern', '2026-08-24']])
   })
 })
 
@@ -2046,10 +2052,16 @@ describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () 
       fs.rmSync(eingaben, { recursive: true, force: true })
     }
   }
-  const geschriebeneWochen = (aufrufe: Aufruf[], tabelle: string) =>
-    aufrufe
-      .filter((a) => a.method !== 'GET' && tabelleVon(a) === tabelle)
-      .map((a) => new URL(`https://x/${a.pfad}`).searchParams.get('start') ?? (a.body as { start?: string } | undefined)?.start)
+  /** Die Wochen, die ein Skript schreibt — über die Speicher-Funktion oder doch direkt in die Tabelle. */
+  const geschriebeneWochen = (aufrufe: Aufruf[], tabelle: 'weeks' | 'fs_weeks') => {
+    const funktion = tabelle === 'weeks' ? 'rpc/woche_speichern' : 'rpc/treffpunkte_speichern'
+    return aufrufe
+      .filter((a) => a.method !== 'GET' && [tabelle, funktion].includes(tabelleVon(a)))
+      .map((a) => {
+        const body = a.body as { p_start?: string; start?: string } | undefined
+        return body?.p_start ?? body?.start ?? new URL(`https://x/${a.pfad}`).searchParams.get('start')
+      })
+  }
 
   it('wochenplanung-importieren: eine NWS-Woche vor der Grenze bleibt draußen, und das Skript sagt es', async () => {
     const alt = '2025-09-01'
@@ -2059,7 +2071,7 @@ describe('Importe holen höchstens, was aufbewahrt wird (T125, 16.10.2026)', () 
       { 'Duties_7.5.json': [{ a: alt, b: 1, c: 34 }, { a: neu, b: 1, c: 34 }] },
       { weeks: [{ congregation_id: C, start: alt, data: probeWoche(alt) }, { congregation_id: C, start: neu, data: probeWoche(neu) }] },
     )
-    expect(geschriebeneWochen(aufrufe, 'weeks')).toEqual([`eq.${neu}`])
+    expect(geschriebeneWochen(aufrufe, 'weeks')).toEqual([neu])
     expect(ausgabe.join('\n')).toContain('Älter als ein Jahr (vor 2025-09-08), nicht übernommen: 1 NWS-Wochen')
     // Gelesen wird auch nur das Fenster, wie in der App.
     const gelesen = aufrufe.filter((a) => a.method === 'GET' && tabelleVon(a) === 'weeks').map((a) => a.pfad)

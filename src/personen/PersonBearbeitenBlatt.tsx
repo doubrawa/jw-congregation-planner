@@ -5,6 +5,7 @@ import { BlattFeld } from '../bausteine/BlattFeld'
 import { Wahl } from '../bausteine/Wahl'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
+import { useUebernehmen } from '../components/useUebernehmen'
 import { ROLE_ORDER } from '../data/constants'
 import { familyMembers, isNameless, namensDublette, personCompare, personLabel } from '../data/helpers'
 import type { Person, Role } from '../data/types'
@@ -12,19 +13,16 @@ import { ROLE_KEY } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 
 /**
- * **Person bearbeiten** (T121, der Stift bei der Person): Name, E-Mail,
- * Geschlecht, Gruppe, Rolle und Familie. Eine Telefonnummer stand bis zum
- * 25.10.2026 dabei — gebraucht hat sie niemand, gezeigt wurde sie nirgends.
+ * **Person bearbeiten** (T121, der Stift bei der Person): Name, Geschlecht,
+ * Gruppe, Rolle und Familie.
  *
- * **Der Name gilt erst beim Schließen** — und nur, wenn er geht. Bis zur Phase
- * 6b schrieb jeder Tastendruck den Namen in Zustand und Wochen; dafür brauchte
- * es das Anhalten beim Speichern (`persist.ts`) und den Rücksprung beim
- * Verlassen (`dubletteVerwerfen`), und wer beide Felder leerte und ging, dem
- * verwarf die App die Person samt Zeile in der Datenbank. Jetzt bleibt der Name
- * im Blatt, bis es zugeht: eindeutig und nicht leer, dann wird er übernommen;
- * sonst bleibt der alte, und ein Hinweis sagt, warum. Alles Übrige gilt sofort,
- * wie in den anderen Blättern — auch die Gruppe: Wer sie wechselt, ist in der
- * alten nicht mehr Aufseher oder Gehilfe, und das steht vorher unter dem Feld.
+ * **Der Name gilt erst beim Schließen** — und nur, wenn er geht. Er bleibt im
+ * Blatt, bis es zugeht oder verschwindet (`useUebernehmen`): eindeutig und
+ * nicht leer, dann wird er übernommen; sonst bleibt der alte, und ein Hinweis
+ * sagt, warum. So steht kein halb getippter Name in Zustand und Wochen. Alles
+ * Übrige gilt sofort, wie in den anderen Blättern — auch die Gruppe: Wer sie
+ * wechselt, ist in der alten nicht mehr Aufseher oder Gehilfe, und das steht
+ * vorher unter dem Feld.
  */
 export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onClose: () => void }) {
   const { state, dispatch } = useApp()
@@ -40,12 +38,14 @@ export function PersonBearbeitenBlatt({ person, onClose }: { person: Person; onC
   const dublette = namensDublette(state.persons, name)
   const leer = isNameless(name)
 
+  const blatt = useUebernehmen(() => {
+    if (name.fn === person.fn && name.ln === person.ln) return
+    if (dublette) dispatch({ type: 'showToast', text: fill(t.toastNameNichtGeaendert, { name: personLabel(dublette) }) })
+    else if (leer) dispatch({ type: 'showToast', text: t.toastNameLeer })
+    else update({ fn: name.fn, ln: name.ln })
+  })
   const schliessen = () => {
-    if (name.fn !== person.fn || name.ln !== person.ln) {
-      if (dublette) dispatch({ type: 'showToast', text: fill(t.toastNameNichtGeaendert, { name: personLabel(dublette) }) })
-      else if (leer) dispatch({ type: 'showToast', text: t.toastNameLeer })
-      else update({ fn: name.fn, ln: name.ln })
-    }
+    blatt.uebernehmen()
     onClose()
   }
 

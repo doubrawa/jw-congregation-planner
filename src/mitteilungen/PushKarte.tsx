@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Zeichen } from '../bausteine/Zeichen'
 import { useInstallAvailable, usePush } from '../components/usePush'
 import { useT } from '../i18n/useT'
+import { gemerkt, merken } from '../lib/geraetespeicher'
 import { promptInstall } from '../lib/install'
 
 /** Auf diesem Gerät weggeklickt — gilt für jedes Konto, wie Farbschema und Schrift. */
@@ -26,18 +27,14 @@ export function PushKarte() {
   const { t } = useT()
   const { angemeldet, supported, needsInstall, verweigert, subscribed, enable } = usePush()
   const installAvail = useInstallAvailable()
-  const [weg, setWeg] = useState(() => localStorage.getItem(WEG_KEY) === '1')
+  const [weg, setWeg] = useState(() => gemerkt(WEG_KEY) === '1')
 
   if (!angemeldet || subscribed || verweigert || weg) return null
   if (!supported && !needsInstall && !installAvail) return null
 
   const wegklicken = () => {
     setWeg(true)
-    try {
-      localStorage.setItem(WEG_KEY, '1')
-    } catch {
-      // Ohne Speicher (privates Fenster) bleibt sie nur bis zum Neuladen weg.
-    }
+    merken(WEG_KEY, '1')
   }
 
   return (

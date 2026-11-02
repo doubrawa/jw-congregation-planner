@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { PNG } from 'pngjs'
-import { antwort, ladeServiceWorker, swQuelle } from './sw-umgebung'
+import { antwort, ladeServiceWorker, swQuelle, type FakeResponse } from './sw-umgebung'
 import { alsCacheName, SW_PLATZHALTER, swMitKennung } from '../scripts/sw-kennung.mjs'
 
 /**
@@ -135,19 +135,107 @@ describe('Service Worker: ein Besuch genügt für den Offline-Start', () => {
     expect(await offline.feuere('fetch', { request: modul }), 'Bündel liegt da, wird aber nicht gefunden').toBeDefined()
   })
 
-  it('fehlt ein Bündel im Netz, legt die Installation die übrigen trotzdem ab', async () => {
-    const sw = ladeServiceWorker({ netz: (u) => (u.includes('react-') ? undefined : mitIndex(u)) })
-    await sw.feuere('install', {})
-    const da = abgelegt(sw)
-    expect(da).toContain(BUENDEL[0])
-    expect(da).toContain(BUENDEL[2])
-    expect(da).not.toContain(BUENDEL[1])
+  /*
+   * **Ganz oder gar nicht.** Ginge die Installation mit einer Lücke durch,
+   * räumte `activate` den vollständigen Cache des bisherigen Stands weg — und
+   * die App startete offline mit einer leeren Seite. Scheitert sie, bleibt der
+   * bisherige Worker mit seinem Cache, und der Browser versucht es beim
+   * nächsten Mal wieder.
+   */
+  const fehlt: Array<[string, (u: string) => FakeResponse | undefined]> = [
+    ['nicht erreichbar', () => undefined],
+    ['404', (u) => antwort(u, false)],
+  ]
+
+  it.each(fehlt)('fehlt ein Bündel (%s), scheitert die Installation', async (_, wie) => {
+    const sw = ladeServiceWorker({ netz: (u) => (u.includes('react-') ? wie(u) : mitIndex(u)) })
+    await expect(sw.feuere('install', {})).rejects.toThrow()
+    expect(abgelegt(sw).filter((u) => u.includes('/assets/')), 'halb abgelegt').toEqual([])
   })
 
-  it('ohne index.html im Cache bleibt es bei der Hülle — kein Absturz', async () => {
-    const sw = ladeServiceWorker({ netz: (u) => (u.endsWith('/index.html') ? undefined : antwort(u)) })
+  it.each(fehlt)('fehlt ein Teil der Hülle (%s), scheitert die Installation', async (_, wie) => {
+    for (const huelle of [SCOPE, `${SCOPE}index.html`]) {
+      const sw = ladeServiceWorker({ netz: (u) => (u === huelle ? wie(u) : mitIndex(u)) })
+      await expect(sw.feuere('install', {}), huelle).rejects.toThrow()
+    }
+  })
+
+  it('fehlt nur ein Bild oder das Manifest, geht die Installation trotzdem durch', async () => {
+    // Ohne sie startet die App genauso — eine umbenannte Datei soll nicht jede
+    // künftige Fassung des Workers aufhalten.
+    const beiwerk = /(manifest\.webmanifest|logo-klein\.svg|icon-192\.png)$/
+    const sw = ladeServiceWorker({ netz: (u) => (beiwerk.test(u) ? undefined : mitIndex(u)) })
     await sw.feuere('install', {})
-    expect(abgelegt(sw).some((u) => u.includes('/assets/'))).toBe(false)
+    expect(abgelegt(sw)).toEqual(expect.arrayContaining([`${SCOPE}index.html`, ...BUENDEL]))
+  })
+})
+
+describe('Service Worker: ein Serverfehler zählt wie kein Netz', () => {
+  /*
+   * Antwortet der Server beim Start der installierten App mit einer
+   * Fehlerseite (5xx), kommt lieber die zuletzt abgelegte Hülle — die App
+   * zeigt dann ihren letzten Stand statt der Fehlerseite.
+   */
+  const INDEX = '<!doctype html><title>Hülle</title>'
+  const gestoert = async (status: number) => {
+    const online = ladeServiceWorker({
+      netz: (u) => (u.endsWith('/index.html') ? antwort(u, true, 'basic', INDEX) : antwort(u)),
+    })
+    await online.feuere('install', {})
+    const sw = ladeServiceWorker({ netz: (u) => antwort(u, false, 'basic', 'Fehlerseite', undefined, status) })
+    for (const [name, c] of online.speicher) sw.speicher.set(name, c)
+    return sw
+  }
+  const seite = async (sw: ReturnType<typeof ladeServiceWorker>, url: string) =>
+    (await sw.feuere('fetch', { request: req(url, { mode: 'navigate' }) })) as FakeResponse
+
+  it.each([500, 503])('beim Start mit %i kommt die abgelegte Hülle', async (status) => {
+    const sw = await gestoert(status)
+    const res = await seite(sw, './')
+    expect(res.status, 'die Fehlerseite des Servers statt der App').toBe(200)
+  })
+
+  it('eine Adresse, die nicht im Cache liegt, bekommt index.html', async () => {
+    // Etwa der Start mit Parametern (`?l=…`): Der Cache kennt nur die Hülle.
+    const res = await seite(await gestoert(502), './?l=fr')
+    expect(await res.text()).toBe(INDEX)
+  })
+
+  it('ohne abgelegte Hülle bleibt es bei der Antwort des Servers', async () => {
+    const sw = ladeServiceWorker({ netz: (u) => antwort(u, false, 'basic', 'Fehlerseite', undefined, 503) })
+    const res = await seite(sw, './')
+    expect(res.status).toBe(503)
+  })
+})
+
+describe('Service Worker: die Versionsprüfung legt nichts ab', () => {
+  /*
+   * Sie fragt die ausgelieferte `index.html` mit `cache: 'no-store'` ab
+   * (`lib/version.ts`). Legte der Worker die Antwort ab, stünde nach einem
+   * Deployment die neue Hülle im Cache, ihre Bündel aber nicht. Offline mit
+   * Parametern gestartet, bekäme die App genau diese Hülle — und bliebe leer.
+   */
+  const ALT = '<!doctype html><script type="module" src="/assets/index-alt111.js"></script>'
+  const NEU = '<!doctype html><script type="module" src="/assets/index-neu222.js"></script>'
+
+  it('nach der Prüfung bekommt ein Start mit Parametern offline weiter die abgelegte Hülle', async () => {
+    const online = ladeServiceWorker({ netz: (u) => antwort(u, true, 'basic', u.endsWith('/index.html') ? ALT : '') })
+    await online.feuere('install', {})
+    // Inzwischen ist ein neuer Stand ausgeliefert.
+    const pruefung = ladeServiceWorker({ netz: (u) => antwort(u, true, 'basic', u.endsWith('/index.html') ? NEU : '') })
+    for (const [name, c] of online.speicher) pruefung.speicher.set(name, c)
+    const res = await pruefung.feuere('fetch', { request: req('index.html', { mode: 'cors', cache: 'no-store' }) })
+    expect(res, 'der Worker hat die Prüfung beantwortet').toBeUndefined()
+
+    const offline = ladeServiceWorker({ netz: () => undefined })
+    for (const [name, c] of online.speicher) offline.speicher.set(name, c)
+    const start = (await offline.feuere('fetch', { request: req('./?l=fr', { mode: 'navigate' }) })) as FakeResponse
+    expect(await start.text()).toBe(ALT)
+  })
+
+  it('Gegenprobe: eine gewöhnliche Abfrage derselben Datei geht weiter über den Worker', async () => {
+    const sw = ladeServiceWorker({ netz: (u) => antwort(u, true, 'basic', NEU) })
+    expect(await sw.feuere('fetch', { request: req('index.html', { mode: 'cors' }) })).toBeDefined()
   })
 })
 

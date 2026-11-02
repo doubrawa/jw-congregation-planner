@@ -727,30 +727,39 @@ export function nichtVorDerFrist(gewuenscht, grenze) {
 }
 
 /**
- * **Die Zusagen dieser Plätze löschen** — nach dem Schreiben ihrer Woche, wie
- * in der App (`zusagenNachDemSchreiben` in `persist.ts`).
+ * **Eine Woche schreiben — nur auf dem gelesenen Stand, mit den Zusagen, die
+ * dabei verfallen, in einer Transaktion** (`woche_speichern` bzw.
+ * `treffpunkte_speichern` in `schema.sql`, derselbe Weg wie die App).
  *
- * Eine Zusage steht unter dem Schlüssel des Platzes (`task_key`), und die App
- * liest beim Laden nur ihn (`confirmationMap`). Überschreibt ein Import den
- * Inhaber eines Platzes, stand bis zum 16.10.2026 die Zusage des Vorgängers
- * weiter da: Der Neue galt als zugesagt, ohne je gefragt worden zu sein
- * (Review, scripts). Welche Plätze den Inhaber wechseln, rechnen die Importe
- * mit den Funktionen der App (`changedSlotKeys`, `fsVerwaisteZusagen`).
+ * Ohne Bedingung ginge still verloren, was ein Planer während eines Laufs an
+ * derselben Woche ändert. Welche
+ * Zusagen verfallen, rechnen die Importe mit den Funktionen der App
+ * (`changedSlotKeys`, `fsVerwaisteZusagen`) — eine Zusage steht unter dem
+ * Schlüssel des Platzes, und bliebe sie stehen, erbte sie der Neue. Trifft der
+ * Stand nicht mehr, hat inzwischen jemand anderes geschrieben — dann wirft der
+ * Helfer, statt dessen Änderung zu überschreiben, und das Skript bricht ab.
  *
- * In Teilen zu je 50 Schlüsseln — jeder steht in der Adresse, in
- * Anführungszeichen, weil ein Schlüssel Zeichen trägt, die PostgREST in einer
- * Liste sonst als Trenner läse.
+ * `stand` ist das `updated_at`, mit dem die Woche gelesen wurde; ohne Stand
+ * legt der Aufruf die Woche an. Zurück kommt der neue Stand; trifft er nicht,
+ * wirft der Helfer `StandVerfehlt` — ein Netz- oder Datenbankfehler wirft wie
+ * jeder andere Aufruf (`restKlient`).
  */
-export async function zusagenLoeschen(rest, congregationId, schluessel) {
-  for (let i = 0; i < schluessel.length; i += 50) {
-    const teil = schluessel
-      .slice(i, i + 50)
-      .map((k) => encodeURIComponent(`"${k}"`))
-      .join(',')
-    await rest(`confirmations?congregation_id=eq.${congregationId}&task_key=in.(${teil})`, {
-      method: 'DELETE',
-      headers: { Prefer: 'return=minimal' },
-    })
+export async function wocheSchreiben(rest, { tabelle = 'weeks', cong, start, stand = null, data, verfallen = [] }) {
+  const funktion = tabelle === 'fs_weeks' ? 'treffpunkte_speichern' : 'woche_speichern'
+  const zeilen = await rest(`rpc/${funktion}`, {
+    method: 'POST',
+    body: JSON.stringify({ p_cong: cong, p_start: start, p_stand: stand, p_data: data, p_verfallen: [...verfallen] }),
+  })
+  const neu = Array.isArray(zeilen) ? zeilen[0]?.stand : undefined
+  if (!neu) throw new StandVerfehlt(tabelle, start)
+  return neu
+}
+
+/** Eine Woche stand beim Schreiben nicht mehr auf dem gelesenen Stand — überschrieben wurde nichts. */
+export class StandVerfehlt extends Error {
+  constructor(tabelle, start) {
+    super(`${tabelle} ${start}: inzwischen von jemand anderem geändert — nichts überschrieben. Das Skript bitte noch einmal starten.`)
+    this.name = 'StandVerfehlt'
   }
 }
 

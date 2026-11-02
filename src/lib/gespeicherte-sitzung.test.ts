@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { createClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { gespeicherteSitzung, sitzungsSchluessel } from './gespeicherte-sitzung'
+import { gespeicherteSitzung, sitzungsSchluessel, sitzungVergessen } from './gespeicherte-sitzung'
 import { speicherSpion } from '../../tests/speicher-spion'
 
 /**
@@ -97,6 +97,47 @@ describe('Die abgelegte Sitzung', () => {
   it('gelöscht wird hier nichts — das bleibt auth-js überlassen', () => {
     ablegen({ ...SITZUNG, refresh_token: undefined })
     gespeicherteSitzung(SCHLUESSEL)
+    expect(localStorage.getItem(SCHLUESSEL)).not.toBeNull()
+  })
+})
+
+/*
+ * **Die Sitzung vom Gerät nehmen** — für das Abmelden, wenn
+ * auth-js sie offline mit abgelaufenem Token liegen lässt (`abmelden.ts`).
+ */
+describe('Die Sitzung vom Gerät nehmen', () => {
+  it('nimmt Sitzung, Benutzereintrag und PKCE-Prüfwert — und sonst nichts', () => {
+    ablegen(SITZUNG)
+    localStorage.setItem(`${SCHLUESSEL}-user`, '{"user":{"id":"u7"}}')
+    localStorage.setItem(`${SCHLUESSEL}-code-verifier`, 'v')
+    localStorage.setItem('theme', 'dunkel')
+    sitzungVergessen(SCHLUESSEL)
+    expect(gespeicherteSitzung(SCHLUESSEL)).toBeNull()
+    expect(localStorage.getItem(`${SCHLUESSEL}-user`)).toBeNull()
+    expect(localStorage.getItem(`${SCHLUESSEL}-code-verifier`)).toBeNull()
+    expect(localStorage.getItem('theme')).toBe('dunkel')
+  })
+
+  it('danach findet auch supabase-js keine Sitzung mehr', async () => {
+    const client = createClient(URL_DER_DATENBANK, 'oeffentlich', { auth: { storageKey: SCHLUESSEL, autoRefreshToken: false } })
+    ablegen({ ...SITZUNG, expires_at: Math.floor(Date.now() / 1000) + 3600 })
+    // Gegenprobe der Voraussetzung: vorher liest es die abgelegte Sitzung.
+    expect((await client.auth.getSession()).data.session?.user.id).toBe('u7')
+    sitzungVergessen(SCHLUESSEL)
+    expect((await client.auth.getSession()).data.session).toBeNull()
+  })
+
+  it('ist der Speicher gesperrt, gibt es keinen Absturz', () => {
+    const loeschen = speicherSpion('removeItem').mockImplementation(() => {
+      throw new DOMException('gesperrt', 'SecurityError')
+    })
+    expect(() => sitzungVergessen(SCHLUESSEL)).not.toThrow()
+    expect(loeschen).toHaveBeenCalledTimes(3)
+  })
+
+  it('ohne Datenbank gibt es keinen Schlüssel — dann fasst sie nichts an', () => {
+    ablegen(SITZUNG)
+    sitzungVergessen('')
     expect(localStorage.getItem(SCHLUESSEL)).not.toBeNull()
   })
 })

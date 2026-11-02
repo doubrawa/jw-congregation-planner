@@ -112,6 +112,21 @@ export function montagVon(datum: string): string {
 }
 
 /**
+ * **Ab welcher Woche eine Änderung am Bestand wirkt** — der Montag der
+ * laufenden Woche. Was der Grundplan, eine entfernte Gruppe oder der Schalter
+ * der Zusätzlichen Klasse ändern, gilt von dort an. Vergangenes bleibt, wie es
+ * war: Es hat so stattgefunden, und die Auswertung zählt es.
+ */
+export function wirktAb(heute = new Date()): string {
+  return montagVon(isoDay(heute))
+}
+
+/** Liegt die Woche mit dieser Kennung vor `ab`? Ohne Kennung (Vorlagen, Proben) nie. */
+export function wocheDavor(kennung: string | undefined, ab: string): boolean {
+  return Boolean(ab && kennung && kennung < ab)
+}
+
+/**
  * Der Montag `wochen` Wochen nach `start` — als ISO-Datum, über UTC gerechnet:
  * Ein Montag plus sieben Tage ist wieder ein Montag, gleich in welcher
  * Zeitzone. Das Fenster der Auslastung und die Proben bauen daraus Kennungen.

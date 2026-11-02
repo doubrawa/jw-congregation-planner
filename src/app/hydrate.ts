@@ -11,7 +11,7 @@
 
 import type { Dispatch } from 'react'
 import { performLogout } from '../lib/abmelden'
-import { loadCongregationData } from '../lib/data'
+import { loadCongregationData, type LoadResult } from '../lib/data'
 import { schreibenAbwarten, schreibStand } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'
@@ -92,7 +92,7 @@ async function ladenUndEinspielen(
   // und die Abfrage konnte es überholen.
   await schreibenAbwarten()
   const vorher = schreibStand()
-  const res = await loadCongregationData(userId)
+  const res = await geladen(userId)
   // Inzwischen abgemeldet: Dieser Stand gehört niemandem mehr (`sitzung.ts`).
   if (meine !== aktuelleSitzung()) return false
   if (res.ok) {
@@ -124,6 +124,21 @@ async function ladenUndEinspielen(
   }
   letztenStandZeigen(dispatch, userId)
   return false
+}
+
+/**
+ * Laden — und was dabei wirft, als gescheitertes Laden. Ein unerwarteter Wurf
+ * (ein Fehler beim Zusammensetzen der Daten, ein Netzfehler, den supabase-js
+ * nicht in eine Antwort fasst) hielte sonst das Startbild für immer stehen,
+ * statt den letzten Stand oder die Fehlerseite zu zeigen.
+ */
+async function geladen(userId: string): Promise<LoadResult> {
+  try {
+    return await loadCongregationData(userId)
+  } catch (err) {
+    console.error('[laden]', err)
+    return { ok: false, reason: 'error', message: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 /**

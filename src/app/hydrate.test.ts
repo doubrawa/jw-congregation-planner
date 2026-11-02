@@ -192,6 +192,24 @@ describe('loadAndHydrate', () => {
     expect(actions[1]).toEqual({ type: 'setDataStatus', status: 'error', userId: 'u9' })
   })
 
+  /*
+   * Ein Wurf statt einer Antwort — ein Fehler beim Zusammensetzen der Daten,
+   * ein Netzfehler, den supabase-js nicht in eine Antwort fasst — ist ein
+   * gescheitertes Laden wie jedes andere. Sonst bliebe das Startbild stehen.
+   */
+  it.each([
+    ['beim Öffnen: die Fehlerseite', false, [{ type: 'setDataStatus', status: 'loading' }, { type: 'setDataStatus', status: 'error', userId: 'u9' }]],
+    ['still: nur der Hinweis', true, [{ type: 'nachladenGescheitert' }]],
+  ])('wirft das Laden, ist es gescheitert — %s', async (_fall, silent, erwartet) => {
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockLoad.mockRejectedValue(new Error('Zusammensetzen kaputt'))
+    const { actions, dispatch } = collector()
+    await expect(loadAndHydrate(dispatch, 'u9', { silent })).resolves.toBeUndefined()
+    expect(actions).toEqual(erwartet)
+    expect(fehler).toHaveBeenCalled()
+    fehler.mockRestore()
+  })
+
   it('bei Ladefehler MIT Aufnahme → hydrate aus der Aufnahme samt staleAt', async () => {
     mockLoad.mockResolvedValue({ ok: false, reason: 'error' })
     const stored = { ...emptyData, congregationId: 'c1', userId: 'u9', empty: false }

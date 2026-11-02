@@ -79,12 +79,17 @@ describe('Die Form des Logos', () => {
 })
 
 describe('Die Dateien in der App-Hülle', () => {
-  it('jede Datei der App-Hülle liegt in public/ — fehlt eine, scheitert die Installation des Workers', () => {
-    // `cache.addAll` bricht beim ersten 404 ab; dann gibt es keinen Offline-Start.
+  it('jede Datei der App-Hülle und ihres Beiwerks liegt in public/', () => {
+    // Fehlt ein Teil der Hülle, scheitert die Installation des Workers
+    // (`cache.addAll`); fehlt Beiwerk, fehlt es offline. Beides fiele erst auf
+    // dem Gerät auf.
     const sw = readFileSync(`${PUBLIC}sw.js`, 'utf8')
-    const liste = /const SHELL = \[([^\]]*)\]/.exec(sw)?.[1] ?? ''
-    const dateien = [...liste.matchAll(/'([^']+)'/g)].map((m) => m[1]!).filter((d) => d !== './' && d !== 'index.html')
-    expect(dateien, 'SHELL nicht gefunden').toContain('logo-klein.svg')
+    const liste = (name: string) => {
+      const inhalt = new RegExp(`const ${name} = \\[([^\\]]*)\\]`).exec(sw)?.[1] ?? ''
+      return [...inhalt.matchAll(/'([^']+)'/g)].map((m) => m[1]!)
+    }
+    const dateien = [...liste('SHELL'), ...liste('BEIWERK')].filter((d) => d !== './' && d !== 'index.html')
+    expect(dateien, 'BEIWERK nicht gefunden').toContain('logo-klein.svg')
     for (const datei of dateien) expect(existsSync(`${PUBLIC}${datei}`), datei).toBe(true)
   })
 

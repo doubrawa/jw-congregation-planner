@@ -60,6 +60,7 @@ import {
   pushAboEigen,
   pushAboEintragen,
   sendPlan,
+  setEntzugMelder,
   setKonfliktMelder,
   setSchreibfehlerMelder,
   substituteSeek,
@@ -69,6 +70,7 @@ import {
   sendPlanEntzug,
 } from './data'
 import type { Group, Person, Service, Week } from '../data/types'
+import { schreibenAbwarten } from './schreiben-unterwegs'
 import { isoDay } from '../data/meeting-dates'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
@@ -93,10 +95,16 @@ describe('Upsert-Schreiber (onConflict)', () => {
   // asynchron — die Kette läuft erst im nächsten Tick.
   const geschrieben = () => new Promise((r) => setTimeout(r, 0))
 
-  it('saveWeek ist kein Upsert mehr — der Stand entscheidet (T39)', async () => {
-    saveWeek('c1', { range: 'X', start: '2026-09-07' } as Week)
+  it('saveWeek ist kein Upsert — der Stand entscheidet (T39), die Zusagen gehen mit', async () => {
+    saveWeek('c1', { range: 'X', start: '2026-09-07' } as Week, ['2026-09-07|mid|part|a1|0'])
     await geschrieben()
-    expect(chain.from).toHaveBeenCalledWith('weeks')
+    expect(chain.rpc).toHaveBeenCalledWith('woche_speichern', {
+      p_cong: 'c1',
+      p_start: '2026-09-07',
+      p_stand: null,
+      p_data: { range: 'X', start: '2026-09-07' },
+      p_verfallen: ['2026-09-07|mid|part|a1|0'],
+    })
     expect(chain.upsert).not.toHaveBeenCalled()
   })
   it('saveWeek schreibt nichts ohne Kennung der Woche (T66)', async () => {
@@ -104,30 +112,22 @@ describe('Upsert-Schreiber (onConflict)', () => {
     // und ein Schreibvorgang ins Ungefähre wäre schlimmer als keiner.
     saveWeek('c1', { range: 'X', start: '' } as Week)
     await geschrieben()
-    expect(chain.from).not.toHaveBeenCalledWith('weeks')
+    expect(chain.rpc).not.toHaveBeenCalledWith('woche_speichern', expect.anything())
   })
 
-  it('savePerson → persons upsert (Row-Mapping)', () => {
-    savePerson('c1', person)
-    expect(chain.from).toHaveBeenCalledWith('persons')
-    expect(chain.upsert).toHaveBeenCalledWith([expect.objectContaining({ id: 'p1', congregation_id: 'c1' })])
-  })
   /*
-    Ein Upsert liest jede Spalte, die es schreibt: `on conflict … do update set
-    x = excluded.x` verlangt das Leserecht. Vom 30. bis 31.10.2026 lag
-    `persons.mail` außerhalb der Freigabe, und die Datenbank wies jedes
-    Speichern einer Person ab, neu wie bestehend (42501). Seit dem 31.10.2026
-    gibt es die Spalte nicht mehr — die Person geht in einem Upsert hinaus.
+    Eine neue Person geht in einem Upsert hinaus. Das liest jede Spalte, die es
+    schreibt (`on conflict … do update set x = excluded.x` verlangt das
+    Leserecht) — eine Spalte außerhalb der Freigabe ließe die Datenbank jedes
+    Anlegen abweisen (42501).
   */
-  it.each([
-    ['savePerson', () => savePerson('c1', { ...person, })],
-    ['saveFamily', () => saveFamily('c1', 'h1', [{ ...person, }])],
-  ])('%s: ein Upsert ohne Adresse — und nichts schreibt hinterher', async (_name, schreiben) => {
-    schreiben()
+  it('savePerson ohne Vorher → persons upsert der ganzen Zeile, ohne Adresse — und nichts schreibt hinterher', async () => {
+    savePerson('c1', person)
     await geschrieben()
-    const personenZeilen = chain.upsert!.mock.calls.map(([z]) => z as unknown).filter(Array.isArray).flat()
-    expect(personenZeilen).toEqual([expect.objectContaining({ id: 'p1', fn: 'A', congregation_id: 'c1' })])
-    expect(personenZeilen[0]).not.toHaveProperty('mail')
+    expect(chain.from).toHaveBeenCalledWith('persons')
+    expect(chain.upsert).toHaveBeenCalledTimes(1)
+    expect(chain.upsert).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', fn: 'A', congregation_id: 'c1' }))
+    expect(chain.upsert!.mock.calls[0]![0]).not.toHaveProperty('mail')
     expect(chain.update).not.toHaveBeenCalled()
   })
   it('saveFsRules → eine Zeile je Regel', async () => {
@@ -198,12 +198,18 @@ describe('Upsert-Schreiber (onConflict)', () => {
     // Den Ablauf mit Stand und Konflikt prüft `fs-woche-konflikt.test.ts`.
     saveFsWeek('c1', '2026-09-14', [])
     await geschrieben()
-    expect(chain.insert).toHaveBeenCalledWith({ congregation_id: 'c1', start: '2026-09-14', data: [] })
+    expect(chain.rpc).toHaveBeenCalledWith('treffpunkte_speichern', {
+      p_cong: 'c1',
+      p_start: '2026-09-14',
+      p_stand: null,
+      p_data: [],
+      p_verfallen: [],
+    })
     expect(chain.upsert).not.toHaveBeenCalled()
   })
   it('saveFsWeek schreibt ebenfalls nichts ohne Kennung', () => {
     saveFsWeek('c1', '', [])
-    expect(chain.from).not.toHaveBeenCalledWith('fs_weeks')
+    expect(chain.rpc).not.toHaveBeenCalledWith('treffpunkte_speichern', expect.anything())
   })
   it('saveService → services upsert', () => {
     saveService('c1', service, 4)
@@ -297,6 +303,65 @@ describe('Insert-Schreiber', () => {
 })
 
 describe('Update-Schreiber', () => {
+  /*
+   * **Nur die geänderten Spalten** einer Zeile, die es schon gibt. Ändern zwei
+   * zugleich verschiedene Felder derselben Person, nähme ein Upsert der ganzen
+   * Zeile dem Früheren seine Änderung still zurück.
+   */
+  describe('mit dem Stand davor: nur, was sich geändert hat', () => {
+    it('savePerson → persons update der geänderten Spalten, kein Upsert', () => {
+      savePerson('c1', { ...person, ln: 'C', female: true }, person)
+      expect(chain.from).toHaveBeenCalledWith('persons')
+      expect(chain.update).toHaveBeenCalledWith({ ln: 'C', female: true })
+      expect(chain.eq).toHaveBeenCalledWith('id', 'p1')
+      expect(chain.upsert).not.toHaveBeenCalled()
+    })
+
+    it('savePerson ohne Änderung schreibt nichts — auch nicht, wenn die Bereiche nur anders geordnet sind', () => {
+      savePerson('c1', { ...person }, person)
+      const priv = (eintraege: [string, boolean][]) => Object.fromEntries(eintraege) as Person['priv']
+      savePerson('c1', { ...person, priv: priv([['vortrag', true], ['gebet', true]]) }, { ...person, priv: priv([['gebet', true], ['vortrag', true]]) })
+      expect(chain.from).not.toHaveBeenCalled()
+    })
+
+    it('savePerson: ein geänderter Bereich schreibt die Bereiche', () => {
+      savePerson('c1', { ...person, priv: { gebet: true } as Person['priv'] }, person)
+      expect(chain.update).toHaveBeenCalledWith({ priv: { gebet: true } })
+    })
+
+    it('saveService → services update, nur die neue Position', () => {
+      saveService('c1', service, 3, { eintrag: service, position: 1 })
+      expect(chain.from).toHaveBeenCalledWith('services')
+      expect(chain.update).toHaveBeenCalledWith({ position: 3 })
+      expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
+      expect(chain.eq).toHaveBeenCalledWith('key', 'mik')
+      expect(chain.upsert).not.toHaveBeenCalled()
+    })
+
+    it('saveGroupRow → groups update, nur der neue Aufseher', () => {
+      saveGroupRow('c1', { ...group, overseerId: 'p9' }, 2, { eintrag: group, position: 2 })
+      expect(chain.from).toHaveBeenCalledWith('groups')
+      expect(chain.update).toHaveBeenCalledWith({ overseer_id: 'p9' })
+      expect(chain.eq).toHaveBeenCalledWith('id', 'g1')
+      expect(chain.upsert).not.toHaveBeenCalled()
+    })
+
+    it('saveMemberRow → nur das geänderte Recht', () => {
+      const konto = { userId: 'u1', email: '', personId: 'p1', planner: false, zuteiler: false }
+      saveMemberRow({ ...konto, zuteiler: true }, konto)
+      expect(chain.update).toHaveBeenCalledWith({ zuteiler: true })
+      expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+    })
+
+    it('unverändert schreibt weder Dienst noch Gruppe noch Konto', () => {
+      saveService('c1', service, 1, { eintrag: service, position: 1 })
+      saveGroupRow('c1', group, 2, { eintrag: { ...group }, position: 2 })
+      const konto = { userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }
+      saveMemberRow(konto, { ...konto })
+      expect(chain.from).not.toHaveBeenCalled()
+    })
+  })
+
   it('savePersonGroup → persons update(grp).eq(id)', () => {
     savePersonGroup(person)
     expect(chain.from).toHaveBeenCalledWith('persons')
@@ -371,6 +436,75 @@ describe('Update-Schreiber', () => {
     expect(chain.from).toHaveBeenCalledWith('members')
     expect(chain.update).toHaveBeenCalledWith({ person_id: 'p1', planner: true, zuteiler: false })
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+  })
+})
+
+describe('Unterwegs, sobald es losgeht', () => {
+  /*
+   * Wer auf das Schreiben wartet — das Nachladen, das Abmelden, das Neuladen
+   * einer neuen Fassung —, wartet auch auf das, dessen `fetch` noch nicht
+   * losging: der zweite Schreibvorgang einer Woche, der auf den ersten
+   * wartet; ein Aufruf, der erst das Token holt (`mitverfolgen`).
+   */
+  const ruhig = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+  afterEach(() => {
+    chain.then = ruhig
+  })
+  const gleichDanach = () => new Promise((r) => setTimeout(r, 10))
+
+  it('ein Schreiben, dessen Antwort aussteht, hält das Warten auf', async () => {
+    let antworten!: () => void
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten = () => ruhig(resolve)
+    }
+    savePerson('c1', person)
+    let fertig = false
+    const warten = schreibenAbwarten().then(() => {
+      fertig = true
+    })
+    await gleichDanach()
+    expect(fertig).toBe(false)
+    antworten()
+    await warten
+    expect(fertig).toBe(true)
+  })
+
+  it('ebenso die Schlange einer Tabelle „eine Zeile je …" (Grundplan, Besuche, Vorträge)', async () => {
+    let antworten!: () => void
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten = () => ruhig(resolve)
+    }
+    saveFsRules('c1', [{ id: 'r1', grp: null, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false }])
+    let fertig = false
+    const warten = schreibenAbwarten().then(() => {
+      fertig = true
+    })
+    await gleichDanach()
+    expect(fertig).toBe(false)
+    antworten()
+    await warten
+    expect(fertig).toBe(true)
+  })
+
+  it('auch der zweite Schreibvorgang einer Woche, der noch auf den ersten wartet', async () => {
+    const antworten: Array<() => void> = []
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten.push(() => resolve({ data: [{ stand: `s${antworten.length}` }], error: null }))
+    }
+    saveWeek('c1', { range: 'A', start: '2026-10-05' } as Week)
+    saveWeek('c1', { range: 'B', start: '2026-10-05' } as Week)
+    let fertig = false
+    const warten = schreibenAbwarten().then(() => {
+      fertig = true
+    })
+    await vi.waitFor(() => expect(antworten).toHaveLength(1))
+    antworten[0]!()
+    // Der erste ist angekommen; der zweite geht erst jetzt los.
+    await vi.waitFor(() => expect(antworten).toHaveLength(2))
+    expect(fertig).toBe(false)
+    antworten[1]!()
+    await warten
+    expect(fertig).toBe(true)
   })
 })
 
@@ -551,8 +685,9 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     await abwarten()
     const [name, optionen] = chain.functions.invoke.mock.calls[0] as [string, { body: unknown }]
     expect(name).toBe('substitute')
-    // Der freie Platz nennt dazu den Kalendertag des Geräts (5.10.2026).
-    const tag = action === 'fill' ? { heute: isoDay(new Date()) } : {}
+    // Freier Platz und Einspringen nennen dazu den Kalendertag des Geräts — der
+    // Server prüft damit, ob die Zusammenkunft vorbei ist.
+    const tag = action === 'fill' || action === 'take' ? { heute: isoDay(new Date()) } : {}
     expect(optionen.body).toEqual({ action, taskKey: 'k1', ...tag })
   })
 })
@@ -586,23 +721,32 @@ describe('send-plan: der Entzug', () => {
     ])
   })
 
-  it('scheitert der Aufruf, steht es nur im Log — keine Meldung „nicht gespeichert": Gespeichert ist ja alles', async () => {
+  it('scheitert der Aufruf, erfährt es der Planer — „nicht benachrichtigt", nicht „nicht gespeichert"', async () => {
     // Die Änderung des Planers steht längst in der Datenbank; eine Warnung
     // über einen Verlust, den es nicht gab, wäre falsch (deshalb kein `run()`).
+    // Wohl aber weiß der Betroffene nichts — das soll der Planer ihm sagen.
     const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
     const melder = vi.fn()
+    const entzug = vi.fn()
     setSchreibfehlerMelder(melder)
-    const ENTZUG = { key: '2026-09-07|mid|helper|mik|0', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' }
-    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
-    sendPlanEntzug([ENTZUG])
-    await abwarten()
-    expect(fehler).toHaveBeenCalledWith('[send-plan/entzug]', 'boom')
-    expect(melder).not.toHaveBeenCalled()
-    // Gegenprobe: Geht er durch, steht auch nichts im Log.
-    fehler.mockClear()
-    sendPlanEntzug([ENTZUG])
-    await abwarten()
-    expect(fehler).not.toHaveBeenCalled()
+    setEntzugMelder(entzug)
+    try {
+      const ENTZUG = { key: '2026-09-07|mid|helper|mik|0', name: 'A B', pid: 'p1', label: 'Mikrofone', datum: 'Di' }
+      chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'boom' } }))
+      sendPlanEntzug([ENTZUG])
+      await abwarten()
+      expect(fehler).toHaveBeenCalledWith('[send-plan/entzug]', 'boom')
+      expect(entzug).toHaveBeenCalledTimes(1)
+      expect(melder).not.toHaveBeenCalled()
+      // Gegenprobe: Geht er durch, steht nichts im Log, und niemand wird gewarnt.
+      fehler.mockClear()
+      sendPlanEntzug([ENTZUG])
+      await abwarten()
+      expect(fehler).not.toHaveBeenCalled()
+      expect(entzug).toHaveBeenCalledTimes(1)
+    } finally {
+      setEntzugMelder(null)
+    }
   })
 })
 
@@ -694,10 +838,14 @@ describe('Weitere Schreiber mit Gegenfall', () => {
   })
 
   it('saveFamily legt erst den Haushalt an, dann die Personen — scheitert der Haushalt, keine Person', async () => {
-    saveFamily('c1', 'h1', [person])
+    saveFamily('c1', 'h1', [{ ...person, fam: 'h1' }, { ...person, id: 'p2', fam: 'h1' }, { ...person, id: 'p3', fam: null }])
     await geschrieben()
-    expect(chain.upsert).toHaveBeenNthCalledWith(1, { id: 'h1', congregation_id: 'c1' })
-    expect(chain.upsert).toHaveBeenNthCalledWith(2, [expect.objectContaining({ id: 'p1', congregation_id: 'c1' })])
+    expect(chain.upsert).toHaveBeenCalledTimes(1)
+    expect(chain.upsert).toHaveBeenCalledWith({ id: 'h1', congregation_id: 'c1' })
+    // An den Personen nur der Haushalt — je Haushalt eine Anfrage, in der Reihenfolge danach.
+    expect(chain.update!.mock.calls).toEqual([[{ fam: 'h1' }], [{ fam: null }]])
+    expect(chain.in!.mock.calls).toEqual([['id', ['p1', 'p2']], ['id', ['p3']]])
+    expect(chain.upsert!.mock.invocationCallOrder[0]).toBeLessThan(chain.update!.mock.invocationCallOrder[0]!)
 
     vi.clearAllMocks()
     const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})

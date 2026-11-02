@@ -155,6 +155,15 @@ describe('Kopf und Navigation', () => {
     expect(texte(container, '.meeting-tab-wann')).toEqual(['8.9. · 19:00', '13.9. · 10:00'])
   })
 
+  it('eine ausgefallene Karte sagt es auch dem Vorleseprogramm — das Durchstreichen liest es nicht vor', () => {
+    const w = woche()
+    w.dev = { mid: { cancelled: true } }
+    const { container } = zeige({ weeks: [w] })
+    const [mitte, ende] = [...seite(container).querySelectorAll('.meeting-tab')].map((b) => b.getAttribute('aria-label'))
+    expect(mitte).toBe(`${fill(t.versammlungTag, { tag: 'Dienstag' })}, 8.9. · 19:00, ${t.druckEntfaellt}`)
+    expect(ende).toBe(`${fill(t.versammlungTag, { tag: 'Sonntag' })}, 13.9. · 10:00`)
+  })
+
   it('der Predigtdienst hat keine Reiter der Zusammenkünfte', () => {
     const { container } = zeige({ tab: 'fs' })
     expect(seite(container).querySelector('.meeting-tabs')).toBeNull()

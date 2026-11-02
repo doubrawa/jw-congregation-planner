@@ -17,7 +17,8 @@ import { pushTexte, TITEL_TROLLEY } from '../send-reminders/texte.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
-import { filterWert, jsonRes, likeMuster, MAX_ROWS, passtAufMuster, schreibZugriff } from './attrappe.ts'
+import { filterWert, jsonRes, likeMuster, MAX_ROWS, nurSpalten, passtAufMuster, schreibZugriff } from './attrappe.ts'
+import { type FsInstance, pendingOfFsWeek, pendingOfMeeting, type Week } from '../_shared/zuteilungen.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -160,6 +161,8 @@ interface Write {
   method: string
   path: string
   body: unknown
+  /** Der `Prefer`-Kopf — er sagt etwa, ob Dubletten stehen bleiben dürfen. */
+  prefer?: string
 }
 
 let writes: Write[]
@@ -189,7 +192,27 @@ let trolleyTermine: { trolley_id: string; datum: string; von: string; bis: strin
  * Angabe mit gesetztem `persoenlich_at`, mit `null` gemeldet, aber nicht
  * abgehakt.
  */
-let bescheidGegeben: { task_key: string; name: string; persoenlich_at?: string | null }[]
+let bescheidGegeben: { task_key: string; name: string; person_id?: string | null; persoenlich_at?: string | null }[]
+/**
+ * Erinnert wird nur an Plätze, die „Plan senden" gemeldet hat. Ohne Angabe
+ * steht jeder besetzte Platz der Wochen im Tagebuch, wie nach dem Senden —
+ * damit die übrigen Fälle bei ihrer Sache bleiben. Aus, steht dort nur
+ * `bescheidGegeben`.
+ */
+let allesGemeldet: boolean
+
+/** Jeder besetzte Platz der Wochen, wie „Plan senden" ihn ins Tagebuch schreibt. */
+function alleBesetzten(): { task_key: string; name: string }[] {
+  const leer = new Map<string, string>()
+  const versammlung = weeks.flatMap((w) =>
+    (['mid', 'we'] as const).flatMap((tab) => {
+      const m = (w.data as Week)[tab]
+      return m ? pendingOfMeeting(w.start, tab, m, SERVICES, leer) : []
+    }),
+  )
+  const treffpunkte = fsWeeks.flatMap((w) => pendingOfFsWeek(w.start, w.data as FsInstance[], leer))
+  return [...versammlung, ...treffpunkte].map((p) => ({ task_key: p.key, name: p.name }))
+}
 /**
  * Tabellen, die es (noch) nicht gibt — das Schema ist nicht eingespielt.
  *
@@ -205,16 +228,22 @@ let fehlendeTabellen: Set<string>
  */
 let kaputteVersammlung: boolean
 const KAPUTT = 'cong-kaputt'
+/** Eine zweite Versammlung **hinter** der eigentlichen — mit denselben Wochen und Konten. */
+let zweiteVersammlung: boolean
+const ZWEITE = 'cong-2'
 
 const { writesTo } = schreibZugriff(() => writes)
 
-const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknown }): Promise<Response> => {
+const fakeFetch = async (
+  input: unknown,
+  init?: { method?: string; body?: unknown; headers?: Record<string, string> },
+): Promise<Response> => {
   const url = String(input)
   const method = init?.method ?? 'GET'
   const path = url.slice(url.indexOf('/rest/v1/') + '/rest/v1/'.length)
 
   if (method !== 'GET') {
-    writes.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+    writes.push({ method, path, body: init?.body ? JSON.parse(String(init.body)) : undefined, prefer: init?.headers?.Prefer })
     return new Response(null, { status: 204 })
   }
   leseWege.push(path)
@@ -226,6 +255,9 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
         ? [{ id: KAPUTT, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: true }]
         : []),
       { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
+      ...(zweiteVersammlung
+        ? [{ id: ZWEITE, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: true }]
+        : []),
     ])
   }
   if (path.startsWith('reminder_log')) {
@@ -252,11 +284,18 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     // die Haken der Wochen, um die es geht.
     const muster = likeMuster(path, 'task_key')
     const nurAbgehakt = /[?&]persoenlich_at=not\.is\.null/.test(path)
-    const zeilen = bescheidGegeben
-      .map((z) => ({ ...z, persoenlich_at: z.persoenlich_at === undefined ? '2026-09-01T10:00:00Z' : z.persoenlich_at }))
+    const abgehakt = bescheidGegeben.map((z) => ({
+      ...z,
+      persoenlich_at: z.persoenlich_at === undefined ? '2026-09-01T10:00:00Z' : z.persoenlich_at,
+    }))
+    const nurGemeldet = (allesGemeldet ? alleBesetzten() : [])
+      .filter((z) => !abgehakt.some((a) => a.task_key === z.task_key && a.name === z.name))
+      .map((z) => ({ ...z, persoenlich_at: null }))
+    const zeilen = [...nurGemeldet, ...abgehakt]
       .filter((z) => muster.length === 0 || muster.some((m) => passtAufMuster(z.task_key, m)))
       .filter((z) => !nurAbgehakt || z.persoenlich_at !== null)
-    return jsonRes(zeilen.slice(0, MAX_ROWS))
+    // Nur die verlangten Spalten: Eine vergessene (`person_id`) fiele sonst nicht auf.
+    return jsonRes(nurSpalten(zeilen.slice(0, MAX_ROWS), path))
   }
   if (path.startsWith('confirmations')) {
     // Die Wochen-Präfixe werden ausgewertet: Ein Präfix, der danebenliegt,
@@ -341,8 +380,10 @@ beforeEach(() => {
   trolleys = []
   trolleyTermine = []
   bescheidGegeben = []
+  allesGemeldet = true
   fehlendeTabellen = new Set()
   kaputteVersammlung = false
+  zweiteVersammlung = false
   resetPush()
 })
 
@@ -646,10 +687,16 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
     expect(previewFor(await run(), U_PLANER)?.body).not.toContain('Otto Ohnekonto')
   })
 
-  it('fehlt die Spalte, meldet der Lauf wie bisher alle', async () => {
-    bescheidGegeben = [{ task_key: `${WEEK_START}|mid|part|gespraech|0`, name: 'Otto Ohnekonto' }]
+  it('ist das Tagebuch nicht lesbar, fällt die Versammlung heute aus — woran erinnert werden darf, steht dort', async () => {
     fehlendeTabellen = new Set(['assignment_log'])
-    expect(previewFor(await run(), U_PLANER)?.body).toContain('Otto Ohnekonto')
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const handler = await loadFn()
+    const res = await handler(request())
+    const r = (await res.json()) as Result & { fehlerVersammlungen?: number }
+    expect(res.status).toBe(500)
+    expect(r.fehlerVersammlungen).toBe(1)
+    expect(r.preview).toEqual([])
+    fehler.mockRestore()
   })
 
   it('auch ein Planer bekommt sie — wer zuteilt, spricht die Unerreichbaren an (4.10.2026)', async () => {
@@ -663,6 +710,115 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
     vi.setSystemTime(new Date('2026-09-04T09:00:00Z')) // mid in 4 Tagen (repeat)
     const r = await run()
     expect(previewFor(r, U_PLANER)).toBeUndefined()
+  })
+})
+
+describe('send-reminders: erinnert wird nur an Gemeldetes', () => {
+  /*
+   * Wer von einem Platz nichts erfahren hat — „Plan senden" lief noch nicht,
+   * oder der Planer hat ihn danach neu besetzt —, soll ihn auch nicht
+   * bestätigen müssen. Maßgeblich ist das Versand-Tagebuch: Platz **und**
+   * Person, wie „Plan senden" sie eingetragen hat — die Id, wo eine dasteht.
+   */
+  const gemeldet = (task_key: string, name: string) => ({ task_key, name, persoenlich_at: null })
+  beforeEach(() => {
+    allesGemeldet = false
+  })
+
+  it('nichts gemeldet: keine Erinnerung, auch keine Meldung an die Planer', async () => {
+    const r = await run()
+    expect(r.preview).toEqual([])
+  })
+
+  it('erinnert an den gemeldeten Platz — und nur an ihn', async () => {
+    bescheidGegeben = [gemeldet(`${WEEK_START}|mid|part|schatz|0`, 'Max Mustermann')]
+    const body = previewFor(await run(), U_MAX)?.body ?? ''
+    expect(body).toContain('Schatzgraben')
+    // Sein Mikrofon-Platz steht nicht im Tagebuch.
+    expect(body).not.toContain('Mikrofon')
+  })
+
+  it('nach dem Senden neu besetzt: gemeldet war der Vorgänger — erinnert wird niemand', async () => {
+    bescheidGegeben = [gemeldet(`${WEEK_START}|mid|part|schatz|0`, 'Anna Vorher')]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+  })
+
+  it('die Planer-Meldung „nicht erreichbar" nennt nur Gemeldetes', async () => {
+    bescheidGegeben = [gemeldet(`${WEEK_START}|mid|part|bibel|0`, 'Nina Nolink')]
+    const planer = previewFor(await run(), U_PLANER)?.body ?? ''
+    expect(planer).toContain('Nina Nolink')
+    expect(planer).not.toContain('Otto Ohnekonto')
+  })
+
+  it('ebenso die Treffpunkte', async () => {
+    weeks = []
+    const leiter = { id: 'i1', grp: '', wd: 3, time: '14:00', place: 'Saal', leader: 'Max Mustermann', lpid: 'p-max' }
+    fsWeeks = [{ start: WEEK_START, data: [leiter] }]
+    expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    bescheidGegeben = [gemeldet(`fs|${WEEK_START}|i1`, 'Max Mustermann')]
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Treffpunkt-Leiter')
+  })
+
+  describe('trägt der Platz eine Id, entscheidet sie', () => {
+    const SCHATZ = `${WEEK_START}|mid|part|schatz|0`
+    /** Die Woche mit nur dem einen Platz — er gehört `wer`. */
+    const nurSchatz = (wer: { name: string; pid: string }) => [
+      { start: WEEK_START, data: { mid: { date: '', helpers: {}, sections: [{ items: [{ iid: 'schatz', title: 'Schatzgraben', names: [wer] }] }] } } },
+    ]
+
+    /*
+     * Im Platz steht der neue Name, im Tagebuch der, unter dem gemeldet wurde.
+     * Über den Namen allein gälte er als nie gemeldet, und die Erinnerungen
+     * blieben bis zum nächsten „Plan senden" aus.
+     */
+    it('nach dem Senden umbenannt: gemeldet war dieselbe Person — sie wird erinnert', async () => {
+      persons = [{ id: 'p-max', fn: 'Max', ln: 'Neumann' }, ...PERSONS.slice(1)]
+      weeks = nurSchatz({ name: 'Max Neumann', pid: 'p-max' })
+      bescheidGegeben = [{ ...gemeldet(SCHATZ, 'Max Mustermann'), person_id: 'p-max' }]
+      expect(previewFor(await run(), U_MAX)?.body).toContain('Schatzgraben')
+    })
+
+    it('… ebenso für die Planer-Meldung: Gemeldet nennt sie die Person, abgehakt nicht', async () => {
+      persons = [{ id: 'p-nina', fn: 'Nina', ln: 'Neu' }, ...PERSONS.filter((p) => p.id !== 'p-nina')]
+      weeks = nurSchatz({ name: 'Nina Neu', pid: 'p-nina' })
+      bescheidGegeben = [{ task_key: SCHATZ, name: 'Nina Nolink', person_id: 'p-nina', persoenlich_at: null }]
+      expect(previewFor(await run(), U_PLANER)?.body).toContain('Nina Neu')
+      bescheidGegeben = [{ task_key: SCHATZ, name: 'Nina Nolink', person_id: 'p-nina' }]
+      expect(previewFor(await run(), U_PLANER)).toBeUndefined()
+    })
+
+    it('Gegenprobe: gemeldet war ein anderer, auch unter demselben Namen — erinnert wird niemand', async () => {
+      weeks = nurSchatz({ name: 'Max Mustermann', pid: 'p-max' })
+      bescheidGegeben = [{ ...gemeldet(SCHATZ, 'Max Mustermann'), person_id: 'p-vorher' }]
+      expect(previewFor(await run(), U_MAX)).toBeUndefined()
+    })
+
+    it('eine Zeile ohne Id gilt über den Namen', async () => {
+      weeks = nurSchatz({ name: 'Max Mustermann', pid: 'p-max' })
+      bescheidGegeben = [{ ...gemeldet(SCHATZ, 'Max Mustermann'), person_id: null }]
+      expect(previewFor(await run(), U_MAX)?.body).toContain('Schatzgraben')
+    })
+  })
+})
+
+describe('send-reminders: was er schreibt, gelingt je Versammlung für sich', () => {
+  it('ein Eintrag ins Versand-Tagebuch, der schon steht, verwirft die übrigen nicht', async () => {
+    await live()
+    const log = writes.filter((w) => w.path.startsWith('reminder_log'))
+    expect(log.length).toBeGreaterThan(0)
+    expect(log.every((w) => w.prefer?.includes('resolution=ignore-duplicates'))).toBe(true)
+  })
+
+  it('Glocken und Tagebuch gehen je Versammlung hinaus — eine abgewiesene Zeile nimmt der anderen nichts', async () => {
+    zweiteVersammlung = true
+    await live()
+    for (const tabelle of ['notifications', 'reminder_log']) {
+      const stapel = writes
+        .filter((w) => w.method === 'POST' && w.path.startsWith(tabelle))
+        .map((w) => w.body as { congregation_id: string }[])
+      expect(stapel, tabelle).toHaveLength(2)
+      expect(stapel.map((zeilen) => new Set(zeilen.map((z) => z.congregation_id)).size), tabelle).toEqual([1, 1])
+    }
   })
 })
 

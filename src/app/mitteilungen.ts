@@ -97,7 +97,10 @@ export interface ZielLage {
  * 4. Eine Aufgabe, die nicht (mehr) die eigene ist → ihre Woche im Programm,
  *    beim Planer im Planen: Eine Zuteilung, die inzwischen jemand anderes hat,
  *    zeigt dort, wer.
- * 5. Ohne Schlüssel → „Meine Aufgaben", wohin auch der Push dieser
+ * 5. Eine neue Anmeldung am eigenen Konto → nirgendwohin: Die Meldung sagt
+ *    selbst, was zu tun ist, und in der App gibt es dafür keinen Ort. Ihr Push
+ *    führt in die Mitteilungen, also hierher.
+ * 6. Ohne Schlüssel → „Meine Aufgaben", wohin auch der Push dieser
  *    Mitteilungen führt (Zuteilung, Entzug, Erinnerung an mehrere Aufgaben).
  */
 export function mitteilungsZiel(n: Notification, lage: ZielLage): AppAction[] {
@@ -108,6 +111,7 @@ export function mitteilungsZiel(n: Notification, lage: ZielLage): AppAction[] {
     return [{ type: 'navigate', screen: 'aufgaben' }, { type: 'openMyTask', id: n.taskId }]
   }
   if (teile) return wocheZeigen(lage.zuteilen ? 'planen' : 'programm', teile, lage.weeks)
+  if (n.type === 'anmeldung') return []
   return [{ type: 'navigate', screen: 'aufgaben' }]
 }
 

@@ -14,7 +14,7 @@ export interface QrBild {
 export interface Zettel {
   personId: string
   name: string
-  /** Der Code zum Eintippen („K7RD-2QWM"). */
+  /** Der Code zum Eintippen („K7RD 2QWM"). */
   code: string
   /** Bis wann er gilt — derselbe Tag in derselben Form wie in der Nachricht, mit Jahr. */
   bis: string

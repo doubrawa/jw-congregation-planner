@@ -13,20 +13,26 @@ export declare const GRUND_NAMEN: string
 export declare const GRUND_LEITER: string
 
 export declare function hindernis(gruende: readonly string[]): string
-export declare function gleich(a: unknown, b: unknown): boolean
 
 /** Die Funktionen der App, mit denen gerechnet wird. */
 export interface AppFunktionen {
-  syncAuxSlots: (weeks: Week[], an: boolean) => Week[]
+  syncAuxSlots: (weeks: Week[], an: boolean, ab?: string) => Week[]
   pidsNachtragen: (weeks: Week[], persons: unknown[]) => Week[]
   normalizeChairKeys: (weeks: Week[]) => Week[]
-  regenFsWeeks: (kennungen: readonly string[], fsWeeks: FsInstance[][], rules: unknown[]) => FsInstance[][]
+  regenFsWeeks: (
+    kennungen: readonly string[],
+    fsWeeks: FsInstance[][],
+    rules: unknown[],
+    wie?: { zuruecksetzen?: (inst: FsInstance) => boolean; ab?: string },
+  ) => FsInstance[][]
   fsLeiterBinden: (fsWeeks: FsInstance[][], persons: unknown[]) => FsInstance[][]
   personFromRow: (r: PersonRow) => unknown
   fsRuleFromRow: (r: FsRuleRow) => unknown
   gleich: (a: unknown, b: unknown) => boolean
   /** Anfang des Ladefensters der App (ISO-Montag, ein Jahr zurück — T125). */
   ab: string
+  /** Ab hier formen Klasse und Grundplan die Wochen (ISO-Montag der laufenden Woche, `wirktAb`). */
+  wirktAb: string
 }
 
 export declare function appFunktionen(heute?: Date): Promise<AppFunktionen>
@@ -34,6 +40,8 @@ export declare function appFunktionen(heute?: Date): Promise<AppFunktionen>
 export interface Angleichung {
   start: string
   stand: string
+  /** Der Stand der Treffpunkt-Woche — `null`, wenn es ihre Zeile noch nicht gibt. */
+  fsStand: string | null
   /** Die Woche und ihre Treffpunkte, wie die App sie nach dem Laden zeigt. */
   nachher: Week
   fsNachher: FsInstance[]
@@ -47,7 +55,7 @@ export interface Angleichung {
 export declare function angleichen(
   bestand: {
     wochen: readonly { start: string; data: unknown; updated_at: string }[]
-    fsWochen: readonly { start: string; data: FsInstance[] }[]
+    fsWochen: readonly { start: string; data: FsInstance[]; updated_at?: string }[]
     regeln: readonly FsRuleRow[]
     personen: readonly PersonRow[]
     auxClass: boolean

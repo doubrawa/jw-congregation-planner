@@ -110,6 +110,8 @@
  *  47. Gruppenaufseher: Ort, Treffpunkt der eigenen Gruppe      → durch
  *  48. dasselbe, dazu die nachgetragene Person eines fremden
  *      Leiters (`fsLeiterBinden` beim Laden)                    → durch
+ *  114. Gruppenaufseher: an einem fremden Treffpunkt eine andere
+ *       Person binden, als der Leiter heißt                     → abgewiesen
  *  49. Mitglied: einen Treffpunkt ändern                        → abgewiesen
  *  50. Planer: eine Regel im Grundplan anlegen                  → durch
  *  51. Gruppenaufseher: eine Regel für eine fremde Gruppe       → abgewiesen
@@ -945,12 +947,16 @@ export function gruppenWahl(gruppen, { aufseherPid, zuteilerPid, mitgliedPid }) 
  * Alles liegt hinter den Wochen von T120 (Woche 6–8 nach `tag0`); jede
  * Kennung trägt `marke`, daran findet das Aufräumen genau diese Zeilen.
  *
+ * Den fremden Treffpunkt leitet der Admin, mit Namen und ohne Id — so, wie
+ * `fsLeiterBinden` ihn vorfindet: Binden darf die App nur an die Person, die so
+ * heißt (`fs_fremde_bindung_ok`).
+ *
  * @param {{
- *   marke: string, versammlung: string, tag0: string, adminPid: string,
+ *   marke: string, versammlung: string, tag0: string, adminPid: string, adminName: string,
  *   zuteilerPid: string, eigeneGruppe: string, fremdeGruppe: string
  * }} auftrag
  */
-export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPid, eigeneGruppe, fremdeGruppe }) {
+export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, adminName, zuteilerPid, eigeneGruppe, fremdeGruppe }) {
   const id = (name) => `${marke}-${name}`
   const montag = (wochen) => tagPlus(tag0, 7 * wochen)
 
@@ -960,7 +966,7 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPi
   const treffpunkt = (name, grp, wd, leader = '') => ({ id: id(`fs-${name}`), ruleId: null, grp, wd, time: '09:30', place: marke, leader, manual: true })
   const fs = {
     eigen: treffpunkt('eigen', eigeneGruppe, 3),
-    fremd: treffpunkt('fremd', fremdeGruppe, 3, 'Probe Leiter'),
+    fremd: treffpunkt('fremd', fremdeGruppe, 3, adminName),
     versammlung: treffpunkt('versammlung', null, 6),
   }
   const treffpunkte = Object.values(fs)
@@ -1002,7 +1008,12 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, zuteilerPi
     {
       nr: 48, wer: 'aufseher', was: 'Gruppenaufseher: dasselbe, während die App einen fremden Leiter an seine Person gebunden hat',
       ziel: fs.eigen.id, feld: 'place', wert: ort, data: mit({ eigen: { place: ort }, fremd: { lpid: adminPid } }),
-      erwartet: true, folge: ['der Weg steht offen — die Person des Leiters zählt nicht', 'ZU STRENG — jede Änderung scheitert, sobald die App irgendwo einen Leiter bindet'],
+      erwartet: true, folge: ['der Weg steht offen — die Bindung an den Leiter selbst zählt nicht', 'ZU STRENG — jede Änderung scheitert, sobald die App irgendwo einen Leiter bindet'],
+    },
+    {
+      nr: 114, wer: 'aufseher', was: 'Gruppenaufseher: an einem fremden Treffpunkt eine andere Person binden, als der Leiter heißt',
+      ziel: fs.fremd.id, feld: 'lpid', wert: zuteilerPid, data: mit({ fremd: { lpid: zuteilerPid } }),
+      erwartet: false, folge: ['AUCH DAS!', 'die Id entscheidet, wem die Leitung gehört — umbinden ist umbesetzen'],
     },
     {
       nr: 49, wer: 'mitglied', was: 'Mitglied: einen Treffpunkt ändern',
@@ -1597,8 +1608,11 @@ async function stufenProben(k, woche) {
     const fehlt = !planer.pid || !zuteiler.pid || !mitglied.pid
       ? 'Admin, Planer und Mitglied brauchen je eine Person'
       : (ohneGruppe ?? (!wahl.fremde ? 'keine Gruppe, die keines der Probekonten leitet' : null))
-    if (fehlt) {
-      k.ungemessen('42–61', 'Treffpunkte, Grundplan, Gruppenbesuche und Pläne der Stufen', fehlt)
+    // Der Name des Admins: Er leitet den fremden Treffpunkt der Anlage (`stufenAnlage`).
+    const ich = fehlt ? null : await planer.rest(`persons?select=fn,ln&id=eq.${planer.pid}`)
+    const adminName = ich ? zeilenVon(ich).map((p) => `${p.fn} ${p.ln}`.trim())[0] : undefined
+    if (fehlt || !adminName) {
+      k.ungemessen('42–61', 'Treffpunkte, Grundplan, Gruppenbesuche und Pläne der Stufen', fehlt ?? 'die Person des Admins ist nicht lesbar')
       return
     }
     const a = stufenAnlage({
@@ -1606,6 +1620,7 @@ async function stufenProben(k, woche) {
       versammlung,
       tag0,
       adminPid: planer.pid,
+      adminName,
       zuteilerPid: zuteiler.pid,
       eigeneGruppe: wahl.eigene,
       fremdeGruppe: wahl.fremde,

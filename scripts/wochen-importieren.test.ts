@@ -259,14 +259,13 @@ describe('main: eingeordnet wie beim Import in der App', () => {
 
   it('lässt Treffpunkte stehen, die eine Woche schon hat', async () => {
     const vorhanden = [{ id: 'probe-treffpunkt', grp: null, time: '08:00', place: 'Schon da' }]
+    // Mit eigenem Stand: Er bliebe nicht stehen, wenn das Skript dieselben Treffpunkte noch einmal schriebe.
+    const zeile = { congregation_id: C, start: '2026-08-24', updated_at: '2026-08-20T10:00:00.000000+00:00', data: vorhanden }
     const { tabellen, ausgabe } = await fahre(() => main(['--anzahl', '1']), {
-      bestand: {
-        congregations: [VERSAMMLUNG], fs_rules: [REGEL],
-        fs_weeks: [{ congregation_id: C, start: '2026-08-24', data: vorhanden }],
-      },
+      bestand: { congregations: [VERSAMMLUNG], fs_rules: [REGEL], fs_weeks: [zeile] },
       funktionen: { 'import-week': () => ({ json: { week: roh('2026-08-24') } }) },
     })
-    expect(tabellen.fs_weeks).toEqual([{ congregation_id: C, start: '2026-08-24', data: vorhanden }])
+    expect(tabellen.fs_weeks).toEqual([zeile])
     expect(ausgabe.join('\n')).toContain('Treffpunkte schon da')
   })
 

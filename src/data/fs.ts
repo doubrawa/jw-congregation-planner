@@ -26,7 +26,7 @@ import {
   overseerGroup,
 } from './helpers'
 import { tieHash, wochenVersatz } from './auslastung'
-import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag } from './meeting-dates'
+import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag, wocheDavor } from './meeting-dates'
 import { fsKey, schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 // Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
 // Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
@@ -247,20 +247,23 @@ function besetzungVon(inst: FsInstance): Pick<FsInstance, 'leader' | 'lpid' | 'l
  * Neu-Ausrichtung behält wochenspezifische Anpassungen —, bei einer geänderten
  * Regel nur deren eigene (`fsRuleUpdate`). Die Besetzung bleibt immer.
  *
- * **Nur die eigenen** (5.10.2026). Bis dahin setzte jede Grundplan-Änderung
- * Zeit und Ort **aller** Treffpunkte zurück, schon beim Anlegen einer neuen
- * Regel: Was für eine einzelne Woche angepasst war, ging bei allen Gruppen
- * verloren. Und seit die Datenbank den Gruppenaufseher auf seine Gruppe
- * beschränkt (`fs_weeks_pruefen`), wies sie die Wochen ab, die er dabei
- * schrieb — seine Regel kam dort nie an (`grundplan-andere-gruppen.test.ts`).
+ * **Nur die eigenen**: Setzte jede Grundplan-Änderung Zeit und Ort **aller**
+ * Treffpunkte zurück, ginge bei allen Gruppen verloren, was für eine einzelne
+ * Woche angepasst ist — und die Datenbank wiese die Wochen ab, die ein
+ * Gruppenaufseher dabei schriebe (`fs_weeks_pruefen`,
+ * `grundplan-andere-gruppen.test.ts`).
+ *
+ * `ab` ist die erste Woche, die der Grundplan noch formt (`wirktAb`) — die
+ * davor bleiben, wie sie stattgefunden haben.
  */
 export function regenFsWeeks(
   kennungen: readonly string[],
   fsWeeks: FsInstance[][],
   rules: FsRule[],
-  zuruecksetzen: (inst: FsInstance) => boolean = () => false,
+  { zuruecksetzen = () => false, ab = '' }: { zuruecksetzen?: (inst: FsInstance) => boolean; ab?: string } = {},
 ): FsInstance[][] {
   return fsWeeks.map((week, wi) => {
+    if (wocheDavor(kennungen[wi], ab)) return week
     const gen = genFsWeek(kennungen[wi] ?? '', rules).map((inst) => {
       const old = week.find((o) => o.id === inst.id)
       if (!old) return inst
@@ -490,11 +493,12 @@ export function fsAddInst(fsWeeks: FsInstance[][], wi: number, inst: FsInstance)
  * Planen betitelten sie mit der rohen Gruppen-Id. Sehen konnte sie außer dem
  * Planer niemand mehr (`fsVisible`) — die Gruppe hat ja keine Mitglieder mehr.
  *
- * Gestrichen wird **jeder** Treffpunkt der Gruppe, auch die nur für eine Woche
- * angelegten (`manual`): Die hält `regenFsWeeks` ausdrücklich fest, sie blieben
- * sonst stehen. Deshalb auch kein `regenFsWeeks` hier — das setzte nebenbei
- * Zeit und Ort jeder angepassten Woche auf den Grundplan zurück, und mit der
- * Gruppe hat das nichts zu tun.
+ * Gestrichen wird **jeder** Treffpunkt der Gruppe ab der laufenden Woche
+ * (`ab`), auch die nur für eine Woche angelegten (`manual`): Die hält
+ * `regenFsWeeks` ausdrücklich fest, sie blieben sonst stehen. Deshalb auch kein
+ * `regenFsWeeks` hier — das setzte nebenbei Zeit und Ort jeder angepassten
+ * Woche auf den Grundplan zurück, und mit der Gruppe hat das nichts zu tun. Die
+ * Wochen davor bleiben: Dort hat sich die Gruppe getroffen.
  *
  * **`null` ist die Versammlung, keine Gruppe: Dafür wird nichts gestrichen.**
  * Der Wächter unten ist kein Formalismus, sondern die schärfste Zeile hier —
@@ -521,12 +525,15 @@ export function fsGruppeEntfernen(
   rules: FsRule[],
   fsWeeks: FsInstance[][],
   grp: string | null,
+  /** Die Kennungen der Wochen und ab welcher sie mitgehen (`wirktAb`) — die Treffpunkte davor haben stattgefunden. */
+  kennungen: readonly string[] = [],
+  ab = '',
 ): { fsRules: FsRule[]; fsWeeks: FsInstance[][] } {
   if (!grp) return { fsRules: rules, fsWeeks }
   const fsRules = rules.some((r) => r.grp === grp) ? rules.filter((r) => r.grp !== grp) : rules
   let geaendert = false
-  const weeks = fsWeeks.map((week) => {
-    if (!week.some((inst) => inst.grp === grp)) return week
+  const weeks = fsWeeks.map((week, wi) => {
+    if (wocheDavor(kennungen[wi], ab) || !week.some((inst) => inst.grp === grp)) return week
     geaendert = true
     return week.filter((inst) => inst.grp !== grp)
   })
@@ -904,6 +911,10 @@ export function deriveMyFsTasks(
  * (`fsLeiterBinden` trägt sie nach, sobald es die Person gibt). Ein
  * Freitext-Leiter ist niemand von hier — der Wechsel zu ihm und
  * von ihm weg ist ein Wechsel. Verschwindet der Treffpunkt, geht die Zusage mit.
+ *
+ * **Ebenso ein neuer Termin**: Ändert sich Tag, Uhrzeit oder Ort — meist über
+ * den Grundplan —, hat der Leiter zu etwas anderem zugesagt. Er bleibt
+ * eingeteilt, sagt aber neu zu, und bis dahin erinnert die App ihn.
  */
 export function fsVerwaisteZusagen(
   vorher: readonly FsInstance[] | undefined,
@@ -915,10 +926,14 @@ export function fsVerwaisteZusagen(
   for (const alt of vorher ?? []) {
     if (!alt.leader) continue // kein Leiter, keine Zusage
     const neu = jetzt.get(alt.id)
-    if (neu && dieselbeLeitung(alt, neu)) continue
+    if (neu && dieselbeLeitung(alt, neu) && derselbeTermin(alt, neu)) continue
     out.push(fsKey(kennung, alt.id))
   }
   return out
+}
+
+function derselbeTermin(a: FsInstance, b: FsInstance): boolean {
+  return a.wd === b.wd && a.time === b.time && a.place === b.place
 }
 
 function dieselbeLeitung(a: FsInstance, b: FsInstance): boolean {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { schreibenAbwarten, schreibStand, verfolgterFetch } from './schreiben-unterwegs'
+import { mitverfolgen, schreibenAbwarten, schreibStand, verfolgterFetch } from './schreiben-unterwegs'
 
 /**
  * **Was gerade hinausgeht** — der Zähler hinter dem Nachladen
@@ -84,6 +84,32 @@ describe('schreibenAbwarten', () => {
     void f('https://db.test/rest/v1/confirmations', { method: 'POST' }).catch(() => {})
     const warten = schreibenAbwarten()
     fehler[0]!()
+    await expect(warten).resolves.toBeUndefined()
+  })
+
+  it('angemeldete Arbeit gilt als unterwegs, bevor ihr fetch losgeht', async () => {
+    // Eine Schreibkette, die noch auf ihren Vorgänger wartet, ein Aufruf, der
+    // erst das Token holt: Am fetch allein wäre das Warten schon vorbei.
+    let fertigmachen!: () => void
+    mitverfolgen(new Promise<void>((weiter) => (fertigmachen = weiter)))
+    let fertig = false
+    const warten = schreibenAbwarten().then(() => {
+      fertig = true
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    expect(fertig).toBe(false)
+    fertigmachen()
+    await warten
+    expect(fertig).toBe(true)
+  })
+
+  it('angemeldete Arbeit, die scheitert, ist auch angekommen — und zählt als begonnen', async () => {
+    const vorher = schreibStand()
+    let scheitern!: () => void
+    mitverfolgen(new Promise<void>((_, nein) => (scheitern = () => nein(new Error('weg')))))
+    expect(schreibStand()).toBe(vorher + 1)
+    const warten = schreibenAbwarten()
+    scheitern()
     await expect(warten).resolves.toBeUndefined()
   })
 

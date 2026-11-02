@@ -16,7 +16,8 @@ const link: AusgestellterLink = {
   personId: 'p-a',
   url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-  code: 'K7RD-2QWM',
+  // Gegliedert, wie `linksAusstellen` ihn liefert.
+  code: 'K7RD 2QWM',
   gueltigBis: '2026-11-14T09:00:00.000Z',
 }
 const anton = { fn: 'Anton', ln: 'Alt' }
@@ -35,7 +36,7 @@ describe('Der Text der Nachricht', () => {
     for (const lang of ['de', 'fr', 'ar'] as const) {
       const n = await linkNachricht(anton, link, { lang, versammlung: 'Musterstadt' })
       expect(n.text, lang).toContain(link.url)
-      expect(n.text, lang).toContain('\nK7RD-2QWM\n')
+      expect(n.text, lang).toContain('\nK7RD 2QWM\n')
       expect(n.text, lang).not.toMatch(/\{\w+\}/)
     }
   })
@@ -69,7 +70,7 @@ describe('Der Text der Nachricht', () => {
       const d = dict(code)
       const n = await linkNachricht(anton, link, { lang: code, versammlung: 'Musterstadt' })
       expect(n.text, `${code}: zitiert „${d.linkSenden}"`).not.toContain(d.linkSenden)
-      expect(n.text, `${code}: Code nicht auf eigener Zeile`).toContain('\nK7RD-2QWM\n')
+      expect(n.text, `${code}: Code nicht auf eigener Zeile`).toContain('\nK7RD 2QWM\n')
       expect(n.text, `${code}: Platzhalter`).not.toMatch(/\{\w+\}/)
       // Der zitierte Knopf heißt wie auf der Anmeldeseite.
       expect(n.text, `${code}: zitiert „${d.codeEintippen}"`).toContain(d.codeEintippen)

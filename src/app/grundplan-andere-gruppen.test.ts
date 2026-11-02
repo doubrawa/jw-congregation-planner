@@ -1,5 +1,5 @@
 /** @vitest-environment happy-dom */
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
@@ -53,6 +53,15 @@ function mitAnpassung(): AppState {
 }
 
 describe('Eine Grundplan-Änderung lässt die Anpassungen der übrigen Treffpunkte stehen', () => {
+  // Die Demo-Wochen liegen im September 2026, und der Grundplan formt nur die
+  // ab der laufenden (`wirktAb`) — die Uhr steht davor.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T10:00:00') })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('der Gruppenaufseher von Gruppe 1 ändert seine Regel — Gruppe 2 behält ihre Woche, und die Datenbank nähme sie an', () => {
     const vorher = mitAnpassung()
     const nachher = reducer(vorher, { type: 'fsRuleUpdate', id: 'r4', patch: { time: '10:00', place: 'Bei Familie Lang' } })

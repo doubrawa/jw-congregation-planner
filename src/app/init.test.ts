@@ -1,7 +1,9 @@
 /** @vitest-environment happy-dom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initialState } from './init'
+import { DEFAULT_FONT_SCALE, DEFAULT_THEME } from '../data/constants'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
+import { speicherSperren } from '../../tests/ohne-speicher'
 
 beforeEach(() => {
   localStorage.clear()
@@ -42,6 +44,16 @@ describe('initialState – leer bis zur Hydration', () => {
 })
 
 describe('Darstellung / Sprache aus localStorage', () => {
+  it('sperrt der Browser den Speicher, startet die App mit den Vorgaben — statt mit einer leeren Seite', () => {
+    const freigeben = speicherSperren()
+    try {
+      const s = initialState()
+      expect([s.theme, s.fontScale, s.lang]).toEqual([DEFAULT_THEME, DEFAULT_FONT_SCALE, 'de'])
+    } finally {
+      freigeben()
+    }
+  })
+
   it('übernimmt eine gespeicherte Darstellung', () => {
     for (const theme of ['dunkel', 'hell', 'auto'] as const) {
       localStorage.setItem('theme', theme)

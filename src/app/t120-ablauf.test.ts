@@ -195,9 +195,10 @@ describe('Gruppenbesuche als Ablauf', () => {
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1])
+    // Seine Zusagen gehen mit der Woche, in einer Transaktion.
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1], expect.arrayContaining(keys))
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
     expect(data.sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
     )
@@ -211,7 +212,8 @@ describe('Gruppenbesuche als Ablauf', () => {
     for (const k of keys) expect(a.state.confirmations[k]).toBeUndefined()
     expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: besuch.id, pid: ANDERER })], [])
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', expect.arrayContaining(keys))
+    expect(vi.mocked(data.saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual(expect.arrayContaining(keys))
+    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
     expect(data.sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
     )
@@ -237,7 +239,7 @@ describe('Gruppenbesuche als Ablauf', () => {
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(a.state.fsWeeks[1]!.find((i) => i.id === inst.id)?.leader).toBe('')
     await geschrieben()
-    expect(data.deleteConfirmationRows).toHaveBeenCalledWith('c1', [key])
+    expect(vi.mocked(data.saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual([key])
     expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key, pid: BESUCHER })])
   })
 })

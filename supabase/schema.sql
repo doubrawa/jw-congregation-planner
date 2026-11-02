@@ -407,7 +407,7 @@ create table if not exists public.notifications (
   congregation_id uuid not null references public.congregations (id) on delete cascade,
   user_id         uuid not null references auth.users (id) on delete cascade, -- Empfänger
   type            text not null default 'zuteilung'
-                  check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert')),
+                  check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert', 'anmeldung')),
   title           text not null,
   body            text not null default '',
   read            boolean not null default false,
@@ -418,6 +418,13 @@ create table if not exists public.notifications (
   task_key        text,
   created_at      timestamptz not null default now()
 );
+
+-- Die Arten der Glocke, mit „Neue Anmeldung" (Function `anmelden`) — eine schon
+-- angelegte Tabelle bekommt die erweiterte Prüfung hier.
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications
+  add constraint notifications_type_check
+  check (type in ('zuteilung', 'erinnerung', 'gesendet', 'import', 'verhindert', 'anmeldung'));
 
 create index if not exists notifications_task_key_idx
   on public.notifications (congregation_id, task_key);
@@ -938,6 +945,34 @@ create table if not exists public.anmelde_fehlversuche (
 create index if not exists anmelde_fehlversuche_at_idx
   on public.anmelde_fehlversuche (at);
 
+-- **Ein Versuch, ein Schritt**: zählen und eintragen unter einer Sperre. Erst
+-- lesen und danach eintragen ließe gleichzeitig geschickte Codes alle an der
+-- Zählung vorbei, bevor einer stand. So bucht jeder Versuch seine Zeile vorab;
+-- war der Code richtig, nimmt die Function sie wieder heraus. Zurück kommt die
+-- Kennung der Zeile, oder nichts, wenn die Grenze erreicht ist (je Absender
+-- oder insgesamt).
+create or replace function public.anmelde_versuch(p_ip text, p_je_absender integer, p_gesamt integer)
+returns table (id bigint)
+language plpgsql
+set search_path = public
+as $$
+declare
+  seit constant timestamptz := now() - interval '1 hour';
+begin
+  perform pg_advisory_xact_lock(hashtextextended('anmelde_versuch', 0));
+  if (select count(*) from public.anmelde_fehlversuche f where f.ip = p_ip and f.at >= seit) >= p_je_absender
+     or (select count(*) from public.anmelde_fehlversuche f where f.at >= seit) >= p_gesamt then
+    return;
+  end if;
+  -- Was älter als ein Tag ist, zählt nirgends mehr.
+  delete from public.anmelde_fehlversuche f where f.at < now() - interval '1 day';
+  return query insert into public.anmelde_fehlversuche (ip) values (p_ip) returning anmelde_fehlversuche.id;
+end $$;
+
+revoke all on function public.anmelde_versuch(text, integer, integer) from public;
+revoke all on function public.anmelde_versuch(text, integer, integer) from anon, authenticated;
+grant execute on function public.anmelde_versuch(text, integer, integer) to service_role;
+
 -- ---------------------------------------------------------------------------
 -- Entfernt: Redner auswärts (T120, Phase 4 — vom 3. bis 4.10.2026)
 -- ---------------------------------------------------------------------------
@@ -1110,14 +1145,11 @@ $$;
 -- Die Treffpunkte, die nicht zu den eigenen Gruppen gehören (Versammlungs-
 -- treffpunkte eingeschlossen), nach Kennung geordnet.
 --
--- Die Person-Id des Leiters (`lpid`) zählt nicht: Die App bindet beim Laden
--- Leiternamen an ihre Person (`fsLeiterBinden`) und schreibt diese Bindung mit,
--- sobald sie eine Woche speichert. Verglichen wird deshalb der Name — sonst
--- scheiterte jede Änderung eines Aufsehers an einer Woche, in der irgendwo ein
--- Leiter noch ohne Id steht.
---
--- Bis zum 15.10.2026 nahm die Funktion einen dritten Wert (`ohne_leiter`, beim
--- Planer ohne Leiterfelder); den alten Aufruf gibt es nicht mehr.
+-- Die Person-Id des Leiters (`lpid`) zählt hier nicht: Die App bindet beim
+-- Laden Leiternamen an ihre Person (`fsLeiterBinden`) und schreibt diese
+-- Bindung mit, sobald sie eine Woche speichert — sonst scheiterte jede Änderung
+-- eines Aufsehers an einer Woche, in der irgendwo ein Leiter noch ohne Id
+-- steht. Welche Änderung der Id erlaubt ist, prüft `fs_fremde_bindung_ok`.
 drop function if exists public.fs_fremde(jsonb, uuid[], boolean);
 create or replace function public.fs_fremde(insts jsonb, eigene uuid[])
 returns jsonb
@@ -1127,6 +1159,36 @@ as $$
   select coalesce(jsonb_agg(e.i - 'lpid' order by e.i ->> 'id'), '[]'::jsonb)
   from jsonb_array_elements(case when jsonb_typeof(insts) = 'array' then insts else '[]'::jsonb end) as e(i)
   where e.i ->> 'grp' is null or not ((e.i ->> 'grp') = any (eigene::text[]))
+$$;
+
+-- **An fremden Treffpunkten nur die Bindung „leer → Id"** — und nur an die
+-- Person, die so heißt wie der Leiter (`fsLeiterBinden`). Jede andere Änderung
+-- der Id ist eine Umbesetzung: Über `lpid` entscheidet `task_gehoert_mir`, wem
+-- die Leitung gehört. Ohne diese Prüfung setzte ein Gruppenaufseher an einem
+-- fremden Treffpunkt die eigene Id ein — der Name bliebe, und die Zusage dazu
+-- gälte als seine.
+create or replace function public.fs_fremde_bindung_ok(vorher jsonb, nachher jsonb, eigene uuid[], cong uuid)
+returns boolean
+language sql stable
+set search_path = public
+as $$
+  select not exists (
+    select 1
+      from jsonb_array_elements(case when jsonb_typeof(vorher) = 'array' then vorher else '[]'::jsonb end) as a(i)
+      join jsonb_array_elements(case when jsonb_typeof(nachher) = 'array' then nachher else '[]'::jsonb end) as b(i)
+        on b.i ->> 'id' = a.i ->> 'id'
+     where (a.i ->> 'grp' is null or not ((a.i ->> 'grp') = any (eigene::text[])))
+       and (b.i ->> 'lpid') is distinct from (a.i ->> 'lpid')
+       and not (
+         a.i ->> 'lpid' is null
+         and exists (
+           select 1 from public.persons p
+            where p.congregation_id = cong
+              and p.id::text = b.i ->> 'lpid'
+              and btrim(p.fn || ' ' || p.ln) = b.i ->> 'leader'
+         )
+       )
+  )
 $$;
 
 -- Ohne angemeldeten Nutzer schreibt die Service-Role (Edge Function,
@@ -1154,7 +1216,8 @@ begin
   end if;
   eigene := public.eigene_gruppen();
   if public.fs_fremde(coalesce(vorher, '[]'::jsonb), eigene)
-     is distinct from public.fs_fremde(new.data, eigene) then
+       is distinct from public.fs_fremde(new.data, eigene)
+     or not public.fs_fremde_bindung_ok(coalesce(vorher, '[]'::jsonb), new.data, eigene, new.congregation_id) then
     raise exception 'nur-eigene-gruppe' using errcode = '42501';
   end if;
   return new;
@@ -1292,11 +1355,12 @@ $$;
 -- Bestätigen fast lautlos (der Client schreibt fire-and-forget); eine erfundene
 -- Form trifft dagegen keinen Platz und bleibt wirkungslos.
 --
--- **Eine bekannte Art in fremder Schreibweise nicht.** „…|helper|mik|0.0" ist
--- keine erfundene Form, sondern Platz 0 in Verkleidung: Durchgelassen, stand
--- damit eine Absage für einen fremden Platz in `confirmations`, und die Edge
--- Functions lasen die Nummer früher mit `Number()` als 0. Die Platznummer ist
--- deshalb hier wie in `schluesselTeile` eine reine Ziffernfolge.
+-- **Eine bekannte Art in fremder Schreibweise nicht.** „…|helper|mik|0.0" oder
+-- „…|helper|mik|01" ist keine erfundene Form, sondern ein bekannter Platz in
+-- Verkleidung: Durchgelassen, stünde neben der Zusage zu „…|1" eine zweite zu
+-- „…|01", die jeder Vergleich der Schlüssel für einen anderen Platz hält. Die
+-- Platznummer steht deshalb hier wie in `schluesselTeile`, wie die App sie
+-- schreibt: eine Zahl ohne führende Null.
 create or replace function public.task_gehoert_mir(schluessel text)
 returns boolean
 language plpgsql
@@ -1350,10 +1414,10 @@ begin
   if art = 'ratgeber' and n = 3 then
     slot := zk -> 'auxRatgeber';
 
-  elsif art = 'helper' and n = 5 and teile[5] ~ '^[0-9]+$' then
+  elsif art = 'helper' and n = 5 and teile[5] ~ '^(0|[1-9][0-9]*)$' then
     slot := zk -> 'helpers' -> teile[4] -> teile[5]::integer;
 
-  elsif art in ('part', 'aux') and n = 5 and teile[5] ~ '^[0-9]+$' then
+  elsif art in ('part', 'aux') and n = 5 and teile[5] ~ '^(0|[1-9][0-9]*)$' then
     -- Stabile Kennung: der Punkt wird gesucht, nicht seine Position.
     select e -> feld -> teile[5]::integer into slot
       from jsonb_array_elements(zk -> 'sections') s,
@@ -1926,6 +1990,85 @@ revoke all on function public.wochen_tauschen(uuid, date, timestamptz, jsonb, da
 -- Ausdrücklich, nicht über die Vorgaben des Projekts: Sie ist die erste
 -- Funktion, die eine Edge Function über `rpc/` ruft.
 grant execute on function public.wochen_tauschen(uuid, date, timestamptz, jsonb, date, timestamptz, jsonb) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Eine Woche schreiben — und mit ihr die Zusagen, die damit verfallen
+-- ---------------------------------------------------------------------------
+-- Wechselt ein Platz den Inhaber, gilt die Zusage des Alten nicht mehr. Ginge
+-- ihr Löschen als zweiter Aufruf verloren (App geschlossen, Netz weg), erbte der
+-- Neue die Zusage: Er stünde grün da, bekäme keine Erinnerung, und „Plan
+-- senden" überginge ihn. Deshalb geht beides in einer Transaktion. Welche
+-- Zusagen verfallen, rechnet die App (`changedSlotKeys`, `fsVerwaisteZusagen`)
+-- — eine zweite Fassung dieser Regel hier liefe auseinander.
+--
+-- Mit dem Stand (T39): Ohne `p_stand` wird die Woche angelegt;
+-- sonst wird nur geschrieben, solange sie noch auf diesem Stand ist. Trifft er
+-- nicht, kommt nichts zurück und nichts ist geändert, auch keine Zusage.
+--
+-- Mit den Rechten des Aufrufers, kein security definer: Was RLS an Wochen und
+-- Zusagen erlaubt (`weeks_write`, `fs_weeks_aendern`, `fs_weeks_pruefen`,
+-- `confirmations_delete_planner`), gilt hier genauso. Die Wartungsskripte rufen
+-- sie mit dem Dienstschlüssel.
+create or replace function public.woche_speichern(
+  p_cong uuid, p_start date, p_stand timestamptz, p_data jsonb, p_verfallen text[] default '{}'
+)
+returns table (stand timestamptz)
+language plpgsql
+set search_path = public
+as $$
+declare
+  neu timestamptz;
+begin
+  if p_stand is null then
+    insert into public.weeks as w (congregation_id, start, data) values (p_cong, p_start, p_data)
+    returning w.updated_at into neu;
+  else
+    update public.weeks w set data = p_data
+     where w.congregation_id = p_cong and w.start = p_start and w.updated_at = p_stand
+    returning w.updated_at into neu;
+    if neu is null then
+      return;
+    end if;
+  end if;
+  delete from public.confirmations c
+   where c.congregation_id = p_cong and c.task_key = any (coalesce(p_verfallen, '{}'));
+  return query select neu;
+end $$;
+
+revoke all on function public.woche_speichern(uuid, date, timestamptz, jsonb, text[]) from public;
+revoke all on function public.woche_speichern(uuid, date, timestamptz, jsonb, text[]) from anon;
+grant execute on function public.woche_speichern(uuid, date, timestamptz, jsonb, text[]) to authenticated, service_role;
+
+-- Dasselbe für die Treffpunkte einer Woche (`fs_weeks`).
+create or replace function public.treffpunkte_speichern(
+  p_cong uuid, p_start date, p_stand timestamptz, p_data jsonb, p_verfallen text[] default '{}'
+)
+returns table (stand timestamptz)
+language plpgsql
+set search_path = public
+as $$
+declare
+  neu timestamptz;
+begin
+  if p_stand is null then
+    insert into public.fs_weeks as f (congregation_id, start, data) values (p_cong, p_start, p_data)
+    returning f.updated_at into neu;
+  else
+    update public.fs_weeks f set data = p_data
+     where f.congregation_id = p_cong and f.start = p_start and f.updated_at = p_stand
+    returning f.updated_at into neu;
+    if neu is null then
+      return;
+    end if;
+  end if;
+  delete from public.confirmations c
+   where c.congregation_id = p_cong and c.task_key = any (coalesce(p_verfallen, '{}'));
+  return query select neu;
+end $$;
+
+revoke all on function public.treffpunkte_speichern(uuid, date, timestamptz, jsonb, text[]) from public;
+revoke all on function public.treffpunkte_speichern(uuid, date, timestamptz, jsonb, text[]) from anon;
+grant execute on function public.treffpunkte_speichern(uuid, date, timestamptz, jsonb, text[]) to authenticated, service_role;
 
 -- Trolleys (T121, Phase 7): Die Trolleys pflegt der Admin; Trolleys und
 -- Termine sieht die ganze Versammlung — so sehen alle, wann einer unterwegs

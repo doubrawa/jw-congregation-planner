@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Zeichen } from '../bausteine/Zeichen'
 import { useT } from '../i18n/useT'
+import { gemerkt, merken } from '../lib/geraetespeicher'
 import { ErsteSchritteFilm } from './ErsteSchritteFilm'
 
 /**
@@ -9,21 +10,10 @@ import { ErsteSchritteFilm } from './ErsteSchritteFilm'
  */
 export const WEG_KEY = 'ersteSchritteWeg'
 
-function istWeg(): boolean {
-  try {
-    return localStorage.getItem(WEG_KEY) === '1'
-  } catch {
-    return false
-  }
-}
+const istWeg = (): boolean => gemerkt(WEG_KEY) === '1'
 
-function merkeWeg(): void {
-  try {
-    localStorage.setItem(WEG_KEY, '1')
-  } catch {
-    // Ohne Speicher (privates Fenster) bleibt sie nur bis zum Neuladen weg.
-  }
-}
+/** Ohne Speicher (privates Fenster) bleibt sie nur bis zum Neuladen weg. */
+const merkeWeg = (): void => merken(WEG_KEY, '1')
 
 /**
  * **Erste Schritte** (22.10.2026): die Karte oben auf Start für alle, die neu

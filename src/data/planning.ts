@@ -11,7 +11,7 @@
 
 import { buildAbsences, istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
 import { allePlaetze, gespeicherteHelfer, leerVorOrt, platzKey, platzMitZusage, type Platz } from './plaetze'
-import { istSchuelerBereich, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
+import { istSchuelerBereich, istSchuelerteil, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
   displayName,
@@ -25,8 +25,9 @@ import {
   isQualified,
   isSong,
   istAusgefallen,
+  istVorsitz,
   MEETING_TABS,
-  partnerGenderOk,
+  passtZumPaar,
   idAufloeser,
   reinigungsGruppen,
   ROLE_GUEST_SPEAKER,
@@ -47,6 +48,7 @@ import {
 } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { ersteZahl } from './ziffern'
 import { folgtDemVorsitz, schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
+import { stehtImDienst, uebernahmeHindernis } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import type {
   Absence,
   ConfirmationMap,
@@ -767,7 +769,8 @@ function waehler(
 /**
  * Auswahl-Optionen für einen Schülerteil-Slot (gold): Vortrag → männlich;
  * Gesprächsführer/-partner → Gesamtlast (Schwestern zuerst), Älteste/DAG nur
- * als letzte Wahl (Malus); Partner zusätzlich gleiches Geschlecht wie der Führer.
+ * als letzte Wahl (Malus); beide passend zum anderen Platz des Paars
+ * (`passtZumPaar`) — gleich, welcher zuerst besetzt ist.
  */
 function schuelerteilOpts(
   item: PartItem,
@@ -776,23 +779,13 @@ function schuelerteilOpts(
   persons: Person[],
 ): WahlOptionen {
   if (slot.male) return nurBrueder()
-  if (slot.bereichsKey === 'schulung') {
-    return { byTotal: true, malus: (p: Person) => !isPlainPublisher(p) }
-  }
-  if (slot.bereichsKey === 'schulungPartner') {
-    // Der Gesprächspartner muss zum Führer DESSELBEN Raums passen — sonst
-    // richtete sich die Zusätzliche Klasse nach dem Hauptsaal.
-    const leadPlatz = slotsOf(item, aux).find((n) => n.bereichsKey === 'schulung')
-    // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
-    // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
-    // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
-    // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
-    // richtete sich die Partnerwahl danach nach dem Falschen.
-    const lead = leadPlatz?.name ? persons.find((p) => gehoertZu(leadPlatz, p)) : undefined
+  if (slot.bereichsKey === 'schulung' || slot.bereichsKey === 'schulungPartner') {
     return {
       byTotal: true,
       malus: (p: Person) => !isPlainPublisher(p),
-      extra: (p: Person) => partnerGenderOk(lead, p),
+      // Zum Gegenüber DESSELBEN Raums — sonst richtete sich die Zusätzliche
+      // Klasse nach dem Hauptsaal.
+      extra: passtZumPaar(slotsOf(item, aux), slot, persons),
     }
   }
   return {}
@@ -1488,8 +1481,11 @@ export function helperKeyParts(
 
 /**
  * Offene Ersatzgesuche für `me`: Hilfsdienst-Slots, deren Bearbeiter „verhindert"
- * gemeldet hat und für die `me` qualifiziert (gleicher Dienst), nicht selbst der
- * Absager und in der Woche nicht abwesend ist. Nächste zuerst.
+ * gemeldet hat und die `me` übernehmen darf (`uebernahmeHindernis`: Bereich,
+ * noch kein Platz des Dienstes, nicht vorbei, nicht abwesend). Nächste zuerst.
+ *
+ * `heute` steht als Parameter da, damit Tests eine Uhr vorgeben können; im
+ * Betrieb ist es jetzt.
  */
 export function deriveSubstituteReqs(
   weeks: Week[],
@@ -1498,19 +1494,20 @@ export function deriveSubstituteReqs(
   me: Person,
   zeiten: MeetingTimes,
   abwesend: AbsenceSet = KEINE_ABWESENHEIT,
+  heute = new Date(),
 ): SubstituteReq[] {
   const out: SubstituteReq[] = []
   const svcByKey = new Map(services.map((s) => [s.key, s]))
+  const ich = { id: me.id, name: displayName(me) }
+  const hatBereich = (bereich: string): boolean => isQualified(me, bereich)
   for (const [key, status] of Object.entries(confirmations)) {
     if (status !== 'verhindert') continue
     const parts = helperKeyParts(key)
     if (!parts) continue
     const svc = svcByKey.get(parts.svc)
-    if (!svc || svc.groups) continue
-    if (!isQualified(me, serviceQualKey(parts.svc))) continue
+    if (!svc) continue
     const wi = wochenIndex(weeks, parts.woche)
     if (wi < 0) continue // Woche nicht geladen — dazu ist nichts zu sagen
-    if (istAbwesend(abwesend, me.id, wi, parts.tab)) continue
     const week = weeks[wi]
     // Entfällt die Zusammenkunft, gibt es nichts zu vertreten (T30) — dieselbe
     // Grenze, die `eachAssignedSlot` für die eigenen Aufgaben zieht und die die
@@ -1523,16 +1520,22 @@ export function deriveSubstituteReqs(
     if (istAusgefallen(week, parts.tab)) continue
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
+    if (!meeting || !slot?.name) continue // leerer Slot — für ihn sucht niemand
     /*
-     * Der eigene Slot ist keiner, für den man einspringt — **über `gehoertZu`**,
-     * nicht über den Namen.
-     *
-     * Hier stand `slot.name === myName`. Sagt der gleichnamige Bruder ab, hieß
-     * das „das bin ich" und sein Gesuch verschwand: Ausgerechnet der, der ihn
-     * am ehesten vertreten könnte (gleiche Qualifikation, gleiche Versammlung),
-     * bekam es nie zu sehen. Trägt der Slot eine `pid`, entscheidet sie.
+     * Dieselbe Regel wie beim Server (`uebernahmeHindernis`): Bereich, kein
+     * Platz desselben Dienstes — auch nicht der eigene, über die Id, wo der
+     * Platz eine trägt —, vorbei, abwesend. Am Namen allein verschwand das
+     * Gesuch des gleichnamigen Bruders: Ausgerechnet der, der ihn am ehesten
+     * vertreten könnte, bekam es nie zu sehen.
      */
-    if (!meeting || !slot?.name || gehoertZu(slot, me)) continue // eigener/leerer Slot
+    const lage = {
+      svc,
+      hatBereich,
+      imDienst: stehtImDienst(meeting.helpers[parts.svc] ?? [], ich),
+      vorbei: istVorbei(meetingDateMs(week, parts.tab, zeiten), heute),
+      abwesend: istAbwesend(abwesend, me.id, wi, parts.tab),
+    }
+    if (uebernahmeHindernis(lage)) continue
     out.push({
       key,
       svc: parts.svc,
@@ -1713,11 +1716,19 @@ export function kennungVon(name: string, pid?: string): string {
  * zeigt sie in den Quadraten.
  */
 
-export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'fsAbsent' | 'fsDouble'
+export type ConflictKind = 'absent' | 'double' | 'helperTask' | 'partner' | 'fsAbsent' | 'fsDouble'
 
 export interface Conflict {
   kind: ConflictKind
   name: string // Anzeigename der Person
+  /** partner: der Gesprächsführer, zu dem sie nicht passt. */
+  zu?: string
+  /**
+   * Nur Plätze dieses Bereichs trifft der Konflikt — beim Paar den Platz des
+   * Partners. Ohne Angabe jeden Platz der Person in der Zusammenkunft: Wer
+   * abwesend ist oder doppelt steht, fehlt überall.
+   */
+  bereich?: string
   /**
    * Wen es betrifft — Person-Id, sonst `name:<Anzeigename>` (`kennungVon`).
    *
@@ -1750,10 +1761,16 @@ interface Belegungen {
   /** Hilfsdienste. */
   helper: Belegung[]
   /**
-   * Belegte Kennungen **je Raum** — Hauptsaal, Zusätzliche Klasse und der
-   * Ratgeber-Platz getrennt, für die Doppelungen unter den Programmpunkten,
-   * die wirklich unmöglich sind. Zwei Punkte **im selben** Raum sind es nicht
-   * (Vorsitz und Anfangsgebet) — deshalb reicht eine einzige Menge nicht aus.
+   * Belegte Kennungen **je Raum, zur Zeit der Klasse** — Hauptsaal,
+   * Zusätzliche Klasse und der Ratgeber-Platz getrennt, für die Doppelungen
+   * unter den Programmpunkten, die wirklich unmöglich sind. Zwei Punkte **im
+   * selben** Raum sind es nicht (Vorsitz und Anfangsgebet) — deshalb reicht
+   * eine einzige Menge nicht aus.
+   *
+   * Die Klasse läuft nur neben den Schülerteilen (S-38, Absatz 27). Vom
+   * Hauptsaal zählt deshalb nur, wer dort zur selben Zeit gebraucht wird: wer
+   * einen Schülerteil hat, und der Vorsitz, der durch sie führt. Wer danach
+   * einen Vortrag hält, steht nicht zur selben Zeit in zwei Räumen.
    *
    * Der Ratgeber steht für sich, obwohl er in der Klasse sitzt: Er begleitet
    * **die ganze Reihe**, ist also die einzige Zuteilung, die jede andere im
@@ -1763,10 +1780,23 @@ interface Belegungen {
   haupt: Map<string, string>
   klasse: Map<string, string>
   ratgeber: Belegung | null
+  /**
+   * Wer in einem Punkt desselben Raums zweimal steht — Führer und Partner,
+   * Leiter und Leser zugleich. Ausgenommen der Vorsitz mit dem Gebet.
+   */
+  zweimalImPunkt: Set<string>
 }
 
 function belegungen(meeting: Meeting, services: Service[], wer: IdVon): Belegungen {
-  const out: Belegungen = { programm: [], helper: [], haupt: new Map(), klasse: new Map(), ratgeber: null }
+  const out: Belegungen = {
+    programm: [],
+    helper: [],
+    haupt: new Map(),
+    klasse: new Map(),
+    ratgeber: null,
+    zweimalImPunkt: new Set(),
+  }
+  const imPunkt = new Map<string, Set<string>>()
   for (const platz of allePlaetze(meeting, services)) {
     const slot = platz.slot
     if (!slot?.name || isGuestRole(slot.rolle)) continue
@@ -1776,8 +1806,39 @@ function belegungen(meeting: Meeting, services: Service[], wer: IdVon): Belegung
     }
     const b = belegung(slot, wer)
     out.programm.push(b)
-    if (platz.art === 'ratgeber') out.ratgeber = b
-    else (platz.aux ? out.klasse : out.haupt).set(b.kennung, b.name)
+    if (platz.art === 'ratgeber') {
+      out.ratgeber = b
+      continue
+    }
+    // Der Vorsitz zählt im Punkt nicht mit: Er darf das Gebet desselben Punkts
+    // sprechen („Lied · Gebet · Einleitende Worte").
+    if (!istVorsitz(slot)) {
+      const punkt = `${platz.si}|${platz.ii}|${platz.aux}`
+      const schon = imPunkt.get(punkt) ?? new Set<string>()
+      if (schon.has(b.kennung)) out.zweimalImPunkt.add(b.kennung)
+      imPunkt.set(punkt, schon.add(b.kennung))
+    }
+    if (platz.aux) out.klasse.set(b.kennung, b.name)
+    else if (istSchuelerteil(platz.item) || istVorsitz(slot)) out.haupt.set(b.kennung, b.name)
+  }
+  return out
+}
+
+/**
+ * **Gesprächsführer und -partner, die nicht zueinander passen** — gleiches
+ * Geschlecht oder derselbe Haushalt (`partnerGenderOk`). Die Auswahl bietet
+ * ein solches Paar nicht an (`passtZumPaar`); stehen kann es trotzdem, aus
+ * der Zeit, als die Regel nur eine Richtung kannte, oder nachdem sich eine
+ * Person geändert hat. Je Punkt und Raum.
+ */
+function unpassendePaare(meeting: Meeting, persons: Person[]): Array<{ partner: SlotAssignment; fuehrer: SlotAssignment }> {
+  const out: Array<{ partner: SlotAssignment; fuehrer: SlotAssignment }> = []
+  for (const { slot, item, aux } of programmPlaetze(meeting)) {
+    if (slot.bereichsKey !== 'schulungPartner' || !slot.name) continue
+    const plaetze = slotsOf(item, aux)
+    const fuehrer = plaetze.find((n) => n.bereichsKey === 'schulung')
+    const partner = persons.find((p) => gehoertZu(slot, p))
+    if (fuehrer?.name && partner && !passtZumPaar(plaetze, slot, persons)(partner)) out.push({ partner: slot, fuehrer })
   }
   return out
 }
@@ -1847,7 +1908,7 @@ export function weekConflicts(
   // vorgegebene Regel — bei manueller Zuteilung nicht automatisch verhindert);
   // double = mehrere Hilfsdienste am selben Tag. Zwei Programmpunkte (z. B.
   // Vorsitz + Anfangsgebet) sind bewusst KEIN Konflikt.
-  for (const [tb, { programm, helper, haupt, klasse, ratgeber }] of belegt) {
+  for (const [tb, { programm, helper, haupt, klasse, ratgeber, zweimalImPunkt }] of belegt) {
     // Gezählt wird über die Kennung, angezeigt der Name — zwei Personen
     // desselben Namens sind zwei Einträge, nicht einer mit doppelter Zahl.
     const namen = new Map<string, string>()
@@ -1881,15 +1942,19 @@ export function weekConflicts(
     /**
      * Zwei Plätze, die einander ausschließen?
      *
-     *  - **Beide Räume**: zur selben Zeit an zwei Orten.
-     *  - **Ratgeber und irgendein Programmpunkt**: Er begleitet die ganze
-     *    Reihe seiner Klasse. Im Hauptsaal wäre er gar nicht da; in seiner
-     *    eigenen Klasse wäre er sein eigener Ratgeber. Die Automatik verhindert
-     *    beides seit je (`used` kennt den Ratgeber-Platz), von Hand blieb es
-     *    möglich — und der Ratgeber steht in der Ansicht neben dem Programm,
-     *    nicht darin.
+     *  - **Beide Räume zur Zeit der Klasse**: zur selben Zeit an zwei Orten
+     *    (`haupt` zählt nur, wer im Hauptsaal dann gebraucht wird).
+     *  - **Ratgeber und ein Programmpunkt zur Zeit der Klasse**: Er begleitet
+     *    die ganze Reihe seiner Klasse. Im Hauptsaal wäre er dann gar nicht
+     *    da; in seiner eigenen Klasse wäre er sein eigener Ratgeber. Die
+     *    Automatik verhindert beides seit je (`used` kennt den Ratgeber-Platz),
+     *    von Hand blieb es möglich — und der Ratgeber steht in der Ansicht
+     *    neben dem Programm, nicht darin.
+     *  - **Zweimal im selben Punkt**: Führer und Partner, Leiter und Leser
+     *    zugleich ist niemand.
      */
-    const raumKonflikt = (kennung: string): boolean => {
+    const unmoeglich = (kennung: string): boolean => {
+      if (zweimalImPunkt.has(kennung)) return true
       if (klasse.has(kennung) && haupt.has(kennung)) return true
       if (ratgeber?.kennung !== kennung) return false
       return haupt.has(kennung) || klasse.has(kennung)
@@ -1904,19 +1969,24 @@ export function weekConflicts(
        * die Menge, „Aufgabe und Hilfsdienst zugleich" die Art — der Planer
        * löst beides unterschiedlich auf.
        *
-       * Hier stand ein `else if`: Der neue Raumkonflikt verdrängte damit die
-       * Hilfsdienst-Warnung. Wer im Hauptsaal stand, in der Klasse stand und
-       * zusätzlich als Ordner eingetragen war, bekam nur noch die Zahl zu
-       * sehen.
+       * Wer im Hauptsaal stand, in der Klasse stand und zusätzlich als Ordner
+       * eingetragen war, bekommt deshalb beide zu sehen.
        */
-      const raum = raumKonflikt(kennung)
-      if (raum) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
+      const doppelt = unmoeglich(kennung)
+      if (doppelt) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: pc + hc })
       if (pc >= 1 && hc >= 1) conflicts.push({ kind: 'helperTask', name, kennung, tab: tb })
-      // Zwei Hilfsdienste sind ihre eigene Doppelung — es sei denn, der
-      // Raumkonflikt hat sie schon mitgezählt. Bis zum 16.10.2026 stand hier ein
-      // `else` zur Zeile darüber: Mit einer Aufgabe dazu fiel die Doppelung weg
-      // (Review, Daten F8).
-      if (!raum && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
+      // Zwei Hilfsdienste sind ihre eigene Doppelung — es sei denn, die Zeile
+      // darüber hat sie schon mitgezählt. Kein `else` zur Aufgabe: Mit ihr fiele
+      // die Doppelung sonst weg.
+      if (!doppelt && hc >= 2) conflicts.push({ kind: 'double', name, kennung, tab: tb, count: hc })
+    }
+  }
+
+  // partner: Gesprächsführer und -partner, die nicht zueinander passen.
+  for (const tb of tabs) {
+    for (const { partner, fuehrer } of unpassendePaare(week[tb], persons)) {
+      const b = belegung(partner, werIst)
+      conflicts.push({ kind: 'partner', name: b.name, kennung: b.kennung, tab: tb, zu: fuehrer.name, bereich: 'schulungPartner' })
     }
   }
 

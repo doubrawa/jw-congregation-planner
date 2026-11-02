@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useId, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { codeAnzeige, codeAus, codeNormal, codeVollstaendig, tokenAus } from '../../supabase/functions/_shared/anmeldung.ts'
 import { useApp } from '../app/context'
+import { NachladeGrenze } from '../components/NachladeGrenze'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import type { Lang } from '../data/types'
 import { APP_LANGS_SORTED } from '../i18n/langs'
@@ -9,11 +10,12 @@ import { codePruefen, mitCodeAnmelden, mitLinkAnmelden } from '../lib/anmelden'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { anmeldeAdresse, anmeldeCodeVerbraucht } from './anmelde-adresse'
 import { anmeldeFehlerText } from './anmelde-fehler'
+import { codeImFeld, stelleImFeld, zeichenVor } from './code-feld'
 import { KONTAKT_MAIL, kontaktVerweis } from './kontakt'
 import { LoginKopf } from './LoginKopf'
 import './login.css'
 
-const ZettelScanner = lazy(() => import('./ZettelScanner'))
+const scannerHolen = () => import('./ZettelScanner')
 
 /** Kann dieses Gerät überhaupt eine Kamera öffnen? (Ob es eine hat, zeigt erst der Versuch.) */
 const kameraMoeglich = (): boolean => typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function'
@@ -45,6 +47,9 @@ export function LoginScreen() {
     const code = anmeldeAdresse().code
     return code ? { art: 'code', code } : { art: 'start' }
   })
+  // Je Versuch ein eigenes `lazy`: Scheitert das Nachladen, merkt React sich
+  // die Ablehnung, und ein zweiter Tipp auf „Zettel scannen" scheiterte sofort.
+  const [ZettelScanner, setZettelScanner] = useState(() => lazy(scannerHolen))
 
   const angemeldet = () => dispatch({ type: 'login', welcome: true })
 
@@ -103,9 +108,20 @@ export function LoginScreen() {
           <>
             {/* Die Überschrift der Seite — wie „Anmelden" und „Mit Code anmelden" in den anderen Ansichten. */}
             <h1 className="seitentitel seitentitel--gross login-titel">{t.zettelScannen}</h1>
-            <Suspense fallback={<p className="klein-text login-scanner-laedt">{t.laedt}</p>}>
-              <ZettelScanner onGefunden={(text) => void gescannt(text)} onAbbrechen={() => setAnsicht({ art: 'start' })} />
-            </Suspense>
+            {/* Kommt der Scanner nicht (ohne Netz nie geladen, nach einem
+                Deploy nicht mehr auf dem Server), bleibt das Eintippen —
+                ohne Grenze stünde die Anmeldeseite leer da. */}
+            <NachladeGrenze
+              onFehler={() => {
+                setZettelScanner(() => lazy(scannerHolen))
+                setAnsicht({ art: 'code', code: '' })
+                dispatch({ type: 'showToast', text: t.kameraFehlt })
+              }}
+            >
+              <Suspense fallback={<p className="klein-text login-scanner-laedt">{t.laedt}</p>}>
+                <ZettelScanner onGefunden={(text) => void gescannt(text)} onAbbrechen={() => setAnsicht({ art: 'start' })} />
+              </Suspense>
+            </NachladeGrenze>
           </>
         ) : (
           <div className="login-form">
@@ -167,51 +183,68 @@ export function LoginScreen() {
 
 /**
  * **Mit Code anmelden** (Entwurf `GCode`): der Code vom Zettel, getippt oder
- * gescannt. Ist er vollständig, sagt die App, wem er gehört — erst dann meldet
- * „Anmelden" an. So merkt, wer auf einem geteilten Gerät den Zettel eines
- * anderen erwischt hat, es vorher.
+ * gescannt. Erst sagt die App, wem er gehört — dann meldet „Anmelden" an. So
+ * merkt, wer auf einem geteilten Gerät den Zettel eines anderen erwischt hat,
+ * es vorher.
+ *
+ * Ein getippter Code wird erst auf „Weiter" geprüft, nicht schon mit dem
+ * letzten Zeichen: Jeder unbekannte Code zählt beim Server als Fehlversuch, und
+ * die Grenze gilt je Absender — in einem WLAN mit einer gemeinsamen Adresse für
+ * alle darin. Ein gescannter Code kommt ohne Tippfehler und wird gleich geprüft.
  */
 function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string; onAngemeldet: () => void; onZurueck: () => void }) {
   const { t } = useT()
   const feldId = useId()
+  const feld = useRef<HTMLInputElement>(null)
+  /** Wohin die Schreibmarke nach dem Umformen der Eingabe gehört. */
+  const marke = useRef<number | null>(null)
   const [eingabe, setEingabe] = useState(vorgabe ? codeAnzeige(vorgabe) : '')
   const [geprueft, setGeprueft] = useState<{ code: string; name: string; versammlung: string } | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
-  /** Zählt die Versuche der Prüfung — „Anmelden" stößt nach einem Fehlschlag die nächste an. */
-  const [versuch, setVersuch] = useState(0)
+  /** Der Code, nach dem gerade gefragt wird — `n` zählt die Versuche, damit derselbe Code noch einmal gefragt werden kann. */
+  const [anfrage, setAnfrage] = useState<{ code: string; n: number } | null>(() =>
+    codeVollstaendig(vorgabe) ? { code: codeNormal(vorgabe), n: 0 } : null,
+  )
   const code = codeNormal(eingabe)
   const passt = geprueft !== null && geprueft.code === code
 
-  // Vollständig getippt (oder gescannt): nachsehen, wem der Code gehört.
+  useLayoutEffect(() => {
+    const el = feld.current
+    if (marke.current === null || !el || document.activeElement !== el) return
+    el.setSelectionRange(marke.current, marke.current)
+    marke.current = null
+  }, [eingabe])
+
+  // Nachsehen, wem der Code gehört.
   useEffect(() => {
-    if (!codeVollstaendig(code)) return
+    if (!anfrage) return
     let vorbei = false
     setLaeuft(true)
-    void codePruefen(code).then((r) => {
+    void codePruefen(anfrage.code).then((r) => {
       if (vorbei) return
       setLaeuft(false)
-      if (r.ok) setGeprueft({ code, name: r.name, versammlung: r.versammlung })
+      if (r.ok) setGeprueft({ code: anfrage.code, name: r.name, versammlung: r.versammlung })
       else setFehler(anmeldeFehlerText(r.fehler, t, 'code'))
     })
     return () => {
       vorbei = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, versuch])
+  }, [anfrage])
 
   const anmelden = async () => {
     if (laeuft) return
     /*
-     * Noch nicht geprüft — die Prüfung ist gescheitert, etwa am Netz: Dann
-     * prüft der Knopf noch einmal, und angemeldet wird erst, wenn der Name zu
-     * sehen ist. Bis zum 16.10.2026 blieb er gesperrt; der Fehler bat um einen
-     * neuen Versuch, und keiner ging, ohne den Code neu zu tippen.
+     * Noch nicht geprüft: Dann fragt der Knopf, wem der Code gehört, und
+     * angemeldet wird erst, wenn der Name zu sehen ist. Das gilt auch nach
+     * einer gescheiterten Prüfung, etwa am Netz — ein neuer Tipp fragt noch
+     * einmal, ohne den Code neu zu tippen.
      */
     if (!passt) {
       if (codeVollstaendig(code)) {
         setFehler(null)
-        setVersuch((n) => n + 1)
+        setAnfrage((a) => ({ code, n: (a?.n ?? 0) + 1 }))
       }
       return
     }
@@ -244,10 +277,17 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
           autoComplete="one-time-code"
           spellCheck={false}
           maxLength={12}
+          ref={feld}
           value={eingabe}
           aria-invalid={fehler ? true : undefined}
           onChange={(e) => {
-            setEingabe(e.target.value.toUpperCase())
+            const roh = e.target.value
+            const neu = codeImFeld(roh, roh.length < eingabe.length)
+            marke.current = stelleImFeld(neu, zeichenVor(roh, e.target.selectionStart ?? roh.length))
+            setEingabe(neu)
+            // Ein anderer Code ist ein neuer: Was über den alten unterwegs ist, gilt nicht mehr.
+            setAnfrage(null)
+            setLaeuft(false)
             setFehler(null)
             setGeprueft(null)
           }}
@@ -280,7 +320,7 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
         aria-disabled={!codeVollstaendig(code) || laeuft || undefined}
         onClick={() => void anmelden()}
       >
-        {t.anmeldenKnopf}
+        {passt ? t.anmeldenKnopf : t.codeWeiter}
       </button>
       {passt && <p className="klein-text login-meldung">{t.angemeldetBleiben}</p>}
       <button type="button" className="knopf-leise login-zurueck" onClick={onZurueck}>

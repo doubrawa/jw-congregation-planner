@@ -29,6 +29,11 @@ export function anmeldeAdresse(): AnmeldeAdresse {
   return gelesen
 }
 
+/** Trägt diese Adresse einen Anmelde-Link oder einen Zettel-Code? */
+export function anmeldungInAdresse(hash: string): boolean {
+  return tokenAus(hash) !== null || codeAus(hash) !== null
+}
+
 /** Der Code ist verbraucht (angemeldet oder verworfen) — beim nächsten Öffnen der Seite steht er nicht mehr da. */
 export function anmeldeCodeVerbraucht(): void {
   if (gelesen) gelesen = { ...gelesen, code: null }

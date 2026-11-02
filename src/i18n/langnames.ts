@@ -24,6 +24,7 @@
 import { useEffect, useState } from 'react'
 import type { Lang } from '../data/types'
 import { JW_LANGS, JW_TO_CONG } from './langs'
+import { einmalNachladen } from './nachladen'
 
 const MODULE = import.meta.glob<{ default: string }>('./langnames/*.ts')
 
@@ -76,17 +77,13 @@ export function loadLangNames(lang: Lang): Promise<boolean> {
   if (lang === 'de' || GELADEN.has(lang)) return Promise.resolve(false)
   const loader = MODULE[`./langnames/${lang}.ts`]
   if (!loader) return Promise.resolve(false)
-  let pending = LAEUFT.get(lang)
-  if (!pending) {
-    pending = loader().then((m) => {
+  return einmalNachladen(LAEUFT, lang, () =>
+    loader().then((m) => {
       GELADEN.set(lang, parse(m.default))
-      LAEUFT.delete(lang)
       generation++
       return true
-    })
-    LAEUFT.set(lang, pending)
-  }
-  return pending
+    }),
+  )
 }
 
 /**

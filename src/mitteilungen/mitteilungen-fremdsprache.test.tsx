@@ -25,6 +25,7 @@ import { TITEL_ENTZUG, TITEL_ZUTEILUNG } from '../../supabase/functions/send-pla
 import { TITEL_ERINNERUNG, TITEL_UNERREICHBAR } from '../../supabase/functions/send-reminders/texte.ts'
 import { TITEL_GEFUNDEN, TITEL_GESUCHT } from '../../supabase/functions/substitute/texte.ts'
 import { TITEL_DAZU } from '../../supabase/functions/trolley/texte.ts'
+import { TEXT_NEUE_ANMELDUNG, TITEL_NEUE_ANMELDUNG } from '../../supabase/functions/anmelden/texte.ts'
 import { MitteilungenScreen } from './MitteilungenScreen'
 
 /**
@@ -108,6 +109,8 @@ function mitteilungen(): Notification[] {
     zeile('gesucht', TITEL_GESUCHT, ['Mikrofone', termin, alsFreitext(NAME)].join(' · ')),
     zeile('gefunden', TITEL_GEFUNDEN, ['Mikrofone', termin, alsFreitext(ANDERER)].join(' · ')),
     zeile('trolley', TITEL_DAZU, trolley),
+    // Ein fester Satz statt Atomen — die Glocke schlägt ihn im Wörterbuch nach (`NOTIF_TEXT_KEY`).
+    { ...zeile('anmeldung', TITEL_NEUE_ANMELDUNG, TEXT_NEUE_ANMELDUNG), type: 'anmeldung' },
     { ...importiert, id: 'import', at },
     { ...abgesagt, id: 'absage', at },
   ]
@@ -150,7 +153,7 @@ describe('Mitteilungen aus jedem Erzeuger, in jeder Sprache', () => {
     // Die Gegenprobe zur Form: Ohne den Doppelpunkt prüfte die Zeile unten
     // nicht mehr, wofür sie geschrieben ist.
     const alle = mitteilungen()
-    expect(alle).toHaveLength(9)
+    expect(alle).toHaveLength(10)
     expect(alle[0]!.text).toMatch(/19:00: Bibellesung/)
     expect(alle[0]!.text).toMatch(/09:30 · Königreichssaal: Treffpunkt-Leiter/)
   })

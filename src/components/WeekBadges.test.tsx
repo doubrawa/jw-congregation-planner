@@ -10,7 +10,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
 import type { Week } from '../data/types'
 import { AusfallBanner, TerminListe } from './WeekBadges'
 import { WeekNav } from './WeekNav'
@@ -24,8 +24,8 @@ import { WeekNav } from './WeekNav'
  * haben und trotzdem dieselbe Fläche teilen:
  *
  * - Der **Grund eines Ausfalls** sind die Worte des Planers und bleiben
- *   unübersetzt. Für „entfällt" gibt es kein gemessenes Wort in jeder Sprache;
- *   der durchgestrichene Name der Zusammenkunft trägt die Aussage allein.
+ *   unübersetzt. Zu sehen ist der durchgestrichene Name der Zusammenkunft;
+ *   vorgelesen wird dazu „entfällt" — das Durchstreichen liest niemand vor.
  *
  * Die Chips unter der Wochen-Navigation gibt es seit T121 nicht mehr: Den
  * Anlass nennt die Wochenwahl (`WochenWahl`), eine verlegte oder ausgefallene
@@ -98,6 +98,17 @@ describe('Das Ausfall-Banner (T30)', () => {
     const aus = woche({ dev: { mid: { cancelled: true } } })
     const { container } = buehne('aus', <AusfallBanner week={aus} tab="mid" />)
     expect(container.querySelector('.ausfall-banner')?.getAttribute('role')).toBe('status')
+  })
+
+  it('vorgelesen wird „entfällt" — das Durchstreichen liest kein Vorleseprogramm vor', async () => {
+    await loadOverlay('ar')
+    expect(dict('ar').druckEntfaellt, 'Arabisch nicht geladen').not.toBe(dict('en').druckEntfaellt)
+    const aus = woche({ dev: { mid: { cancelled: true } } })
+    for (const lang of ['de', 'ar'] as const) {
+      const { container } = buehne('aus', <AusfallBanner week={aus} tab="mid" />, { lang })
+      expect(container.querySelector('.ausfall-banner .sr-only')?.textContent?.trim()).toBe(dict(lang).druckEntfaellt)
+      cleanup()
+    }
   })
 })
 

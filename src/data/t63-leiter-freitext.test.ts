@@ -105,7 +105,7 @@ describe('T63 · der Freitext wird nicht zur gleichnamigen Person', () => {
     // bleibt Freitext.
     const regel = [{ id: 'r1', grp: null, wd: 1, time: '09:30', place: 'KH', monthly: 0, skipCong: false }]
     const gespeichert = [[inst({ id: 'r1', ruleId: 'r1', leader: KS, lext: true })]]
-    const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }], (i) => i.ruleId === 'r1')
+    const [woche] = regenFsWeeks(KENN.slice(0, 1), gespeichert, [{ ...regel[0]!, place: 'Markt' }], { zuruecksetzen: (i) => i.ruleId === 'r1' })
     expect(woche?.[0]).toMatchObject({ leader: KS, lext: true, place: 'Markt' })
   })
 

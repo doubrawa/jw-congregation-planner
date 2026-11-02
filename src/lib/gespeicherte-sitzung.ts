@@ -17,6 +17,8 @@
  * mit gültigem Token wartete der Start offline, nur eben auf die Daten (dort).
  */
 
+import { vergessen } from './geraetespeicher'
+
 /**
  * Wo supabase-js die Sitzung ablegt: sein Standardschlüssel
  * (`sb-<projekt>-auth-token`, supabase-js 2.110.2). `lib/supabase.ts` gibt ihn
@@ -48,6 +50,20 @@ function istSitzung(wert: unknown): wert is Abgelegt {
     typeof s.expires_at === 'number' &&
     typeof s.user?.id === 'string'
   )
+}
+
+/**
+ * **Die abgelegte Sitzung vom Gerät nehmen** — für das Abmelden, wenn auth-js
+ * es nicht selbst tut. Offline mit abgelaufenem Token kann es die Sitzung nicht
+ * erneuern; `signOut` gibt dann nur den Fehler zurück und lässt sie liegen
+ * (auth-js 2.110.2, `_signOut`). Die App stünde auf „abgemeldet", und mit dem
+ * nächsten Netz wäre der Vorgänger wieder angemeldet. Gelöscht wird, was auth-js
+ * unter dem Schlüssel ablegt: die Sitzung, ein eigener Benutzereintrag und der
+ * PKCE-Prüfwert.
+ */
+export function sitzungVergessen(schluessel = SITZUNG_SCHLUESSEL): void {
+  if (!schluessel) return
+  for (const name of [schluessel, `${schluessel}-user`, `${schluessel}-code-verifier`]) vergessen(name)
 }
 
 /**

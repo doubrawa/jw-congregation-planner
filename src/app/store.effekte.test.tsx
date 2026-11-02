@@ -9,6 +9,7 @@ import type { Abweisung } from '../lib/data'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
+import { speicherSperren } from '../../tests/ohne-speicher'
 
 /**
  * **Was der Provider nebenher tut** — die Effekte, die keiner Aktion gehören.
@@ -97,7 +98,11 @@ vi.mock('../lib/push-abo', () => ({
  * und der Test ruft genau die auf, die `data.ts` aufrufen würde.
  */
 type Konfliktmelder = (grund?: Abweisung) => void
-const melder = { schreibfehler: null as (() => void) | null, konflikt: null as Konfliktmelder | null }
+const melder = {
+  schreibfehler: null as (() => void) | null,
+  konflikt: null as Konfliktmelder | null,
+  entzug: null as (() => void) | null,
+}
 vi.mock('../lib/data', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   setSchreibfehlerMelder: (fn: (() => void) | null) => {
@@ -105,6 +110,9 @@ vi.mock('../lib/data', async (orig) => ({
   },
   setKonfliktMelder: (fn: Konfliktmelder | null) => {
     melder.konflikt = fn
+  },
+  setEntzugMelder: (fn: (() => void) | null) => {
+    melder.entzug = fn
   },
 }))
 
@@ -176,6 +184,14 @@ afterEach(() => {
 })
 
 describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
+  it('ging die Nachricht über einen Entzug nicht hinaus, erfährt es der Planer — gespeichert ist die Änderung', () => {
+    const { result } = starte()
+    act(() => {
+      melder.entzug?.()
+    })
+    expect(result.current.state.toast?.text).toBe(DE.toastEntzugNichtGemeldet)
+  })
+
   it('ein Fehlschlag erzeugt einen Hinweis', () => {
     const { result } = starte()
     act(() => {
@@ -481,6 +497,26 @@ describe('Die Supabase-Sitzung wird gespiegelt', () => {
     // Nach dem Abmelden ist dasselbe Konto wieder ein neues Anmelden.
     await act(async () => {
       authListener.fn?.('SIGNED_OUT', null)
+      authListener.fn?.('SIGNED_IN', { user: { id: 'u7' } })
+    })
+    expect(ladeweise('u7')).toBe('sichtbar')
+  })
+
+  it('nach einem Abmelden ohne SIGNED_OUT lädt dieselbe Anmeldung wieder', async () => {
+    // Offline mit abgelaufenem Token meldet auth-js kein SIGNED_OUT; die App
+    // nimmt die Sitzung dann selbst vom Gerät (`abmelden.ts`). Meldete sich
+    // danach dasselbe Konto wieder an, galt es als „schon geladen" — und die
+    // App blieb leer.
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u7' } } } })
+    const { result } = starte()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await act(async () => {
+      result.current.dispatch({ type: 'logout' })
+    })
+    loadAndHydrate.mockClear()
+    await act(async () => {
       authListener.fn?.('SIGNED_IN', { user: { id: 'u7' } })
     })
     expect(ladeweise('u7')).toBe('sichtbar')
@@ -1168,6 +1204,24 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
       result.current.dispatch({ type: 'setLang', lang: 'ar' })
     })
     expect(document.documentElement.dir).toBe('rtl')
+  })
+
+  it('sperrt der Browser den Speicher, gilt die Wahl trotzdem — nur merkt das Gerät sie nicht', async () => {
+    // Ein Effekt, der beim Merken wirft, risse die ganze App mit.
+    const freigeben = speicherSperren()
+    try {
+      const { result } = starte()
+      await act(async () => {
+        result.current.dispatch({ type: 'setTheme', theme: 'dunkel' })
+        result.current.dispatch({ type: 'setFontScale', scale: 1.15 })
+        result.current.dispatch({ type: 'setLang', lang: 'ar' })
+      })
+      expect(document.documentElement.dataset.theme).toBe('dunkel')
+      expect(document.documentElement.style.getPropertyValue('--fs')).toBe('1.15')
+      expect(document.documentElement.dir).toBe('rtl')
+    } finally {
+      freigeben()
+    }
   })
 
   /**

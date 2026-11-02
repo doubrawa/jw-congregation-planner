@@ -198,6 +198,14 @@ describe('Person bearbeiten: der Name', () => {
     expect(dispatch).not.toHaveBeenCalled()
   })
 
+  it('verschwindet das Blatt, ohne dass es jemand schließt, gilt der Name trotzdem', () => {
+    // Etwa, weil ein Tipp auf eine Mitteilung woandershin führt.
+    const { container, dispatch, unmount } = zeige(person())
+    tippen(bearbeiten(container), 'Andreas', 'Alt')
+    unmount()
+    expect(patches(dispatch)).toEqual([{ fn: 'Andreas', ln: 'Alt' }])
+  })
+
   it('meldet am Feld, wer den Namen schon trägt — Schreibweise und Leerzeichen zählen nicht', () => {
     const b = bearbeiten(zeige(person()).container)
     tippen(b, 'bernd  ', ' BRAND')

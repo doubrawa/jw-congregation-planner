@@ -409,7 +409,7 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
     expect(container.querySelector('.prog-raum')).toBeNull()
   })
 
-  it('der Platz der Klasse öffnet das Sheet mit dem Raum im Titel', () => {
+  it('der Platz der Klasse öffnet das Sheet für die Klasse — den Raum nennt das Blatt aus `aux`', () => {
     const weeks = schuelerWoche()
     const { container, dispatch } = zeige(
       weeks[0]!.mid.sections[0]!, { weeks, auxClass: true }, { mitAux: true },
@@ -417,7 +417,8 @@ describe('Die Zusätzliche Klasse als zweite Reihe', () => {
     fireEvent.click(plaetze(container).at(-1)!)
     const sel = dispatch.mock.calls[0]![0].sel
     expect(sel.aux).toBe(true)
-    expect(sel.labelRolle).toContain(t.auxKlasse)
+    // Die Qualifikation reist mit — dieselbe Auswahl wie aus jeder anderen Fläche.
+    expect(sel.priv).toBe('schulung')
   })
 
   it('der Hauptsaal-Platz trägt kein aux-Kennzeichen', () => {

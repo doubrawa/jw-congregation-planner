@@ -6,6 +6,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
 import type { Ausgestellt } from '../lib/links-ausstellen'
+import { dict } from '../i18n/ui'
 
 /**
  * **Der Zettel-Druck räumt hinter sich auf — auch neben einem zweiten.**
@@ -23,7 +24,7 @@ const linksAusstellen = vi.fn((ids: readonly string[]) =>
       personId,
       url: 'https://versammlung.app/#anmelden=x',
       zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-      code: 'K7RD-2QWM',
+      code: 'K7RD 2QWM',
       gueltigBis: '2026-11-14T09:00:00.000Z',
     })),
     fehler: false,
@@ -33,6 +34,17 @@ vi.mock('../lib/links-ausstellen', async (echt) => ({
   ...(await echt<typeof import('../lib/links-ausstellen')>()),
   linksAusstellen: (ids: readonly string[]) => linksAusstellen(ids),
 }))
+// Das Wörterbuch der Versammlung kommt nachgeladen — `kaputt`: nach einem Deploy fehlt der alte Teil.
+const nachladen = { kaputt: false }
+vi.mock('../i18n/ui', async (echt) => {
+  const ui = await echt<typeof import('../i18n/ui')>()
+  return {
+    ...ui,
+    loadOverlay: (lang: Parameters<typeof ui.loadOverlay>[0]) =>
+      nachladen.kaputt ? Promise.reject(new Error('Failed to fetch dynamically imported module')) : ui.loadOverlay(lang),
+  }
+})
+const dispatch = vi.fn()
 
 const { useZettelDruck } = await import('./useZettelDruck')
 
@@ -58,7 +70,7 @@ function zeige() {
   function Buehne() {
     const store = useStaticStore(state)
     return (
-      <AppDispatchContext.Provider value={vi.fn()}>
+      <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
             {/* Die erste Stelle druckt nie — sie hört aber als erste auf „afterprint". */}
@@ -75,6 +87,8 @@ function zeige() {
 beforeEach(() => {
   window.print = vi.fn()
   linksAusstellen.mockClear()
+  dispatch.mockClear()
+  nachladen.kaputt = false
 })
 afterEach(() => {
   cleanup()
@@ -107,7 +121,7 @@ describe('Zettel drucken neben einer zweiten Stelle', () => {
                 personId,
                 url: 'https://versammlung.app/#anmelden=x',
                 zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-                code: 'K7RD-2QWM',
+                code: 'K7RD 2QWM',
                 gueltigBis: '2026-11-14T09:00:00.000Z',
               })),
               fehler: false,
@@ -124,6 +138,32 @@ describe('Zettel drucken neben einer zweiten Stelle', () => {
     })
     expect(window.print).not.toHaveBeenCalled()
     expect(document.documentElement.dataset.print).toBeUndefined()
+  })
+
+  /*
+   * Ein neuer Link ersetzt den alten samt Zettel. Stellte der Druck erst aus
+   * und lüde dann nach, wären beim Fehlen des Teils die Links ersetzt, gedruckt
+   * wäre nichts, und es käme keine Meldung.
+   */
+  it('lässt sich nicht nachladen, was der Druck braucht, wird kein Link ersetzt — und es steht da', async () => {
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      nachladen.kaputt = true
+      const { getByText } = zeige()
+      fireEvent.click(getByText('drucken'))
+      await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: dict('de').linkFehler }))
+      expect(linksAusstellen).not.toHaveBeenCalled()
+      expect(window.print).not.toHaveBeenCalled()
+    } finally {
+      fehler.mockRestore()
+    }
+  })
+
+  it('Gegenprobe: lädt es, wird ausgestellt und gedruckt', async () => {
+    const { getByText } = zeige()
+    fireEvent.click(getByText('drucken'))
+    await waitFor(() => expect(window.print).toHaveBeenCalled())
+    expect(linksAusstellen).toHaveBeenCalledWith(['p-a'])
   })
 
   it('der Druck einer anderen Seite (S-89) lässt sie in Ruhe', async () => {

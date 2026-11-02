@@ -261,6 +261,9 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
+  // Die Uhr des Servers vor der Testwoche: Mit der echten wäre sie vorbei, und
+  // „heute" aus der App glaubt er nur bis auf einen Tag (`heuteUtc`).
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date(`${HEUTE}T10:00:00Z`) })
   authUser = U_ME
   week = freshWeek()
   stand = '2026-09-01T10:00:00.000000+00:00'
@@ -276,6 +279,10 @@ beforeEach(() => {
   resetPush()
 })
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 /** Ruft die Function so auf, wie es die App tut. */
 function call(body: unknown, opts?: { auth?: string | null }): Promise<Response> {
   if (opts && 'auth' in opts) authUser = opts.auth ?? null
@@ -288,10 +295,14 @@ function call(body: unknown, opts?: { auth?: string | null }): Promise<Response>
   )
 }
 
+/** Der Kalendertag des Geräts, wie die App ihn mitschickt — vor der Testwoche. */
+const HEUTE = '2026-09-01'
+
 const take = (extra?: Record<string, unknown>) => ({
   action: 'take',
   congregationId: CONG,
   taskKey: KEY,
+  heute: HEUTE,
   ...extra,
 })
 
@@ -817,6 +828,58 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     // auch den Ersatz (4.10.2026).
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER, U_ZUTEILER]))
+  })
+})
+
+/*
+ * **Einspringen nach derselben Regel, nach der die App anbietet**
+ * (`uebernahmeHindernis`). `take` prüfte nur den Bereich: Wer an dem Tag
+ * abwesend war, wer schon auf dem anderen Platz desselben Dienstes stand oder
+ * wer für gestern tippte, kam durch — die App hätte ihm das Gesuch gar nicht
+ * gezeigt.
+ */
+describe('substitute: take prüft, was die App beim Anbieten prüft', () => {
+  it('wer an dem Tag abwesend ist → 409 absent, nichts geschrieben', async () => {
+    const res = await call(take(), { auth: U_ABSENT })
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'absent' })
+    expect(writes).toEqual([])
+  })
+
+  it('wer schon auf dem anderen Platz des Dienstes steht → 403 not-offered', async () => {
+    ;(week as { mid: { helpers: Record<string, unknown[]> } }).mid.helpers[SVC]!.push({ name: 'Ich Selbst', pid: 'p-me' })
+    const res = await call(take())
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'not-offered' })
+    expect(writes).toEqual([])
+  })
+
+  it('für eine Zusammenkunft, die vorbei ist → 409 past', async () => {
+    vi.setSystemTime(new Date('2026-09-09T10:00:00Z'))
+    const res = await call(take({ heute: '2026-09-09' }))
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({ error: 'past' })
+    expect(writes).toEqual([])
+  })
+
+  it('ein zweiter Aufruf nach dem eigenen Übernehmen: nichts zu tun — über die Id, nicht den Namen', async () => {
+    ;(week as { mid: { helpers: Record<string, unknown[]> } }).mid.helpers[SVC]![0] = { name: 'Ich Selbst (alt)', pid: 'p-me' }
+    const res = await call(take())
+    await expect(res.json()).resolves.toEqual({ ok: true, already: true })
+    expect(writes).toEqual([])
+  })
+})
+
+describe('substitute: seek erreicht, wer übernehmen dürfte', () => {
+  it('wer schon auf dem anderen Platz des Dienstes steht, bekommt das Gesuch nicht', async () => {
+    const vorher = await call({ action: 'seek', taskKey: KEY }, { auth: U_ORIG })
+    const alle = ((await vorher.json()) as { notified: number }).notified
+    writes = []
+    ;(week as { mid: { helpers: Record<string, unknown[]> } }).mid.helpers[SVC]!.push({ name: 'Ich Selbst', pid: 'p-me' })
+    const res = await call({ action: 'seek', taskKey: KEY }, { auth: U_ORIG })
+    const zeilen = (writesTo('notifications').find((w) => w.method === 'POST')?.body ?? []) as { user_id: string }[]
+    expect(zeilen.map((z) => z.user_id)).not.toContain(U_ME)
+    expect(((await res.json()) as { notified: number }).notified).toBe(alle - 1)
   })
 })
 

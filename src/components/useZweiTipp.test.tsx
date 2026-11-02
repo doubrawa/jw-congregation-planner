@@ -67,3 +67,51 @@ describe('useZweiTipp: die Sperre nach dem Schärfen', () => {
     expect(tun).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('useZweiTipp: daneben getippt', () => {
+  /*
+   * Safari am iPhone gibt einem angetippten Knopf keinen Fokus — `blur` kommt
+   * dort nie. Ohne eigenes Lauschen stünde der Knopf scharf, während man längst
+   * woanders tippt, und ein späterer Tipp auf ihn löschte ohne Frage.
+   */
+  function MitNachbar({ tun, abschirmen = false }: { tun: () => void; abschirmen?: boolean }) {
+    return (
+      <>
+        <Knopf tun={tun} />
+        <p onPointerDown={abschirmen ? (e) => e.stopPropagation() : undefined}>daneben</p>
+      </>
+    )
+  }
+
+  it('ein Tipp neben den Knopf entschärft ihn — der nächste Tipp fragt wieder', () => {
+    const tun = vi.fn()
+    const { getByRole, getByText } = render(<MitNachbar tun={tun} />)
+    uhr(10_000)
+    fireEvent.click(getByRole('button'))
+    fireEvent.pointerDown(getByText('daneben'))
+    expect(getByRole('button').textContent).toBe('Löschen')
+
+    uhr(10_000 + ZWEI_TIPP_SPERRE_MS)
+    fireEvent.click(getByRole('button'))
+    expect(tun).not.toHaveBeenCalled()
+    expect(getByRole('button').textContent).toBe('Wirklich?')
+  })
+
+  it('auch neben einem Ziel, das das Ereignis nicht weiterreicht', () => {
+    const { getByRole, getByText } = render(<MitNachbar tun={vi.fn()} abschirmen />)
+    fireEvent.click(getByRole('button'))
+    fireEvent.pointerDown(getByText('daneben'))
+    expect(getByRole('button').textContent).toBe('Löschen')
+  })
+
+  it('ein Tipp auf den Knopf selbst lässt ihn scharf', () => {
+    const tun = vi.fn()
+    const { getByRole } = render(<MitNachbar tun={tun} />)
+    uhr(10_000)
+    fireEvent.click(getByRole('button'))
+    fireEvent.pointerDown(getByRole('button'))
+    uhr(10_000 + ZWEI_TIPP_SPERRE_MS)
+    fireEvent.click(getByRole('button'))
+    expect(tun).toHaveBeenCalledTimes(1)
+  })
+})

@@ -112,6 +112,39 @@ describe('Gesprächspartner richtet sich nach dem Führer DESSELBEN Raums', () =
   })
 })
 
+/*
+ * **Die Regel gilt in beiden Richtungen.** Steht der Partner schon da, muss der
+ * Führer zu ihm passen — sonst bot das Blatt zur Schwester als Partnerin einen
+ * Bruder als Führer an, nur weil der Führer-Platz zuletzt besetzt wurde.
+ */
+describe('Gesprächsführer richtet sich nach dem schon eingeteilten Partner', () => {
+  /** Der Führer-Platz offen, der Partner besetzt — in beiden Räumen mit derselben Person. */
+  function mitPartner(partner: Person): KandidatenDaten {
+    const w = wocheMitKlasse('', '')
+    const item = w.mid.sections[0]!.items[0] as PartItem
+    item.names[1] = { ...item.names[1]!, name: `${partner.fn} ${partner.ln}`, pid: partner.id }
+    return daten([w])
+  }
+  const fuehrerSlot: SlotSelection = {
+    kind: 'part', wi: 0, tab: 'mid', si: 0, ii: 0, ni: 0, priv: 'schulung', groups: false, label: 'Gespräche beginnen',
+  }
+
+  it('zur Partnerin nur Schwestern als Führerin', () => {
+    expect(wer(fuehrerSlot, mitPartner(SCHWESTER_D))).toEqual(['Clara Cohn', 'Dora Dietz'])
+  })
+
+  it('zum Partner nur Brüder', () => {
+    expect(wer(fuehrerSlot, mitPartner(BRUDER_B))).toEqual(['Anton Alt', 'Bernd Brand'])
+  })
+
+  it('aus demselben Haushalt auch geschlechtsübergreifend', () => {
+    const ehemann = { ...BRUDER_A, fam: 'h1' }
+    const ehefrau = { ...SCHWESTER_D, fam: 'h1' }
+    const s = { ...mitPartner(ehefrau), persons: [ehemann, BRUDER_B, SCHWESTER_C, ehefrau] }
+    expect(wer(fuehrerSlot, s)).toEqual(['Anton Alt', 'Clara Cohn', 'Dora Dietz'])
+  })
+})
+
   it('der Führer wird über seine Id erkannt, nicht über seinen Namen', () => {
     /*
       Zwei Gleichnamige verschiedenen Geschlechts — bis T110 möglich, seither
@@ -443,6 +476,16 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     // (`fsLeiterZuteilung`).
     const gast = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst', lext: true } : i))
     expect(liste('a', fsDaten(gast)).find((c) => c.key === 'l1')?.today).toEqual([])
+  })
+
+  it('über die Id: Ein Gleichnamiger leitet nicht, was der andere leitet', () => {
+    // Trägt der Treffpunkt die Id des Leiters, entscheidet sie (`gehoertZu`);
+    // am Namen allein galt sein Namensvetter als „schon heute dran".
+    const fremd = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst', lpid: 'l-anderer' } : i))
+    expect(liste('a', fsDaten(fremd)).find((c) => c.key === 'l1')?.today).toEqual([])
+    // Gegenprobe: mit seiner eigenen Id ist er dran — auch wenn der Name anders geschrieben steht.
+    const eigen = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'E. Ernst', lpid: 'l1' } : i))
+    expect(liste('a', fsDaten(eigen)).find((c) => c.key === 'l1')?.today.map((h) => h.text)).toEqual([`14:00 · ${DE.fsVers}`])
   })
 
   it('ohne „zuletzt" und ohne Punkte — Treffpunkte zählt die Automatik anders', () => {

@@ -80,8 +80,8 @@ import {
   restKlient,
   versammlungHolen,
   WOCHENTAG_NAMEN,
+  wocheSchreiben,
   zugangsdaten,
-  zusagenLoeschen,
 } from './gemeinsam.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { mondayOf, uuid5 } from './wochenplanung-importieren.mjs'
@@ -366,7 +366,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`NWS: ${treffpunkte.length} Treffpunkte in ${jeWoche.size} Wochen.`)
 
   // Wechselt ein Leiter, verfällt die Zusage seines Vorgängers — dieselbe Regel
-  // wie in der App (`fsVerwaisteZusagen`, siehe `zusagenLoeschen`). Wie weit
+  // wie in der App (`fsVerwaisteZusagen`, siehe `wocheSchreiben`). Wie weit
   // zurück, ebenso (T125).
   appCodeBereit()
   const [{ fsVerwaisteZusagen }, { aufbewahrtAb, VERTEILUNG_WOCHEN }] = await Promise.all([
@@ -377,8 +377,10 @@ export async function main(argv = process.argv.slice(2)) {
 
   const wochen = await rest(`weeks?select=start&congregation_id=eq.${cong}&start=gte.${ab}`)
   const bekannteWochen = new Set(wochen.map((w) => w.start))
-  const fsRows = await rest(`fs_weeks?select=start,data&congregation_id=eq.${cong}&start=gte.${ab}`)
+  // Mit dem Stand: Geschrieben wird nur, solange die Woche noch so dasteht (`wocheSchreiben`).
+  const fsRows = await rest(`fs_weeks?select=start,data,updated_at&congregation_id=eq.${cong}&start=gte.${ab}`)
   const fsNachStart = new Map(fsRows.map((r) => [r.start, r.data ?? []]))
+  const fsStand = new Map(fsRows.map((r) => [r.start, r.updated_at]))
   console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen ab ${ab}.`)
 
   const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
@@ -394,7 +396,7 @@ export async function main(argv = process.argv.slice(2)) {
     for (const k of Object.keys(summe)) summe[k] += z[k]
     if (z.geaendert) {
       const verfallen = fsVerwaisteZusagen(vorher, z.insts, montag)
-      geschrieben.push({ montag, insts: z.insts, neu: !fsNachStart.has(montag), z, verfallen })
+      geschrieben.push({ montag, insts: z.insts, stand: fsStand.get(montag) ?? null, z, verfallen })
     }
   }
   const verfallen = geschrieben.reduce((n, g) => n + g.verfallen.length, 0)
@@ -429,23 +431,10 @@ export async function main(argv = process.argv.slice(2)) {
     return
   }
 
-  // Erst die Woche, dann die verfallenen Zusagen: Scheitert das Schreiben,
-  // bleiben sie, wie in der App.
+  // Die Woche und die verfallenen Zusagen in einer Transaktion — wie in der
+  // App. Ohne Stand legt der Aufruf die Woche an.
   for (const g of geschrieben) {
-    if (g.neu) {
-      await rest('fs_weeks', {
-        method: 'POST',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ congregation_id: cong, start: g.montag, data: g.insts }),
-      })
-    } else {
-      await rest(`fs_weeks?congregation_id=eq.${cong}&start=eq.${g.montag}`, {
-        method: 'PATCH',
-        headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ data: g.insts }),
-      })
-    }
-    await zusagenLoeschen(rest, cong, g.verfallen)
+    await wocheSchreiben(rest, { tabelle: 'fs_weeks', cong, start: g.montag, stand: g.stand, data: g.insts, verfallen: g.verfallen })
   }
   console.log(`\nGeschrieben: ${geschrieben.length} Treffpunkt-Wochen aktualisiert.`)
   if (verfallen) console.log(`${verfallen} Zusagen gelöscht — ihr Treffpunkt hat einen anderen Leiter.`)

@@ -34,7 +34,17 @@
  * Namen hinter der Grenze bleiben absichtlich stehen.
  */
 
-import { isGuestRole, isSong, programmPlaetze, raeume, slotsOf, type ProgrammPlatz } from './helpers'
+import {
+  isGuestRole,
+  isSong,
+  isSpeakerRole,
+  programmPlaetze,
+  raeume,
+  rolleMitHerkunft,
+  serviceQualKey,
+  slotsOf,
+  type ProgrammPlatz,
+} from './helpers'
 import {
   helferKey,
   punktKey,
@@ -160,6 +170,44 @@ export function platzKey(platz: Platz, woche: string, tab: MeetingKey): string {
       return ratgeberKey(woche, tab)
     case 'helper':
       return helferKey(woche, tab, platz.svc.key, platz.pos)
+  }
+}
+
+/**
+ * **Die Auswahl zu einem Platz** — wie das Zuteilen-Blatt sie braucht: die
+ * Stelle, die nötige Qualifikation, die Gruppen-Rotation, das Freitext-Feld
+ * für Redner und die Beschriftung, kanonisch (übersetzt wird beim Anzeigen).
+ *
+ * Eine Stelle für jede Fläche, die das Blatt öffnet — das Programm, die
+ * Hilfsdienste, den Ratgeber und „Zuteilen" in den Zusagen der Woche. Fünf
+ * Abschriften liefen auseinander: Die aus den Zusagen öffnete das Blatt ohne
+ * Qualifikation, und angeboten wurde jeder.
+ */
+export function auswahlFuer(platz: Platz, wi: number, tab: MeetingKey): MeetingSlotSelection {
+  switch (platz.art) {
+    case 'ratgeber':
+      // Die Beschriftung setzt das Blatt — Raum und Rolle in der Sprache des Lesers.
+      return { kind: 'ratgeber', wi, tab, label: '', priv: 'ratgeber', groups: false }
+    case 'helper': {
+      const gruppe = Boolean(platz.svc.groups)
+      return {
+        kind: 'helper', wi, tab, svc: platz.svc.key, pos: platz.pos,
+        label: platz.svc.name, priv: gruppe ? null : serviceQualKey(platz.svc.key), groups: gruppe,
+      }
+    }
+    case 'programm':
+      return {
+        kind: 'part', wi, tab, si: platz.si, ii: platz.ii, ni: platz.ni,
+        ...(platz.aux ? { aux: true } : {}),
+        label: platz.item.title,
+        labelRolle: rolleMitHerkunft(platz.slot),
+        priv: platz.slot.bereichsKey ?? null,
+        groups: false,
+        // `isSpeakerRole`, nicht `isGuestRole`: Das Flag öffnet die
+        // Freitext-Felder und muss deshalb auch beim **eigenen** Redner gesetzt
+        // sein — sonst gäbe es keinen Weg zurück zum Gastredner (T29).
+        guest: isSpeakerRole(platz.slot.rolle),
+      }
   }
 }
 

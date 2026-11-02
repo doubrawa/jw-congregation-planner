@@ -283,7 +283,11 @@ Gesprächsteil kannst du den Partner bei Bedarf hinzufügen oder entfernen
 (entfernen mit zwei Tipps). Für den Gesprächspartner
 werden nur Personen mit demselben Geschlecht vorgeschlagen – **oder
 Familienangehörige** (siehe „Familie" im Personen‑Detail), die auch
-geschlechtsübergreifend zusammen eingeteilt werden dürfen. Wer nur als Partner
+geschlechtsübergreifend zusammen eingeteilt werden dürfen. Das gilt in beide
+Richtungen: Steht der Partner schon fest, schlägt die App als Gesprächsführer
+nur vor, wer zu ihm passt. Passt ein Paar trotzdem nicht zusammen, nennt es die
+Planung unter den Konflikten, und am Platz des Partners steht **Passt nicht als
+Paar** (siehe [Konflikte](#4-konflikte-und-offene-zuteilungen)). Wer nur als Partner
 (nicht als Gesprächsführer) eingeteilt werden soll, bekommt in den Personendaten
 den Bereich **„Schulungsaufgaben Partner"**. Die automatische Zuteilung setzt
 Gesprächsteile bevorzugt mit Verkündigern und Schwestern (nicht mit Ältesten/
@@ -559,8 +563,10 @@ Die Planen‑Seite weist dich aktiv auf Handlungsbedarf hin: In der Karte
 klären ist – eine Zeile je Punkt, in dieser Reihenfolge:
 
 - **Konflikte** (roter Punkt) – „Person ist abwesend, aber eingeteilt",
-  Doppelbelegungen und „Hilfsdienst und Aufgabe am selben Tag", die
-  Abwesenheiten zuerst. Es steht nur da, was so nicht bleiben kann; dass jemand
+  Doppelbelegungen, „Hilfsdienst und Aufgabe am selben Tag" und ein
+  Gesprächspartner, der nicht zum Gesprächsführer passt (verschiedenes
+  Geschlecht, keine Familie), die Abwesenheiten zuerst. Es steht nur da, was so
+  nicht bleiben kann; dass jemand
   mehrere Wochen hintereinander drankommt, meldet die App nicht – in einer
   kleinen Versammlung ist das der Normalfall, und die Meldung verdeckte die
   wichtigen daneben.
@@ -584,7 +590,7 @@ Ist nichts zu klären, steht nur die Besetzung da.
 > wenn sie stimmt.
 
 Die genannten Zuteilungen **stehen im Programm darunter rot da**, rechts der
-Grund („Abwesend", „An diesem Tag schon") – in beiden Zusammenkünften, in der
+Grund („Abwesend", „An diesem Tag schon", „Passt nicht als Paar") – in beiden Zusammenkünften, in der
 Zusätzlichen Klasse und bei den Hilfsdiensten. Die Treffpunkte haben ihre
 eigene Liste der Konflikte über dem Plan; dort heben sich die Genannten mit
 kräftigem Rand und einem Punkt davor ab. Du musst den Namen also nicht suchen:
@@ -989,7 +995,8 @@ gilt, nennt seine Häufigkeit. Ein Tipp öffnet den Treffpunkt: Wochentag,
 Häufigkeit, Uhrzeit und Ort gelten sofort, bei einer Gruppe auch **Außer bei
 Versammlungstreffpunkt**; **Entfernen** fragt vorher nach. **+ Treffpunkt für
 jede Woche** legt einen neuen an — erst mit **Hinzufügen**, ohne Ort im Saal
-eurer Versammlung. Jede Änderung setzt die Wochenpläne neu auf.
+eurer Versammlung. Jede Änderung setzt die Wochenpläne neu auf – **ab der
+laufenden Woche**; vergangene Wochen bleiben, wie sie stattgefunden haben.
 
 Unter **Treffpunkte** steht die gewählte Woche: je Tag eine Karte, darin jeder
 Treffpunkt mit Uhrzeit, Titel und Ort und darunter sein **Leiter**. Der Leiter
@@ -1283,7 +1290,11 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
   **Code eintippen**. Link und Code gelten **ein Jahr** – so lange meldet sich
   die Person damit jederzeit selbst wieder an. **Jeder neue Link ersetzt den
   vorigen:** Druckst du nach der Nachricht noch einen Zettel, gilt der Text in
-  der Nachricht nicht mehr – und umgekehrt.
+  der Nachricht nicht mehr – und umgekehrt. Der Code steht in zwei
+  Vierergruppen da; die Lücke dazwischen tippt niemand mit.
+- **Meldet sich ein Gerät bei einem schon bestehenden Konto an**, erfährt das
+  Konto davon: als Mitteilung **Neue Anmeldung** und per Push auf seinen
+  anderen Geräten. So bleibt auch ein neu ausgestellter Link nicht unbemerkt.
 - **Aufgabenbereiche** – als Chips, was die Person übernehmen darf, nach
   Gruppen geordnet. **Ändern** öffnet die Schalter (siehe
   [Aufgabenbereiche](#aufgabenbereiche)).
@@ -1748,7 +1759,7 @@ Ein Tipp auf eine Gruppe öffnet das Blatt **Predigtdienstgruppe**:
   auf diese Gruppe zutrifft:
   - „Die Mitglieder dieser Gruppe sind danach keiner Gruppe mehr zugeordnet."
   - „Die Treffpunkte dieser Gruppe entfallen." – im Grundplan wie in den
-    geplanten Wochen.
+    geplanten Wochen ab der laufenden; in den vergangenen bleiben sie stehen.
   - „Ihre Gruppenbesuche entfallen."
   - „In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe."
 
@@ -1798,7 +1809,10 @@ Bei der **Letzten Erinnerung** wählst du **Am Tag** oder **1 Tag vorher**. Stan
 dort noch ein Wert von früher (2 bis 7 Tage), erscheint er als dritte
 Möglichkeit, bis du umstellst. Ab der Aufgabe selbst meldet sich die App nicht
 mehr. Erinnert wird nur, wer weder zu- noch abgesagt hat – per Push und in der
-Glocke, nie per E‑Mail. Wer am Tag der letzten Erinnerung noch offen ist und
+Glocke, nie per E‑Mail – und nur an einen Platz, den **Plan senden** ihm schon
+gemeldet hat: Wer von einem Platz nichts weiß, soll ihn auch nicht bestätigen
+müssen. Besetzt du einen Platz nach dem Senden neu, wartet die Erinnerung an
+ihn auf das nächste **Plan senden**. Wer am Tag der letzten Erinnerung noch offen ist und
 keine Push-Benachrichtigungen bekommt, wird dir und den anderen Admins und
 Planern gemeldet, damit ihr ihn persönlich erinnert.
 
@@ -1857,6 +1871,8 @@ Ist er eingeschaltet, ändert sich Folgendes:
 
 **Ausschalten behält deine Planung.** Die Zuteilungen der Klasse bleiben
 gespeichert und sind wieder da, sobald du den Schalter erneut einschaltest.
+Ein- und Ausschalten wirkt **ab der laufenden Woche**; vergangene Wochen
+bleiben, wie sie stattgefunden haben.
 Solange er aus ist, gibt es die Klasse aber wirklich nicht: Sie steht weder im
 Programm noch im Ausdruck, zählt nicht zu den offenen Zuteilungen und es geht
 keine Erinnerung dafür hinaus. Neu einzuteilen ist nach dem Wiedereinschalten

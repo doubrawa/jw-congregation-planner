@@ -166,8 +166,10 @@ describe('Ausfall: es kommt niemand zusammen', () => {
     const abgesagt = { [helferKey('2026-09-07', 'mid', 'mik', 0)]: 'verhindert' as const }
 
     // Gegenprobe zuerst: findet die Zusammenkunft statt, gibt es das Gesuch.
-    expect(deriveSubstituteReqs([makeWeek()], dienste, abgesagt, einspringer, ZEITEN)).toHaveLength(1)
-    expect(deriveSubstituteReqs([aus()], dienste, abgesagt, einspringer, ZEITEN)).toEqual([])
+    // Mit einem Heute davor — sonst wäre sie vorbei, und beides bliebe leer.
+    const vorher = new Date('2026-09-01T08:00:00')
+    expect(deriveSubstituteReqs([makeWeek()], dienste, abgesagt, einspringer, ZEITEN, undefined, vorher)).toHaveLength(1)
+    expect(deriveSubstituteReqs([aus()], dienste, abgesagt, einspringer, ZEITEN, undefined, vorher)).toEqual([])
   })
 
   it('lässt die Zuteilungen stehen — Zurücknehmen stellt die Planung wieder her', () => {

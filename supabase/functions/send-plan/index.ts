@@ -241,7 +241,7 @@ async function versenden(
   neu: OffenerPlatz[],
   kontoFuer: KontoFuer,
   empfaengerFuer: (uid: string) => Empfaenger,
-  personByName: ReadonlyMap<string, string>,
+  personIdFuer: (pid: string | undefined, name: string) => string | null,
 ): Promise<Response> {
   if (neu.length === 0) return json({ ok: true, personen: 0, aufgaben: 0, ohneKonto: [] })
 
@@ -259,7 +259,7 @@ async function versenden(
       congregation_id: cong,
       task_key: p.key,
       name: p.name,
-      person_id: p.pid ?? personByName.get(p.name) ?? null,
+      person_id: personIdFuer(p.pid, p.name),
       user_id: kontoFuer(p.pid, p.name) ?? null,
     })),
     // Was schon dasteht, bleibt stehen; der Rest kommt hinzu. Ohne das
@@ -514,13 +514,11 @@ async function wocheLesen(cong: string, weekStart: string): Promise<GeleseneWoch
     rest.get<ServiceRow[]>(
       `services?select=key,name,count,groups&congregation_id=eq.${wert(cong)}&order=position.asc`,
     ),
-    zeilenJePraefix<{ task_key: string; name: string }>(rest, cong, 'assignment_log', 'task_key,name', praefixe).catch((err) => {
-      // Fehlt das Tagebuch (Migration nicht eingespielt), würde ohne diesen
-      // Fang gar nichts hinausgehen. Lieber senden — schlimmstenfalls eine
-      // Wiederholung, nie ein Ausfall.
-      console.error(`assignment_log nicht lesbar: ${(err as Error).message}`)
-      return [] as { task_key: string; name: string }[]
-    }),
+    // Ohne Fang: Ist das Tagebuch nicht lesbar, scheitert der Aufruf, und der
+    // Planer versucht es noch einmal. Mit leerem Tagebuch schickte „Plan
+    // senden" allen dieselbe Nachricht erneut, und „Jetzt erinnern" fände
+    // niemanden, der von seinem Platz weiß — und meldete Erfolg.
+    zeilenJePraefix<{ task_key: string; name: string }>(rest, cong, 'assignment_log', 'task_key,name', praefixe),
   ])
   const week = weekRows[0]?.data
   if (!week) return null
@@ -585,7 +583,19 @@ Deno.serve(async (req: Request) => {
     // Konto einer eingeteilten Person — Id zuerst, Name nur ohne Id (siehe
     // `_shared/konten.ts`).
     const kontoFuer = kontoAufloeser(members, persons)
+    const personIds = new Set(persons.map((p) => p.id))
     const personByName = new Map(persons.map((p) => [personDisplayName(p.fn, p.ln), p.id]))
+    /*
+     * Die Person eines Platzes für das Tagebuch — Id vor Name, und eine Id, die
+     * es nicht mehr gibt, ist keine: `assignment_log.person_id` ist ein
+     * Fremdschlüssel. Eine gelöschte Person, deren Id noch in der Woche steht,
+     * wiese sonst den ganzen Stapel ab; das Tagebuch bliebe leer, der nächste
+     * Druck schickte allen dieselbe Nachricht noch einmal, und erinnert würde
+     * an nichts. Der Name allein entscheidet nur ohne Id — sonst träfe er einen
+     * Namensvetter.
+     */
+    const personIdFuer = (pid: string | undefined, name: string): string | null =>
+      pid ? (personIds.has(pid) ? pid : null) : (personByName.get(name) ?? null)
     const subsByUser = abosJeKonto(subs)
     const empfaengerFuer = (uid: string): Empfaenger => ({
       userId: uid,
@@ -615,22 +625,31 @@ Deno.serve(async (req: Request) => {
        * Zuteilung auf denselben Platz keine Nachricht mehr — der Platz zählte
        * als gemeldet. **Jeder** der Liste, nicht nur der erste.
        */
-      await Promise.all(
+      const geloescht = await Promise.all(
         entzuege.map((e) =>
-          rest.send(
+          rest.zeilenSchreiben<{ task_key: string; name: string }>(
             'DELETE',
             `assignment_log?congregation_id=eq.${wert(cong)}` +
-              `&task_key=eq.${wert(e.taskKey)}&name=eq.${wert(e.name)}`,
+              `&task_key=eq.${wert(e.taskKey)}&name=eq.${wert(e.name)}&select=task_key,name`,
           ),
         ),
       )
+      /*
+       * **Der Gruppenaufseher meldet nur, wer im Tagebuch stand.** Wem er den
+       * Entzug schickt, sagte sonst allein sein Rumpf — samt Bezeichnung und
+       * Termin, also jedem beliebigen eine Nachricht über einen Platz, von
+       * dem er nie wusste. Admin und Planer schreiben die Woche ohnehin; ihr
+       * Rumpf nennt auch, wer zugesagt hatte, ohne gemeldet zu sein.
+       */
+      const standen = new Set(geloescht.flatMap((zeilen) => zeilen ?? []).map((z) => tagebuchSchluessel(z.task_key, z.name)))
+      const melden = aufseherVon ? entzuege.filter((e) => standen.has(tagebuchSchluessel(e.taskKey, e.name))) : entzuege
 
       // Je Person **eine** Nachricht, wie beim „Plan senden": Wer beim
       // Umbesetzen einer Zusammenkunft zwei Plätze verliert, soll einmal
       // hinsehen müssen und nicht zweimal erschrecken.
       return await jePersonMelden(
         cong,
-        entzuege.map((e) => ({ ...e, art: 'entzug' as const })),
+        melden.map((e) => ({ ...e, art: 'entzug' as const })),
         kontoFuer,
         empfaengerFuer,
       )
@@ -677,7 +696,7 @@ Deno.serve(async (req: Request) => {
     // Was schon gemeldet wurde, bleibt liegen. Sonst schickte ein zweiter Druck
     // nach einer kleinen Nachbesserung allen dieselbe Nachricht erneut.
     const neu = zuSenden.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))
-    return await versenden(cong, neu, kontoFuer, empfaengerFuer, personByName)
+    return await versenden(cong, neu, kontoFuer, empfaengerFuer, personIdFuer)
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: die REST-Fehler tragen Pfad und
     // rohen PostgREST-Rumpf — beim Suchen nützlich und beim Angreifen genauso.

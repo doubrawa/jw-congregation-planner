@@ -75,6 +75,8 @@
   font-size: calc(19px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.08em;
+  /* Die Lücke zwischen den Vierergruppen so breit wie auf dem Zettel. */
+  word-spacing: 0.4em;
   text-align: center;
 }
 

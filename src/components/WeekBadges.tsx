@@ -12,18 +12,17 @@ import './components.css'
  * Hinweis, dass diese Zusammenkunft in dieser Woche **nicht stattfindet** (T30).
  *
  * Auch beim Gedächtnismahl steht er da: Das Datum des Mahls streicht die
- * Zusammenkunft, die es verdrängt (`setAnlassTermin`). Ein eigenes Banner
- * dafür gab es bis zum 16.10.2026 (`MemorialBanner`). Es hing an
- * `memCancel`, das kein Code setzte, und erschien deshalb nie.
+ * Zusammenkunft, die es verdrängt (`setAnlassTermin`).
  *
- * Der Text ist der Grund, den der Planer selbst eingetragen hat — seine Worte,
- * in seiner Sprache, wie ein Name oder ein Vortragsthema. Für „entfällt" gibt
- * es kein gemessenes Wort; ein erfundenes in jeder anderen Sprache wäre
- * schlechter als gar keines. Der Name der Zusammenkunft steht durchgestrichen davor, und das
- * ist unmissverständlich — auch ohne Satz.
+ * Zu sehen ist der Name der Zusammenkunft, durchgestrichen — das ist
+ * unmissverständlich, auch ohne Satz. Vorgelesen wird dazu „entfällt"
+ * (`druckEntfaellt`, dasselbe Wort wie auf dem Druckbogen): Das Durchstreichen
+ * liest kein Vorleseprogramm vor.
  *
- * Ohne Grund bleibt der durchgestrichene Name allein stehen. Das ist selten:
- * wer eine Zusammenkunft absagt, schreibt üblicherweise dazu, warum.
+ * Darunter steht der Grund, den der Planer selbst eingetragen hat — seine
+ * Worte, in seiner Sprache, wie ein Name oder ein Vortragsthema. Ohne Grund
+ * bleibt der durchgestrichene Name allein stehen; das ist selten, wer eine
+ * Zusammenkunft absagt, schreibt üblicherweise dazu, warum.
  */
 export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: MeetingKey }) {
   const { t } = useT()
@@ -33,6 +32,7 @@ export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: Meet
   return (
     <div className="ausfall-banner" role="status">
       <s className="ausfall-name">{name}</s>
+      <span className="sr-only"> {t.druckEntfaellt}</span>
       {grund && (
         <div className="ausfall-grund" dir="auto">
           {grund}

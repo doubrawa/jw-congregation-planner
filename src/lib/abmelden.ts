@@ -8,6 +8,7 @@
 
 import type { Dispatch } from 'react'
 import type { AppAction } from '../app/context'
+import { sitzungVergessen } from './gespeicherte-sitzung'
 import { pushAboLoesen } from './push-abo'
 import { schreibenAbwarten } from './schreiben-unterwegs'
 import { supabase } from './supabase'
@@ -31,16 +32,37 @@ export function performLogout(dispatch: Dispatch<AppAction>, { keineVersammlung 
   void sitzungBeenden()
 }
 
+/**
+ * Wie lange das Abmelden höchstens auf das Netz wartet, bevor die App die
+ * Sitzung selbst vom Gerät nimmt. Offline wartet auth-js bei jedem der Schritte
+ * bis zu 25 s auf ein neues Token (`gespeicherte-sitzung.ts`). So lange bliebe
+ * die Sitzung liegen, und wer die App inzwischen schließt, wäre beim nächsten
+ * Öffnen wieder angemeldet. Was bis dahin losging, trägt sein Token schon; was
+ * erst danach losginge, nähme die Datenbank nicht mehr an — offline ginge es
+ * ohnehin nicht hinaus.
+ */
+const NETZ_FRIST_MS = 5000
+
 async function sitzungBeenden(): Promise<void> {
   if (!supabase) return
+  const frist = setTimeout(sitzungVergessen, NETZ_FRIST_MS)
   try {
-    await pushAboLoesen()
-  } catch (err) {
-    // Ein Abo, das sich nicht lösen lässt, hält das Abmelden nicht auf.
-    console.error('[abmelden] Push-Abo', err)
+    try {
+      await pushAboLoesen()
+    } catch (err) {
+      // Ein Abo, das sich nicht lösen lässt, hält das Abmelden nicht auf.
+      console.error('[abmelden] Push-Abo', err)
+    }
+    // Was `logout` eben noch hinausgeschickt hat (`persist`), braucht die
+    // Sitzung bis zur Antwort — ohne sie wiese die Datenbank es ab (RLS).
+    await schreibenAbwarten()
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
+    // Offline mit abgelaufenem Token bleibt die Sitzung sonst auf dem Gerät.
+    if (error) {
+      console.error('[abmelden]', error.message)
+      sitzungVergessen()
+    }
+  } finally {
+    clearTimeout(frist)
   }
-  // Was `logout` eben noch hinausgeschickt hat (`persist`), braucht die
-  // Sitzung bis zur Antwort — ohne sie wiese die Datenbank es ab (RLS).
-  await schreibenAbwarten()
-  await supabase.auth.signOut({ scope: 'local' })
 }

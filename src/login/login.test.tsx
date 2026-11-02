@@ -47,13 +47,17 @@ vi.mock('../lib/anmelden', () => ({
   mitLinkAnmelden: (t: string) => mitLinkAnmelden(t),
 }))
 // Der Scanner braucht eine Kamera — hier steht er für das, was er meldet.
-const scanErgebnis = { text: '' }
+// `kaputt`: Er kommt nicht (Nachladen gescheitert) — wie ein Fehler beim Aufbauen.
+const scanErgebnis = { text: '', kaputt: false }
 vi.mock('./ZettelScanner', () => ({
-  default: ({ onGefunden }: { onGefunden: (text: string) => void }) => (
-    <button type="button" className="test-scan" onClick={() => onGefunden(scanErgebnis.text)}>
-      scan
-    </button>
-  ),
+  default: ({ onGefunden }: { onGefunden: (text: string) => void }) => {
+    if (scanErgebnis.kaputt) throw new Error('Failed to fetch dynamically imported module')
+    return (
+      <button type="button" className="test-scan" onClick={() => onGefunden(scanErgebnis.text)}>
+        scan
+      </button>
+    )
+  },
 }))
 
 const { LoginScreen } = await import('./LoginScreen')
@@ -88,6 +92,7 @@ beforeEach(() => {
   mitCodeAnmelden.mockClear().mockResolvedValue(null)
   mitLinkAnmelden.mockClear().mockResolvedValue(null)
   scanErgebnis.text = ''
+  scanErgebnis.kaputt = false
   window.history.replaceState(null, '', '/')
   anmeldeAdresseVergessen()
   // Eine Kamera „gibt es" — ob sie aufgeht, zeigt erst der Scanner.
@@ -185,29 +190,56 @@ describe('Mit Code anmelden', () => {
     return r
   }
 
-  it('erst vollständig wird gefragt, wem der Code gehört — und es steht da, bevor man anmeldet', async () => {
+  const weiter = (c: HTMLElement) => fireEvent.click(knopf(c, t.codeWeiter)!)
+  const getippt = (c: HTMLElement, wert: string) => fireEvent.change(codeFeld(c), { target: { value: wert } })
+
+  it('ein getippter Code wird erst auf „Weiter" geprüft — dann steht da, wem er gehört, bevor man anmeldet', async () => {
     const { container } = zumCode()
-    fireEvent.change(codeFeld(container), { target: { value: 'k7rd' } })
+    getippt(container, 'k7rd-2qwm')
+    // Nicht schon mit dem letzten Zeichen: Jeder unbekannte Code zählt beim
+    // Server als Fehlversuch, und die Grenze gilt für alle hinter derselben
+    // Adresse — im WLAN des Saals für alle darin.
+    await act(async () => {})
     expect(codePruefen).not.toHaveBeenCalled()
-    fireEvent.change(codeFeld(container), { target: { value: 'k7rd-2qwm' } })
+    weiter(container)
     await waitFor(() => expect(codePruefen).toHaveBeenCalledWith('K7RD2QWM'))
     await waitFor(() => expect(container.querySelector('.login-code-passt')?.textContent).toContain('Anna Alt'))
     expect(container.querySelector('.login-code-passt')?.textContent).toContain(fill(t.congLabel, { name: 'Musterstadt' }))
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
+    // Erst jetzt heißt der Knopf „Anmelden".
+    expect(knopf(container, t.codeWeiter)).toBeUndefined()
+    expect(knopf(container, t.anmeldenKnopf)).toBeDefined()
   })
 
   it('„Anmelden" meldet mit genau diesem Code an', async () => {
     const { container, dispatch } = zumCode()
-    fireEvent.change(codeFeld(container), { target: { value: 'K7RD2QWM' } })
+    getippt(container, 'K7RD2QWM')
+    weiter(container)
     await waitFor(() => expect(container.querySelector('.login-code-passt')).toBeTruthy())
     fireEvent.click(knopf(container, t.anmeldenKnopf)!)
     await waitFor(() => expect(mitCodeAnmelden).toHaveBeenCalledWith('K7RD2QWM'))
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true }))
   })
 
-  it('vor dem Prüfen meldet „Anmelden" nicht an', () => {
+  it('unvollständig fragt „Weiter" nicht und meldet nicht an', async () => {
     const { container } = zumCode()
-    fireEvent.click(knopf(container, t.anmeldenKnopf)!)
+    getippt(container, 'K7RD2QW')
+    weiter(container)
+    await act(async () => {})
+    expect(codePruefen).not.toHaveBeenCalled()
+    expect(mitCodeAnmelden).not.toHaveBeenCalled()
+  })
+
+  it('wer den geprüften Code danach ändert, lässt ihn neu prüfen', async () => {
+    const { container } = zumCode()
+    getippt(container, 'K7RD2QWM')
+    weiter(container)
+    await waitFor(() => expect(container.querySelector('.login-code-passt')).toBeTruthy())
+    getippt(container, 'K7RD 2QWA')
+    expect(container.querySelector('.login-code-passt')).toBeNull()
+    expect(knopf(container, t.anmeldenKnopf)).toBeUndefined()
+    weiter(container)
+    await waitFor(() => expect(codePruefen).toHaveBeenLastCalledWith('K7RD2QWA'))
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
   })
 
@@ -219,19 +251,21 @@ describe('Mit Code anmelden', () => {
   ] as const)('„%s" steht als Satz da', async (fehler, key) => {
     codePruefen.mockResolvedValue({ ok: false, fehler })
     const { container } = zumCode()
-    fireEvent.change(codeFeld(container), { target: { value: 'K7RD2QWM' } })
+    getippt(container, 'K7RD2QWM')
+    weiter(container)
     await waitFor(() => expect(container.querySelector('.feld-fehler')?.textContent).toBe(t[key]))
   })
 
-  it('scheitert die Prüfung am Netz, prüft „Anmelden" noch einmal — angemeldet wird erst danach (16.10.2026)', async () => {
-    // Bis dahin blieb der Knopf gesperrt: Der Satz bat um einen neuen Versuch,
-    // und keiner ging, ohne den Code neu zu tippen.
+  it('scheitert die Prüfung am Netz, fragt „Weiter" noch einmal — angemeldet wird erst danach', async () => {
+    // Bliebe der Knopf gesperrt, bäte der Satz um einen neuen Versuch, und
+    // keiner ginge, ohne den Code neu zu tippen.
     codePruefen.mockResolvedValueOnce({ ok: false, fehler: 'netz' })
     const { container, dispatch } = zumCode()
-    fireEvent.change(codeFeld(container), { target: { value: 'K7RD2QWM' } })
+    getippt(container, 'K7RD2QWM')
+    weiter(container)
     await waitFor(() => expect(container.querySelector('.feld-fehler')?.textContent).toBe(t.anmeldenFehler))
-    expect(knopf(container, t.anmeldenKnopf)!.getAttribute('aria-disabled')).toBeNull()
-    fireEvent.click(knopf(container, t.anmeldenKnopf)!)
+    expect(knopf(container, t.codeWeiter)!.getAttribute('aria-disabled')).toBeNull()
+    weiter(container)
     await waitFor(() => expect(container.querySelector('.login-code-passt')?.textContent).toContain('Anna Alt'))
     expect(codePruefen).toHaveBeenCalledTimes(2)
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
@@ -239,11 +273,13 @@ describe('Mit Code anmelden', () => {
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true }))
   })
 
-  it('ein Code aus der Adresse (QR-Code mit der Handy-Kamera) steht gleich im Feld — angemeldet wird erst auf den Knopf', async () => {
+  it('ein Code aus der Adresse (QR-Code mit der Handy-Kamera) steht gleich im Feld und wird gleich geprüft — angemeldet wird erst auf den Knopf', async () => {
+    // Gescannt gibt es keinen Tippfehler, der als Fehlversuch zählen könnte.
     window.history.replaceState(null, '', '/#code=K7RD2QWM')
     const { container } = zeige()
-    expect(codeFeld(container).value).toBe('K7RD-2QWM')
+    expect(codeFeld(container).value).toBe('K7RD 2QWM')
     await waitFor(() => expect(codePruefen).toHaveBeenCalledWith('K7RD2QWM'))
+    await waitFor(() => expect(knopf(container, t.anmeldenKnopf)).toBeDefined())
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
     // … und aus der Adresse ist er heraus: Ein Neuladen fragt nicht noch einmal.
     expect(window.location.hash).toBe('')
@@ -277,6 +313,56 @@ describe('Mit Code anmelden', () => {
   })
 })
 
+/*
+ * **Die Lücke im Code setzt das Feld selbst**: Auf dem Zettel stehen zwei
+ * Vierergruppen mit einer breiten Lücke, ohne Bindestrich — den hielte
+ * mancher für einen Teil des Codes und tippte ihn mit. Das Feld zeigt dieselbe
+ * Gliederung, und niemand muss sie tippen.
+ */
+describe('Das Feld gliedert den Code wie der Zettel', () => {
+  const feld = () => {
+    const r = zeige()
+    fireEvent.click(knopf(r.container, t.codeEintippen)!)
+    return codeFeld(r.container)
+  }
+  const tippe = (f: HTMLInputElement, wert: string) => {
+    fireEvent.change(f, { target: { value: wert } })
+    return f.value
+  }
+
+  it('mit dem vierten Zeichen steht die Lücke da, danach geht es dahinter weiter', () => {
+    const f = feld()
+    expect(tippe(f, 'k7r')).toBe('K7R')
+    expect(tippe(f, 'K7Rd')).toBe('K7RD ')
+    expect(tippe(f, 'K7RD 2')).toBe('K7RD 2')
+    expect(tippe(f, 'K7RD 2QWM')).toBe('K7RD 2QWM')
+  })
+
+  it('wer Bindestrich oder Lücke selbst tippt, bekommt keine zweite', () => {
+    const f = feld()
+    tippe(f, 'K7RD')
+    expect(tippe(f, 'K7RD -')).toBe('K7RD ')
+    expect(tippe(f, 'K7RD  ')).toBe('K7RD ')
+    expect(tippe(f, 'K7RD -2')).toBe('K7RD 2')
+  })
+
+  it('beim Löschen geht die Lücke mit, statt sich wieder einzusetzen', () => {
+    const f = feld()
+    tippe(f, 'K7RD')
+    expect(f.value).toBe('K7RD ')
+    expect(tippe(f, 'K7RD')).toBe('K7RD')
+    expect(tippe(f, 'K7R')).toBe('K7R')
+  })
+
+  it('Eingefügtes — mit Bindestrich, klein, mit Rand — steht danach wie auf dem Zettel', () => {
+    expect(tippe(feld(), ' k7rd-2qwm ')).toBe('K7RD 2QWM')
+  })
+
+  it('Zeichen, die es im Code nicht gibt (0, O, 1, I), erscheinen gar nicht erst', () => {
+    expect(tippe(feld(), 'K0O1I7')).toBe('K7')
+  })
+})
+
 describe('Zettel scannen', () => {
   const scannen = async (text: string) => {
     const r = zeige()
@@ -296,9 +382,10 @@ describe('Zettel scannen', () => {
     expect([...r.container.querySelectorAll('h1')].map((h) => h.textContent)).toEqual([t.zettelScannen])
   })
 
-  it('der QR-Code des Zettels füllt den Code — angemeldet wird erst auf den Knopf', async () => {
+  it('der QR-Code des Zettels füllt den Code und lässt ihn gleich prüfen — angemeldet wird erst auf den Knopf', async () => {
     const { container } = await scannen('https://versammlung.app/#code=K7RD2QWM')
-    expect(codeFeld(container).value).toBe('K7RD-2QWM')
+    expect(codeFeld(container).value).toBe('K7RD 2QWM')
+    await waitFor(() => expect(codePruefen).toHaveBeenCalledWith('K7RD2QWM'))
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
   })
 
@@ -313,6 +400,25 @@ describe('Zettel scannen', () => {
     const { dispatch } = await scannen('https://fremd.example/irgendwas')
     expect(mitLinkAnmelden).not.toHaveBeenCalled()
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.scanFremd })
+  })
+
+  it('kommt der Scanner nicht, bleibt das Eintippen — statt einer leeren Seite', async () => {
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      scanErgebnis.kaputt = true
+      const { container, dispatch } = zeige()
+      fireEvent.click(knopf(container, t.zettelScannen)!)
+      await waitFor(() => expect(codeFeld(container)).toBeTruthy())
+      expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.kameraFehlt })
+      expect(container.querySelector('h1')?.textContent).toBe(t.mitCodeAnmelden)
+      // Ein neuer Versuch, wenn er wieder da ist, öffnet ihn.
+      scanErgebnis.kaputt = false
+      fireEvent.click(knopf(container, t.a11yZurueck)!)
+      fireEvent.click(knopf(container, t.zettelScannen)!)
+      await waitFor(() => expect(container.querySelector('.test-scan')).toBeTruthy())
+    } finally {
+      fehler.mockRestore()
+    }
   })
 })
 

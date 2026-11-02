@@ -10,7 +10,9 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { codeVollstaendig, pruefsumme } from '../_shared/anmeldung.ts'
+import { anmeldeTexte, TEXT_NEUE_ANMELDUNG, TITEL_NEUE_ANMELDUNG } from '../anmelden/texte.ts'
 import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
+import { reset as pushZuruecksetzen, sent as gesendetePushes } from './web-push.stub.ts'
 
 const SUPABASE_URL = 'https://test.supabase.co'
 const CONG = 'cong-1'
@@ -42,7 +44,11 @@ let links: LinkRow[]
 let members: Array<{ user_id: string; congregation_id: string; person_id: string | null; planner: boolean; zuteiler: boolean; email: string }>
 /** Konten bei Supabase Auth: Id → Adresse. */
 let konten: Map<string, string>
-let fehlversuche: Array<{ ip: string; at: string }>
+let fehlversuche: Array<{ id: number; ip: string; at: string }>
+/** Kann `anmelde_versuch` buchen? Sonst antwortet die Datenbank mit einem Fehler. */
+let buchenKaputt: boolean
+let glocke: Array<Record<string, unknown>>
+let abos: Array<{ id: string; user_id: string; endpoint: string; p256dh: string; auth: string; lang: string | null }>
 let angelegt: Array<{ id: string; email: string; email_confirm: boolean }>
 /** Welcher `type` beim Einlösen gilt — neuere Fassungen von Auth nennen ihn „email". */
 let verifyTyp: 'magiclink' | 'email'
@@ -137,15 +143,28 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const ids = inListe(path, 'person_id')
     return jsonRes(members.filter((m) => (pid ? m.person_id === pid : ids.includes(m.person_id ?? ''))))
   }
-  if (path.startsWith('anmelde_fehlversuche')) {
-    if (method === 'POST') {
-      for (const z of body as Array<{ ip: string }>) fehlversuche.push({ ip: z.ip, at: new Date().toISOString() })
-      return new Response(null, { status: 201 })
-    }
+  // Wie `anmelde_versuch` in schema.sql: in der letzten Stunde zählen, dann buchen.
+  if (path.startsWith('rpc/anmelde_versuch')) {
+    if (buchenKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
+    const seit = Date.now() - 3600e3
+    const juengst = fehlversuche.filter((f) => new Date(f.at).getTime() >= seit)
+    if (juengst.filter((f) => f.ip === body.p_ip).length >= body.p_je_absender || juengst.length >= body.p_gesamt) return jsonRes([])
+    const id = (fehlversuche.at(-1)?.id ?? 0) + 1
+    fehlversuche.push({ id, ip: body.p_ip, at: new Date().toISOString() })
+    return jsonRes([{ id }])
+  }
+  if (path.startsWith('anmelde_fehlversuche') && method === 'DELETE') {
+    const id = Number(filterWert(path, 'id'))
+    fehlversuche = fehlversuche.filter((f) => f.id !== id)
+    return new Response(null, { status: 204 })
+  }
+  if (path.startsWith('notifications') && method === 'POST') {
+    glocke.push(...(body as Array<Record<string, unknown>>))
+    return new Response(null, { status: 201 })
+  }
+  if (path.startsWith('push_subscriptions')) {
     if (method === 'DELETE') return new Response(null, { status: 204 })
-    const ip = filterWert(path, 'ip')
-    const limit = Number(/[?&]limit=(\d+)/.exec(path)?.[1] ?? '1000')
-    return jsonRes(fehlversuche.filter((f) => !ip || f.ip === ip).slice(0, limit).map((_, i) => ({ id: i })))
+    return jsonRes(nurSpalten(abos.filter((a) => a.user_id === filterWert(path, 'user_id')), path))
   }
   return jsonRes([])
 }
@@ -191,6 +210,10 @@ beforeEach(async () => {
   members = [{ user_id: 'konto-bert', congregation_id: CONG, person_id: P_BERT, planner: false, zuteiler: true, email: '' }]
   konten = new Map([['konto-bert', 'bert-alt@example.org']])
   fehlversuche = []
+  buchenKaputt = false
+  glocke = []
+  abos = []
+  pushZuruecksetzen()
   angelegt = []
   verifyTyp = 'magiclink'
   verifyKaputt = false
@@ -314,8 +337,44 @@ describe('anmelden: mit dem Code vom Zettel', () => {
     expect(fehlversuche).toEqual([])
   })
 
+  it('ein richtiger Code zählt nicht als Fehlversuch — weder beim Prüfen noch beim Anmelden', async () => {
+    expect((await call({ aktion: 'code', code: CODE_ANNA, pruefen: true })).status).toBe(200)
+    expect((await call({ aktion: 'code', code: CODE_ANNA })).body.sitzung).toBeDefined()
+    expect(fehlversuche).toEqual([])
+  })
+
+  it('gleichzeitig geschickte falsche Codes kommen nicht an der Grenze vorbei', async () => {
+    // Bis dahin las die Function erst und trug danach ein: 30 Versuche auf
+    // einmal sahen alle eine leere Liste. Jetzt bucht jeder vorab.
+    fehlversuche = Array.from({ length: 18 }, (_, i) => ({ id: i + 1, ip: '203.0.113.7', at: new Date().toISOString() }))
+    const handler = await loadFn()
+    const versuch = () =>
+      handler(
+        new Request('https://fn.test/anmelden', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.7' },
+          body: JSON.stringify({ aktion: 'code', code: 'ZZZZ9999' }),
+        }),
+      )
+    const status = (await Promise.all(Array.from({ length: 6 }, versuch))).map((r) => r.status)
+    expect(status.filter((s) => s === 404)).toHaveLength(2)
+    expect(status.filter((s) => s === 429)).toHaveLength(4)
+    expect(fehlversuche.filter((f) => f.ip === '203.0.113.7')).toHaveLength(20)
+  })
+
+  it('lässt sich der Versuch nicht buchen, meldet nichts an und rät nichts (503)', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      buchenKaputt = true
+      expect(await call({ aktion: 'code', code: CODE_ANNA })).toEqual({ status: 503, body: { error: 'server-error' } })
+      expect(angelegt).toEqual([])
+    } finally {
+      err.mockRestore()
+    }
+  })
+
   it('nach 20 Fehlversuchen eines Absenders → 429, auch mit dem richtigen Code', async () => {
-    fehlversuche = Array.from({ length: 20 }, () => ({ ip: '203.0.113.7', at: new Date().toISOString() }))
+    fehlversuche = Array.from({ length: 20 }, (_, i) => ({ id: i + 1, ip: '203.0.113.7', at: new Date().toISOString() }))
     const r = await call({ aktion: 'code', code: CODE_ANNA })
     expect(r.status).toBe(429)
     expect(r.body.sitzung).toBeUndefined()
@@ -325,9 +384,82 @@ describe('anmelden: mit dem Code vom Zettel', () => {
   })
 
   it('nach 500 Fehlversuchen insgesamt → 429 für alle', async () => {
-    fehlversuche = Array.from({ length: 500 }, (_, i) => ({ ip: `198.51.100.${i % 250}`, at: new Date().toISOString() }))
+    fehlversuche = Array.from({ length: 500 }, (_, i) => ({ id: i + 1, ip: `198.51.100.${i % 250}`, at: new Date().toISOString() }))
     const r = await call({ aktion: 'code', code: CODE_ANNA }, { ip: '192.0.2.1' })
     expect(r.status).toBe(429)
+  })
+})
+
+/*
+ * **Eine weitere Anmeldung erfährt das Konto**: Ein neuer Link
+ * meldet am vorhandenen Konto an, und ausstellen kann ihn jeder Admin — ohne
+ * Meldung könnte er sich unbemerkt als jedes Mitglied anmelden.
+ */
+describe('anmelden: eine weitere Anmeldung erfährt das Konto', () => {
+  const BERT_LINK = 'B'.repeat(43)
+  const VAPID = { VAPID_PUBLIC_KEY: 'pub', VAPID_PRIVATE_KEY: 'priv' }
+
+  beforeEach(async () => {
+    links.push(await linkZeile(P_BERT, BERT_LINK, 'Q2LF6JXD'))
+  })
+
+  it('eine Anmeldung an einem bestehenden Konto steht in seiner Glocke — kanonisch deutsch, übersetzt wird beim Anzeigen', async () => {
+    expect((await call({ aktion: 'link', token: BERT_LINK })).body.sitzung).toBeDefined()
+    expect(glocke).toEqual([
+      { congregation_id: CONG, user_id: 'konto-bert', type: 'anmeldung', title: TITEL_NEUE_ANMELDUNG, body: TEXT_NEUE_ANMELDUNG },
+    ])
+  })
+
+  it('… und geht per Push an seine Geräte, in der Sprache jedes Geräts', async () => {
+    abos = [
+      { id: 'a1', user_id: 'konto-bert', endpoint: 'https://push.test/de', p256dh: 'k', auth: 'a', lang: null },
+      { id: 'a2', user_id: 'konto-bert', endpoint: 'https://push.test/en', p256dh: 'k', auth: 'a', lang: 'en' },
+      { id: 'a3', user_id: 'konto-fremd', endpoint: 'https://push.test/fremd', p256dh: 'k', auth: 'a', lang: null },
+    ]
+    await call({ aktion: 'link', token: BERT_LINK }, { env: VAPID })
+    const nachEndpunkt = new Map(gesendetePushes.map((p) => [p.endpoint, JSON.parse(p.payload) as { title: string; body: string; url: string }]))
+    expect([...nachEndpunkt.keys()].sort()).toEqual(['https://push.test/de', 'https://push.test/en'])
+    expect(nachEndpunkt.get('https://push.test/de')).toMatchObject({ title: TITEL_NEUE_ANMELDUNG, body: TEXT_NEUE_ANMELDUNG, url: 'https://app.test/#go=mitteilungen' })
+    expect(nachEndpunkt.get('https://push.test/en')).toMatchObject({ title: anmeldeTexte('en').titel, body: anmeldeTexte('en').text })
+  })
+
+  it('auch mit dem Code vom Zettel', async () => {
+    await call({ aktion: 'code', code: 'Q2LF6JXD' })
+    expect(glocke.map((z) => z.user_id)).toEqual(['konto-bert'])
+  })
+
+  it('Gegenprobe: die allererste Anmeldung meldet nichts — das ist das erste Gerät', async () => {
+    abos = [{ id: 'a1', user_id: P_ANNA, endpoint: 'https://push.test/anna', p256dh: 'k', auth: 'a', lang: null }]
+    expect((await call({ aktion: 'link', token: TOKEN_ANNA }, { env: VAPID })).body.sitzung).toBeDefined()
+    expect(glocke).toEqual([])
+    expect(gesendetePushes).toEqual([])
+    // Das zweite Gerät mit demselben Link dagegen schon.
+    await call({ aktion: 'link', token: TOKEN_ANNA }, { env: VAPID })
+    expect(glocke.map((z) => z.user_id)).toEqual([P_ANNA])
+  })
+
+  it('Gegenprobe: nur Prüfen meldet niemanden an und meldet deshalb auch nichts', async () => {
+    await call({ aktion: 'code', code: 'Q2LF6JXD', pruefen: true })
+    expect(glocke).toEqual([])
+  })
+
+  it('scheitert die Meldung, bleibt die Anmeldung gültig', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      abos = [{ id: 'a1', user_id: 'konto-bert', endpoint: 'https://push.test/de', p256dh: 'k', auth: 'a', lang: null }]
+      const handler = await loadFn(VAPID)
+      const echt = globalThis.fetch
+      ;(globalThis as Record<string, unknown>).fetch = (input: unknown, init?: RequestInit) =>
+        String(input).includes('push_subscriptions') ? Promise.reject(new Error('weg')) : echt(input as string, init)
+      const res = await handler(
+        new Request('https://fn.test/anmelden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aktion: 'link', token: BERT_LINK }) }),
+      )
+      expect(res.status).toBe(200)
+      expect(((await res.json()) as Antwort).sitzung).toBeDefined()
+      expect(err).toHaveBeenCalledWith('anmelden: Meldung', 'weg')
+    } finally {
+      err.mockRestore()
+    }
   })
 })
 

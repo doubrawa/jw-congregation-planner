@@ -88,8 +88,8 @@ import {
   personDisplayName,
   restKlient,
   versammlungHolen,
+  wocheSchreiben,
   zugangsdaten,
-  zusagenLoeschen,
 } from './gemeinsam.mjs'
 
 /* ===================== Stabile Identität (uuid5) ========================== */
@@ -676,7 +676,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   // Welche Plätze den Inhaber wechseln, rechnet die App selbst — deren Zusagen
-  // verfallen (siehe `zusagenLoeschen`). Wie weit zurück, ebenso (T125), und
+  // verfallen (siehe `wocheSchreiben`). Wie weit zurück, ebenso (T125), und
   // wer das Wachtturm-Studium leitet.
   appCodeBereit()
   const [{ changedSlotKeys, festenWtLeiterEintragen }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }] =
@@ -692,7 +692,8 @@ export async function main(argv = process.argv.slice(2)) {
   const appAbwesenheiten = abwesenheiten.map(zeilen.absenceFromRow)
   const zeiten = zeitenAus(versammlung)
 
-  const wochen = await rest(`weeks?select=start,data&congregation_id=eq.${cong}&start=gte.${ab}`)
+  // Mit dem Stand: Geschrieben wird nur, solange die Woche noch so dasteht (`wocheSchreiben`).
+  const wochen = await rest(`weeks?select=start,data,updated_at&congregation_id=eq.${cong}&start=gte.${ab}`)
   const nachStart = new Map(wochen.map((w) => [w.start, w]))
   console.log(`App: ${personen.length} Personen, ${wochen.length} importierte Wochen ab ${ab}.`)
 
@@ -745,7 +746,7 @@ export async function main(argv = process.argv.slice(2)) {
       const verfallen = MEETING_TABS.flatMap((tab) =>
         vorher[tab] && zeile.data[tab] ? changedSlotKeys(vorher[tab], zeile.data[tab], services, montag, tab) : [],
       )
-      geschrieben.push({ montag, data: zeile.data, z, wt: wt.eingetragen.length, verfallen })
+      geschrieben.push({ montag, stand: zeile.updated_at, data: zeile.data, z, wt: wt.eingetragen.length, verfallen })
     }
   }
 
@@ -791,16 +792,10 @@ export async function main(argv = process.argv.slice(2)) {
     return
   }
 
-  // 4) Zurückschreiben (nur veränderte Wochen) — und erst danach die Zusagen
-  //    der Plätze, die den Inhaber wechseln. Scheitert das Schreiben, bleiben
-  //    sie, wie in der App.
+  // 4) Zurückschreiben (nur veränderte Wochen), mit den Zusagen der Plätze,
+  //    die den Inhaber wechseln, in einer Transaktion — wie in der App.
   for (const g of geschrieben) {
-    await rest(`weeks?congregation_id=eq.${cong}&start=eq.${g.montag}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ data: g.data }),
-    })
-    await zusagenLoeschen(rest, cong, g.verfallen)
+    await wocheSchreiben(rest, { cong, start: g.montag, stand: g.stand, data: g.data, verfallen: g.verfallen })
   }
   console.log(`\nGeschrieben: ${geschrieben.length} Wochen aktualisiert.`)
   if (verfallen) console.log(`Zusagen an ${verfallen} geänderten Plätzen gelöscht (wo es welche gab).`)

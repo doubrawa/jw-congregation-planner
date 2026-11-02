@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAbsences } from './absence'
+import { buildAbsences, KEINE_ABWESENHEIT } from './absence'
 import { syncAuxSlots } from './aux-class'
 import {
   buildDemoWeeks,
@@ -493,6 +493,8 @@ describe('Auslastung', () => {
 })
 
 describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
+  /** Ein Tag vor der Testwoche — sonst wäre alles vorbei, und jeder Gegenfall bliebe aus dem falschen Grund leer. */
+  const VORHER = new Date('2026-09-01T08:00:00')
   const qualified = (svc: string): Person => ({
     id: 'meX', fn: 'Ersatz', ln: 'Person', role: 'dienstamtgehilfe', female: false,
     priv: { ...emptyQualifications(), [`svc:${svc}`]: true },
@@ -502,7 +504,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)
     expect(reqs).toHaveLength(1)
     expect(reqs[0]).toMatchObject({ svc: 'ton', declinedBy: 'A. Absager', key: helferKey('2026-09-07', 'mid', 'ton', 0) })
   })
@@ -511,14 +513,14 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'), STANDARD_ZEITEN)).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('mik'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toHaveLength(0)
   })
 
   it('nur „verhindert" zählt (bestätigt/offen nicht)', () => {
     const weeks = buildDemoWeeks()
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'bestätigt' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toHaveLength(0)
   })
 
   it('nennt, was ich an dem Tag schon habe — vor dem Zusagen', () => {
@@ -533,7 +535,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     mid.helpers.ton = [{ name: 'A. Absager' }]
     mid.helpers.mik = [{ name: displayName(ich) }, { name: '' }] // ich habe schon Mikrofon
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)
     expect(reqs).toHaveLength(1)
     expect(reqs[0]?.schonHeute.map((a) => a.text)).toContain('Mikrofone')
   })
@@ -543,7 +545,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
     const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, {
       [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const,
-    }, qualified('ton'), STANDARD_ZEITEN)
+    }, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)
     expect(reqs[0]?.schonHeute).toEqual([])
   })
 
@@ -560,7 +562,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     weeks[0]!.mid.helpers.ton = [{ name: displayName(ich), pid: 'p-namensvetter' }]
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
 
-    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN)
+    const reqs = deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)
     expect(reqs, 'das Gesuch des Namensvetters galt als das eigene').toHaveLength(1)
     expect(reqs[0]?.declinedBy).toBe(displayName(ich))
   })
@@ -569,14 +571,14 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const weeks = buildDemoWeeks()
     weeks[0]!.mid.helpers.ton = [{ name: 'Ersatz Person' }] // = displayName(me)
     const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toHaveLength(0)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toHaveLength(0)
   })
 
   // Gegenfälle vom 31.10.2026 — jeder neben dem Fall, in dem das Gesuch kommt.
   it('nicht für einen Gruppendienst: Die Reinigung übernimmt eine Gruppe, keine Person', () => {
     const weeks = buildDemoWeeks()
     const conf = { [helferKey('2026-09-07', 'mid', 'rein', 0)]: 'verhindert' as const }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('rein'), STANDARD_ZEITEN)).toEqual([])
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('rein'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toEqual([])
   })
 
   it('nicht für eine Woche, die nicht geladen ist — und nicht für einen Dienst, den es nicht mehr gibt', () => {
@@ -585,7 +587,7 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
       [helferKey('2099-01-05', 'mid', 'ton', 0)]: 'verhindert' as const,
       [helferKey('2026-09-07', 'mid', 'gibt-es-nicht', 0)]: 'verhindert' as const,
     }
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN)).toEqual([])
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toEqual([])
   })
 
   it('nicht für den, der in der Woche abwesend ist — am Tag danach schon', () => {
@@ -595,8 +597,29 @@ describe('deriveSubstituteReqs (Einspringen bei Hilfsdiensten)', () => {
     const ich = qualified('ton')
     const am = (from: string, to: string) => buildAbsences([{ id: 'a1', personId: ich.id, userId: null, from, to, reason: '' }], weeks, STANDARD_ZEITEN)
     // Die Zusammenkunft unter der Woche liegt am Dienstag, 8. September.
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-08', '2026-09-08'))).toEqual([])
-    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-09', '2026-09-10'))).toHaveLength(1)
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-08', '2026-09-08'), VORHER)).toEqual([])
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, am('2026-09-09', '2026-09-10'), VORHER)).toHaveLength(1)
+  })
+
+  /*
+   * Dieselbe Regel wie beim Server (`uebernahmeHindernis`) — sonst böte die
+   * App an, was `substitute` dann abweist.
+   */
+  it('nicht für gestern: Wer übernimmt, kommt zur Zusammenkunft', () => {
+    const weeks = buildDemoWeeks()
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }]
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    const danach = new Date('2026-09-09T08:00:00')
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, danach)).toEqual([])
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, qualified('ton'), STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toHaveLength(1)
+  })
+
+  it('nicht, wer im selben Dienst schon steht — ein zweiter Platz brächte niemanden dazu', () => {
+    const weeks = buildDemoWeeks()
+    const ich = qualified('ton')
+    weeks[0]!.mid.helpers.ton = [{ name: 'A. Absager' }, { name: displayName(ich), pid: ich.id }]
+    const conf = { [helferKey('2026-09-07', 'mid', 'ton', 0)]: 'verhindert' as const }
+    expect(deriveSubstituteReqs(weeks, DEMO_SERVICES, conf, ich, STANDARD_ZEITEN, KEINE_ABWESENHEIT, VORHER)).toEqual([])
   })
 })
 
@@ -1089,6 +1112,96 @@ describe('Konfliktprüfungen (Planen)', () => {
     } as unknown as Week
 
     expect(weekConflicts([week], 0, [person], [], 'mid')).toEqual([])
+  })
+
+  /* ---- Zur Zeit der Klasse, im selben Punkt, als Paar --------------------- */
+
+  const leute = {
+    anna: { id: 'p-anna', fn: 'Anna', ln: 'Acker', role: 'verkuendiger', female: true, priv: emptyQualifications() } as Person,
+    bernd: { id: 'p-bernd', fn: 'Bernd', ln: 'Bauer', role: 'verkuendiger', priv: emptyQualifications() } as Person,
+    carl: { id: 'p-carl', fn: 'Carl', ln: 'Christ', role: 'aeltester', priv: emptyQualifications() } as Person,
+  }
+  const am = (p: Person) => ({ name: `${p.fn} ${p.ln}`, pid: p.id })
+  /**
+   * Eine Zusammenkunft mit Vorsitz, einem Schülerteil (Führer + Partner) und
+   * einem Vortrag danach — „Unser Leben als Christ", nicht neben der Klasse.
+   */
+  function mitKlasse(): Week {
+    const roh = {
+      range: '', book: '', start: '2026-09-07',
+      mid: {
+        date: '', end: '', helpers: {},
+        sections: [
+          { label: 'ERÖFFNUNG', farbe: 'neutral', items: [{ iid: 'e1', title: 'Lied · Gebet · Einleitende Worte', names: [{ name: '', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }] }] },
+          {
+            label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
+            items: [{ iid: 'g1', title: 'Gespräche beginnen', names: [{ name: '', bereichsKey: 'schulung' }, { name: '', rolle: 'Partner', bereichsKey: 'schulungPartner' }] }],
+          },
+          { label: 'UNSER LEBEN ALS CHRIST', farbe: 'rot', items: [{ iid: 'l1', title: 'Vortrag', names: [{ name: '', bereichsKey: 'leben' }] }] },
+        ],
+      },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    } as unknown as Week
+    return syncAuxSlots([roh], true)[0]!
+  }
+  const punkt = (w: Week, si: number) => w.mid.sections[si]!.items[0] as PartItem
+
+  it('wer erst nach der Klasse im Hauptsaal einen Vortrag hält, steht nicht zur selben Zeit in zwei Räumen', () => {
+    const w = mitKlasse()
+    punkt(w, 1).aux![0] = { ...punkt(w, 1).aux![0]!, ...am(leute.carl) }
+    punkt(w, 2).names[0] = { ...punkt(w, 2).names[0]!, ...am(leute.carl) }
+    expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([])
+  })
+
+  it('der Ratgeber mit einem Vortrag nach der Klasse ebenso', () => {
+    const w = mitKlasse()
+    w.mid.auxRatgeber = { ...w.mid.auxRatgeber!, ...am(leute.carl) }
+    punkt(w, 2).names[0] = { ...punkt(w, 2).names[0]!, ...am(leute.carl) }
+    expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([])
+  })
+
+  it('der Vorsitz führt durch die Schülerteile — in der Klasse dazu stünde er doppelt', () => {
+    const w = mitKlasse()
+    punkt(w, 0).names[0] = { ...punkt(w, 0).names[0]!, ...am(leute.carl) }
+    punkt(w, 1).aux![0] = { ...punkt(w, 1).aux![0]!, ...am(leute.carl) }
+    expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([
+      { kind: 'double', name: 'Carl Christ', kennung: 'p-carl', tab: 'mid', count: 2 },
+    ])
+  })
+
+  it('wer im selben Punkt Führer und Partner ist, steht doppelt da', () => {
+    const w = mitKlasse()
+    punkt(w, 1).names[0] = { ...punkt(w, 1).names[0]!, ...am(leute.bernd) }
+    punkt(w, 1).names[1] = { ...punkt(w, 1).names[1]!, ...am(leute.bernd) }
+    expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([
+      { kind: 'double', name: 'Bernd Bauer', kennung: 'p-bernd', tab: 'mid', count: 2 },
+    ])
+  })
+
+  it('ein Paar, das nicht zueinander passt, nennt die Prüfung — mit beiden Namen', () => {
+    const w = mitKlasse()
+    punkt(w, 1).names[0] = { ...punkt(w, 1).names[0]!, ...am(leute.anna) }
+    punkt(w, 1).names[1] = { ...punkt(w, 1).names[1]!, ...am(leute.bernd) }
+    expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([
+      // Nur am Platz des Partners (`bereich`) — sein Hilfsdienst steht nicht in Frage.
+      { kind: 'partner', name: 'Bernd Bauer', kennung: 'p-bernd', tab: 'mid', zu: 'Anna Acker', bereich: 'schulungPartner' },
+    ])
+  })
+
+  it('aus demselben Haushalt passt das Paar — und die Klasse prüft ihr eigenes', () => {
+    const w = mitKlasse()
+    const familie = [{ ...leute.anna, fam: 'h1' }, { ...leute.bernd, fam: 'h1' }, leute.carl]
+    punkt(w, 1).names[0] = { ...punkt(w, 1).names[0]!, ...am(leute.anna) }
+    punkt(w, 1).names[1] = { ...punkt(w, 1).names[1]!, ...am(leute.bernd) }
+    expect(weekConflicts([w], 0, familie, [], 'mid')).toEqual([])
+    // In der Klasse dasselbe Paar ohne Haushalt: nur dort die Meldung.
+    punkt(w, 1).aux![0] = { ...punkt(w, 1).aux![0]!, ...am(leute.anna) }
+    punkt(w, 1).aux![1] = { ...punkt(w, 1).aux![1]!, ...am(leute.carl) }
+    expect(weekConflicts([w], 0, familie, [], 'mid')).toEqual([
+      // Anna steht in beiden Räumen — und Carl passt nicht zu ihr.
+      { kind: 'double', name: 'Anna Acker', kennung: 'p-anna', tab: 'mid', count: 2 },
+      { kind: 'partner', name: 'Carl Christ', kennung: 'p-carl', tab: 'mid', zu: 'Anna Acker', bereich: 'schulungPartner' },
+    ])
   })
 
   it('erkennt Helfer + Aufgabe am selben Tag (helperTask)', () => {

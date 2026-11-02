@@ -534,6 +534,26 @@ describe('Gesprächspartner: die Id des Führers entscheidet', () => {
     const partner = punkt.names.find((n) => n.bereichsKey === 'schulungPartner')
     expect(partner?.pid, 'die Partnerwahl folgte dem Namensvetter').toBe(bruder.id)
   })
+
+  /*
+   * **Auch in der anderen Richtung.** Steht der Partner schon da (von Hand
+   * eingetragen), wählt die Automatik den Führer passend zu ihm — bis dahin
+   * fragte sie die Regel nur am Partner-Platz.
+   */
+  it('steht der Partner schon da, passt der Führer zu ihm', () => {
+    const partner = mk(SCHUL, { id: 'p-bruder', fn: 'Paul', ln: 'Partner' })
+    // Schwestern haben weniger Last und kämen zuerst — die Regel muss sie ausschließen.
+    const schwestern = [1, 2, 3].map((i) => mk(SCHUL, { id: `s${i}`, fn: `Sara${i}`, ln: 'Schwester', female: true }))
+    const bruder = mk(SCHUL, { id: 'kand-b', fn: 'Bo', ln: 'Bruder' })
+    const w = woche({ name: '' })
+    const item = w.mid.sections[0]!.items[0] as { names: Array<{ name: string; pid?: string }> }
+    item.names[1] = { ...item.names[1]!, name: displayName(partner), pid: partner.id }
+
+    const { weeks } = autoAssignMeeting([w], 0, 'mid', [...schwestern, bruder, partner], [], [], 'parts')
+
+    const punkt = weeks[0]!.mid.sections[0]!.items[0] as { names: Array<{ pid?: string; bereichsKey?: string }> }
+    expect(punkt.names.find((n) => n.bereichsKey === 'schulung')?.pid).toBe(bruder.id)
+  })
 })
 
 /**

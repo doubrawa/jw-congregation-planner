@@ -235,11 +235,57 @@ describe('Gedächtnismahl: erstmals einstellbar', () => {
     expect(istAusgefallen(eine(ws), 'we')).toBe(true)
   })
 
-  it('und das Aufheben des Anlasses beide', () => {
+  it('und das Aufheben des Anlasses seinen Strich', () => {
     let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
     ws = setAnlass(ws, 0, null)
     expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
     expect(istAusgefallen(eine(ws), 'we')).toBe(false)
+  })
+
+  /*
+   * **Nur den eigenen Strich.** Hat der Planer die andere Zusammenkunft selbst
+   * gestrichen (Saal belegt), nimmt das Mahl diesen Strich nicht zurück —
+   * weder eine neue Uhrzeit noch ein neuer Tag in derselben Zusammenkunft
+   * noch das Aufheben des Anlasses.
+   */
+  describe('ein Strich des Planers an der anderen Zusammenkunft bleibt', () => {
+    /** Mahl am Dienstag (streicht die Woche), dazu das Wochenende vom Planer gestrichen. */
+    const mitEigenemStrich = (): Week[] => {
+      const ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
+      return setAbweichung(ws, 0, 'we', { cancelled: true })
+    }
+
+    it('bei einer neuen Uhrzeit', () => {
+      const ws = setAnlassTermin(mitEigenemStrich(), 0, { zeit: '19:30' })
+      expect(istAusgefallen(eine(ws), 'we')).toBe(true)
+      expect(istAusgefallen(eine(ws), 'mid')).toBe(true)
+    })
+
+    it('bei einem neuen Ende', () => {
+      const ws = setAnlassTermin(mitEigenemStrich(), 0, { bis: '2026-04-01' })
+      expect(istAusgefallen(eine(ws), 'we')).toBe(true)
+    })
+
+    it('bei einem neuen Tag in derselben Zusammenkunft', () => {
+      const ws = setAnlassTermin(mitEigenemStrich(), 0, { von: '2026-04-02' }) // Donnerstag
+      expect(istAusgefallen(eine(ws), 'we')).toBe(true)
+      expect(istAusgefallen(eine(ws), 'mid')).toBe(true)
+    })
+
+    it('beim Aufheben des Anlasses', () => {
+      const ws = setAnlass(mitEigenemStrich(), 0, null)
+      expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
+      expect(istAusgefallen(eine(ws), 'we')).toBe(true)
+    })
+  })
+
+  it('holt der Planer die verdrängte Zusammenkunft zurück, streicht eine neue Uhrzeit sie nicht wieder', () => {
+    // Der Anlass schlägt vor, die Zusammenkunft entscheidet: Nur ein neuer Tag
+    // verschiebt den Ausfall.
+    let ws = setAnlassTermin(setAnlass([makeWeek()], 0, 'mem'), 0, { von: '2026-03-31' })
+    ws = setAbweichung(ws, 0, 'mid', { cancelled: undefined })
+    ws = setAnlassTermin(ws, 0, { zeit: '19:30' })
+    expect(istAusgefallen(eine(ws), 'mid')).toBe(false)
   })
 
   it('wechselt sauber vom Kreisaufseher herüber — der Umbau wird zurückgenommen', () => {

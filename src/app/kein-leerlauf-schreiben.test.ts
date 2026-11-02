@@ -317,7 +317,7 @@ describe('Eine geänderte Treffpunkt-Woche braucht keinen eigenen Fall', () => {
     const { vorher, nachher } = mitGeaenderterWoche()
     persist(vorher, nachher, { type: 'toggleReminderRepeat' })
     expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', vorher.weeks[0]!.start, nachher.fsWeeks[0])
+    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', vorher.weeks[0]!.start, nachher.fsWeeks[0], [])
   })
 
   it('was eine Function schreibt oder was geladen wird, geht nicht noch einmal hinaus', () => {

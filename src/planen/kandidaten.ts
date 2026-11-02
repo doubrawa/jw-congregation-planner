@@ -15,7 +15,8 @@
 import type { AppState } from '../app/context'
 import { abwesenheitAm, istAbwesend, type AbsenceSet } from '../data/absence'
 import { ratgeberSlot, slotsOf } from '../data/aux-class'
-import { fsTag } from '../data/fs'
+import { fsLeiterZuteilung, fsTag } from '../data/fs'
+import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import {
   displayName,
   gehoertZu,
@@ -23,7 +24,7 @@ import {
   isQualified,
   isSong,
   istAusgefallen,
-  partnerGenderOk,
+  passtZumPaar,
   personCompare,
   reinigungsGruppen,
   ROLE_CIRCUIT,
@@ -131,15 +132,16 @@ function fsKandidaten(
   // Über eine Rechnung aus der Ordnungszahl widersprachen sich Konfliktbanner
   // und Kandidatenblatt bei einer Lücke im Bestand um sieben Tage.
   const tag = inst ? fsTag(state.weeks[sel.wi]?.start ?? '', inst.wd) : null
-  const schonHeute = (name: string): MeetingAssignment[] => {
+  const schonHeute = (person: Person): MeetingAssignment[] => {
     if (!inst) return []
     const out: MeetingAssignment[] = []
     for (const o of state.fsWeeks[sel.wi] ?? []) {
-      // `o.lext`: Ein Freitext-Leiter blockiert keinen Gleichnamigen — er ist
-      // nicht diese Person, er heißt nur so.
-      if (o.id === sel.instId || o.wd !== inst.wd || o.lext || o.leader !== name) continue
-      const ttl = o.grp == null ? t.fsVers : (state.groups.find((g) => g.id === o.grp)?.name ?? o.grp)
-      out.push({ text: `${o.time} · ${tu(ttl)}`, lang: 'u' })
+      if (o.id === sel.instId || o.wd !== inst.wd) continue
+      // Über `gehoertZu`, Id vor Name: Ein Gleichnamiger leitet nicht, was der
+      // andere leitet — und ein Freitext-Leiter (`lext`) ist nicht diese
+      // Person, er heißt nur so (`fsLeiterZuteilung`).
+      if (!gehoertZu(fsLeiterZuteilung(o), person)) continue
+      out.push({ text: `${o.time} · ${treffpunktTitel(o, state.groups, { t, tu })}`, lang: 'u' })
     }
     return out
   }
@@ -160,7 +162,7 @@ function fsKandidaten(
         name,
         assignName: name,
         sub: t[ROLE_KEY[p.role]],
-        today: schonHeute(name),
+        today: schonHeute(p),
         absent: abwesenheit !== undefined,
         abwesenheit,
         vorschlag: false,
@@ -288,21 +290,7 @@ function geschlechtsPruefung(
   if (!item || isSong(item)) return () => true
   const plaetze = slotsOf(item, sel.aux === true)
   const platz = plaetze[sel.ni]
-  const fuehrerPlatz =
-    sel.priv === 'schulungPartner'
-      ? plaetze.find((n, i) => i !== sel.ni && n.bereichsKey === 'schulung')
-      : undefined
-  // Über `gehoertZu`, nicht über den Namen: Trägt der Führer-Platz eine
-  // `pid` — und das tut er, sobald ihn jemand zugeteilt hat —, ist sie der
-  // Anhalt. Am Namen allein entschied die Reihenfolge der Personenliste,
-  // wer als Führer gilt; bei zwei Gleichnamigen verschiedenen Geschlechts
-  // richtete sich die Partnerwahl danach nach dem Falschen.
-  const fuehrer = fuehrerPlatz?.name
-    ? state.persons.find((p) => gehoertZu(fuehrerPlatz, p))
-    : undefined
-  return (p: Person) => {
-    if (platz?.male && p.female) return false
-    if (sel.priv === 'schulungPartner' && !partnerGenderOk(fuehrer, p)) return false
-    return true
-  }
+  // Führer und Partner passen zueinander, gleich, wer zuerst dasteht.
+  const passt = passtZumPaar(plaetze, platz, state.persons)
+  return (p: Person) => !(platz?.male && p.female) && passt(p)
 }

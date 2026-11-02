@@ -1145,13 +1145,16 @@ interface SlotSelectionBase {
   tab: MeetingKey
   /**
    * Sheet-Titel — der Programmpunkt, **Versammlungssprache**
-   * („Bibellesung · Jer 32:6-18").
+   * („Bibellesung · Jer 32:6-18"); beim Ratgeber leer, dort setzt das Blatt
+   * Raum und Rolle selbst.
    */
   label: string
   /**
-   * Rolle und Raum hinter dem Titel („Leser", „Zusätzliche Klasse") —
-   * **App-Sprache**, wie überall bei Rollen (`MyTask.rolle`, `OpenSlot.rolle`).
-   * Getrennt, weil ein einzelner Übersetzer für beide Hälften nicht stimmen kann.
+   * Die Rolle hinter dem Titel („Leser") — kanonisch, übersetzt beim Anzeigen
+   * in die **App-Sprache**, wie überall bei Rollen (`MyTask.rolle`,
+   * `OpenSlot.rolle`). Getrennt, weil ein einzelner Übersetzer für Titel und
+   * Rolle nicht stimmen kann. Den Raum („Zusätzliche Klasse") setzt das Blatt
+   * aus `aux`.
    */
   labelRolle?: string
   priv: QualificationKey | string | null // nötige Qualifikation (null = alle)
@@ -1220,6 +1223,7 @@ export type NotificationType =
   | 'gesendet' // Zuteilung(en) gesendet
   | 'import' // Programm importiert
   | 'verhindert' // Verhinderung gemeldet (an Koordinator)
+  | 'anmeldung' // Ein Gerät hat sich mit dem Zugang des Kontos angemeldet
 
 export interface Notification {
   id: string

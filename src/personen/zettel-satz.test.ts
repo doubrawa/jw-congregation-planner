@@ -70,27 +70,28 @@ describe('Die Zettel zu ausgestellten Links', () => {
   const link = (personId: string, code: string): AusgestellterLink => ({
     personId,
     url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
-    zettelUrl: `https://versammlung.app/#code=${code.replace('-', '')}`,
+    zettelUrl: `https://versammlung.app/#code=${code.replace(' ', '')}`,
     code,
     gueltigBis: '2026-11-14T09:00:00.000Z',
   })
 
   it('je Link ein Zettel mit Name, Code und Datum — in der Folge der Links', () => {
-    const satz = zettelSatz([link('p-b', 'K7RD-2QWM'), link('p-a', 'HX4P-9VTA')], {
+    // Gegliedert, wie `linksAusstellen` den Code liefert.
+    const satz = zettelSatz([link('p-b', 'K7RD 2QWM'), link('p-a', 'HX4P 9VTA')], {
       namen: new Map([['p-a', 'Anton Alt'], ['p-b', 'Bernd Brand']]),
       lang: 'de',
       t: dict('de'),
       versammlung: 'Musterstadt',
     })
     expect(satz.zettel.map((z) => [z.name, z.code, z.bis])).toEqual([
-      ['Bernd Brand', 'K7RD-2QWM', zahlBinden('14. November 2026')],
-      ['Anton Alt', 'HX4P-9VTA', zahlBinden('14. November 2026')],
+      ['Bernd Brand', 'K7RD 2QWM', zahlBinden('14. November 2026')],
+      ['Anton Alt', 'HX4P 9VTA', zahlBinden('14. November 2026')],
     ])
     expect(satz.adresse).toBe('versammlung.app')
   })
 
   it('das Datum steht in der Sprache des Zettels, mit Jahr — gebunden, damit es auf dem schmalen Zettel nicht bricht', () => {
-    const satz = zettelSatz([link('p-a', 'K7RD-2QWM')], { namen: new Map(), lang: 'en', t: dict('en'), versammlung: 'Musterstadt' })
+    const satz = zettelSatz([link('p-a', 'K7RD 2QWM')], { namen: new Map(), lang: 'en', t: dict('en'), versammlung: 'Musterstadt' })
     expect(satz.zettel[0]!.bis).toBe(zahlBinden('November 14, 2026'))
   })
 })

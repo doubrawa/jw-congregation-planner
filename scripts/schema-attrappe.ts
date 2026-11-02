@@ -224,7 +224,8 @@ function funktionsFehler(tabelle: string, method: string, body: unknown, schema:
   const fehler: string[] = []
   for (const [k, wert] of Object.entries(rumpf)) {
     const p = parameter.get(k)
-    const falsch = p ? typFehler(p.typ, wert) : 'keinen solchen Parameter'
+    // `null` nimmt jeder Parameter an (kein `strict`) — `woche_speichern` legt damit an.
+    const falsch = !p ? 'keinen solchen Parameter' : wert === null ? null : typFehler(p.typ, wert)
     if (falsch) fehler.push(`${method} ${tabelle}.${k}: ${falsch}`)
   }
   for (const [k, p] of parameter) if (p.pflicht && !(k in rumpf)) fehler.push(`${method} ${tabelle}.${k}: Parameter fehlt`)
@@ -309,8 +310,8 @@ function passtFilter(wert: unknown, ausdruck: string): boolean {
     case 'lt': return wert != null && String(wert) < v
     case 'lte': return wert != null && String(wert) <= v
     case 'is': return v === 'null' ? wert == null : String(wert) === v
-    // Ein Wert in Anführungszeichen steht für sich, wie bei PostgREST (seit
-    // 16.10.2026: `zusagenLoeschen` quotet jeden Schlüssel).
+    // Ein Wert in Anführungszeichen steht für sich, wie bei PostgREST:
+    // Aufgaben-Schlüssel tragen Zeichen, die sonst trennten.
     case 'in': return v.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"(.*)"$/, '$1')).includes(String(wert))
     case 'like': {
       const muster = v.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')
@@ -352,6 +353,9 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
   const mitStand = standTabellen()
   let uhr = 0
   const neuerStand = (): string => new Date(Date.now() + ++uhr).toISOString()
+  // Wie in der Datenbank trägt jede Zeile einer Tabelle mit Stand einen
+  // (`not null default now()`) — auch die, die der Bestand ohne mitbringt.
+  for (const t of mitStand) for (const z of tabellen[t] ?? []) z.updated_at ??= neuerStand()
 
   const antwort = (status: number, json?: unknown): Response =>
     new Response(json === undefined ? null : JSON.stringify(json), {
@@ -404,6 +408,30 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
         Object.assign(a, { data: r.p_data_a, updated_at: neuerStand() })
         Object.assign(b, { data: r.p_data_b, updated_at: neuerStand() })
         return antwort(200, [a, b].map((w) => ({ woche: w.start, stand: w.updated_at })))
+      }
+      // Eine Woche samt ihren verfallenen Zusagen, wie
+      // `woche_speichern`/`treffpunkte_speichern`: ohne Stand anlegen, sonst nur
+      // auf genau diesem Stand ändern; trifft er nicht, ist nichts geändert —
+      // auch keine Zusage gelöscht.
+      const wochenTabelle = { 'rpc/woche_speichern': 'weeks', 'rpc/treffpunkte_speichern': 'fs_weeks' }[tabelle]
+      if (wochenTabelle) {
+        const r = rumpf as { p_cong: string; p_start: string; p_stand: string | null; p_data: unknown; p_verfallen?: string[] }
+        const zeilenDerTabelle = (tabellen[wochenTabelle] ??= [])
+        let zeile: Zeile | undefined
+        if (r.p_stand == null) {
+          if (zeilenDerTabelle.some((w) => w.congregation_id === r.p_cong && w.start === r.p_start)) {
+            return antwort(409, { code: '23505', message: `duplicate key value violates unique constraint "${wochenTabelle}_congregation_id_start_key"` })
+          }
+          zeile = { id: randomUUID(), congregation_id: r.p_cong, start: r.p_start, data: r.p_data, updated_at: neuerStand() }
+          zeilenDerTabelle.push(zeile)
+        } else {
+          zeile = zeilenDerTabelle.find((w) => w.congregation_id === r.p_cong && w.start === r.p_start && w.updated_at === r.p_stand)
+          if (!zeile) return antwort(200, [])
+          Object.assign(zeile, { data: r.p_data, updated_at: neuerStand() })
+        }
+        const weg = new Set(r.p_verfallen ?? [])
+        tabellen.confirmations = (tabellen.confirmations ?? []).filter((c) => c.congregation_id !== r.p_cong || !weg.has(String(c.task_key)))
+        return antwort(200, [{ stand: zeile.updated_at }])
       }
       // Gründe (29.10.2026): was die Funktion aus der eigenen Versammlung
       // liefert — ohne ihre Prüfung, wem sie es liefert. (Die Adressen kamen

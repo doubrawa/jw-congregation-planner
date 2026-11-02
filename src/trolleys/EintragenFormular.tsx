@@ -30,7 +30,8 @@ const WAHL_GRENZE = 3
  * Was einem Eintrag im Weg steht, steht schon vor dem Absenden da
  * (`eintragenHindernis`, dieselben Gründe wie die Function); was erst der
  * Server weiß — zwei wollten zugleich dieselbe Zeit —, danach an derselben
- * Stelle.
+ * Stelle. Diese Meldung gilt der Eingabe, mit der abgeschickt wurde: Ändert
+ * sie sich, hier oder von außen, geht sie.
  *
  * Die Eingabe hält der Aufrufer (`eingabe`): Am Desktop setzt ein Klick ins
  * Raster Tag und Trolley, während das Formular schon offen steht.
@@ -51,17 +52,14 @@ export function EintragenFormular({
   const { t } = useT()
   const heute = useKalendertag()
   const aktion = useTrolleyAktion()
-  const [fehler, setFehler] = useState<string | null>(null)
+  const [fehler, setFehler] = useState<{ fuer: Eingabe; text: string } | null>(null)
   const ich = eigenePerson(state)
   const trolleys = trolleysSortiert(state.trolleys)
   const partner = eingabe.mitPartner ? state.persons.find((p) => p.id === eingabe.partner) ?? null : null
   const partnerName = vornameVon(state.persons, eingabe.partner)
   const hindernis = eintragenHindernis(state.trolleyTermine, ich, { ...eingabe, partner }, fromIso(heute))
   const ohnePartner = eingabe.mitPartner && !partner
-  const aendern = (patch: Partial<Eingabe>) => {
-    setFehler(null)
-    onEingabe({ ...eingabe, ...patch })
-  }
+  const aendern = (patch: Partial<Eingabe>) => onEingabe({ ...eingabe, ...patch })
 
   const absenden = async () => {
     if (!ich || hindernis || ohnePartner) return
@@ -76,7 +74,7 @@ export function EintragenFormular({
       gemeinsam: partner !== null,
     }
     const grund = await aktion.eintragen(termin)
-    if (grund) setFehler(trolleyFehlerText(grund, t, partnerName))
+    if (grund) setFehler({ fuer: eingabe, text: trolleyFehlerText(grund, t, partnerName) })
     else onFertig()
   }
 
@@ -89,7 +87,8 @@ export function EintragenFormular({
       ))}
     </select>
   )
-  const meldung = fehler ?? (hindernis ? trolleyFehlerText(hindernis, t, partnerName) : null)
+  const serverFehler = fehler?.fuer === eingabe ? fehler.text : null
+  const meldung = serverFehler ?? (hindernis ? trolleyFehlerText(hindernis, t, partnerName) : null)
   // Wer es erfährt: der Partner sofort, am Vortag beide — oder, allein, wer dazukommen kann.
   const hinweis = partner ? fill(t.trolleyPartnerHinweis, { name: partnerName }) : eingabe.mitPartner ? null : t.trolleyGesuchtHinweis
 

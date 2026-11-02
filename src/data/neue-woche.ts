@@ -34,7 +34,7 @@
  * nicht zurück.
  */
 
-import { setAnlassTermin } from './anlass'
+import { memAusfallAbleiten, setAnlassTermin } from './anlass'
 import { syncAuxSlots } from './aux-class'
 import { genFsWeek } from './fs'
 import { besucheInNeueWoche } from './gruppenbesuche'
@@ -65,7 +65,9 @@ export function neueWocheEinordnen(roh: Week, k: NeueWocheKontext): { week: Week
   }
   let wochen = syncAuxSlots([mitEnden], k.auxClass)
   const mem = mitEnden.anlass?.art === 'mem' ? mitEnden.anlass.von : undefined
-  if (mem) wochen = setAnlassTermin(wochen, 0, { von: mem })
+  // Erst den Termin vervollständigen (`bis`), dann den Ausfall ableiten: Ein
+  // Termin, der schon dasteht, verschiebt beim Setzen nichts (`setAnlassTermin`).
+  if (mem) wochen = memAusfallAbleiten(setAnlassTermin(wochen, 0, { von: mem }), 0)
   const fsWeek = besucheInNeueWoche(genFsWeek(roh.start, k.fsRules), roh.start, k.gruppenbesuche, k.persons)
   // Nach dem Gedächtnismahl: Fällt es aufs Wochenende, bleibt der Vortrag weg.
   const mitVortrag = vortragInNeueWoche(wochen[0] ?? mitEnden, k.vortraege, k.persons)

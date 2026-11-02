@@ -15,31 +15,30 @@
  * (`scripts/sw-kennung.mjs`); im Dev-Server bleibt der Platzhalter stehen, dort
  * ist das Caching ohnehin aus.
  *
- * Hier stand `'shell-v1'` — konstant. `activate` löscht nur Caches mit
- * **anderem** Namen, es wurde also nie etwas gelöscht: Die gehashten Assets
- * jedes Builds blieben unbegrenzt liegen. Und `activate` läuft überhaupt nur,
- * wenn sich diese Datei selbst geändert hat; die Kennung ist deshalb beides
- * zugleich — der Grund fürs Aufräumen und sein Auslöser.
+ * `activate` löscht jeden Cache mit **anderem** Namen, und es läuft nur, wenn
+ * sich diese Datei geändert hat. Die Kennung ist deshalb beides zugleich — der
+ * Grund fürs Aufräumen und sein Auslöser.
  */
 const CACHE = 'shell-__BUILD_ID__'
 const DEV = new URL(self.location.href).searchParams.has('dev')
 
 // Relative URLs lösen gegen den SW-Pfad auf, also den App-Basispfad
 // (unter versammlung.app und im Dev gleichermaßen /).
-// `logo-klein.svg` ist das Favicon, `icon-192.png` sein Ersatz. Das Logo in der
-// App (Menü, Anmeldung) zeichnet `bausteine/Logo.tsx` selbst.
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'logo-klein.svg', 'icon-192.png']
+// Die Hülle: Ohne sie startet die App offline nicht.
+const SHELL = ['./', 'index.html']
+// Beiwerk: `logo-klein.svg` ist das Favicon, `icon-192.png` sein Ersatz. Fehlt
+// eines, startet die App trotzdem. Das Logo in der App (Menü, Anmeldung)
+// zeichnet `bausteine/Logo.tsx` selbst.
+const BEIWERK = ['manifest.webmanifest', 'logo-klein.svg', 'icon-192.png']
 
 /**
  * Die gehashten Bündel, auf die `index.html` verweist — Skript, vorab geladene
  * Module und Stylesheet (`src`/`href` unter `/assets/`).
  *
  * **Ohne sie startet die App offline nicht.** Der `fetch`-Hörer legt Assets
- * zwar beim Abruf ab, aber beim ersten Besuch hat die Seite sie geladen, bevor
- * dieser Worker die Kontrolle übernahm — sie gingen an ihm vorbei. Wer die App
- * einmal öffnete und danach ohne Netz in den Saal kam, sah eine leere Seite:
- * die Hülle aus dem Cache, das Bündel nicht (gemessen am 1.10.2026 mit
- * `vite preview` und gestopptem Server).
+ * zwar beim Abruf ab, aber beim ersten Besuch lädt die Seite sie, bevor dieser
+ * Worker die Kontrolle übernimmt — sie gehen an ihm vorbei. Deshalb legt sie
+ * die Installation selbst ab.
  *
  * Gelesen wird die gerade abgelegte `index.html` selbst, keine Liste aus dem
  * Bauschritt: Sie ist die eine Stelle, die weiß, welche Bündel dieser Stand
@@ -60,13 +59,20 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE)
-      // Fehlt eine Datei, soll die Installation nicht komplett scheitern.
-      await Promise.allSettled(SHELL.map((u) => cache.add(new Request(u, { cache: 'reload' }))))
+      /*
+       * **Hülle und Bündel ganz oder gar nicht.** Fehlt eines, scheitert die
+       * Installation, und der bisherige Worker bleibt — mit seinem vollständigen
+       * Cache. Ginge die Installation mit Lücken durch, räumte `activate` den
+       * alten Cache weg, und die App startete offline mit einer leeren Seite.
+       * `addAll` legt nichts ab, wenn eine Antwort fehlt.
+       */
+      await cache.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))
       const index = await cache.match(new Request('index.html'))
-      if (!index) return
       // Ohne `cache: 'reload'`: Die Namen tragen den Inhalts-Hash, und die
       // Seite hat sie eben erst geladen — der HTTP-Cache darf sie liefern.
-      await Promise.allSettled(buendelAus(await index.text()).map((u) => cache.add(new Request(u))))
+      await cache.addAll(buendelAus(await index.text()).map((u) => new Request(u)))
+      // Das Beiwerk darf fehlen.
+      await Promise.allSettled(BEIWERK.map((u) => cache.add(new Request(u, { cache: 'reload' }))))
     })(),
   )
 })
@@ -99,9 +105,8 @@ async function fromNetwork(request) {
  * **`ignoreVary`**, weil der Inhalts-Hash im Namen schon alles sagt. Schickt der
  * Server `Vary: Origin` (`vite preview` tut es), trifft ein Eintrag sonst nur
  * eine Anfrage mit demselben `Origin`: Das beim Installieren abgelegte Bündel
- * (ohne `Origin`) fand das Modul-Skript der Seite (`crossorigin`, mit `Origin`)
- * nicht — offline blieb die Seite leer, obwohl alles im Cache lag (gemessen am
- * 1.10.2026).
+ * (ohne `Origin`) fände das Modul-Skript der Seite (`crossorigin`, mit `Origin`)
+ * nicht — offline bliebe die Seite leer, obwohl alles im Cache liegt.
  */
 async function cacheFirst(request) {
   const hit = await caches.match(request, { ignoreVary: true })
@@ -109,25 +114,41 @@ async function cacheFirst(request) {
   return fromNetwork(request)
 }
 
-/** Netz zuerst, Cache als Rückfall — für HTML und selten geänderte Dateien. */
+/**
+ * Netz zuerst, Cache als Rückfall — für HTML und selten geänderte Dateien.
+ *
+ * Ein Serverfehler (5xx) zählt wie kein Netz: Antwortet der Server beim Start
+ * der installierten App mit einer Fehlerseite, kommt lieber die zuletzt
+ * geladene Hülle — die App zeigt dann ihren letzten Stand.
+ */
 async function networkFirst(request, fallbackUrl) {
   try {
-    return await fromNetwork(request)
+    const res = await fromNetwork(request)
+    if (res.status < 500) return res
+    return (await ausDemCache(request, fallbackUrl)) || res
   } catch (err) {
-    const hit = await caches.match(request)
+    const hit = await ausDemCache(request, fallbackUrl)
     if (hit) return hit
-    if (fallbackUrl) {
-      const shell = await caches.match(fallbackUrl)
-      if (shell) return shell
-    }
     throw err
   }
+}
+
+/** Die abgelegte Fassung der Anfrage, sonst die Hülle (`fallbackUrl`). */
+async function ausDemCache(request, fallbackUrl) {
+  const hit = await caches.match(request)
+  if (hit) return hit
+  return fallbackUrl ? caches.match(fallbackUrl) : undefined
 }
 
 self.addEventListener('fetch', (event) => {
   if (DEV) return
   const { request } = event
   if (request.method !== 'GET') return
+  // Wer ausdrücklich nichts ablegen lässt (die Versionsprüfung, `lib/version.ts`),
+  // kommt am Worker vorbei. Sonst läge danach die neue `index.html` im Cache,
+  // ohne ihre Bündel: Offline mit Parametern gestartet (`?l=…`), bekäme die App
+  // diese Hülle (`networkFirst`), und die Seite bliebe leer.
+  if (request.cache === 'no-store') return
   const url = new URL(request.url)
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
 
@@ -149,9 +170,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Alles Fremde (Supabase!) läuft ungefiltert durch — kein respondWith. Die
-  // Schriften kommen seit August 2026 aus dem Paket (`src/styles/fonts.css`)
-  // und damit über `/assets/` oben; der Google-Fonts-Zweig, der hier stand,
-  // traf seither nie mehr.
+  // Schriften kommen aus dem Paket (`src/styles/fonts.css`) und damit über
+  // `/assets/` oben.
 })
 
 self.addEventListener('push', (event) => {

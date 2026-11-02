@@ -1,5 +1,6 @@
 import { useApp } from '../app/context'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
+import { auswahlFuer } from '../data/plaetze'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
@@ -28,18 +29,7 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
 
   const slot = ratgeberSlot(meeting)
   const stand = slot.name && zusage.moeglich('mid') ? zusage.ratgeber('mid') : null
-  const open = () =>
-    dispatch({
-      type: 'openSlot',
-      sel: {
-        kind: 'ratgeber',
-        wi: state.week,
-        tab: 'mid',
-        label: `${t.auxKlasse} · ${t.auxRatgeber}`,
-        priv: 'ratgeber',
-        groups: false,
-      },
-    })
+  const open = () => dispatch({ type: 'openSlot', sel: auswahlFuer({ art: 'ratgeber', slot }, state.week, 'mid') })
 
   return (
     <section className="prog-abschnitt" data-farbe="neutral2">

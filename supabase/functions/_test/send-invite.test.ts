@@ -13,7 +13,7 @@
  * beim Laden, deshalb wird das Modul je Szenario frisch importiert.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { pruefsumme } from '../_shared/anmeldung.ts'
+import { codeNormal, pruefsumme } from '../_shared/anmeldung.ts'
 import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
@@ -213,9 +213,9 @@ describe('send-invite: der Link', () => {
     // Im Klartext steht nichts in der Datenbank.
     const token = new URL(link?.url ?? 'https://x/').hash.replace('#anmelden=', '')
     expect(JSON.stringify(zeile)).not.toContain(token)
-    expect(JSON.stringify(zeile)).not.toContain(link?.code.replace('-', '') ?? '?')
+    expect(JSON.stringify(zeile)).not.toContain(codeNormal(link?.code ?? '?'))
     expect(zeile?.token_hash).toBe(await pruefsumme(token))
-    expect(zeile?.code_hash).toBe(await pruefsumme(link?.code.replace('-', '') ?? ''))
+    expect(zeile?.code_hash).toBe(await pruefsumme(codeNormal(link?.code ?? '')))
     // Ein neuer Link ist ungeöffnet und ungesendet — auch wenn der alte es nicht war.
     expect(zeile?.gesendet_at).toBeNull()
     expect(zeile?.benutzt_at).toBeNull()
@@ -233,8 +233,10 @@ describe('send-invite: der Link', () => {
     const r = await call(fuerAnna)
     const link = r.body.links?.[0]
     expect(link?.url).toMatch(/^https:\/\/app\.test\/#anmelden=[A-Za-z0-9_-]{43}$/)
-    expect(link?.code).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/)
-    expect(link?.zettelUrl).toBe(`https://app.test/#code=${link?.code.replace('-', '')}`)
+    // Wie der Zettel ihn zeigt: zwei Vierer mit Lücke — kein Bindestrich, den
+    // jemand mit eintippen wollte.
+    expect(link?.code).toMatch(/^[A-HJ-NP-Z2-9]{4} [A-HJ-NP-Z2-9]{4}$/)
+    expect(link?.zettelUrl).toBe(`https://app.test/#code=${codeNormal(link?.code ?? '')}`)
   })
 
   it('jede Person ihren eigenen — zwei Personen, zwei verschiedene Links, in einem Schreiben', async () => {

@@ -74,8 +74,14 @@ beforeEach(() => {
   // Das Blatt lässt sich nach unten wegwischen; die Geste fragt, ob wir am
   // Schreibtisch sitzen. jsdom kennt matchMedia nicht — hier: kein Schreibtisch.
   window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  // Die Demo-Wochen liegen im September 2026; was mit einer Gruppe geht, zählt
+  // ab der laufenden Woche (`wirktAb`) — die Uhr steht davor.
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T10:00:00') })
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 const zeilen = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.einst-zeile')]
 const knopf = (wo: ParentNode, text: string) =>
@@ -323,6 +329,24 @@ describe('Der Name gilt beim Schließen', () => {
     fireEvent.click(knopf(blatt(), t.fertig))
     expect(updates(dispatch)).toEqual([])
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: hinweis })
+  })
+
+  it('verschwindet das Blatt, ohne dass es jemand schließt, gilt der Name trotzdem', () => {
+    // Etwa, weil ein Tipp auf eine Mitteilung woandershin führt.
+    const { dispatch, unmount } = oeffne()
+    fireEvent.change(name(), { target: { value: 'Nord' } })
+    unmount()
+    expect(updates(dispatch)).toEqual([{ type: 'updateGroup', id: 'g1', patch: { name: 'Nord' } }])
+  })
+
+  it('wer nach dem Tippen entfernt, übernimmt keinen Namen — und hört nichts darüber', () => {
+    const { dispatch } = oeffne()
+    fireEvent.change(name(), { target: { value: '' } })
+    fireEvent.click(knopf(blatt(), t.gruppeEntfernen))
+    bestaetigen(knopf(blatt(), t.loeschenSicher))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'removeGroup', id: 'g1' })
+    expect(blatt(), 'das Blatt ist noch offen').toBeNull()
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameLeer })
   })
 })
 

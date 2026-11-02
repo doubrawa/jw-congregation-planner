@@ -68,7 +68,7 @@ const ausgestellt = (): AusgestellterLink => ({
   personId: 'p-a',
   url: `https://versammlung.app/#anmelden=${'T'.repeat(43)}`,
   zettelUrl: 'https://versammlung.app/#code=K7RD2QWM',
-  code: 'K7RD-2QWM',
+  code: 'K7RD 2QWM',
   gueltigBis: '2026-11-14T09:00:00.000Z',
 })
 
@@ -195,10 +195,23 @@ describe('Mit Link, noch nicht angemeldet', () => {
     expect(container.querySelector('.konto-hinweis')?.textContent).toBe(fill(t.linkAbgelaufenHint, { name: 'Anton' }))
   })
 
-  it('bietet einen neuen Link und gleich den Zettel an', () => {
-    const { container } = zeige(person(), { anmeldeLinks: [link()] })
+  it('abgelaufen bietet es einen neuen Link und gleich den Zettel an', () => {
+    const { container } = zeige(person(), { anmeldeLinks: [link(-1)] })
     expect(knopf(container, t.neuerLinkBtn)).toBeDefined()
     expect(knopf(container, t.zettelDrucken)).toBeDefined()
+  })
+
+  /*
+   * Ein noch gültiger Link ist womöglich schon verschickt. Ersetzte ein Tipp
+   * auf „Zettel drucken" ihn still, fände der Empfänger einen toten Link vor.
+   * Den Zettel gibt es dann im Blatt, das es dazusagt.
+   */
+  it('noch gültig ersetzt kein einzelner Tipp den Link — der Zettel steht im Blatt, mit dem Hinweis', () => {
+    const { container } = zeige(person(), { anmeldeLinks: [link()] })
+    expect(knopf(container, t.zettelDrucken)).toBeUndefined()
+    const b = oeffnen(container)
+    expect(knopf(b, t.zettelDrucken)).toBeDefined()
+    expect(b.textContent).toContain(t.neuerLinkErsetzt)
   })
 })
 
@@ -291,7 +304,8 @@ describe('Per Nachricht', () => {
     const { title, text } = geteilt()[0]!
     expect(title).toBe('Dein Zugang zur Versammlung Musterstadt')
     expect(text).toContain(`#anmelden=${'T'.repeat(43)}`)
-    expect(text).toContain('\nK7RD-2QWM\n')
+    // Die Function schickt hier noch die frühere Form mit Bindestrich — die Nachricht gliedert selbst.
+    expect(text).toContain('\nK7RD 2QWM\n')
     expect(text).toContain('frag die Ältesten nach einem neuen Link')
     expect(text).not.toContain('E-Mail')
     expect(aktionen(dispatch).some((a) => a.type === 'linksAusgestellt')).toBe(true)
@@ -332,7 +346,7 @@ describe('Per Nachricht', () => {
     const { container, dispatch } = zeige(person())
     fireEvent.click(knopf(abschnitt(oeffnen(container)), t.kopierenBtn)!)
     await waitFor(() => expect(toasts(dispatch)).toContain(fill(t.toastNachrichtKopiert, { name: 'Anton' })))
-    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD-2QWM\n')
+    expect(kopiert.mock.calls[0]![0]).toContain('\nK7RD 2QWM\n')
     await waitFor(() => expect(blatt()).toBeNull())
   })
 
@@ -389,13 +403,14 @@ describe('Zettel drucken', () => {
   afterEach(() => fireEvent(window, new Event('afterprint')))
 
   it('stellt einen Link aus und druckt den Zettel: Name, Code, bis wann, QR-Code', async () => {
-    const { container } = zeige(person(), { anmeldeLinks: [link()] })
+    const { container } = zeige(person(), { anmeldeLinks: [link(-1)] })
     fireEvent.click(knopf(container, t.zettelDrucken)!)
     await waitFor(() => expect(drucken).toHaveBeenCalled())
     expect(linksAusstellen).toHaveBeenCalledWith(['p-a'])
     const zettel = document.querySelector('.anmelde-zettel')!
     expect(zettel.querySelector('.anmelde-name')?.textContent).toBe('Anton Alt')
-    expect(zettel.querySelector('.anmelde-code')?.textContent).toBe('K7RD-2QWM')
+    // Ohne Bindestrich, den mancher mittippte — die breite Lücke setzt das CSS.
+    expect(zettel.querySelector('.anmelde-code')?.textContent).toBe('K7RD 2QWM')
     expect(zettel.textContent).toContain(fill(t.gueltigBisDatum, { datum: zahlBinden('14. November 2026') }))
     expect(zettel.querySelector('.anmelde-qr path')?.getAttribute('d')).toMatch(/^M\d+ \d+h\d+v1h-\d+z/)
     // Der zitierte Knopf ist der der Anmeldeseite.
@@ -403,7 +418,7 @@ describe('Zettel drucken', () => {
   })
 
   it('der Bogen hängt direkt unter body — der Druck blendet alles andere mit einer Regel aus', async () => {
-    const { container } = zeige(person(), { anmeldeLinks: [link()] })
+    const { container } = zeige(person(), { anmeldeLinks: [link(-1)] })
     fireEvent.click(knopf(container, t.zettelDrucken)!)
     await waitFor(() => expect(drucken).toHaveBeenCalled())
     expect(document.querySelector('.anmelde-bogen')?.parentElement).toBe(document.body)
@@ -411,7 +426,7 @@ describe('Zettel drucken', () => {
   })
 
   it('nach dem Druckdialog ist der Bogen fort — die Codes darauf melden an', async () => {
-    const { container } = zeige(person(), { anmeldeLinks: [link()] })
+    const { container } = zeige(person(), { anmeldeLinks: [link(-1)] })
     fireEvent.click(knopf(container, t.zettelDrucken)!)
     await waitFor(() => expect(drucken).toHaveBeenCalled())
     fireEvent(window, new Event('afterprint'))
@@ -428,7 +443,7 @@ describe('Zettel drucken', () => {
 
   it('kommt kein Link zurück, wird nichts gedruckt — es sagt, warum', async () => {
     linksAusstellen.mockResolvedValue({ links: [], fehler: true })
-    const { container, dispatch } = zeige(person(), { anmeldeLinks: [link()] })
+    const { container, dispatch } = zeige(person(), { anmeldeLinks: [link(-1)] })
     fireEvent.click(knopf(container, t.zettelDrucken)!)
     await waitFor(() => expect(toasts(dispatch)).toContain(t.linkFehler))
     expect(drucken).not.toHaveBeenCalled()
@@ -454,7 +469,7 @@ describe('Konto-Karte im Offline-Stand', () => {
 
   it('druckt keinen Zettel', async () => {
     window.print = vi.fn()
-    const { container, dispatch } = zeige(person(), { ...OFFLINE, anmeldeLinks: [link()] })
+    const { container, dispatch } = zeige(person(), { ...OFFLINE, anmeldeLinks: [link(-1)] })
     fireEvent.click(knopf(container, t.zettelDrucken)!)
     await waitFor(() => expect(toasts(dispatch)).toContain(t.offlineReadOnly))
     expect(linksAusstellen).not.toHaveBeenCalled()

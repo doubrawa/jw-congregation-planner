@@ -138,6 +138,11 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     }
   })
 
+  it('„Neue Anmeldung" bleibt in den Mitteilungen — in „Meine Aufgaben" steht nichts dazu', () => {
+    const n = zeile({ type: 'anmeldung', title: 'Neue Anmeldung', text: 'Mit deinem Zugang wurde ein Gerät angemeldet.', taskId: undefined })
+    for (const zuteilen of [true, false]) expect(mitteilungsZiel(n, lage({ zuteilen })), String(zuteilen)).toEqual([])
+  })
+
   it('ein Schlüssel, den es so nicht gibt, zählt wie keiner', () => {
     // Der Demo-Bestand trägt solche („a2"), und eine Spaltenänderung kann sie
     // hinterlassen — kein Sprung ins Leere, sondern der Weg ohne Schlüssel.

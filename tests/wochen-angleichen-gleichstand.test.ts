@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * **Das Prüfskript rechnet, was das Laden rechnet** (5.10.2026, Befund 9).
@@ -36,7 +36,18 @@ import { buildDemoWeeks, DEMO_FS_RULES, DEMO_PERSONS } from './testdaten/testdat
 import { angleichen, appFunktionen, GRUND_KLASSE, GRUND_NAMEN, GRUND_TREFFPUNKTE_FEHLEN } from '../scripts/wochen-angleichen.mjs'
 
 describe('wochen-angleichen.mjs: dieselbe Kette wie Laden und hydrate', () => {
-  it('Wochen und Treffpunkte gleichen dem Zustand nach dem Laden', async () => {
+  // Die Demo-Wochen liegen im September 2026. Klasse und Grundplan formen sie
+  // ab der laufenden Woche (`wirktAb`) — die Uhr steht davor, im zweiten Fall
+  // mitten darin.
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it.each([
+    ['alle Wochen kommen noch', '2026-09-01T10:00:00'],
+    ['die erste ist vorbei — beide Seiten lassen sie stehen', `${buildDemoWeeks()[1]!.start}T10:00:00`],
+  ])('Wochen und Treffpunkte gleichen dem Zustand nach dem Laden: %s', async (_fall, jetzt) => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(jetzt) })
     // Absteigend, wie die Abfrage sie liefert — ohne Bindung, ohne Klasse, ohne Treffpunkt-Zeilen.
     const wochen = buildDemoWeeks()
       .slice(0, 2)

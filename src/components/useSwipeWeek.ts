@@ -179,6 +179,9 @@ export function useSwipeWeek(ref: RefObject<HTMLElement | null>, opts: Options):
     const onStart = (e: TouchEvent) => {
       // Mehrfinger (Zoom) gehört nicht uns; während des Blätterns ist Pause.
       if (aktiv || laeuft || e.touches.length !== 1) {
+        // Kommt ein zweiter Finger zu einer laufenden Geste, federt der Streifen
+        // zurück — sonst bliebe er stehen, wohin ihn der erste gezogen hatte.
+        if (aktiv && dx !== 0) release(true)
         aktiv = false
         phase = 'verworfen'
         return

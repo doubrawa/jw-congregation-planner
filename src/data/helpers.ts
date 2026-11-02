@@ -191,9 +191,7 @@ function chairMeeting(meeting: Meeting, key: 'vorsitzMid' | 'vorsitzWe'): Meetin
       if (isSong(item)) return item
       let itemChanged = false
       const names = item.names.map((slot) => {
-        const isChair =
-          slot.rolle === 'Vorsitz' || (slot.bereichsKey != null && CHAIR_KEYS.has(slot.bereichsKey))
-        if (isChair && slot.bereichsKey !== key) {
+        if (istVorsitz(slot) && slot.bereichsKey !== key) {
           itemChanged = true
           return { ...slot, bereichsKey: key }
         }
@@ -500,6 +498,38 @@ export function partnerGenderOk(lead: Person | undefined, cand: Person): boolean
   // Familienangehörige (gleicher Haushalt) dürfen auch geschlechtsübergreifend
   // Partner sein (z. B. Ehepaar, Vater/Tochter) — jw.org-Anweisung.
   return Boolean(lead.fam) && lead.fam === cand.fam
+}
+
+/** Der Platz, der zu einem Platz des Paars gehört: Führer ↔ Partner. */
+const GEGENUEBER: Readonly<Record<string, string>> = { schulung: 'schulungPartner', schulungPartner: 'schulung' }
+
+/**
+ * **Wer zum anderen Platz des Paars passt** — Gesprächsführer und -partner
+ * eines Schülerteils, in **beiden** Richtungen (`partnerGenderOk` ist
+ * symmetrisch). Steht der Partner schon da, muss der Führer zu ihm passen, wie
+ * umgekehrt. Für die Automatik, den Vorschlag und das Blatt dieselbe Regel.
+ *
+ * `plaetze` sind die Plätze desselben Raums — die Zusätzliche Klasse richtet
+ * sich nicht nach dem Hauptsaal. Ohne Gegenüber, oder wo es niemand aus der
+ * Versammlung ist, gilt keine Einschränkung.
+ */
+export function passtZumPaar(
+  plaetze: readonly SlotAssignment[],
+  platz: SlotAssignment | undefined,
+  persons: readonly Person[],
+): (p: Person) => boolean {
+  const gegenArt = platz?.bereichsKey ? GEGENUEBER[platz.bereichsKey] : undefined
+  if (!gegenArt) return () => true
+  const gegenPlatz = plaetze.find((n) => n !== platz && n.bereichsKey === gegenArt)
+  // Über `gehoertZu`, nicht über den Namen: Bei zwei Gleichnamigen
+  // verschiedenen Geschlechts entschiede sonst die Reihenfolge der Liste.
+  const gegenueber = gegenPlatz?.name ? persons.find((p) => gehoertZu(gegenPlatz, p)) : undefined
+  return (p) => partnerGenderOk(gegenueber, p)
+}
+
+/** Ist das der Platz des Vorsitzes? Über die Rolle oder den Bereich (`normalizeChairKeys`). */
+export function istVorsitz(slot: SlotAssignment): boolean {
+  return slot.rolle === 'Vorsitz' || (slot.bereichsKey != null && CHAIR_KEYS.has(slot.bereichsKey))
 }
 
 /** Andere Personen im selben Haushalt (Familienangehörige). */

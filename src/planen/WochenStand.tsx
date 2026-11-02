@@ -53,10 +53,11 @@ export function PlanSpur({ tab }: { tab: MeetingKey }) {
 
 /**
  * Die Konflikte in fester Reihenfolge: Abwesenheit zuerst — die Person kommt
- * gar nicht —, dann Doppelbelegung, dann Hilfsdienst und Aufgabe. Sonst wanderte
- * die schwerste Meldung je nach Datenlage an eine andere Stelle.
+ * gar nicht —, dann Doppelbelegung, dann ein unpassendes Paar, dann Hilfsdienst
+ * und Aufgabe. Sonst wanderte die schwerste Meldung je nach Datenlage an eine
+ * andere Stelle.
  */
-const KONFLIKT_RANG: Partial<Record<ConflictKind, number>> = { absent: 0, double: 1, helperTask: 2 }
+const KONFLIKT_RANG: Partial<Record<ConflictKind, number>> = { absent: 0, double: 1, partner: 2, helperTask: 3 }
 
 /** Die Legende in der Reihenfolge des Entwurfs. */
 const LEGENDE: ReadonlyArray<readonly [PlatzLage, 'zusageBestaetigt' | 'zusageWartet' | 'lageProblem' | 'offenWort']> = [
@@ -169,5 +170,6 @@ function konfliktText(c: Conflict, t: Dict): string {
   const tabName = zusammenkunftName(c.tab ?? 'mid', t)
   if (c.kind === 'absent') return fill(t.konfliktAbsent, { name: c.name, tab: tabName })
   if (c.kind === 'double') return fill(t.konfliktDouble, { name: c.name, n: c.count ?? 2, tab: tabName })
+  if (c.kind === 'partner') return fill(t.konfliktPartner, { name: c.name, zu: c.zu ?? '', tab: tabName })
   return fill(t.konfliktHelperTask, { name: c.name, tab: tabName })
 }

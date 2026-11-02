@@ -49,7 +49,7 @@ export function setAnlass(weeks: Week[], wi: number, art: AnlassArt | null): Wee
   const vorher = anlassArt(week)
   if (vorher === art || (vorher === undefined && art === null)) return weeks
 
-  let next = zuruecknehmen(weeks, wi, vorher)
+  let next = zuruecknehmen(weeks, wi, week.anlass)
   if (art === 'co') next = setDienstwoche(next, wi, true)
   if (art === 'kongress') next = beideStreichen(next, wi, true)
 
@@ -89,7 +89,22 @@ export function setAnlassTermin(
 
   const next = [...weeks]
   next[wi] = { ...week, anlass: bereinigt }
-  return art === 'mem' && bereinigt.von ? memAusfall(next, wi, bereinigt.von) : next
+  // Nur ein neuer Tag verschiebt den Ausfall — Ende und Uhrzeit nicht: Sonst
+  // nähme jede Korrektur der Uhrzeit einen Strich zurück, den der Planer an
+  // der anderen Zusammenkunft selbst gesetzt hat.
+  if (art !== 'mem' || !bereinigt.von || bereinigt.von === week.anlass?.von) return next
+  return memAusfall(next, wi, bereinigt.von, week.anlass?.von)
+}
+
+/**
+ * Den Ausfall des Gedächtnismahls für eine Woche ableiten, die ihr Datum schon
+ * trägt — die eben importierte (`neueWocheEinordnen`). Gestrichen wird die
+ * verdrängte Zusammenkunft; einen Vorgänger, dessen Strich zurückzunehmen
+ * wäre, gibt es dort nicht.
+ */
+export function memAusfallAbleiten(weeks: Week[], wi: number): Week[] {
+  const anlass = weeks[wi]?.anlass
+  return anlass?.art === 'mem' && anlass.von ? memAusfall(weeks, wi, anlass.von, undefined) : weeks
 }
 
 /**
@@ -106,19 +121,25 @@ export function setAnlassTermin(
  * Versammlung, die dienstags zusammenkommt, hat für den 2. April kein
  * Programm — sie kommt also auch nicht zusammen.
  *
- * Die jeweils andere wird ausdrücklich **ent**strichen: Korrigiert der Planer
- * das Datum von einem Dienstag auf einen Sonntag, stünden sonst beide
- * durchgestrichen da.
+ * Wechselt der Tag die Zusammenkunft, wird die bisher verdrängte
+ * **ent**strichen: Korrigiert der Planer das Datum von einem Dienstag auf einen
+ * Sonntag, stünden sonst beide durchgestrichen da. Nur sie — einen Strich, den
+ * der Planer selbst gesetzt hat, nimmt das Mahl nicht zurück.
  */
-function memAusfall(weeks: Week[], wi: number, iso: string): Week[] {
-  const versatz = wochentagVersatz(iso)
-  if (versatz === null) return weeks
-  const faelltAus: MeetingKey = versatz <= 4 ? 'mid' : 'we' // 0 = Montag … 6 = Sonntag
-  let next = weeks
-  for (const tab of MEETING_TABS) {
-    next = setAbweichung(next, wi, tab, { cancelled: tab === faelltAus ? true : undefined })
-  }
+function memAusfall(weeks: Week[], wi: number, iso: string, vorher: string | undefined): Week[] {
+  const faelltAus = memFaelltAus(iso)
+  if (!faelltAus) return weeks
+  let next = setAbweichung(weeks, wi, faelltAus, { cancelled: true })
+  const bisher = memFaelltAus(vorher)
+  if (bisher && bisher !== faelltAus) next = setAbweichung(next, wi, bisher, { cancelled: undefined })
   return next
+}
+
+/** Welche Zusammenkunft das Mahl an diesem Tag verdrängt — `null` ohne gültiges Datum. */
+function memFaelltAus(iso: string | undefined): MeetingKey | null {
+  const versatz = iso ? wochentagVersatz(iso) : null
+  if (versatz === null) return null
+  return versatz <= 4 ? 'mid' : 'we' // 0 = Montag … 6 = Sonntag
 }
 
 /**
@@ -154,12 +175,18 @@ function wochentagVersatz(iso: string): number | null {
  * Zusammenkunft verdrängt wird.
  */
 
-/** Wirkungen eines Anlasses zurücknehmen. */
-function zuruecknehmen(weeks: Week[], wi: number, art: AnlassArt | undefined): Week[] {
-  if (art === 'co') return setDienstwoche(weeks, wi, false)
-  // Kongress wie Gedächtnismahl: beide entstrichen. Was der Planer selbst
-  // gesetzt hat (Tag, Uhrzeit, Grund), bleibt stehen — nur der Strich geht.
-  if (art === 'kongress' || art === 'mem') return beideStreichen(weeks, wi, false)
+/**
+ * Wirkungen eines Anlasses zurücknehmen. Was der Planer selbst gesetzt hat
+ * (Tag, Uhrzeit, Grund), bleibt stehen — nur der Strich geht: beim Kongress
+ * beide, beim Gedächtnismahl der, den sein Tag gesetzt hat.
+ */
+function zuruecknehmen(weeks: Week[], wi: number, anlass: Anlass | undefined): Week[] {
+  if (anlass?.art === 'co') return setDienstwoche(weeks, wi, false)
+  if (anlass?.art === 'kongress') return beideStreichen(weeks, wi, false)
+  if (anlass?.art === 'mem') {
+    const tab = memFaelltAus(anlass.von)
+    return tab ? setAbweichung(weeks, wi, tab, { cancelled: undefined }) : weeks
+  }
   return weeks
 }
 

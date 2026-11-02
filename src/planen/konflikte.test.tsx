@@ -13,11 +13,13 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
-import type { Conflict } from '../data/planning'
+import { KEINE_ABWESENHEIT } from '../data/absence'
+import { type Conflict, weekConflicts } from '../data/planning'
 import type { Meeting, Person, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { HelpersPanel } from './HelpersPanel'
 import { machKonfliktVon } from './useKonflikte'
+import { problemGrund } from './platz-anzeige'
 
 /**
  * Die Konflikte unter „Zu klären" und der Plan darunter.
@@ -245,7 +247,7 @@ describe('T76 — die betroffene Zuteilung hebt sich im Plan ab', () => {
  * schwerste, denn die Person kommt gar nicht), dann Doppelbelegung, dann
  * Hilfsdienst-und-Aufgabe.
  */
-describe('Die drei Konflikt-Sätze', () => {
+describe('Die Konflikt-Sätze', () => {
   const KAI = person('p-k', 'Kai')
 
   const zeigeKonflikt = (over: Partial<AppState>, tab: 'mid' | 'we' = 'mid') =>
@@ -309,6 +311,28 @@ describe('Die drei Konflikt-Sätze', () => {
     const { container } = zeigeKonflikt({ weeks: [w] }, 'we')
     expect(probleme(container)[0]).toContain('Zusammenkunft am Wochenende')
   })
+
+  it('ein Paar, das nicht zueinander passt — mit beiden Namen', () => {
+    const anna: Person = { ...person('p-a', 'Anna'), female: true }
+    const bernd = person('p-b', 'Bernd')
+    const meeting: Meeting = {
+      date: '', end: '', helpers: {},
+      sections: [{
+        label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
+        items: [{
+          iid: 'g1', title: 'Gespräche beginnen', meta: '',
+          names: [
+            { name: 'Anna', pid: anna.id, bereichsKey: 'schulung' },
+            { name: 'Bernd', pid: bernd.id, rolle: 'Partner', bereichsKey: 'schulungPartner' },
+          ],
+        }],
+      }],
+    }
+    const { container } = zeigeKonflikt({ persons: [anna, bernd], weeks: [woche(0, meeting)] })
+    expect(probleme(container)).toEqual([
+      'Bernd passt nicht als Partner zu Anna — gleiches Geschlecht oder Familie · Zusammenkunft unter der Woche',
+    ])
+  })
 })
 
 describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
@@ -322,6 +346,39 @@ describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
     const platz = { name: 'Anna', pid: anna.id }
     expect(machKonfliktVon([anna], [doppelt, weg])(platz)?.kind).toBe('absent')
     expect(machKonfliktVon([anna], [weg, doppelt])(platz)?.kind).toBe('absent')
+  })
+
+  it('ein unpassendes Paar sagt es am Platz selbst — nicht „An diesem Tag schon"', () => {
+    const paar: Conflict = { kind: 'partner', name: 'Bernd', kennung: 'p-b', tab: 'mid', zu: 'Anna' }
+    expect(problemGrund(paar, t)).toBe(t.paarPasstNicht)
+    expect(problemGrund({ ...paar, kind: 'double', count: 2 }, t)).toBe(t.sheetSchonHeute)
+  })
+
+  it('das unpassende Paar trifft nur den Platz des Partners — sein Schlussgebet am selben Abend nicht', () => {
+    // Wer abwesend ist oder doppelt steht, fehlt überall; wer nicht zum
+    // Gesprächsführer passt, passt nur dort nicht. Zwei Programmpunkte am
+    // selben Abend sind kein Konflikt — das Gebet bleibt, wie es ist.
+    const anna = { ...person('p-anna', 'Anna'), female: true }
+    const bernd = person('p-bernd', 'Bernd')
+    const partner = { name: 'Bernd', pid: bernd.id, rolle: 'Partner', bereichsKey: 'schulungPartner' }
+    const gebet = { name: 'Bernd', pid: bernd.id, rolle: 'Gebet', bereichsKey: 'gebet' }
+    const meeting: Meeting = {
+      date: '', end: '', helpers: {},
+      sections: [
+        {
+          label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
+          items: [{
+            iid: 'g1', title: 'Gespräche beginnen', meta: '',
+            names: [{ name: 'Anna', pid: anna.id, bereichsKey: 'schulung' }, partner],
+          }],
+        },
+        { label: 'ABSCHLUSS', farbe: 'neutral', items: [{ iid: 'e1', title: 'Schlussworte · Gebet', meta: '', names: [gebet] }] },
+      ],
+    }
+    const liste = weekConflicts([woche(0, meeting)], 0, [anna, bernd], DIENSTE, 'mid', KEINE_ABWESENHEIT)
+    const von = machKonfliktVon([anna, bernd], liste)
+    expect(von(partner)?.kind).toBe('partner')
+    expect(von(gebet), 'das Gebet steht nicht in Frage').toBeUndefined()
   })
 })
 

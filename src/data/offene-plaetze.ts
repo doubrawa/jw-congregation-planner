@@ -24,10 +24,10 @@
  */
 
 import { istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { gehoertZu, isQualified, istAusgefallen, MEETING_TABS } from './helpers'
-import { angebotsBereich } from '../../supabase/functions/_shared/freie-plaetze.ts'
+import { displayName, isQualified, istAusgefallen, MEETING_TABS } from './helpers'
+import { stehtImDienst, uebernahmeHindernis } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
-import { allePlaetze, platzKey } from './plaetze'
+import { allePlaetze, auswahlFuer, platzKey } from './plaetze'
 import { assignmentsInMeeting, wochenIndex } from './planning'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type {
@@ -104,6 +104,8 @@ export function offenePlaetze(
 ): OffenerPlatz[] {
   const out: OffenerPlatz[] = []
   const gesendet = gesendeteWochen(sentLog)
+  const ich = { id: me.id, name: displayName(me) }
+  const hatBereich = (bereich: string): boolean => isQualified(me, bereich)
   weeks.forEach((week, wi) => {
     if (!gesendet.has(week.start)) return
     for (const tab of MEETING_TABS) {
@@ -116,11 +118,9 @@ export function offenePlaetze(
         // Nur Hilfsdienste — Programmpunkte und den Ratgeber teilt der Planer zu.
         if (platz.art !== 'helper') continue
         if (platz.slot?.name) continue
-        // Schon auf einem anderen Platz desselben Dienstes (Mikrofon 1, und
-        // Mikrofon 2 ist frei): Ein zweiter Platz brächte dem Dienst niemanden dazu.
-        if (meeting.helpers[platz.svc.key]?.some((s) => gehoertZu(s, me))) continue
-        const bereich = angebotsBereich(platz.svc)
-        if (!bereich || !isQualified(me, bereich)) continue
+        // Vorbei und abwesend sind oben schon gefragt — für die ganze Zusammenkunft.
+        const imDienst = stehtImDienst(meeting.helpers[platz.svc.key] ?? [], ich)
+        if (uebernahmeHindernis({ svc: platz.svc, hatBereich, imDienst, vorbei: false, abwesend: false })) continue
         out.push({
           key: platzKey(platz, week.start, tab),
           // Wie bei den Aufgaben (`eachAssignedSlot`): Der Dienst trägt allein.
@@ -156,11 +156,7 @@ export function platzAuswahl(
   const meeting = weeks[wi]?.[teile.tab]
   if (!meeting) return null
   for (const platz of allePlaetze(meeting, services)) {
-    if (platzKey(platz, teile.woche, teile.tab) !== key) continue
-    const basis = { wi, tab: teile.tab, label: '', priv: null, groups: false }
-    if (platz.art === 'ratgeber') return { kind: 'ratgeber', ...basis }
-    if (platz.art === 'helper') return { kind: 'helper', ...basis, svc: platz.svc.key, pos: platz.pos }
-    return { kind: 'part', ...basis, si: platz.si, ii: platz.ii, ni: platz.ni, ...(platz.aux ? { aux: true } : {}) }
+    if (platzKey(platz, teile.woche, teile.tab) === key) return auswahlFuer(platz, wi, teile.tab)
   }
   return null
 }
