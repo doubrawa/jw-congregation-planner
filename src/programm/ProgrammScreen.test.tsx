@@ -669,7 +669,7 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     expect(optionen().map((o) => o.getAttribute('aria-checked'))).toEqual(['true', 'false'])
   })
 
-  it('„Diese Woche" druckt den Wochenbogen — beide Tage und die Hilfsdienste, ohne das Blatt „Drucken"', () => {
+  it('„Diese Woche" druckt den Wochenbogen — beide Tage, ohne das Blatt „Drucken"', () => {
     // Ein abgebrochener Druck vorher (kein `afterprint`) ließ früher den
     // nächsten Ausdruck still als Monat oder Zettelbogen herauskommen — der
     // Bogen setzt sein Kennzeichen jetzt selbst.
@@ -677,13 +677,11 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     let kennzeichen: string | undefined = 'nicht gedruckt'
     let blattImDruck: boolean | undefined
     let tage: string[] = []
-    let dienste = 0
     print.mockImplementation(() => {
       kennzeichen = document.documentElement.dataset.print
       // Der Druckdialog nimmt auf, was in diesem Moment im DOM steht.
       blattImDruck = document.querySelector('.druck-optionen') !== null
       tage = [...document.querySelectorAll('.druck-bogen .druck-tag-datum')].map((e) => e.textContent ?? '')
-      dienste = document.querySelectorAll('.druck-bogen .druck-hilfsdienste').length
     })
     const { container } = zeige({ weeks: wochen(), fsWeeks: leer(), week: 2 })
     drucke(container, 0)
@@ -691,7 +689,6 @@ describe('Drucken: diese Woche oder der ganze Monat', () => {
     expect(kennzeichen).toBe('bogen')
     expect(blattImDruck, 'das Blatt „Drucken" stand noch im Ausdruck').toBe(false)
     expect(tage).toEqual(['Dienstag, 15. September', 'Sonntag, 20. September'])
-    expect(dienste).toBe(1)
   })
 
   it('„Ganzer Monat" druckt jede Woche, deren Montag im Monat liegt — und nur die', () => {

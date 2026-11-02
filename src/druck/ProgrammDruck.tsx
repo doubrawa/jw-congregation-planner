@@ -1,13 +1,12 @@
 import { Fragment } from 'react'
 import { useApp } from '../app/context'
 import { hatAuxKlasse } from '../data/aux-class'
-import { abweichungsGrund, dauerAbtrennen, istAusgefallen, MEETING_TABS } from '../data/helpers'
+import { abweichungsGrund, dauerAbtrennen, istAusgefallen } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
 import type { MeetingKey, SlotAssignment, Week } from '../data/types'
 import { zusammenkunftName } from '../components/anlass-name'
-import { wochentagMitZahl } from '../components/datum-anzeige'
-import { platzName, useT } from '../i18n/useT'
-import { abschnittZeilen, plaetzeVon, rolleNebenDemNamen } from '../programm/programm-zeilen'
+import { useT } from '../i18n/useT'
+import { abschnittZeilen, rolleNebenDemNamen } from '../programm/programm-zeilen'
 import { Balken, Offen } from './DruckBlatt'
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 
@@ -101,53 +100,6 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
           )}
         </>
       )}
-    </section>
-  )
-}
-
-/**
- * **Die Hilfsdienste beider Tage** als Tabelle: eine Zeile je Dienst, eine
- * Spalte je Tag. Ein freier Platz steht gepunktet da; fällt ein Tag aus, ist
- * sein Kopf durchgestrichen. Am Bildschirm steht seit dem 21.10.2026 jeder
- * Tag mit seinen eigenen Diensten (`ZusammenkunftAnsicht`).
- */
-export function HilfsdiensteDruck({ week, rawWeek }: { week: Week; rawWeek: Week }) {
-  const { state } = useApp()
-  const i18n = useT()
-  const { t, tu } = i18n
-  return (
-    <section className="druck-hilfsdienste" data-farbe="neutral2">
-      <AbschnittKopf name={t.hilfsdienste} lieder={[]} />
-      <div className="druck-dienst-zeile druck-dienst-zeile--kopf">
-        <span />
-        {MEETING_TABS.map((key) => {
-          const datum = meetingDate(rawWeek, key, state.congregation.times)
-          return (
-            <span key={key}>
-              <TagDatum ausgefallen={istAusgefallen(rawWeek, key)}>{wochentagMitZahl(datum, state.lang)}</TagDatum>
-            </span>
-          )
-        })}
-      </div>
-      {state.services.map((service) => (
-        <div key={service.key} className="druck-dienst-zeile">
-          <span>{tu(service.name)}</span>
-          {MEETING_TABS.map((key) => {
-            const plaetze = plaetzeVon(week[key].helpers, service)
-            const namen = plaetze
-              .filter((slot) => slot?.name)
-              .map((slot) => platzName(slot?.name ?? '', Boolean(service.groups), i18n))
-            const frei = plaetze.some((slot) => !slot?.name)
-            return (
-              <span key={key}>
-                {namen.join(', ')}
-                {namen.length > 0 && frei && ', '}
-                {frei && <Offen breite={84} />}
-              </span>
-            )
-          })}
-        </div>
-      ))}
     </section>
   )
 }

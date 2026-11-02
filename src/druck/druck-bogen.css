@@ -339,41 +339,6 @@
   color: var(--tinte2);
 }
 
-/* ---- Hilfsdienste: eine Zeile je Dienst, eine Spalte je Tag ----------- */
-
-.druck-hilfsdienste {
-  display: flex;
-  flex-direction: column;
-  padding-top: 22px;
-}
-
-.druck-dienst-zeile {
-  display: grid;
-  grid-template-columns: 118px minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 10px;
-  align-items: baseline;
-  padding: 6px 0 7px;
-  border-top: 1px solid var(--linie);
-  font-size: 13.5px;
-}
-
-.druck-dienst-zeile--kopf {
-  align-items: end;
-  padding: 0 0 4px;
-  border-top: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--tinte2);
-}
-
-.druck-dienst-zeile > :first-child {
-  color: var(--tinte2);
-}
-
-.druck-dienst-zeile:not(.druck-dienst-zeile--kopf) > :not(:first-child) {
-  font-weight: 600;
-}
-
 .druck-hinweis {
   margin: 0;
   padding-top: 10px;
@@ -388,9 +353,10 @@
 
 /* ---- Enger, wenn ein Block sonst nicht auf ein Blatt passt (`Bogen`) -- */
 
-/* Eine Woche mit langen Namen bei den Hilfsdiensten lief um wenige Pixel auf
-   ein zweites Blatt (1.11.2026). Gemessen an einer solchen Woche: rund 150 px
-   weniger. Nur dieser Block — was ohnehin passt, bleibt, wie es war. */
+/* Eine Woche mit langen Namen bei den damals noch gedruckten Hilfsdiensten
+   lief um wenige Pixel auf ein zweites Blatt (1.11.2026). Gemessen an einer
+   solchen Woche: rund 150 px weniger. Nur dieser Block — was ohnehin passt,
+   bleibt, wie es war. */
 .druck-block--eng {
   line-height: 1.25;
 }
@@ -405,18 +371,6 @@
 
 .druck-block--eng .druck-abschnitt-kopf {
   padding: 7px 0 3px;
-}
-
-.druck-block--eng .druck-hilfsdienste {
-  padding-top: 14px;
-}
-
-.druck-block--eng .druck-dienst-zeile {
-  padding: 3px 0 4px;
-}
-
-.druck-block--eng .druck-dienst-zeile--kopf {
-  padding: 0 0 3px;
 }
 
 /* ---- Monat: je Woche ihr Kopf, darunter die Woche wie auf ihrem Bogen -- */

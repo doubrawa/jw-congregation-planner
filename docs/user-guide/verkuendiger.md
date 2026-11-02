@@ -299,7 +299,7 @@ dieser Woche** und zur **nächsten Zusammenkunft**, die stattfindet.
 Neben dem Termin jeder Zusammenkunft und über den Treffpunkten steht das
 **Drucker**‑Zeichen, ab dem Tablet der Knopf **Drucken** rechts neben der Woche.
 Er öffnet ein Blatt: **Diese Woche** ist vorgewählt – beide Zusammenkünfte auf
-einem Blatt, mit den Hilfsdiensten –, oder du wählst den **ganzen Monat**,
+einem Blatt, ohne die Hilfsdienste –, oder du wählst den **ganzen Monat**,
 Woche für Woche im selben Aussehen. Erst **Drucken** druckt. Gedruckt wird ein eigener
 Bogen auf A4, nicht der Bildschirm; freie Plätze stehen gepunktet da. Wo bei
 dir **„Du"** steht, druckt der Bogen deinen Namen; der Aushang gilt allen. Auch

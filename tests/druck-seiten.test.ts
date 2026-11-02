@@ -90,17 +90,11 @@ describe('Das eng gesetzte Blatt', () => {
     expect(Number(wert('.druck-block--eng', 'line-height')[0])).toBeLessThan(Number(wert('.druck-blatt', 'line-height')[0]))
   })
 
-  it.each(['.druck-punkt', '.druck-abschnitt-kopf', '.druck-dienst-zeile'])('%s rückt zusammen', (selektor) => {
+  it.each(['.druck-punkt', '.druck-abschnitt-kopf'])('%s rückt zusammen', (selektor) => {
     const eng = senkrecht(wert(`.druck-block--eng ${selektor}`, 'padding')[0])
     const sonst = senkrecht(wert(selektor, 'padding')[0])
     expect(sonst, `${selektor} ohne Abstand gelesen`).toBeGreaterThan(0)
     expect(eng).toBeLessThan(sonst)
-  })
-
-  it('die Hilfsdienste rücken an die Zusammenkunft heran', () => {
-    expect(parseFloat(wert('.druck-block--eng .druck-hilfsdienste', 'padding-top')[0] ?? '')).toBeLessThan(
-      parseFloat(wert('.druck-hilfsdienste', 'padding-top')[0] ?? ''),
-    )
   })
 })
 

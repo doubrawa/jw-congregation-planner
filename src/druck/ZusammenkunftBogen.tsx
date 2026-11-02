@@ -1,23 +1,29 @@
 import { useApp } from '../app/context'
 import { anlassArt } from '../data/anlass'
-import { ersteZusammenkunftNach } from '../data/helpers'
+import { ersteZusammenkunftNach, istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
+import { allePlaetze, leerVorOrt } from '../data/plaetze'
+import type { Week } from '../data/types'
 import { anlassName } from '../components/anlass-name'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { monatsName, wochenDesMonats, wochenZeitraum } from '../programm/druck'
 import { Bogen } from './Bogen'
 import { Offen } from './DruckBlatt'
-import { HilfsdiensteDruck, TagVoll } from './ProgrammDruck'
+import { TagVoll, type DruckTag } from './ProgrammDruck'
 
 /**
  * **Die Zusammenkünfte einer Woche auf einem Blatt** (T121, Phase 9; Entwurf
- * `GDruckWoche`): links unter der Woche, rechts das Wochenende und darunter
- * die Hilfsdienste beider Tage. Ausführlich: je Punkt die Personen mit ihrer
- * Rolle, frei = gepunktet.
+ * `GDruckWoche`): links unter der Woche, rechts das Wochenende. Ausführlich:
+ * je Punkt die Personen mit ihrer Rolle, frei = gepunktet.
  *
- * Bis Phase 9 druckte die App den Bildschirm — je Zusammenkunft für sich, ohne
- * Hilfsdienste, am Desktop beide Tage auf zwei Seiten.
+ * Bis Phase 9 druckte die App den Bildschirm — je Zusammenkunft für sich, am
+ * Desktop beide Tage auf zwei Seiten. Die Hilfsdienste standen von Phase 9 bis
+ * zum 2.11.2026 unter dem Wochenende; seitdem nicht mehr auf dem Aushang
+ * (Betreiber).
+ *
+ * Der Anlass der Woche (Kreisaufseher, Gedächtnismahl, Kongress) steht hinter
+ * dem Zeitraum im Kopf des Blatts — im Monat steht er im Kopf der Woche.
  */
 export function WochenBogen({ wi }: { wi: number }) {
   const { state } = useApp()
@@ -26,11 +32,14 @@ export function WochenBogen({ wi }: { wi: number }) {
   const rawWeek = state.weeks[wi]
   if (!rawWeek) return null
   const { week, tpw } = progWeek(rawWeek)
+  const zeitraum = [wochenZeitraum(rawWeek, state.lang, programmSpanne({ week, tpw })), anlassName(anlassArt(rawWeek), t)]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <Bogen
       titel={t.navZusammenkuenfte}
-      zeitraum={wochenZeitraum(rawWeek, state.lang, programmSpanne({ week, tpw }))}
-      bloecke={[{ key: rawWeek.start ?? String(wi), inhalt: <WochenInhalt wi={wi} /> }]}
+      zeitraum={zeitraum}
+      bloecke={[{ key: rawWeek.start ?? String(wi), inhalt: <WochenInhalt wi={wi} week={week} rawWeek={rawWeek} tpw={tpw} /> }]}
     />
   )
 }
@@ -43,9 +52,9 @@ export function WochenBogen({ wi }: { wi: number }) {
  *
  * Bis zum 1.11.2026 stand hier eine eigene, knappe Fassung (Entwurf
  * `GDruckMonat`): je Punkt eine Zeile, die Namen rechts, ohne Dauer und
- * Zusatz. Zwei Wochen je Blatt sollte sie fassen; mit den Hilfsdiensten einer
- * echten Versammlung war es trotzdem nur eine. Woche und Monat sehen jetzt
- * gleich aus (Betreiber).
+ * Zusatz. Zwei Wochen je Blatt sollte sie fassen; mit den damals noch
+ * gedruckten Hilfsdiensten einer echten Versammlung war es trotzdem nur eine.
+ * Woche und Monat sehen jetzt gleich aus (Betreiber).
  */
 export function MonatsBogen({ monat }: { monat: string }) {
   const { state } = useApp()
@@ -72,38 +81,51 @@ function MonatsWoche({ wi }: { wi: number }) {
         <h2 className="druck-monat-titel">{programmSpanne({ week, tpw })}</h2>
         {anlass && <span className="druck-anlass">{anlass}</span>}
       </div>
-      <WochenInhalt wi={wi} />
+      <WochenInhalt wi={wi} week={week} rawWeek={rawWeek} tpw={tpw} />
     </section>
   )
 }
 
 /**
  * **Was von einer Woche auf dem Papier steht** — auf dem Wochen- und dem
- * Monatsbogen dasselbe: links unter der Woche, rechts das Wochenende, darunter
- * die Hilfsdienste beider Tage. In der Kongresswoche ein Satz und wann die
- * nächste Zusammenkunft ist.
+ * Monatsbogen dasselbe: links unter der Woche, rechts das Wochenende — ohne
+ * Hilfsdienste. In der Kongresswoche ein Satz und wann die nächste
+ * Zusammenkunft ist.
+ *
+ * Was die gepunktete Linie heißt, steht nur da, wenn auf dem Blatt eine ist
+ * (2.11.2026): Ohne Hilfsdienste ist eine ganz besetzte Woche der Normalfall,
+ * und „noch frei" unter einem vollen Programm las sich, als fehle etwas.
  */
-function WochenInhalt({ wi }: { wi: number }) {
-  const { state } = useApp()
+function WochenInhalt({ wi, week, rawWeek, tpw }: { wi: number } & Omit<DruckTag, 'tab'>) {
   const { t } = useT()
-  const progWeek = useProgWeeks()
-  const rawWeek = state.weeks[wi]
-  if (!rawWeek) return null
   if (anlassArt(rawWeek) === 'kongress') return <KongressZeilen wi={wi} />
-  const { week, tpw } = progWeek(rawWeek)
   const tag = { week, rawWeek, tpw }
   return (
     <div className="druck-woche">
       <TagVoll tab="mid" {...tag} />
       <div className="druck-spalte">
         <TagVoll tab="we" {...tag} />
-        <HilfsdiensteDruck week={week} rawWeek={rawWeek} />
-        <p className="druck-hinweis">
-          <Offen breite={28} />
-          {t.druckNochFrei}
-        </p>
+        {hatFreienPlatz(rawWeek) && (
+          <p className="druck-hinweis">
+            <Offen breite={28} />
+            {t.druckNochFrei}
+          </p>
+        )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Steht auf dem Bogen ein freier Platz? Dieselben Plätze, die `TagVoll`
+ * druckt — Programm, Zusätzliche Klasse und ihr Ratgeber, ohne das
+ * Schlussgebet vor Ort (`leerVorOrt`) —, an den Tagen, die stattfinden.
+ */
+function hatFreienPlatz(rawWeek: Week): boolean {
+  return MEETING_TABS.some(
+    (tab) =>
+      !istAusgefallen(rawWeek, tab) &&
+      [...allePlaetze(rawWeek[tab])].some((platz) => !platz.slot.name && !leerVorOrt(rawWeek[tab], platz)),
   )
 }
 

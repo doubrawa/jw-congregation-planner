@@ -263,13 +263,13 @@ export const DE = {
     hilfsdienste: 'Hilfsdienste', stand: 'Stand: {datum}', drucken: 'Drucken',
     // Druck-Auswahl (T105): die angezeigte Woche oder alle Wochen des Monats.
     druckWoche: 'Diese Woche', druckMonat: 'Ganzer Monat · {monat}',
-    // Unter dem Titel des Druck-Blatts der Zusammenkünfte (T121).
-    druckZusammenkuenfte: 'Zusammenkünfte mit allen Zuteilungen.',
-    // Druckbögen (T121, Phase 9): Fuß jedes Blatts hinter „Stand: …"; unter den
-    // Hilfsdiensten, was die gepunktete Linie heißt.
+    // Unter dem Titel des Druck-Blatts der Zusammenkünfte (T121). Seit dem
+    // 2.11.2026 druckt der Bogen keine Hilfsdienste mehr.
+    druckZusammenkuenfte: 'Das Programm mit allen Zuteilungen – ohne Hilfsdienste.',
+    // Druckbögen (T121, Phase 9): Fuß jedes Blatts hinter „Stand: …"; unter dem
+    // Wochenende, was die gepunktete Linie heißt — nur, wenn ein Platz frei ist.
     aenderungenInDerApp: 'Änderungen stehen in der App',
-    // Seit T142 (25.10.2026) übernimmt man in der App nur Hilfsdienste — gepunktet sind auch Programmpunkte.
-    druckNochFrei: 'noch frei – Hilfsdienste übernimmst du in der App, sonst sprich die Ältesten an.',
+    druckNochFrei: 'noch frei – sprich die Ältesten an.',
     // Bogen der Treffpunkte (Entwurf GDruckTreffpunkte): Überschriften, Spalten
     // und was gegenüber dem Grundplan anders ist — „statt {alt}" nennt Zeit und
     // Ort, die sonst gelten.

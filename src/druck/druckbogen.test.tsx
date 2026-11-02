@@ -23,8 +23,8 @@ import { zahlBinden } from '../i18n/zahl-binden'
 /**
  * **Die Druckbögen der Zusammenkünfte** (T121, Phase 9; Entwurf
  * `GDruckWoche`, seit dem 1.11.2026 auch für den Monat): eigenes Papier statt des gedruckten
- * Bildschirms — beide Tage einer Woche auf einem Blatt, die Hilfsdienste
- * darunter, freie Plätze gepunktet zum Eintragen von Hand.
+ * Bildschirms — beide Tage einer Woche auf einem Blatt, ohne Hilfsdienste,
+ * freie Plätze gepunktet zum Eintragen von Hand.
  */
 
 const t = dict('de')
@@ -94,7 +94,7 @@ const texte = (c: ParentNode, sel: string) => [...c.querySelectorAll(sel)].map((
 afterEach(cleanup)
 
 describe('Der Wochenbogen', () => {
-  it('beide Tage auf einem Blatt, die Hilfsdienste darunter — Kopf mit Versammlung, Thema und Woche samt Jahr', () => {
+  it('beide Tage auf einem Blatt — Kopf mit Versammlung, Thema und Woche samt Jahr', () => {
     const { container } = zeige(<WochenBogen wi={0} />)
     expect(container.querySelectorAll('.druck-blatt')).toHaveLength(1)
     expect(texte(container, '.druck-tag-datum')).toEqual(['Dienstag, 8. September', 'Sonntag, 13. September'])
@@ -138,17 +138,26 @@ describe('Der Wochenbogen', () => {
     expect(container.textContent).not.toContain(t.chipDu)
   })
 
-  it('die Hilfsdienste: je Dienst eine Zeile, je Tag eine Spalte — bis zur Platzzahl, freie Plätze gepunktet', () => {
-    const { container } = zeige(<WochenBogen wi={0} />)
-    const zeilen = [...container.querySelectorAll('.druck-hilfsdienste .druck-dienst-zeile:not(.druck-dienst-zeile--kopf)')]
-    expect(zeilen.map((z) => z.firstElementChild?.textContent)).toEqual(['Mikrofone', 'Saalordner'])
-    const [mik, saal] = zeilen
-    // Mikrofone: unter der Woche einer von zwei Plätzen besetzt — Name und Punkte.
-    expect(mik?.children[1]?.textContent).toBe('Mia Mikro, ')
-    expect(mik?.children[1]?.querySelector('.druck-offen')).not.toBeNull()
-    expect(mik?.children[2]?.textContent).toBe('Max Mikro, Moni Mikro')
-    expect(saal?.children[1]?.querySelector('.druck-offen')).not.toBeNull()
-    expect(saal?.children[2]?.textContent).toBe('Sven Saal')
+  /**
+   * **Keine Hilfsdienste auf dem Aushang** (Betreiber, 2.11.2026) — weder
+   * unter der Woche noch am Wochenende, auf dem Wochen- wie auf dem
+   * Monatsbogen. Bis dahin standen sie als Tabelle unter dem Wochenende.
+   */
+  it('keine Hilfsdienste — weder unter der Woche noch am Wochenende, auch im Monat nicht', () => {
+    // Gegenprobe: Die Woche hat Hilfsdienste mit Namen an beiden Tagen.
+    expect(woche().mid.helpers.mik?.[0]?.name).toBe('Mia Mikro')
+    expect(woche().we.helpers.saal?.[0]?.name).toBe('Sven Saal')
+    for (const bogen of [<WochenBogen key="woche" wi={0} />, <MonatsBogen key="monat" monat="2026-09" />]) {
+      zeige(bogen)
+      const text = document.body.textContent ?? ''
+      // Gegenprobe: Das Programm beider Tage steht da.
+      expect(text).toContain('Sara Schul')
+      expect(text).toContain('Sonntag, 13. September')
+      for (const wort of ['Mia Mikro', 'Max Mikro', 'Moni Mikro', 'Sven Saal', 'Mikrofone', 'Saalordner', t.hilfsdienste]) {
+        expect(text, `${bogen.key}: ${wort}`).not.toContain(wort)
+      }
+      cleanup()
+    }
   })
 
   it('fällt ein Tag aus, steht er durchgestrichen da — mit dem Grund statt des Programms', () => {
@@ -156,6 +165,76 @@ describe('Der Wochenbogen', () => {
     const { container } = zeige(<WochenBogen wi={0} />, { weeks: [w] })
     expect(container.querySelector('.druck-tag-datum s')?.textContent).toBe('Dienstag, 8. September')
     expect(container.querySelector('.druck-ausfall')?.textContent).toBe('Saal belegt')
+  })
+
+  /**
+   * **Was „noch frei" heißt, steht nur da, wenn etwas frei ist** (2.11.2026).
+   * Ohne Hilfsdienste ist eine ganz besetzte Woche der Normalfall; die
+   * Erklärung unter einem vollen Programm las sich, als fehle etwas.
+   */
+  describe('die Erklärung der gepunkteten Linie', () => {
+    /** Jeder Platz im Programm besetzt — auch die der Zusätzlichen Klasse und ihr Ratgeber. */
+    const besetzt = (w: Week): Week => {
+      const fuellen = (slot: { name: string }) => ({ ...slot, name: slot.name || 'Nina Neu' })
+      const tag = (m: Week['mid']): Week['mid'] => ({
+        ...m,
+        sections: m.sections.map((s) => ({
+          ...s,
+          items: s.items.map((item) =>
+            'names' in item ? { ...item, names: item.names.map(fuellen), ...(item.aux ? { aux: item.aux.map(fuellen) } : {}) } : item,
+          ),
+        })),
+        ...(m.auxRatgeber ? { auxRatgeber: fuellen(m.auxRatgeber) } : {}),
+      })
+      return { ...w, mid: tag(w.mid), we: tag(w.we) }
+    }
+    const erklaerung = (w: Week) => {
+      const { container } = zeige(<WochenBogen wi={0} />, { weeks: [w] })
+      const hinweis = container.querySelector('.druck-hinweis')
+      const offen = container.querySelectorAll('.druck-woche .druck-offen').length
+      cleanup()
+      return { hinweis: hinweis?.textContent ?? null, offen }
+    }
+
+    it('mit freiem Platz da, ganz besetzt nicht', () => {
+      expect(erklaerung(woche())).toEqual({ hinweis: t.druckNochFrei, offen: 3 })
+      expect(erklaerung(besetzt(woche()))).toEqual({ hinweis: null, offen: 0 })
+    })
+
+    it('das Schlussgebet vor Ort ist kein freier Platz — es steht ohne Linie da', () => {
+      const w = besetzt(woche())
+      w.we.sections = [
+        { label: 'WACHTTURM-STUDIUM', farbe: 'wein', items: [{ iid: 'w1', title: 'Studienartikel', meta: '60 Min.', names: [{ name: 'Leo Leiter', rolle: 'Leiter' }] }] },
+        { label: LABEL_ABSCHLUSS, farbe: 'neutral', items: [{ iid: 'a2', title: 'Schlussworte · Lied 5 · Gebet', names: [{ name: '', rolle: 'Gebet' }] }] },
+      ]
+      expect(erklaerung(w)).toEqual({ hinweis: null, offen: 0 })
+    })
+
+    it('ein freier Platz an einem Tag, der ausfällt, steht nicht auf dem Blatt — also keine Erklärung', () => {
+      const w = { ...woche(), dev: { mid: { cancelled: true, reason: 'Saal belegt' } } }
+      expect(erklaerung(w)).toEqual({ hinweis: null, offen: 0 })
+    })
+
+    it('frei nur in der Zusätzlichen Klasse oder bei ihrem Ratgeber — die Erklärung steht da', () => {
+      const [mitKlasse] = syncAuxSlots([besetzt(woche())], true)
+      const ganz = besetzt(mitKlasse!)
+      const ratgeber = (w: Week, name: string): Week => ({ ...w, mid: { ...w.mid, auxRatgeber: { ...w.mid.auxRatgeber!, name } } })
+      // Die Plätze der Klasse frei, ihr Ratgeber besetzt …
+      expect(erklaerung(ratgeber(mitKlasse!, 'Rolf Rat')).hinweis).toBe(t.druckNochFrei)
+      // … und umgekehrt.
+      expect(erklaerung(ratgeber(ganz, ''))).toEqual({ hinweis: t.druckNochFrei, offen: 2 })
+      // Gegenprobe: alles besetzt.
+      expect(erklaerung(ganz)).toEqual({ hinweis: null, offen: 0 })
+    })
+  })
+
+  it('der Anlass steht hinter dem Zeitraum im Kopf — im Monat im Kopf der Woche', () => {
+    const [co] = setAnlass([woche()], 0, 'co')
+    const kopf = zeige(<WochenBogen wi={0} />, { weeks: [co!] }).container.querySelector('.druck-zeitraum')?.textContent
+    expect(kopf).toBe(`${zahlBinden('7.–13. September 2026')} · ${t.coWoche}`)
+    cleanup()
+    // Gegenprobe: ohne Anlass nur der Zeitraum.
+    expect(zeige(<WochenBogen wi={0} />).container.querySelector('.druck-zeitraum')?.textContent).toBe(zahlBinden('7.–13. September 2026'))
   })
 })
 
@@ -245,12 +324,12 @@ describe('Der Monatsbogen', () => {
     expect(kongress.querySelector('.druck-woche')).toBeNull()
   })
 
-  it('… und auf ihrem eigenen Bogen ebenso — statt zweier gestrichener Tage und leerer Hilfsdienste', () => {
+  it('… und auf ihrem eigenen Bogen ebenso — statt zweier gestrichener Tage', () => {
     const weeks = setAnlass(wochen(), 1, 'kongress')
     const { container } = zeige(<WochenBogen wi={1} />, { weeks })
     expect(container.querySelector('.druck-kongress')?.textContent).toBe(t.kongressAusfall)
     expect(container.querySelector('.druck-hinweis')?.textContent).toContain(zahlBinden('Dienstag, 15. September'))
-    expect(container.querySelector('.druck-hilfsdienste')).toBeNull()
+    expect(container.querySelector('.druck-woche')).toBeNull()
   })
 })
 
@@ -480,7 +559,7 @@ describe('Bogen: Blöcke nach gemessener Höhe verteilen', () => {
   const enge = (c: HTMLElement) => texte(c, '.druck-block--eng [data-hoehe]')
 
   it('passt ein Block nur knapp nicht, rückt er zusammen — und bleibt auf einem Blatt (1.11.2026)', () => {
-    // Die Woche mit langen Namen bei den Hilfsdiensten: 1030 normal, 880 eng; Platz 1010.
+    // Eine volle Woche, etwa mit Zusätzlicher Klasse: 1030 normal, 880 eng; Platz 1010.
     const { container } = zeige(<Bogen titel="T" zeitraum="Z" bloecke={[block('Woche', 1030, 880)]} />)
     const alle = [...container.querySelectorAll('.druck-blatt')]
     expect(alle).toHaveLength(1)

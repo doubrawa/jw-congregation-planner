@@ -1952,15 +1952,18 @@ der Woche. Ein Tipp darauf öffnet das Blatt **Drucken** mit der Wahl; erst
 
 - **Diese Woche** (vorgewählt) – beide Zusammenkünfte auf einem Blatt: links
   unter der Woche, rechts das Wochenende, je Programmpunkt die Personen mit
-  ihrer Rolle (beim Gastredner seine Versammlung), darunter die
-  **Hilfsdienste** beider Tage. Fällt ein Tag aus,
-  steht er durchgestrichen da, mit dem Grund. Eine Kongresswoche steht mit
-  einem Satz da, dazu, wann die nächste Zusammenkunft ist. Passt eine Woche
-  knapp nicht auf ein Blatt – etwa mit langen Namen bei den Hilfsdiensten –,
-  rückt sie etwas enger zusammen.
+  ihrer Rolle (beim Gastredner seine Versammlung). Die **Hilfsdienste** stehen
+  nicht auf dem Bogen – weder unter der Woche noch am Wochenende. Ist ein
+  Platz noch frei, steht unter dem Wochenende, was die gepunktete Linie
+  heißt; ist alles besetzt, fehlt der Satz. Hat die Woche einen Anlass
+  (Besuch des Kreisaufsehers, Gedächtnismahl, Kongress), steht er oben
+  hinter dem Zeitraum. Fällt ein Tag aus, steht er durchgestrichen da, mit
+  dem Grund. Eine Kongresswoche steht mit einem Satz da, dazu, wann die
+  nächste Zusammenkunft ist. Passt eine Woche knapp nicht auf ein Blatt –
+  etwa mit langen Namen –, rückt sie etwas enger zusammen.
 - **Ganzer Monat · September 2026** – alle Wochen des Monats, jede mit ihrem
-  Zeitraum darüber und sonst genau wie bei **Diese Woche**, meist eine Woche
-  je Blatt. Eine Woche wird nie zerteilt.
+  Zeitraum und Anlass darüber und sonst genau wie bei **Diese Woche**, meist
+  eine Woche je Blatt. Eine Woche wird nie zerteilt.
 
 Aus welchem Reiter du druckst – unter der Woche oder Wochenende –, ist gleich:
 Der Bogen nimmt immer beide Zusammenkünfte mit.

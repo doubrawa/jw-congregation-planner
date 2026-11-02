@@ -15,11 +15,10 @@ export interface DruckBlock {
  * **Ein Druckbogen aus Blöcken** (T121, Phase 9), verteilt auf A4-Blätter —
  * **gemessen, nicht geschätzt.**
  *
- * Wie viel auf ein Blatt passt, hängt an den Daten: Eine Versammlung mit
- * sieben Hilfsdiensten und langen Namen braucht mehr Platz als das Szenario
- * mit vier. Eine feste Zahl je Blatt schnitt dann das Ende ab, oder der
- * Browser brach mitten in einer Woche um — und „Seite 1 von 2" stimmte nicht
- * mehr.
+ * Wie viel auf ein Blatt passt, hängt an den Daten: Eine Woche mit
+ * Zusätzlicher Klasse und langen Namen braucht mehr Platz als eine ohne. Eine
+ * feste Zahl je Blatt schnitt dann das Ende ab, oder der Browser brach mitten
+ * in einer Woche um — und „Seite 1 von 2" stimmte nicht mehr.
  *
  * Deshalb erst einmal alles auf **ein** Blatt in natürlicher Höhe zeichnen,
  * unsichtbar neben dem Bildschirm (`druck-messen`), die Blöcke messen und dann
@@ -29,13 +28,17 @@ export interface DruckBlock {
  * Zeichnen des Browsers.
  *
  * **Ein Block, der allein nicht auf ein Blatt passt, rückt zusammen**
- * (`druck-block--eng`, 1.11.2026): engere Zeilen, weniger Luft zwischen
- * Punkten und Diensten, und noch einmal gemessen. Eine Woche mit langen Namen
- * bei den Hilfsdiensten lief sonst um wenige Pixel auf ein zweites Blatt. Nur
- * dieser Block — im Monat sehen die übrigen Wochen aus wie auf ihrem eigenen
- * Bogen. Passt er auch so nicht, bekommt er sein Blatt ohne feste Höhe
- * (`ueberlang`): Er läuft auf die nächste Seite weiter, statt abgeschnitten
- * zu werden.
+ * (`druck-block--eng`, 1.11.2026): engere Zeilen, weniger Luft zwischen den
+ * Punkten, und noch einmal gemessen. Eine Woche mit langen Namen bei den
+ * damals noch gedruckten Hilfsdiensten lief sonst um wenige Pixel auf ein
+ * zweites Blatt. Nur dieser Block — im Monat sehen die übrigen Wochen aus wie
+ * auf ihrem eigenen Bogen. Passt er auch so nicht, bekommt er sein Blatt ohne
+ * feste Höhe (`ueberlang`): Er läuft auf die nächste Seite weiter, statt
+ * abgeschnitten zu werden.
+ *
+ * Gemessen wird der ganze Block, im Monat also samt dem Kopf der Woche (rund
+ * 33 px). Eine Woche, die auf ihrem eigenen Bogen knapp passt, rückt deshalb
+ * im Monat zusammen — sonst liefe sie dort auf ein zweites Blatt.
  */
 export function Bogen({ titel, zeitraum, bloecke }: { titel: string; zeitraum: string; bloecke: readonly DruckBlock[] }) {
   const [blaetter, setBlaetter] = useState<Blatt[] | null>(null)
