@@ -14,7 +14,10 @@ import {
   sammleNwsWochen,
   uuid5,
   verteileWoche,
+  wochenAusExporten,
+  wochenUnterschiede,
 } from './wochenplanung-importieren.mjs'
+import { abschnitt, dokument, tabelle, wochenKopf } from './wochenuebersicht-attrappe'
 import type { HelperSlot, SlotAssignment } from '../src/data/types'
 
 /**
@@ -449,5 +452,137 @@ describe('verteileWoche', () => {
     expect(data.we.sections[0]!.items[0]!.title).toBe('Lied · Gebet') // auch keine Liednummer
     expect(data.we.helpers).toEqual({})
     expect(z.gestrichen).toBe(1)
+  })
+})
+
+describe('wochenUnterschiede — was der Trockenlauf Platz für Platz nennt', () => {
+  /*
+    Vor dem Schreiben in die echte Datenbank zeigt `--trocken`, wer welchen
+    Platz verliert, und erst danach entscheidet der Betreiber — am 2.11.2026
+    etwa über Hilfsdienst-Plätze, die App und NWS verschieden besetzten. Fehlt
+    hier ein Platz, sieht er die Änderung erst, wenn sie geschrieben ist.
+  */
+  const woche = () => ({ mid: mitteWoche(), we: wochenendWoche() })
+
+  it('ein neuer Inhaber, ein gefüllter und ein geleerter Platz — je mit Punkt und Rolle', () => {
+    const vorher = woche()
+    vorher.mid.sections[0]!.items[0]!.names![0] = { name: 'Probe Eins', pid: 'id-1', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }
+    vorher.mid.sections[4]!.items[0]!.names![0] = { name: 'Probe Drei', pid: 'id-3', rolle: 'Gebet', bereichsKey: 'gebet' }
+    const nachher = structuredClone(vorher)
+    nachher.mid.sections[0]!.items[0]!.names![0] = { name: 'Probe Zwei', pid: 'id-2', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }
+    nachher.mid.sections[1]!.items[0]!.names![0] = { name: 'Probe Vier', pid: 'id-4', bereichsKey: 'vortrag' }
+    nachher.mid.sections[4]!.items[0]!.names![0] = { name: '', rolle: 'Gebet', bereichsKey: 'gebet' }
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'mid', punkt: 'Lied · Gebet · Einleitende Worte', platz: 'Vorsitz', alt: 'Probe Eins', neu: 'Probe Zwei' },
+      { tab: 'mid', punkt: 'Vortrag', platz: 'Platz 1', alt: '—', neu: 'Probe Vier' },
+      { tab: 'mid', punkt: 'Schlussworte · Gebet', platz: 'Gebet', alt: 'Probe Drei', neu: '—' },
+    ])
+  })
+
+  it('derselbe Name mit einer anderen Person dahinter ist ein Wechsel', () => {
+    // Zwei Gleichnamige: Ohne die Id sähe der Bericht keinen Unterschied.
+    const vorher = woche()
+    vorher.mid.sections[0]!.items[0]!.names![0] = { name: 'Probe Eins', pid: 'id-alt', rolle: 'Vorsitz', bereichsKey: 'vorsitzMid' }
+    const nachher = structuredClone(vorher)
+    nachher.mid.sections[0]!.items[0]!.names![0]!.pid = 'id-neu'
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'mid', punkt: 'Lied · Gebet · Einleitende Worte', platz: 'Vorsitz', alt: 'Probe Eins', neu: 'Probe Eins' },
+    ])
+  })
+
+  it('ein neues Vortragsthema und eine Liednummer stehen als Titel da', () => {
+    const vorher = woche()
+    const nachher = structuredClone(vorher)
+    nachher.we.sections[0]!.items[0]!.title = 'Lied 5 · Gebet'
+    nachher.we.sections[1]!.items[0]!.title = 'Probe-Thema'
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'we', punkt: 'Lied · Gebet', platz: 'Titel', alt: 'Lied · Gebet', neu: 'Lied 5 · Gebet' },
+      { tab: 'we', punkt: '(Vortragsthema eintragen)', platz: 'Titel', alt: '(Vortragsthema eintragen)', neu: 'Probe-Thema' },
+    ])
+  })
+
+  it('Hilfsdienste: ein Platz hinter dem letzten bisherigen und ein ganzer Dienst — in beide Richtungen', () => {
+    const vorher = woche()
+    vorher.mid.helpers = { mik: [{ name: 'Probe Eins', pid: 'id-1' }] }
+    const nachher = structuredClone(vorher)
+    nachher.mid.helpers = { mik: [{ name: 'Probe Eins', pid: 'id-1' }, { name: 'Probe Zwei', pid: 'id-2' }], rein: [{ name: 'Gruppe 3' }] }
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'mid', punkt: 'Hilfsdienst mik', platz: 'Platz 2', alt: '—', neu: 'Probe Zwei' },
+      { tab: 'mid', punkt: 'Hilfsdienst rein', platz: 'Platz 1', alt: '—', neu: 'Gruppe 3' },
+    ])
+    expect(wochenUnterschiede(nachher, vorher)).toEqual([
+      { tab: 'mid', punkt: 'Hilfsdienst mik', platz: 'Platz 2', alt: 'Probe Zwei', neu: '—' },
+      { tab: 'mid', punkt: 'Hilfsdienst rein', platz: 'Platz 1', alt: 'Gruppe 3', neu: '—' },
+    ])
+  })
+
+  it('der Ratgeber der Zusätzlichen Klasse', () => {
+    const vorher = woche()
+    const nachher = structuredClone(vorher)
+    nachher.mid.auxRatgeber = { ...nachher.mid.auxRatgeber, name: 'Probe Fünf', pid: 'id-5' }
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'mid', punkt: 'Zusätzliche Klasse', platz: 'Ratgeber', alt: '—', neu: 'Probe Fünf' },
+    ])
+  })
+
+  it('die Gegenprobe: dieselbe Woche ergibt nichts — und eine fehlende Zusammenkunft wird nicht verglichen', () => {
+    const vorher = woche()
+    expect(wochenUnterschiede(vorher, structuredClone(vorher))).toEqual([])
+    const nachher = structuredClone(vorher)
+    nachher.we.sections[1]!.items[0]!.title = 'Probe-Thema'
+    expect(wochenUnterschiede({ mid: vorher.mid }, nachher)).toEqual([])
+  })
+})
+
+describe('wochenAusExporten — die Exporte an die Personen der App gebunden', () => {
+  /*
+    Die Wochenübersicht nennt Namen, die App führt Personen. Die Brücke ist
+    die Personenliste: Name → NWS-Kennung → `uuid5("person:<ID>")`, dieselbe
+    Kennung, die der Personen-Generator vergibt. So kommt auch ein
+    Gleichnamiger an die richtige Person — über den Namen allein fände sich
+    „Probe Zwei 2" nicht, denn die App schreibt ihn „Probe Zwei (2)".
+  */
+  const PERSONEN = [
+    { PersonID: '101', FirstName: 'Probe', LastName: 'Eins', DisplayName: 'Probe Eins' },
+    { PersonID: '102', FirstName: 'Probe ', LastName: 'Zwei 2', DisplayName: 'Probe Zwei' },
+    { PersonID: '103', FirstName: 'Probe', LastName: 'Drei', DisplayName: 'Probe Drei' },
+  ]
+  const APP = new Map([[uuid5('person:101'), 'Probe Eins'], [uuid5('person:102'), 'Probe Zwei (2)']])
+  const datei = (name: string, ...tabellen: string[]) => ({ name, xml: dokument(tabellen) })
+  const vorsitz = (wer: string, gebet = '·') => tabelle([['Vorsitzender', wer, 'Anfangsgebet', gebet]])
+  const AUGUST = 'Probe August 2026 Wochenübersicht.docx'
+
+  it('ein Name kommt über die Personenliste an die App-Person — auch der Gleichnamige', () => {
+    const { wochen } = wochenAusExporten([datei(AUGUST, wochenKopf('August 24-30'), vorsitz('Probe Zwei 2', 'Probe Eins'))], PERSONEN, APP)
+    expect(wochen.get('2026-08-24')?.mid).toMatchObject({ chairman: 'Probe Zwei (2)', openingPrayer: 'Probe Eins' })
+  })
+
+  it('wer in NWS steht, aber nicht in der App, behält seinen Namen — und gilt als NWS-Person', () => {
+    const { wochen, nwsNamen } = wochenAusExporten([datei(AUGUST, wochenKopf('August 24-30'), vorsitz('Probe Drei'))], PERSONEN, APP)
+    expect(wochen.get('2026-08-24')?.mid.chairman).toBe('Probe Drei')
+    // Daran meldet der Import ihn als „NWS-Person ohne App-Konto"; ein Gast steht nicht in der Liste.
+    expect(nwsNamen.has('Probe Drei')).toBe(true)
+    expect(nwsNamen.has('Probe Gast')).toBe(false)
+  })
+
+  it('zwei Monate in einer Lieferung: Wochen, Besonderheiten und übersprungene Dienste zusammen', () => {
+    const benutzerdefiniert = abschnitt('Dienste unter der Woche', [['Benutzerdefiniert 1', 'Probe Eins']])
+    const { wochen, uebersprungen } = wochenAusExporten(
+      [
+        datei('Probe November 2026 Wochenübersicht.docx', wochenKopf('November 30-Dezember 06'), vorsitz('Probe Eins'), benutzerdefiniert),
+        datei('Probe Dezember 2026 Wochenübersicht.docx', wochenKopf('Dezember 07-13', 'Kreisaufseher'), vorsitz('Probe Eins'), benutzerdefiniert),
+      ],
+      PERSONEN,
+      APP,
+    )
+    expect([...wochen.keys()]).toEqual(['2026-11-30', '2026-12-07'])
+    expect([...wochen.values()].map((w) => w.besonderheit)).toEqual([null, 'Kreisaufseher'])
+    expect(uebersprungen).toEqual({ dienste: 2 })
+  })
+
+  it('ohne Monat und Jahr im Dateinamen bricht es ab — das Jahr wird nicht geraten', () => {
+    expect(() => wochenAusExporten([datei('Wochenübersicht.docx', wochenKopf('August 24-30'))], PERSONEN, APP)).toThrow(
+      'Monat und Jahr fehlen im Dateinamen',
+    )
   })
 })

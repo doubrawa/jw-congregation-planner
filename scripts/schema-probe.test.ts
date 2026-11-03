@@ -23,6 +23,7 @@ import {
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
+import { abschnitt, tabelle, wochenKopf, wochenuebersichtDocx } from './wochenuebersicht-attrappe'
 import { LABEL_WT_STUDIUM } from '../src/data/constants'
 import { wasBleibt, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 
@@ -84,6 +85,22 @@ const G_ALT = k(51) // Gruppe vor dem Zurücksetzen
 const NWS_PERSON = uuid5('person:101')
 const NWS_PERSONEN = [{ ID: 101, mid: 1, cid: 7, a: 'Probe', b: 'Eins' }]
 
+/** Dieselbe Person in den Exporten: Personenliste und Wochenübersicht (Vorsitz und Mikrofon). */
+const PROBE_PERSONENLISTE = 'PersonID,FirstName,LastName,DisplayName\r\n101,Probe,Eins,Probe Eins\r\n'
+const UEBERSICHT_DATEI = 'Probe August 2026 Wochenübersicht.docx'
+function probeUebersicht({ kopf = ['August 24-30'], vorsitz = 'Probe Eins' }: { kopf?: string[]; vorsitz?: string } = {}) {
+  return wochenuebersichtDocx([
+    wochenKopf(...kopf),
+    tabelle([['Vorsitzender', vorsitz, 'Anfangsgebet', '·']]),
+    abschnitt('Dienste unter der Woche', [['Mikrofone', 'Probe Eins']]),
+  ])
+}
+
+/** Eine Eingabedatei auf die Platte — Text und Buffer wörtlich, alles andere als JSON. */
+function eingabeSchreiben(ordner: string, name: string, inhalt: unknown) {
+  fs.writeFileSync(path.join(ordner, name), typeof inhalt === 'string' || Buffer.isBuffer(inhalt) ? inhalt : JSON.stringify(inhalt))
+}
+
 /** Ein Tag später oder früher, als ISO-Datum. */
 function plusTage(iso: string, tage: number): string {
   const d = new Date(`${iso}T12:00:00Z`)
@@ -133,10 +150,13 @@ const ANON = {
 
 interface Lauf {
   titel: string
-  /** Was gefahren wird — meist `main` mit einer Aufrufzeile; `dateien` ist das Verzeichnis der Eingaben. */
-  fahren: (m: Record<string, (...a: unknown[]) => Promise<unknown>>, dateien: string) => Promise<unknown>
+  /**
+   * Was gefahren wird — meist `main` mit einer Aufrufzeile; `dateien` ist das
+   * Verzeichnis der Eingaben, `zusatz` hängen einzelne Proben an (`--trocken`).
+   */
+  fahren: (m: Record<string, (...a: unknown[]) => Promise<unknown>>, dateien: string, zusatz?: string[]) => Promise<unknown>
   umgebung?: Umgebung
-  /** Eingabedateien (Name → Inhalt; ein Objekt wird zu JSON). */
+  /** Eingabedateien (Name → Inhalt; Text und Buffer wörtlich, ein Objekt als JSON). */
   dateien?: Record<string, unknown>
   /** Aufrufe, die der Lauf erreicht haben muss: „METHODE tabelle". */
   erwartet: string[]
@@ -474,6 +494,22 @@ const LAEUFE: Record<string, Lauf[]> = {
       // Studienleiter (18.10.2026).
       erwartet: ['GET congregations', 'GET persons', 'GET absences', 'GET weeks', 'GET services', 'POST rpc/woche_speichern'],
     },
+    {
+      // Seit dem NWS-Update vom 20.10.2026 der Weg an die Zuteilungen (2.11.2026).
+      titel: 'Zuteilungen aus den NWS-Exporten einspielen',
+      dateien: { [UEBERSICHT_DATEI]: probeUebersicht(), 'Personen.csv': PROBE_PERSONENLISTE },
+      fahren: (m, d, zusatz = []) =>
+        m.main!(['--wochenuebersicht', path.join(d, UEBERSICHT_DATEI), '--personen', path.join(d, 'Personen.csv'), ...zusatz]),
+      umgebung: {
+        bestand: {
+          congregations: [{ id: C }],
+          persons: [{ id: NWS_PERSON, congregation_id: C, fn: 'Probe', ln: 'Eins' }],
+          weeks: [{ congregation_id: C, start: '2026-08-24', data: probeWoche('2026-08-24') }],
+          services: [{ congregation_id: C, key: 'mik', name: 'Mikrofone' }],
+        },
+      },
+      erwartet: ['GET congregations', 'GET persons', 'GET absences', 'GET weeks', 'GET services', 'POST rpc/woche_speichern'],
+    },
   ],
 
   'versammlung-zuruecksetzen.mjs': [
@@ -714,9 +750,7 @@ describe('Jeder REST-Aufruf der Wartungsskripte passt zu schema.sql', () => {
     const modul = (await laden!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
     try {
-      for (const [name, inhalt] of Object.entries(lauf.dateien ?? {})) {
-        fs.writeFileSync(path.join(eingaben, name), typeof inhalt === 'string' ? inhalt : JSON.stringify(inhalt))
-      }
+      for (const [name, inhalt] of Object.entries(lauf.dateien ?? {})) eingabeSchreiben(eingaben, name, inhalt)
       const { aufrufe } = await fahre(() => lauf.fahren(modul, eingaben), lauf.umgebung)
       const erreicht = new Set(aufrufe.map((a) => `${a.method} ${tabelleVon(a)}`))
       expect(lauf.erwartet.filter((e) => !erreicht.has(e)), 'diese Aufrufe hat der Lauf nicht erreicht').toEqual([])
@@ -1622,7 +1656,7 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
     const modul = (await MODULE['./versammlung-zuruecksetzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
     try {
-      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), String(inhalt))
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) eingabeSchreiben(eingaben, name, inhalt)
       const bestand = {
         ...l.umgebung!.bestand,
         persons: [
@@ -1656,18 +1690,22 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
 })
 
 /**
- * Den ersten Lauf eines Import-Skripts noch einmal fahren — mit eigenem Bestand
- * (je Tabelle ersetzt) und, wo nötig, eigenen Edge Functions.
+ * Einen Lauf eines Import-Skripts noch einmal fahren (ohne Angabe den ersten) —
+ * mit eigenem Bestand (je Tabelle ersetzt), wo nötig eigenen Edge Functions,
+ * angehängten Schaltern und eigenen Eingabedateien (je Name ersetzt).
  */
-async function fahreImport(skript: string, bestand: Record<string, Zeile[]>, funktionen?: Umgebung['funktionen']) {
-  const l = LAEUFE[skript]![0]!
+async function fahreImport(
+  skript: string,
+  bestand: Record<string, Zeile[]>,
+  funktionen?: Umgebung['funktionen'],
+  { lauf = 0, zusatz = [], dateien = {} }: { lauf?: number; zusatz?: string[]; dateien?: Record<string, unknown> } = {},
+) {
+  const l = LAEUFE[skript]![lauf]!
   const modul = (await MODULE[`./${skript}`]!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
   const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
   try {
-    for (const [name, inhalt] of Object.entries(l.dateien ?? {})) {
-      fs.writeFileSync(path.join(eingaben, name), typeof inhalt === 'string' ? inhalt : JSON.stringify(inhalt))
-    }
-    return await fahre(() => l.fahren(modul, eingaben), {
+    for (const [name, inhalt] of Object.entries({ ...l.dateien, ...dateien })) eingabeSchreiben(eingaben, name, inhalt)
+    return await fahre(() => l.fahren(modul, eingaben, zusatz), {
       ...l.umgebung,
       ...(funktionen ? { funktionen } : {}),
       bestand: { ...l.umgebung!.bestand, ...bestand },
@@ -1816,6 +1854,107 @@ describe('Importe: Der feste Leiter des Wachtturm-Studiums kommt in die Woche (1
   })
 })
 
+describe('wochenplanung-importieren aus den NWS-Exporten (2.11.2026)', () => {
+  /*
+    Seit dem NWS-Update vom 20.10.2026 kommt der Import an die Zuteilungen nur
+    noch über die Exporte. Er läuft gegen die echte Datenbank, nach einem
+    Trockenlauf, dessen Bericht der Betreiber liest und danach entscheidet.
+    Deshalb muss der Bericht jeden Platz nennen, der sich ändert, und der echte
+    Lauf darf keine Woche anfassen, die schon stimmt: Jedes Schreiben hebt
+    ihren Stand, und ein Planer, der sie gerade offen hat, träfe beim Speichern
+    auf einen Konflikt.
+  */
+  const exportLauf = ({ bestand = {}, zusatz = [], dateien = {} }: { bestand?: Record<string, Zeile[]>; zusatz?: string[]; dateien?: Record<string, unknown> } = {}) =>
+    fahreImport('wochenplanung-importieren.mjs', bestand, undefined, { lauf: 1, zusatz, dateien })
+  const geschrieben = (aufrufe: Aufruf[]) => aufrufe.filter((a) => tabelleVon(a) === 'rpc/woche_speichern').length
+  type Woche = { mid: { sections: { items: { names: Record<string, unknown>[] }[] }[]; helpers: Record<string, unknown> } }
+  const vorsitzIn = (data: unknown) => (data as Woche).mid.sections[0]!.items[0]!.names[0]
+
+  it('Vorsitz und Mikrofon kommen an die Person, die die Personenliste nennt', async () => {
+    const { tabellen } = await exportLauf()
+    const mitte = (tabellen.weeks![0]!.data as Woche).mid
+    expect(mitte.sections[0]!.items[0]!.names[0]).toMatchObject({ name: 'Probe Eins', pid: NWS_PERSON, rolle: 'Vorsitz' })
+    expect(mitte.helpers.mik).toEqual([{ name: 'Probe Eins', pid: NWS_PERSON }])
+  })
+
+  it('steht schon da, was NWS führt, schreibt der nächste Lauf die Woche nicht — ihr Stand bleibt', async () => {
+    const erster = await exportLauf()
+    expect(geschrieben(erster.aufrufe), 'der erste Lauf schreibt').toBe(1)
+    const zweiter = await exportLauf({ bestand: { weeks: erster.tabellen.weeks! } })
+    expect(geschrieben(zweiter.aufrufe)).toBe(0)
+    expect(zweiter.tabellen.weeks![0]!.updated_at).toBe(erster.tabellen.weeks![0]!.updated_at)
+    expect(zweiter.ausgabe.join('\n')).toContain('Getroffene Wochen: 1 (davon schon auf dem Stand von NWS: 1)')
+  })
+
+  it('auch ein Blob ohne Montag gilt nicht als geändert, wenn seine Plätze schon stimmen', async () => {
+    // Die App ergänzt `start` beim Laden aus der Spalte; der Blob muss ihn nicht
+    // tragen. Der Import gibt ihn für den Studienleiter dazu — das allein ist
+    // keine Änderung.
+    const erster = await exportLauf()
+    const zeile = erster.tabellen.weeks![0]!
+    const { start: _ausDerSpalte, ...ohneMontag } = zeile.data as Record<string, unknown>
+    const zweiter = await exportLauf({ bestand: { weeks: [{ ...zeile, data: ohneMontag }] } })
+    expect(geschrieben(zweiter.aufrufe)).toBe(0)
+    expect(zweiter.ausgabe.join('\n')).toContain('(davon schon auf dem Stand von NWS: 1)')
+  })
+
+  it('führt NWS die Woche als besondere, bleibt sie ohne Anlass in der App unberührt — und der Bericht sagt, was zu tun ist', async () => {
+    // So stand die Woche des Kreisaufsehers am 3.11.2026: in NWS „Kreisaufseher",
+    // in der App noch ohne Anlass.
+    const { aufrufe, ausgabe } = await exportLauf({ dateien: { [UEBERSICHT_DATEI]: probeUebersicht({ kopf: ['August 24-30', 'Kreisaufseher'] }) } })
+    expect(geschrieben(aufrufe)).toBe(0)
+    expect(ausgabe.join('\n')).toContain('nicht übernommen: 2026-08-24 „Kreisaufseher". Erst den Anlass in der App setzen.')
+  })
+
+  it('ein Name, den weder die App noch die Personenliste kennt, steht als Freitext da — und im Bericht', async () => {
+    const unbekannt = await exportLauf({ dateien: { [UEBERSICHT_DATEI]: probeUebersicht({ vorsitz: 'Probe Unbekannt' }) } })
+    expect(vorsitzIn(unbekannt.tabellen.weeks![0]!.data)).toMatchObject({ name: 'Probe Unbekannt' })
+    expect(vorsitzIn(unbekannt.tabellen.weeks![0]!.data)).not.toHaveProperty('pid')
+    expect(unbekannt.ausgabe.join('\n')).toContain('noch die NWS-Personenliste treffen (als Freitext gesetzt):\n  Probe Unbekannt')
+
+    // Gegenprobe: Steht der Name in der Personenliste, fehlt nur die App-Person.
+    const fehlt = await exportLauf({
+      dateien: {
+        [UEBERSICHT_DATEI]: probeUebersicht({ vorsitz: 'Probe Zwei' }),
+        'Personen.csv': `${PROBE_PERSONENLISTE}102,Probe,Zwei,Probe Zwei\r\n`,
+      },
+    })
+    const bericht = fehlt.ausgabe.join('\n')
+    expect(bericht).toContain('NWS-Personen ohne App-Konto (nur Name gesetzt — Personen neu importieren?):\n  Probe Zwei')
+    expect(bericht).not.toContain('noch die NWS-Personenliste treffen')
+  })
+
+  it('--trocken nennt jeden Platz, der sich ändert — und schreibt nichts', async () => {
+    const { aufrufe, tabellen, ausgabe } = await exportLauf({ zusatz: ['--trocken'] })
+    expect(geschrieben(aufrufe)).toBe(0)
+    expect(tabellen.weeks![0]!.data).toEqual(probeWoche('2026-08-24'))
+    const bericht = ausgabe.join('\n')
+    expect(bericht).toContain('Eine Woche würde sich ändern:')
+    expect(bericht).toContain('  2026-08-24\n')
+    expect(bericht).toContain('    Mitte · Probe-Punkt · Vorsitz: — → Probe Eins')
+    expect(bericht).toContain('    Mitte · Hilfsdienst mik · Platz 1: — → Probe Eins')
+  })
+
+  it('eine Woche mit Anlass bleibt unberührt — beim Kreisaufseher plant der Planer selbst', async () => {
+    // So wartet die Woche des Kreisaufsehers im Dezember 2026 auf den Import:
+    // Erst steht der Anlass in der App, dann läuft der Import über sie hinweg.
+    const { aufrufe, ausgabe } = await exportLauf({
+      bestand: { weeks: [{ congregation_id: C, start: '2026-08-24', data: { ...probeWoche('2026-08-24'), anlass: { art: 'co' } } }] },
+    })
+    expect(geschrieben(aufrufe)).toBe(0)
+    expect(ausgabe.join('\n')).toContain('Sonderwochen übersprungen: 1')
+  })
+
+  it('--wochenuebersicht ohne --personen bricht ab, bevor es irgendetwas liest', async () => {
+    const modul = (await MODULE['./wochenplanung-importieren.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const ohnePersonen = () => modul.main!(['--wochenuebersicht', UEBERSICHT_DATEI])
+    await expect(fahre(ohnePersonen)).rejects.toThrow('process.exit(2)')
+    const { aufrufe, meldungen } = await fahre(() => ohnePersonen().catch(() => undefined))
+    expect(aufrufe).toEqual([])
+    expect(meldungen.join('\n')).toContain('Zur Wochenübersicht gehören die Dateien und die Personenliste')
+  })
+})
+
 describe('mandanten-nachweis: Zugang wie die Probe der Mitgliedsrechte (16.10.2026)', () => {
   /*
     Bis dahin musste alles in der Umgebung stehen, das Kennwort von B „gab das
@@ -1885,7 +2024,7 @@ describe('treffpunkt-regeln-setzen: Zusagen folgen ihrem Treffpunkt (16.10.2026)
     const modul = (await MODULE['./treffpunkt-regeln-setzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
     try {
-      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), JSON.stringify(inhalt))
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) eingabeSchreiben(eingaben, name, inhalt)
       const importiert = { id: 'x1430', ruleId: null, grp: null, wd: 1, time: '14:30', place: 'Probe-Ort', leader: 'Probe Eins', lpid: NWS_PERSON, manual: true }
       const alterGrundplan = { id: 'r-alt', ruleId: 'r-alt', grp: null, wd: 6, time: '09:30', place: '', leader: 'Probe Zwei' }
       const zusage = (id: string, task_key: string, user_id: string) => ({ id, congregation_id: C, user_id, task_key, status: 'bestätigt' })
@@ -1921,7 +2060,7 @@ describe('abwesenheiten-importieren: der Abgleich sieht, was zählt (16.10.2026)
     const modul = (await MODULE['./abwesenheiten-importieren.mjs']!()) as { main: (argv: string[]) => Promise<unknown> }
     const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
     try {
-      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), JSON.stringify(inhalt))
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) eingabeSchreiben(eingaben, name, inhalt)
       const alt = Array.from({ length: MAX_ZEILEN }, (_, i) => ({
         id: `alt-${i}`, congregation_id: C, person_id: NWS_PERSON, from_date: '2020-01-01', to_date: '2020-01-02', reason: '',
       }))
@@ -1995,7 +2134,7 @@ describe('versammlung-zuruecksetzen: die Sicherung zählt nur nach einem Abbruch
     const modul = (await MODULE['./versammlung-zuruecksetzen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const eingaben = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-probe-'))
     try {
-      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) fs.writeFileSync(path.join(eingaben, name), String(inhalt))
+      for (const [name, inhalt] of Object.entries(l.dateien ?? {})) eingabeSchreiben(eingaben, name, inhalt)
       fs.writeFileSync(path.join(eingaben, SICHERUNG), JSON.stringify(sicherung))
       const lauf = await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand: { ...l.umgebung!.bestand, ...bestand } })
       return { ...lauf, sicherungDa: fs.existsSync(path.join(eingaben, SICHERUNG)) }

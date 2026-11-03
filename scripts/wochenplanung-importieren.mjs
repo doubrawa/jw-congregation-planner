@@ -54,11 +54,30 @@
  * wird (der Name steht ohne pid im Slot, wie bei jeder Gruppen-Rotation). „Dienst
  * 7" (ohne App-Pendant), Garten und Instandhaltung werden nur gezählt gemeldet.
  *
+ * **Zwei Quellen.** Die entschlüsselten NWS-Tabellen (`--daten`) oder die
+ * Exporte, die NWS selbst schreibt: die **Wochenübersicht** eines Monats (docx)
+ * und die **Personenliste** (CSV), über die jeder Name an seine NWS-Id und damit
+ * an die App-Person kommt (`nws-exporte.mjs`). Die Exporte sind der Weg, seit
+ * NWS seine Daten nicht mehr offen entschlüsselbar ablegt; sie tragen keine
+ * Liednummern, das Programm behält also seine Lieder.
+ *
+ * **Geschrieben wird nur, was sich ändert.** Steht in einer Woche schon genau
+ * das, was NWS führt, bleibt sie unberührt — jedes Schreiben höbe ihren Stand,
+ * und ein Planer, der sie gerade offen hat, träfe beim Speichern auf einen
+ * Konflikt. `--trocken` nennt Platz für Platz, was sich ändern würde.
+ *
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   node scripts/wochenplanung-importieren.mjs \
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--nur-leere] [--trocken]
+ *
+ *   node scripts/wochenplanung-importieren.mjs \
+ *     --wochenuebersicht "<…> November 2026 Wochenübersicht.docx,<…> Dezember 2026 Wochenübersicht.docx" \
+ *     --personen "<…> NWS Desktop Personen (N).csv" [--cong <id>] [--nur-leere] [--trocken]
+ *
+ * Monat und Jahr einer Wochenübersicht stehen in ihrem Dateinamen, so wie NWS
+ * ihn vergibt.
  *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
  * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
@@ -79,6 +98,8 @@
  */
 
 import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   alleZeilen,
   alsSkript,
@@ -91,6 +112,13 @@ import {
   wocheSchreiben,
   zugangsdaten,
 } from './gemeinsam.mjs'
+import {
+  csvLesen,
+  docxDokument,
+  exportNamensAufloeser,
+  monatAusDateiname,
+  wochenAusUebersicht,
+} from './nws-exporte.mjs'
 
 /* ===================== Stabile Identität (uuid5) ========================== */
 
@@ -564,6 +592,71 @@ export function verteileWoche(data, gebunden, nurLeere, keyMap) {
   return zaehler
 }
 
+/**
+ * Was ein Import an einer Woche ändert, Platz für Platz — für den Bericht des
+ * Trockenlaufs. Verglichen werden Namen samt Person-Id, die Titel der
+ * Programmpunkte (das Vortragsthema, die Liednummern) und die Hilfsdienste.
+ * Die Struktur der Woche ändert der Import nicht; Punkte stehen also an
+ * derselben Stelle. Reine Funktion.
+ */
+export function wochenUnterschiede(vorher, nachher) {
+  const out = []
+  const wer = (s) => (s?.name ? s.name : '—')
+  const anders = (a, b) => (a?.name ?? '') !== (b?.name ?? '') || (a?.pid ?? null) !== (b?.pid ?? null)
+  for (const tab of ['mid', 'we']) {
+    const a = vorher?.[tab]
+    const b = nachher?.[tab]
+    if (!a || !b) continue
+    ;(b.sections ?? []).forEach((sec, si) => {
+      ;(sec.items ?? []).forEach((it, ii) => {
+        const alt = a.sections?.[si]?.items?.[ii]
+        if (!alt) return
+        if (alt.title !== it.title) out.push({ tab, punkt: alt.title, platz: 'Titel', alt: alt.title, neu: it.title })
+        ;(it.names ?? []).forEach((s, ni) => {
+          if (anders(alt.names?.[ni], s)) out.push({ tab, punkt: it.title, platz: s?.rolle || `Platz ${ni + 1}`, alt: wer(alt.names?.[ni]), neu: wer(s) })
+        })
+      })
+    })
+    if (anders(a.auxRatgeber, b.auxRatgeber)) out.push({ tab, punkt: 'Zusätzliche Klasse', platz: 'Ratgeber', alt: wer(a.auxRatgeber), neu: wer(b.auxRatgeber) })
+    for (const key of new Set([...Object.keys(a.helpers ?? {}), ...Object.keys(b.helpers ?? {})])) {
+      const la = a.helpers?.[key] ?? []
+      const lb = b.helpers?.[key] ?? []
+      for (let i = 0; i < Math.max(la.length, lb.length); i++) {
+        if (anders(la[i], lb[i])) out.push({ tab, punkt: `Hilfsdienst ${key}`, platz: `Platz ${i + 1}`, alt: wer(la[i]), neu: wer(lb[i]) })
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * Die NWS-Wochen aus den Exporten (Wochenübersicht + Personenliste) — dieselbe
+ * Zwischenform wie `sammleNwsWochen`. Ein Name kommt über die Personenliste an
+ * seine NWS-Id und über `uuid5("person:<ID>")` an die App-Person (`appById`:
+ * App-Id → Anzeigename); wer dort fehlt, behält seinen Namen aus dem Export.
+ * Jede Woche trägt dazu ihre `besonderheit` laut NWS („Kreisaufseher").
+ *
+ * `nwsNamen` sind die Namen der NWS-Personen, für die Meldung, wer in der App
+ * fehlt.
+ */
+export function wochenAusExporten(dateien, personenZeilen, appById) {
+  const { idZu, namen: nwsNamen } = exportNamensAufloeser(personenZeilen)
+  const person = (text) => {
+    const id = idZu(text)
+    return id ? (appById.get(uuid5(`person:${id}`)) ?? null) : null
+  }
+  const wochen = new Map()
+  let dienste = 0
+  for (const { name, xml } of dateien) {
+    const datum = monatAusDateiname(name)
+    if (!datum) throw new Error(`${name}: Monat und Jahr fehlen im Dateinamen („… November 2026 Wochenübersicht.docx").`)
+    const { wochen: neu, uebersprungen } = wochenAusUebersicht(xml, { ...datum, person })
+    for (const [montag, w] of neu) wochen.set(montag, w)
+    dienste += uebersprungen.dienste
+  }
+  return { wochen, nwsNamen, uebersprungen: { dienste } }
+}
+
 /* ============================= Ausführung ================================= */
 
 /** Exportiert für `nws-staende-vereinen.mjs`: Vereint wird genau, was die Importe lesen. */
@@ -626,6 +719,11 @@ export function gruppenNamensAufloeser(fieldServiceGroups) {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
+  const exporte = typeof arg.wochenuebersicht === 'string' ? arg.wochenuebersicht.split(',').map((s) => s.trim()).filter(Boolean) : null
+  if (arg.wochenuebersicht && (!exporte?.length || typeof arg.personen !== 'string')) {
+    console.error('Zur Wochenübersicht gehören die Dateien und die Personenliste: --wochenuebersicht "<a.docx>,<b.docx>" --personen "<Personen.csv>"')
+    process.exit(2)
+  }
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
@@ -635,7 +733,7 @@ export async function main(argv = process.argv.slice(2)) {
   //    sie, um Dubletten über die stabile id aufzulösen (siehe unten). Ganze
   //    Zeilen: Der feste Studienleiter steht in den Bereichen (`priv`), und wann
   //    er fehlt, sagen die Abwesenheiten und die Zeiten der Versammlung.
-  const tabellen = ladeTabellen(datenDir, TABELLEN)
+  const tabellen = exporte ? null : ladeTabellen(datenDir, TABELLEN)
   const versammlung = await versammlungHolen(rest, arg, 'id,mid_wd,mid_time,we_wd,we_time')
   const cong = versammlung.id
   // Die Abwesenheiten seitenweise (`alleZeilen`): Über 1000 Zeilen schnitte
@@ -654,21 +752,38 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   // 2) NWS-Zuteilungen einsammeln — Namen über die id an die App-Person gebunden.
-  const nwsNameOf = nwsNamensAufloeser(tabellen.persons, appById)
-  const groupNameOf = gruppenNamensAufloeser(tabellen.fieldServiceGroups)
-  const nwsWochen = sammleNwsWochen(tabellen, nwsNameOf, groupNameOf)
+  let nwsWochen
+  let nwsNamen
+  let ausExporten = null
+  if (exporte) {
+    ausExporten = wochenAusExporten(
+      exporte.map((pfad) => ({ name: path.basename(pfad), xml: docxDokument(pfad) })),
+      csvLesen(fs.readFileSync(arg.personen, 'utf8')),
+      appById,
+    )
+    nwsWochen = ausExporten.wochen
+    nwsNamen = ausExporten.nwsNamen
+  } else {
+    const nwsNameOf = nwsNamensAufloeser(tabellen.persons, appById)
+    const groupNameOf = gruppenNamensAufloeser(tabellen.fieldServiceGroups)
+    nwsWochen = sammleNwsWochen(tabellen, nwsNameOf, groupNameOf)
+    nwsNamen = nwsPersonenNamen(tabellen.persons)
+  }
   console.log(`NWS: ${nwsWochen.size} Programmwochen mit Zuteilungen.`)
-  const nwsNamen = nwsPersonenNamen(tabellen.persons)
   const dubletten = new Set()
   const fehlendePersonen = new Set()
+  const unbekannteNamen = new Set()
   const bind = (roh) => {
     const name = (roh ?? '').trim()
     if (!name) return { name: '' } // kein auflösbarer Name → offener Slot
     const treffer = nachName.get(name)
     if (!treffer || treffer.length === 0) {
-      // Kein Treffer: entweder externer Redner (nicht in NWS) — das ist normal —
-      // oder eine NWS-Person, die (noch) nicht in der App steht.
+      // Kein Treffer: eine NWS-Person, die (noch) nicht in der App steht — oder
+      // ein Name, den auch NWS nicht als Person führt. Gastredner kommen hier
+      // nicht an (`bindSpeaker`); im Export ist ein solcher Name ein Lesefehler,
+      // in den NWS-Tabellen ein Freitext-Eintrag. Beides soll der Bericht nennen.
       if (nwsNamen.has(name)) fehlendePersonen.add(name)
+      else unbekannteNamen.add(name)
       return { name }
     }
     if (treffer.length > 1) { dubletten.add(name); return { name } } // mehrdeutig → nur Name
@@ -679,13 +794,14 @@ export async function main(argv = process.argv.slice(2)) {
   // verfallen (siehe `wocheSchreiben`). Wie weit zurück, ebenso (T125), und
   // wer das Wachtturm-Studium leitet.
   appCodeBereit()
-  const [{ changedSlotKeys, festenWtLeiterEintragen }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }] =
+  const [{ changedSlotKeys, festenWtLeiterEintragen }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }] =
     await Promise.all([
       import('../src/data/planning.ts'),
       import('../src/data/helpers.ts'),
       import('../src/data/aufbewahrung.ts'),
       import('../src/lib/zeilen.ts'),
       import('../supabase/functions/_shared/planung.ts'),
+      import('../supabase/functions/_shared/gleicher-inhalt.ts'),
     ])
   const ab = aufbewahrtAb(VERTEILUNG_WOCHEN)
   const appPersonen = personen.map(zeilen.personFromRow)
@@ -711,10 +827,11 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   // 3) Woche für Woche füllen
-  let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0, zuAlt = 0
+  let getroffen = 0, ohneWoche = 0, sonder = 0, gestrichen = 0, zuAlt = 0, unveraendert = 0
   let gesetzt = 0, ohnePid = 0, fehlplatz = 0, helfer = 0, helferOhnePid = 0, helferOhneDienst = 0
   let wtLeiter = 0, wtVertreter = 0
   const geschrieben = []
+  const ohneAnlass = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
     // Älter als ein Jahr: gar nicht erst hinein (T125).
     if (montag < ab) { zuAlt++; continue }
@@ -727,11 +844,17 @@ export async function main(argv = process.argv.slice(2)) {
     // Alle drei Arten sind Aussagen über die Woche, deshalb genügt „hat einen
     // Anlass".
     if (zeile.data.anlass?.art) { sonder++; continue }
+    // Führt NWS die Woche als besondere („Kreisaufseher" in der Wochenübersicht),
+    // die App aber noch ohne Anlass, stünde das gewöhnliche Programm da und
+    // bekäme die Plätze der Sonderwoche. Erst der Anlass in der App — dann gilt
+    // die Regel darüber.
+    if (roh.besonderheit) { ohneAnlass.push(`${montag} „${roh.besonderheit}"`); continue }
     getroffen++
     const gebunden = loeseWoche(roh, bind)
     // `verteileWoche` schreibt in die Woche selbst — der Stand davor sagt, wer
-    // einen Platz verliert.
-    const vorher = structuredClone(zeile.data)
+    // einen Platz verliert. Mit dem Montag, den `festenWtLeiterEintragen` unten
+    // dazugibt: Sonst zählte ein Blob ohne `start` bei jedem Lauf als geändert.
+    const vorher = structuredClone({ ...zeile.data, start: montag })
     const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
     gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
@@ -742,18 +865,21 @@ export async function main(argv = process.argv.slice(2)) {
     zeile.data = wt.week
     wtLeiter += wt.eingetragen.length
     wtVertreter += wt.eingetragen.filter((p) => !p.priv.wtLeiter).length
-    if (z.gesetzt + z.helfer + wt.eingetragen.length > 0) {
-      const verfallen = MEETING_TABS.flatMap((tab) =>
-        vorher[tab] && zeile.data[tab] ? changedSlotKeys(vorher[tab], zeile.data[tab], services, montag, tab) : [],
-      )
-      geschrieben.push({ montag, stand: zeile.updated_at, data: zeile.data, z, wt: wt.eingetragen.length, verfallen })
-    }
+    // Nur, was sich ändert (siehe Kopf): „gesetzt" zählt auch einen Platz, auf
+    // dem schon dieselbe Person stand.
+    if (gleicherInhalt(vorher, zeile.data)) { unveraendert++; continue }
+    const verfallen = MEETING_TABS.flatMap((tab) =>
+      vorher[tab] && zeile.data[tab] ? changedSlotKeys(vorher[tab], zeile.data[tab], services, montag, tab) : [],
+    )
+    geschrieben.push({
+      montag, stand: zeile.updated_at, data: zeile.data, verfallen, unterschiede: wochenUnterschiede(vorher, zeile.data),
+    })
   }
 
   // Übersprungene Dienste zählen (Dienst 7/Garten/…) — zur Einordnung. Die
   // Reinigung wird importiert und daher hier NICHT als übersprungen gezählt.
-  const uebersprungen = {}
-  for (const du of (tabellen.duties ?? []).filter((x) => !x.Deleted)) {
+  const uebersprungen = ausExporten?.uebersprungen.dienste ? { benutzerdefiniert: ausExporten.uebersprungen.dienste } : {}
+  for (const du of (tabellen?.duties ?? []).filter((x) => !x.Deleted)) {
     const s = dutySlot(du.c ?? -1)
     if (du.d === 1) {
       if (s.skip && s.skip !== 'reinigung') uebersprungen[s.skip] = (uebersprungen[s.skip] ?? 0) + 1
@@ -762,7 +888,10 @@ export async function main(argv = process.argv.slice(2)) {
     }
   }
 
-  console.log(`\nGetroffene Wochen: ${getroffen} · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
+  console.log(`\nGetroffene Wochen: ${getroffen} (davon schon auf dem Stand von NWS: ${unveraendert}) · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
+  if (ohneAnlass.length) {
+    console.log(`  ! Laut NWS besonders, in der App ohne Anlass — nicht übernommen: ${ohneAnlass.join(' · ')}. Erst den Anlass in der App setzen.`)
+  }
   if (zuAlt) console.log(`Älter als ein Jahr (vor ${ab}), nicht übernommen: ${zuAlt} NWS-Wochen`)
   if (gestrichen) console.log(`Gestrichene Zusammenkünfte übersprungen: ${gestrichen}`)
   console.log(`Programmplätze gesetzt: ${gesetzt} (ohne pid/extern: ${ohnePid}) · Slots fehlten: ${fehlplatz}`)
@@ -781,14 +910,23 @@ export async function main(argv = process.argv.slice(2)) {
     console.log(`\nNWS-Personen ohne App-Konto (nur Name gesetzt — Personen neu importieren?):`)
     console.log(`  ${[...fehlendePersonen].sort().join(', ')}`)
   }
+  if (unbekannteNamen.size) {
+    console.log(`\nNamen, die weder eine App-Person noch die NWS-Personenliste treffen (als Freitext gesetzt):`)
+    console.log(`  ${[...unbekannteNamen].sort().join(', ')}`)
+  }
 
   const verfallen = geschrieben.reduce((n, g) => n + g.verfallen.length, 0)
   if (arg.trocken) {
-    console.log('\n--trocken: nichts geschrieben.')
-    for (const g of geschrieben.slice(0, 3)) {
-      console.log(`  ${g.montag}: ${g.z.gesetzt} Programm- + ${g.z.helfer} Hilfsdienst-Plätze${g.wt ? ' + Leiter des Wachtturm-Studiums' : ''}`)
+    const n = geschrieben.length
+    console.log(`\n--trocken: nichts geschrieben. ${n === 0 ? 'Keine Woche würde sich ändern.' : n === 1 ? 'Eine Woche würde sich ändern:' : `${n} Wochen würden sich ändern:`}`)
+    const ZK = { mid: 'Mitte', we: 'Wochenende' }
+    for (const g of geschrieben) {
+      console.log(`\n  ${g.montag}`)
+      for (const u of g.unterschiede) console.log(`    ${ZK[u.tab]} · ${u.punkt} · ${u.platz}: ${u.alt} → ${u.neu}`)
     }
-    if (verfallen) console.log(`  ${verfallen} geänderte Plätze — eine Zusage daran fiele weg.`)
+    if (verfallen) {
+      console.log(`\n  ${verfallen} ${verfallen === 1 ? 'Platz ändert seine' : 'Plätze ändern ihre'} Besetzung — wo dort eine Zusage steht, fiele sie weg.`)
+    }
     return
   }
 
