@@ -14,11 +14,16 @@ import {
   sammleNwsWochen,
   uuid5,
   verteileWoche,
+  ablaufAngleichen,
+  livingNachReihe,
   wochenAusExporten,
   wochenUnterschiede,
 } from './wochenplanung-importieren.mjs'
 import { abschnitt, dokument, tabelle, wochenKopf } from './wochenuebersicht-attrappe'
-import type { HelperSlot, SlotAssignment } from '../src/data/types'
+import type { HelperSlot, SlotAssignment, Week } from '../src/data/types'
+import * as helpers from '../src/data/helpers'
+import * as bearbeiten from '../src/data/meeting-edit'
+import { setAnlass } from '../src/data/anlass'
 
 /**
  * Der Importer läuft außerhalb der App, mit dem Service-Role-Key, selten und
@@ -584,5 +589,185 @@ describe('wochenAusExporten — die Exporte an die Personen der App gebunden', (
     expect(() => wochenAusExporten([datei('Wochenübersicht.docx', wochenKopf('August 24-30'))], PERSONEN, APP)).toThrow(
       'Monat und Jahr fehlen im Dateinamen',
     )
+  })
+})
+
+describe('ablaufAngleichen — das Programm, wie die Versammlung es hält', () => {
+  /*
+    Gefunden am 3.11.2026: In der Woche vom 2.11. schob NWS „Kreiskongress
+    Wiederholung" (12 Min.) vor das Bibelstudium und kürzte beide Nachbarn; in
+    der App stand weiter das Arbeitsheft, und der Bruder des eingeschobenen
+    Punkts fiel still weg. Die Woche des Kreisaufsehers (7.12.) übersprang der
+    Import ganz. Geprüft wird mit den Bearbeitungsfunktionen der App selbst —
+    denselben, mit denen der Planer den Abschnitt ändert.
+  */
+  const app = { ...helpers, ...bearbeiten }
+  const platz = (bereichsKey: string, rolle?: string) => ({ name: '', ...(rolle ? { rolle } : {}), bereichsKey })
+
+  /** Eine Woche wie aus `import-week`: Abschnittsarten, Kennungen, Nummern und Minuten. */
+  function appWoche(): Week {
+    return {
+      start: '2026-11-02',
+      range: 'Probewoche',
+      mid: {
+        date: '',
+        end: 'Ende ca. 20:45',
+        helpers: {},
+        sections: [
+          { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ iid: 'e', title: 'Lied 1 und Gebet', meta: '1 Min.', mins: 1, names: [platz('vorsitzMid', 'Vorsitz'), platz('gebet', 'Gebet')] }] },
+          { label: 'SCHÄTZE AUS GOTTES WORT', kind: 'schaetze', farbe: 'petrol', items: [
+            { iid: 's1', num: 1, title: 'Probe-Vortrag', meta: '10 Min.', mins: 10, names: [platz('vortrag')] },
+          ] },
+          { label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein', items: [
+            { song: 'Lied 2' },
+            { iid: 'l7', num: 7, title: 'Probe-Punkt', meta: 'Besprechung · 15 Min.', mins: 15, names: [platz('besprechung')] },
+            { iid: 'l8', num: 8, title: 'Versammlungsbibelstudium', meta: '30 Min. · Probe', mins: 30, names: [platz('studium', 'Leiter'), platz('leser', 'Leser')] },
+          ] },
+          { label: 'ABSCHLUSS', kind: 'abschluss', farbe: 'neutral', items: [{ iid: 'a', title: 'Schlussworte · Lied 3 und Gebet', meta: '3 Min.', mins: 3, names: [platz('gebet', 'Gebet')] }] },
+        ],
+      },
+      we: {
+        date: '',
+        end: 'Ende ca. 11:45',
+        helpers: {},
+        sections: [
+          { label: 'ERÖFFNUNG', kind: 'eroeffnung', farbe: 'neutral', items: [{ iid: 'we', title: 'Lied · Gebet', names: [platz('vorsitzWe', 'Vorsitz'), platz('gebet', 'Gebet')] }] },
+          { label: 'ÖFFENTLICHER VORTRAG', kind: 'vortrag', farbe: 'petrol', items: [{ iid: 'wv', title: '(Vortragsthema eintragen)', meta: '30 Min.', mins: 30, names: [platz('vortrag', 'Gastredner')] }] },
+          { label: 'WACHTTURM-STUDIUM', kind: 'wtStudium', farbe: 'wein', items: [{ iid: 'wt', title: 'Probe-Artikel', meta: '60 Min.', mins: 60, names: [platz('studium', 'Leiter'), platz('leser', 'Leser')] }] },
+          { label: 'ABSCHLUSS', kind: 'abschluss', farbe: 'neutral', items: [{ iid: 'wa', title: 'Schlussworte · Lied · Gebet', names: [platz('gebet', 'Gebet')] }] },
+        ],
+      },
+    } as Week
+  }
+
+  type Zeile = { nr: number | null; titel: string; min: number | null; art: 'teil' | 'vbs' | 'ka' }
+  const teil = (nr: number | null, titel: string, min: number | null = null): Zeile => ({ nr, titel, min, art: 'teil' })
+  const VBS = (min: number | null = null): Zeile => ({ nr: 8, titel: 'Versammlungsbibelstudium', min, art: 'vbs' })
+  const lac = (w: Week) => w.mid.sections[2]!.items.filter((x) => !helpers.isSong(x)) as { iid: string; title: string; mins?: number; names: SlotAssignment[] }[]
+  const angleichen = (w: Week, ablauf: Zeile[]) => ablaufAngleichen(w, ablauf, app) as { data: Week; reihe: number[] | null; nurApp: string[]; fehler?: string }
+
+  it('ein eingeschobener Punkt kommt vor das Bibelstudium, mit seinen Minuten — und das Ende bleibt, wenn die Summe bleibt', () => {
+    const { data, reihe } = angleichen(appWoche(), [teil(7, 'Probe-Punkt', 13), teil(null, 'Probe-Wiederholung', 12), VBS(20)])
+    expect(lac(data).map((t) => [t.title, t.mins])).toEqual([['Probe-Punkt', 13], ['Probe-Wiederholung', 12], ['Versammlungsbibelstudium', 20]])
+    expect(data.mid.end).toBe('Ende ca. 20:45') // 15 + 30 = 13 + 12 + 20
+    expect(data.mid.umgebaut).toBe(true)
+    // Der Bruder des eingeschobenen Punkts ist der zweite unter „living".
+    expect(reihe).toEqual([0, 1])
+  })
+
+  it('die Brüder kommen an ihren Punkt — auch der des eingeschobenen', () => {
+    const roh = {
+      mid: { chairman: null, openingPrayer: null, closingPrayer: null, auxCounselor: null, treasuresTalk: null, spiritualGems: null, bibleReading: null, apply: [], living: ['Probe Eins', 'Probe Zwei'], cbs: 'Probe Drei', cbsReader: null, helpers: {}, cleaning: null },
+      we: { chairman: null, watchtowerReader: null, speaker: null, openingSong: null, closingSong: null, helpers: {}, cleaning: null },
+    }
+    const { data, reihe } = angleichen(appWoche(), [teil(7, 'Probe-Punkt'), teil(null, 'Probe-Wiederholung'), VBS()])
+    const gebunden = loeseWoche(roh, (name: string) => ({ name }))
+    gebunden.mid.living = livingNachReihe(gebunden.mid.living, reihe)
+    verteileWoche(data, gebunden, false)
+    expect(lac(data).map((t) => t.names[0]!.name)).toEqual(['Probe Eins', 'Probe Zwei', 'Probe Drei'])
+  })
+
+  it('ein Punkt, den nur die App kennt, bekommt keinen Bruder aus NWS — die übrigen rücken nicht nach', () => {
+    expect(livingNachReihe([{ name: 'A' }, { name: 'B' }], [0, -1, 1])).toEqual([{ name: 'A' }, null, { name: 'B' }])
+    expect(livingNachReihe([{ name: 'A' }], null)).toEqual([{ name: 'A' }])
+  })
+
+  it('ein zweiter Lauf findet den eingeschobenen Punkt wieder — nichts ändert sich mehr', () => {
+    const ablauf = [teil(7, 'Probe-Punkt', 13), teil(null, 'Probe-Wiederholung', 12), VBS(20)]
+    const erster = angleichen(appWoche(), ablauf).data
+    const zweiter = angleichen(structuredClone(erster), ablauf)
+    expect(zweiter.data).toEqual(erster)
+    expect(zweiter.reihe).toEqual([0, 1])
+  })
+
+  it('ohne Nummer an der Stelle eines Punkts aus dem Heft: dessen eigenes Thema, kein neuer Punkt', () => {
+    // Die Woche vom 30.11.2026: „Aktuelles" hält die Versammlung mit eigenem Thema.
+    const { data, reihe } = angleichen(appWoche(), [teil(null, 'Probe-Thema der Versammlung', 15), VBS(30)])
+    expect(lac(data).map((t) => t.title)).toEqual(['Probe-Thema der Versammlung', 'Versammlungsbibelstudium'])
+    expect(lac(data)[0]!.iid).toBe('l7')
+    expect(reihe).toEqual([0])
+  })
+
+  it('die Woche des Kreisaufsehers: sein Thema am Dienstvortrag, er selbst in beiden Vorträgen, das Studium ohne Leser', () => {
+    const woche = setAnlass([appWoche()], 0, 'co')[0]!
+    const { data, reihe } = angleichen(woche, [teil(null, 'Probe-Bedürfnis', 15), { nr: null, titel: 'Probe-Dienstvortrag', min: 30, art: 'ka' }])
+    const punkte = lac(data)
+    expect(punkte.map((t) => t.title)).toEqual(['Probe-Bedürfnis', 'Dienstvortrag · Probe-Dienstvortrag'])
+    expect(reihe).toEqual([0])
+
+    const roh = {
+      mid: { chairman: null, openingPrayer: null, closingPrayer: null, auxCounselor: null, treasuresTalk: null, spiritualGems: null, bibleReading: null, apply: [], living: ['Probe Eins'], cbs: null, cbsReader: null, helpers: {}, cleaning: null, kreisaufseher: 'Probe Kreisaufseher' },
+      we: { chairman: null, watchtowerReader: null, speaker: null, openingSong: null, closingSong: null, helpers: {}, cleaning: null },
+    }
+    const z = verteileWoche(data, loeseWoche(roh, (name: string) => ({ name, pid: `id-${name}` })), false)
+    expect(punkte[1]!.names).toEqual([{ name: 'Probe Kreisaufseher', rolle: 'Kreisaufseher', bereichsKey: 'vortrag' }]) // Gast: ohne pid
+    const schluss = data.we.sections.find((s) => s.kind === 'dienstvortrag')!.items[0] as { names: SlotAssignment[] }
+    expect(schluss.names[0]).toMatchObject({ name: 'Probe Kreisaufseher', rolle: 'Kreisaufseher' })
+    const wt = data.we.sections.find((s) => s.kind === 'wtStudium')!.items[0] as { names: SlotAssignment[]; mins: number }
+    expect([wt.mins, wt.names.map((n) => n.bereichsKey)]).toEqual([30, ['studium']])
+    expect(z.fehlplatz).toBe(0)
+  })
+
+  it('ohne Ablauf aus NWS bleibt die Woche, wie sie ist', () => {
+    const w = appWoche()
+    expect(angleichen(w, [])).toEqual({ data: w, reihe: null, nurApp: [] })
+  })
+
+  it('ein eigener Punkt, den nur die App kennt, bleibt — und wird genannt', () => {
+    const w = bearbeiten.lacAdd([appWoche()], 0, 'mid', 2, 'Probe aus der App')[0]!
+    const { data, nurApp, reihe } = angleichen(w, [teil(7, 'Probe-Punkt'), VBS()])
+    expect(lac(data).map((t) => t.title)).toEqual(['Probe-Punkt', 'Probe aus der App', 'Versammlungsbibelstudium'])
+    expect(nurApp).toEqual(['Probe aus der App'])
+    expect(reihe).toEqual([0, -1])
+  })
+
+  it('passt der Ablauf nicht, ändert sich nichts — und der Grund steht da', () => {
+    // Eingeschoben vor einen Punkt des Hefts: Die App schiebt nur vor dem Bibelstudium ein.
+    expect(angleichen(appWoche(), [teil(null, 'Probe davor'), teil(7, 'Probe-Punkt'), VBS()]).fehler).toBe(
+      '„Probe davor" steht in NWS vor Punkt 7 („Probe-Punkt") — eingeschoben wird vor dem Bibelstudium',
+    )
+    // Ein Punkt des Hefts fehlt in NWS.
+    expect(angleichen(appWoche(), [VBS()]).fehler).toBe('Punkt 7 („Probe-Punkt") fehlt in NWS')
+    // NWS führt den Kreisaufseher, die App das Bibelstudium.
+    expect(angleichen(appWoche(), [teil(7, 'Probe-Punkt'), { nr: null, titel: 'Probe', min: 30, art: 'ka' }]).fehler).toBe(
+      'der Dienstvortrag steht in NWS, aber nicht an dieser Stelle in der App',
+    )
+    // Ohne diesen Abschnitt in der App.
+    const ohne = appWoche()
+    ohne.mid.sections.splice(2, 1)
+    expect(angleichen(ohne, [VBS()]).fehler).toBe('in der App fehlt der Abschnitt „Unser Leben als Christ"')
+  })
+})
+
+describe('wochenUnterschiede — was sich am Ablauf ändert', () => {
+  const punkt = (iid: string, title: string, mins: number, names: SlotAssignment[] = [{ name: '', bereichsKey: 'besprechung' }]) => ({ iid, title, meta: '', mins, names })
+  const woche = () => ({
+    mid: { sections: [{ label: 'L', farbe: 'wein', items: [punkt('a', 'Probe-Punkt', 15), punkt('b', 'Probe-Studium', 30, [{ name: 'Probe Eins', rolle: 'Leiter', bereichsKey: 'studium' }, { name: 'Probe Zwei', rolle: 'Leser', bereichsKey: 'leser' }])] }], helpers: {} },
+  })
+
+  it('ein eingeschobener Punkt, gekürzte Minuten und ein Platz, der wegfällt — zugeordnet über die Kennung', () => {
+    const vorher = woche()
+    const nachher = structuredClone(vorher)
+    const [a, b] = nachher.mid.sections[0]!.items
+    a!.mins = 13
+    b!.names = [b!.names[0]!]
+    nachher.mid.sections[0]!.items = [a!, punkt('neu', 'Probe-Wiederholung', 12, [{ name: 'Probe Drei', bereichsKey: 'besprechung' }]), b!]
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'mid', punkt: 'Probe-Punkt', platz: 'Minuten', alt: '15', neu: '13' },
+      { tab: 'mid', punkt: 'Probe-Wiederholung', platz: 'Punkt', alt: '—', neu: 'neu, 12 Min.' },
+      { tab: 'mid', punkt: 'Probe-Wiederholung', platz: 'Platz 1', alt: '—', neu: 'Probe Drei' },
+      { tab: 'mid', punkt: 'Probe-Studium', platz: 'Leser', alt: 'Probe Zwei', neu: 'entfällt' },
+    ])
+  })
+
+  it('der Anlass, ein verlegter Tag und ein Punkt, der wegfällt', () => {
+    const vorher = woche()
+    const nachher = { ...structuredClone(vorher), anlass: { art: 'co' }, dev: { mid: { wd: 2 } } }
+    nachher.mid.sections[0]!.items.splice(0, 1)
+    expect(wochenUnterschiede(vorher, nachher)).toEqual([
+      { tab: 'woche', punkt: 'Anlass', platz: 'Art', alt: '—', neu: 'Kreisaufseher' },
+      { tab: 'mid', punkt: 'Zusammenkunft', platz: 'verlegt auf', alt: '—', neu: 'Dienstag' },
+      { tab: 'mid', punkt: 'Probe-Punkt', platz: 'Punkt', alt: 'da', neu: 'entfällt' },
+    ])
   })
 })

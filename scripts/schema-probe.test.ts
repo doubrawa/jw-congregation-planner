@@ -498,8 +498,12 @@ const LAEUFE: Record<string, Lauf[]> = {
       // Seit dem NWS-Update vom 20.10.2026 der Weg an die Zuteilungen (2.11.2026).
       titel: 'Zuteilungen aus den NWS-Exporten einspielen',
       dateien: { [UEBERSICHT_DATEI]: probeUebersicht(), 'Personen.csv': PROBE_PERSONENLISTE },
+      // `eingabe:<Name>` in `zusatz` meint eine Datei der Probe — erst hier steht ihr Ordner fest.
       fahren: (m, d, zusatz = []) =>
-        m.main!(['--wochenuebersicht', path.join(d, UEBERSICHT_DATEI), '--personen', path.join(d, 'Personen.csv'), ...zusatz]),
+        m.main!([
+          '--wochenuebersicht', path.join(d, UEBERSICHT_DATEI), '--personen', path.join(d, 'Personen.csv'),
+          ...zusatz.map((z) => (z.startsWith('eingabe:') ? path.join(d, z.slice('eingabe:'.length)) : z)),
+        ]),
       umgebung: {
         bestand: {
           congregations: [{ id: C }],
@@ -1898,12 +1902,48 @@ describe('wochenplanung-importieren aus den NWS-Exporten (2.11.2026)', () => {
     expect(zweiter.ausgabe.join('\n')).toContain('(davon schon auf dem Stand von NWS: 1)')
   })
 
-  it('führt NWS die Woche als besondere, bleibt sie ohne Anlass in der App unberührt — und der Bericht sagt, was zu tun ist', async () => {
-    // So stand die Woche des Kreisaufsehers am 3.11.2026: in NWS „Kreisaufseher",
-    // in der App noch ohne Anlass.
-    const { aufrufe, ausgabe } = await exportLauf({ dateien: { [UEBERSICHT_DATEI]: probeUebersicht({ kopf: ['August 24-30', 'Kreisaufseher'] }) } })
+  it('die Woche des Kreisaufsehers bekommt ihren Anlass und ihre Zuteilungen — ein zweiter Lauf schreibt nichts', async () => {
+    // So stand sie am 3.11.2026: in NWS „Kreisaufseher", in der App ohne Anlass.
+    // Bis dahin übersprang der Import sie, und der Planer musste sie selbst bauen.
+    const dateien = { [UEBERSICHT_DATEI]: probeUebersicht({ kopf: ['August 24-30', 'Kreisaufseher'] }) }
+    const erster = await exportLauf({ dateien })
+    expect(geschrieben(erster.aufrufe)).toBe(1)
+    const data = erster.tabellen.weeks![0]!.data as Woche & { anlass?: unknown; co?: boolean }
+    expect([data.anlass, data.co]).toEqual([{ art: 'co' }, true])
+    expect(vorsitzIn(data)).toMatchObject({ name: 'Probe Eins', pid: NWS_PERSON })
+
+    const zweiter = await exportLauf({ dateien, bestand: { weeks: erster.tabellen.weeks! } })
+    expect(geschrieben(zweiter.aufrufe)).toBe(0)
+    expect(zweiter.ausgabe.join('\n')).toContain('(davon schon auf dem Stand von NWS: 1)')
+  })
+
+  it('eine Besonderheit, für die die App keinen Anlass hat, bleibt unberührt — und der Bericht nennt sie', async () => {
+    const { aufrufe, ausgabe } = await exportLauf({ dateien: { [UEBERSICHT_DATEI]: probeUebersicht({ kopf: ['August 24-30', 'Probe-Besonderheit'] }) } })
     expect(geschrieben(aufrufe)).toBe(0)
-    expect(ausgabe.join('\n')).toContain('nicht übernommen: 2026-08-24 „Kreisaufseher". Erst den Anlass in der App setzen.')
+    expect(ausgabe.join('\n')).toContain('nicht übernommen: 2026-08-24 „Probe-Besonderheit". Diese Wochen plant der Planer.')
+  })
+
+  it('der Tag aus dem Programm der Leben-und-Dienst-Zusammenkunft verlegt die Zusammenkunft — und der Rhythmus nimmt es zurück', async () => {
+    // Freitag die Regel; in der Woche des Kreisaufsehers hält NWS sie am Dienstag (8.12.2026).
+    const lud = (tag: string) => wochenuebersichtDocx([tabelle([[tag, 'PROBE 1-2'], ['7:00', 'Lied 1', 'Probe Eins']])])
+    const LUD = 'Probe August 2026 Programm der Leben-und-Dienst-Zusammenkunft.docx'
+    const mitLud = (tag: string, weeks?: Zeile[]) =>
+      exportLauf({
+        dateien: { [LUD]: lud(tag) },
+        bestand: { congregations: [{ id: C, mid_wd: 5, mid_time: '19:00:00' }], ...(weeks ? { weeks } : {}) },
+        zusatz: ['--leben-und-dienst', `eingabe:${LUD}`],
+      })
+    const verlegt = await mitLud('2026.08.25')
+    expect((verlegt.tabellen.weeks![0]!.data as { dev?: unknown }).dev).toEqual({ mid: { wd: 2 } })
+    const zurueck = await mitLud('2026.08.28', verlegt.tabellen.weeks!)
+    expect(zurueck.tabellen.weeks![0]!.data).not.toHaveProperty('dev')
+  })
+
+  it('--leben-und-dienst ohne Wochenübersicht bricht ab, bevor es irgendetwas liest', async () => {
+    const modul = (await MODULE['./wochenplanung-importieren.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const { aufrufe, meldungen } = await fahre(() => modul.main!(['--leben-und-dienst', 'probe.docx']).catch(() => undefined))
+    expect(aufrufe).toEqual([])
+    expect(meldungen.join('\n')).toContain('--leben-und-dienst "<a.docx>,<b.docx>" gehört zur Wochenübersicht')
   })
 
   it('ein Name, den weder die App noch die Personenliste kennt, steht als Freitext da — und im Bericht', async () => {
@@ -1935,14 +1975,15 @@ describe('wochenplanung-importieren aus den NWS-Exporten (2.11.2026)', () => {
     expect(bericht).toContain('    Mitte · Hilfsdienst mik · Platz 1: — → Probe Eins')
   })
 
-  it('eine Woche mit Anlass bleibt unberührt — beim Kreisaufseher plant der Planer selbst', async () => {
-    // So wartet die Woche des Kreisaufsehers im Dezember 2026 auf den Import:
-    // Erst steht der Anlass in der App, dann läuft der Import über sie hinweg.
-    const { aufrufe, ausgabe } = await exportLauf({
-      bestand: { weeks: [{ congregation_id: C, start: '2026-08-24', data: { ...probeWoche('2026-08-24'), anlass: { art: 'co' } } }] },
-    })
-    expect(geschrieben(aufrufe)).toBe(0)
-    expect(ausgabe.join('\n')).toContain('Sonderwochen übersprungen: 1')
+  it('ein Anlass, den NWS nicht führt, lässt die Woche unberührt — dort plant der Planer selbst', async () => {
+    // Die App sagt Kreisaufseher, NWS nicht — oder das Gedächtnismahl, das NWS gar nicht kennt.
+    for (const art of ['co', 'mem']) {
+      const { aufrufe, ausgabe } = await exportLauf({
+        bestand: { weeks: [{ congregation_id: C, start: '2026-08-24', data: { ...probeWoche('2026-08-24'), anlass: { art } } }] },
+      })
+      expect(geschrieben(aufrufe), art).toBe(0)
+      expect(ausgabe.join('\n')).toContain('Sonderwochen übersprungen: 1')
+    }
   })
 
   it('--wochenuebersicht ohne --personen bricht ab, bevor es irgendetwas liest', async () => {

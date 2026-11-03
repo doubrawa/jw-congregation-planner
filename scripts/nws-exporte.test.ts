@@ -11,6 +11,8 @@ import {
   namensForm,
   PERSONEN_FLAGS,
   personenAlsNws,
+  programmPunkt,
+  tageAusLebenUndDienst,
   wochenAusUebersicht,
   zipEintrag,
 } from './nws-exporte.mjs'
@@ -349,6 +351,11 @@ describe('wochenAusUebersicht — jeder Name an seinen Platz', () => {
         cbsReader: 'Probe Vierzehn',
         helpers: { saal: ['Probe Eins'], eingang: ['Probe Zwei (2)'], mik: ['Probe Drei', 'Probe Vier'], ton: ['Probe Fünf'] },
         cleaning: 'Gruppe 3',
+        ablauf: [
+          { nr: 6, titel: 'Probe-Punkt', min: null, art: 'teil' },
+          { nr: 7, titel: 'Versammlungsbibelstudium', min: null, art: 'vbs' },
+        ],
+        kreisaufseher: null,
       },
       we: {
         chairman: 'Probe Eins',
@@ -381,12 +388,43 @@ describe('wochenAusUebersicht — jeder Name an seinen Platz', () => {
     expect(wochen.get('2026-08-24')?.mid).toMatchObject({ chairman: 'Probe Eins', openingPrayer: null })
   })
 
-  it('der Vortrag des Kreisaufsehers verschiebt die Punkte nicht — und die Woche sagt, dass er kommt', () => {
-    const leben = [['6. Probe-Punkt', 'Probe Zwölf'], ['7. Probe-Dienstvortrag', 'KA: Probe Kreisaufseher']]
-    const { wochen } = lesen(woche(['Dezember 07-13', 'Kreisaufseher'], { mitte: mitte(leben) }), 2026, 12)
+  it('der Vortrag des Kreisaufsehers verschiebt die Punkte nicht — und die Woche sagt, dass er kommt und wer er ist', () => {
+    // So steht die Woche des Kreisaufsehers im Export vom 2.11.2026: sein Vortrag
+    // ohne Nummer an der Stelle des Bibelstudiums, mit Thema und Minuten.
+    const leben = [['Probe-Punkt (15 Min.)', 'Probe Zwölf'], ['Probe-Dienstvortrag (30 Min.)', '·', 'KA: Probe Kreisaufseher']]
+    const kaMitte = tabelle([VORSITZ_OFFEN, ['Unser Leben als Christ'], ...leben])
+    const { wochen } = lesen([wochenKopf('Dezember 07-13', 'Kreisaufseher'), kaMitte], 2026, 12)
     const ka = wochen.get('2026-12-07')
     expect(ka?.besonderheit).toBe('Kreisaufseher')
     expect(ka?.mid.living).toEqual(['Probe Zwölf'])
+    expect(ka?.mid.kreisaufseher).toBe('Probe Kreisaufseher')
+    expect(ka?.mid.ablauf).toEqual([
+      { nr: null, titel: 'Probe-Punkt', min: 15, art: 'teil' },
+      { nr: null, titel: 'Probe-Dienstvortrag', min: 30, art: 'ka' },
+    ])
+  })
+
+  it('ein eingeschobener Punkt ohne Nummer geht mit seinem Bruder in den Ablauf — er fällt nicht weg', () => {
+    // Die Woche vom 2.11.2026: „Kreiskongress Wiederholung" zwischen Punkt 7 und
+    // dem Bibelstudium, beide Nachbarn gekürzt.
+    const leben = [['6. Probe-Punkt (13 Min.)', 'Probe Zwölf'], ['Probe-Wiederholung vom 17.10. (12 Min.)', 'Probe Fünfzehn']]
+    const { wochen } = lesen(woche(undefined, { mitte: mitte(leben) }))
+    const w = wochen.get('2026-08-24')!
+    expect(w.mid.living).toEqual(['Probe Zwölf', 'Probe Fünfzehn'])
+    expect(w.mid.ablauf.map((z: { nr: number | null; titel: string; min: number | null }) => [z.nr, z.titel, z.min])).toEqual([
+      [6, 'Probe-Punkt', 13],
+      [null, 'Probe-Wiederholung vom 17.10.', 12],
+      [7, 'Versammlungsbibelstudium', null],
+    ])
+  })
+
+  it('das Thema des Kreisaufsehers verliert den leeren Rest „ |", den NWS anhängt', () => {
+    const ka = abschnitt('Zusammenkunft am Wochenende', [['Öffentlicher Vortrag', 'Probe-Thema (Teil 1) |'], ['Vortragsredner', ['Probe Gast', '(Kreisaufseher)']]])
+    const { wochen } = lesen([wochenKopf('August 24-30', 'Kreisaufseher'), ka])
+    expect(wochen.get('2026-08-24')?.we.speaker).toMatchObject({ theme: 'Probe-Thema (Teil 1)', herkunft: 'Kreisaufseher', external: true })
+    // Gegenprobe: Ein senkrechter Strich mitten im Thema bleibt stehen.
+    const mitten = abschnitt('Zusammenkunft am Wochenende', [['Öffentlicher Vortrag', 'Probe | Thema'], ['Vortragsredner', 'Probe Gast']])
+    expect(lesen([wochenKopf('August 24-30'), mitten]).wochen.get('2026-08-24')?.we.speaker?.theme).toBe('Probe | Thema')
   })
 
   it('mehrere Wochen in einer Datei, jede an ihrem Montag', () => {
@@ -410,6 +448,36 @@ describe('wochenAusUebersicht — jeder Name an seinen Platz', () => {
     expect(xml).toContain('Drei &amp; Probe Vier')
     const { wochen } = wochenAusUebersicht(xml, { jahr: 2026, monat: 8, person })
     expect(wochen.get('2026-08-24')?.mid.helpers.mik).toEqual(['Probe Drei', 'Probe Vier'])
+  })
+})
+
+describe('programmPunkt — Nummer, Titel und Minuten einer Zeile', () => {
+  it('die Nummer gehört zum Arbeitsheft, ohne Nummer ist es ein Punkt der Versammlung', () => {
+    expect(programmPunkt('7. Probe-Punkt, mit Komma (13 Min.)')).toEqual({ nr: 7, titel: 'Probe-Punkt, mit Komma', min: 13 })
+    expect(programmPunkt('Probe-Wiederholung vom 17.10. (12 Min.)')).toEqual({ nr: null, titel: 'Probe-Wiederholung vom 17.10.', min: 12 })
+  })
+
+  it('ohne Minuten bleiben sie offen — eine Zahl im Titel ist keine Dauer', () => {
+    expect(programmPunkt('8. Versammlungsbibelstudium')).toEqual({ nr: 8, titel: 'Versammlungsbibelstudium', min: null })
+    expect(programmPunkt('Probe 2027')).toEqual({ nr: null, titel: 'Probe 2027', min: null })
+  })
+})
+
+describe('tageAusLebenUndDienst — der Tag der Zusammenkunft unter der Woche', () => {
+  const programm = (...tage: string[]) =>
+    dokument([
+      tabelle([['Planung für die Zusammenkunft unter der Woche', 'Probeversammlung']]),
+      ...tage.map((t) => tabelle([[t, 'PROBE 1-2'], ['7:00', 'Lied 1', 'Probe Eins']])),
+    ])
+
+  it('je Woche der Tag aus ihrem Kopf — auch ein verlegter', () => {
+    // Freitag die Regel, in der Woche des Kreisaufsehers Dienstag.
+    expect(tageAusLebenUndDienst(programm('2026.12.04', '2026.12.08'))).toEqual(['2026-12-04', '2026-12-08'])
+  })
+
+  it('ohne Woche oder mit einem Tag, den es nicht gibt, bricht es ab', () => {
+    expect(() => tageAusLebenUndDienst(dokument([tabelle([['Probe', 'Probe']])]))).toThrow('keine Woche gefunden')
+    expect(() => tageAusLebenUndDienst(programm('2026.02.30'))).toThrow('kein Datum „2026.02.30"')
   })
 })
 

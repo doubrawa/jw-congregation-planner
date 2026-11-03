@@ -314,6 +314,7 @@ function neueWoche() {
       chairman: null, openingPrayer: null, closingPrayer: null, auxCounselor: null,
       treasuresTalk: null, spiritualGems: null, bibleReading: null,
       apply: [], living: [], cbs: null, cbsReader: null, helpers: {}, cleaning: null,
+      ablauf: [], kreisaufseher: null,
     },
     we: { chairman: null, watchtowerReader: null, speaker: null, openingSong: null, closingSong: null, helpers: {}, cleaning: null },
   }
@@ -321,6 +322,21 @@ function neueWoche() {
 
 /** „A & B & C" → [A, B, C]. */
 const namenListe = (z) => (leer(z) ? [] : z.text.split(/\s*&\s*/).map(namensForm).filter(Boolean))
+
+/**
+ * Ein Programmpunkt, wie die Wochenübersicht ihn schreibt: „7. Titel (13 Min.)".
+ *
+ * **Die Nummer sagt, woher der Punkt kommt.** NWS nummeriert die Punkte des
+ * Arbeitshefts durch; einen eigenen Punkt der Versammlung schreibt es ohne
+ * Nummer — einen eingeschobenen („Kreiskongress Wiederholung") ebenso wie einen
+ * Punkt des Hefts, dem die Versammlung ein eigenes Thema gegeben hat. Dann fehlt
+ * dessen Nummer in der Zählung (gemessen an den Exporten vom 2.11.2026).
+ * Minuten ohne Angabe bleiben `null`.
+ */
+export function programmPunkt(text) {
+  const m = /^(?:(\d+)\.\s*)?(.*?)\s*(?:\((\d+)\s*Min\.\))?$/.exec(namensForm(text))
+  return { nr: m?.[1] ? Number(m[1]) : null, titel: m?.[2] ?? '', min: m?.[3] ? Number(m[3]) : null }
+}
 
 function mitte(w, zeilen, name) {
   let abschnitt = ''
@@ -363,6 +379,10 @@ function mitte(w, zeilen, name) {
       continue
     }
     if (abschnitt === 'Unser Leben als Christ') {
+      // Der Ablauf des Abschnitts geht mit: Hier ändert die Versammlung ihr
+      // Programm — ein eingeschobener Punkt, ein eigenes Thema, andere Minuten,
+      // in der Woche des Kreisaufsehers sein Vortrag statt des Bibelstudiums.
+      const punkt = programmPunkt(t0)
       if (/Versammlungsbibelstudium/.test(t0)) {
         const rollen = z[1]?.absaetze ?? []
         const namen = z[2]?.absaetze ?? []
@@ -370,12 +390,20 @@ function mitte(w, zeilen, name) {
           if (r === 'Leiter') w.cbs = namen[i] ? name(namen[i]) : null
           if (r === 'Leser') w.cbsReader = namen[i] ? name(namen[i]) : null
         })
+        w.ablauf.push({ ...punkt, art: 'vbs' })
         continue
       }
       const wer = z.length > 2 ? z[2] : z[1]
-      // Der Vortrag des Kreisaufsehers steht anstelle des Bibelstudiums — kein Programmplatz der Versammlung.
-      if (/^KA:/.test(wer?.text ?? '')) continue
+      // Der Vortrag des Kreisaufsehers steht anstelle des Bibelstudiums. Er ist
+      // ein Gast: sein Name bleibt Text und kommt an keine Person.
+      const ka = /^KA:\s*(.*)$/.exec(wer?.text ?? '')
+      if (ka) {
+        w.kreisaufseher = namensForm(ka[1]) || null
+        w.ablauf.push({ ...punkt, art: 'ka' })
+        continue
+      }
       w.living.push(leer(wer) ? null : name(wer.text))
+      w.ablauf.push({ ...punkt, art: 'teil' })
       continue
     }
     throw new Error(`Wochenübersicht: Zeile „${t0}" außerhalb eines Abschnitts.`)
@@ -405,7 +433,9 @@ function wochenende(we, zeilen, name, person) {
   let thema = null
   for (const z of zeilen) {
     const t0 = z[0]?.text ?? ''
-    if (t0 === 'Öffentlicher Vortrag') thema = leer(z[1]) ? null : z[1].text
+    // Das Thema des Kreisaufsehers endet in NWS auf „ |" (Export vom 2.11.2026),
+    // als stünde dahinter noch etwas — ein leerer Rest, kein Teil des Themas.
+    if (t0 === 'Öffentlicher Vortrag') thema = leer(z[1]) ? null : z[1].text.replace(/\s*\|\s*$/, '') || null
     else if (t0 === 'Vortragsredner') {
       const [roh = '', herkunft = ''] = z[1]?.absaetze ?? []
       const text = namensForm(roh)
@@ -447,7 +477,10 @@ function reinigung(zeilen) {
  * Beim Redner entscheidet es, ob er ein Gast ist.
  *
  * Dazu je Woche `besonderheit` — die zweite Kopfzeile, etwa „Kreisaufseher" —
- * und gezählt, was der Import nicht übernimmt.
+ * und gezählt, was der Import nicht übernimmt. Unter der Woche steht der Ablauf
+ * von „Unser Leben als Christ" in `ablauf` (`programmPunkt` je Zeile, mit `art`
+ * „teil", „vbs" oder „ka"); `living` trägt die Namen der Zeilen „teil" in
+ * derselben Folge, `kreisaufseher` den Namen hinter „KA:".
  */
 export function wochenAusUebersicht(xml, { jahr, monat, person }) {
   const name = (text) => person(namensForm(text)) ?? namensForm(text)
@@ -476,4 +509,30 @@ export function wochenAusUebersicht(xml, { jahr, monat, person }) {
     else if (titel === 'Reinigung') woche.mid.cleaning = reinigung(rest)
   }
   return { wochen, uebersprungen }
+}
+
+/* ===================== Programm der Leben-und-Dienst-Zusammenkunft ========= */
+
+/**
+ * Die Tage der Zusammenkunft unter der Woche (ISO), aus dem Export „Programm der
+ * Leben-und-Dienst-Zusammenkunft". Nur sie: Die Zuteilungen stehen vollständiger
+ * in der Wochenübersicht, der Tag aber nur hier. Er weicht ab, wenn die
+ * Zusammenkunft verlegt ist — in der Woche des Kreisaufsehers auf den Dienstag
+ * (8.12.2026 statt Freitag).
+ *
+ * Jede Woche ist eine Tabelle, ihre Kopfzeile beginnt mit dem Tag
+ * („2026.12.08 | HESEKIEL 3-4"). Findet sich keiner, bricht es ab.
+ */
+export function tageAusLebenUndDienst(xml) {
+  const tage = []
+  for (const zeilen of tabellenVon(xml)) {
+    const m = /^(\d{4})\.(\d{2})\.(\d{2})\b/.exec(zeilen[0]?.[0]?.text ?? '')
+    if (!m) continue
+    const tag = `${m[1]}-${m[2]}-${m[3]}`
+    const d = new Date(`${tag}T12:00:00Z`)
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== tag) throw new Error(`Leben und Dienst: kein Datum „${zeilen[0][0].text}".`)
+    tage.push(tag)
+  }
+  if (!tage.length) throw new Error('Leben und Dienst: keine Woche gefunden — unbekanntes Format.')
+  return tage
 }

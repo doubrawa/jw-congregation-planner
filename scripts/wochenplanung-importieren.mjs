@@ -74,10 +74,20 @@
  *
  *   node scripts/wochenplanung-importieren.mjs \
  *     --wochenuebersicht "<…> November 2026 Wochenübersicht.docx,<…> Dezember 2026 Wochenübersicht.docx" \
- *     --personen "<…> NWS Desktop Personen (N).csv" [--cong <id>] [--nur-leere] [--trocken]
+ *     --personen "<…> NWS Desktop Personen (N).csv" \
+ *     [--leben-und-dienst "<…> November 2026 Programm der Leben-und-Dienst-Zusammenkunft.docx,<…>"] \
+ *     [--cong <id>] [--nur-leere] [--trocken]
  *
  * Monat und Jahr einer Wochenübersicht stehen in ihrem Dateinamen, so wie NWS
- * ihn vergibt.
+ * ihn vergibt. Das Programm der Leben-und-Dienst-Zusammenkunft liefert nur den
+ * Tag unter der Woche — ohne es bleibt ein verlegter Tag (Kreisaufseher:
+ * Dienstag) unbemerkt.
+ *
+ * **Aus den Exporten kommt auch der Ablauf** von „Unser Leben als Christ"
+ * (`ablaufAngleichen`): eingeschobene Punkte, eigene Themen, Minuten, das Thema
+ * des Dienstvortrags — und die Woche des Kreisaufsehers, die NWS als solche
+ * führt, bekommt in der App ihren Anlass. Der Ablauf folgt NWS auch mit
+ * `--nur-leere`, wie die Liednummern.
  *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
  * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
@@ -89,9 +99,10 @@
  *              bereits gesetzte Namen. Die Flagge schützt **Zuteilungen** —
  *              Liednummern gehören zur Programmstruktur und folgen immer NWS.
  *
- * Übersprungen wird, was der Planer selbst entschieden hat: Wochen mit Anlass
- * (Kreisaufseher, Gedächtnismahl, Kongress) und einzeln gestrichene
- * Zusammenkünfte. NWS kennt beides nicht und teilte sonst ins Leere.
+ * Übersprungen wird, was der Planer selbst entschieden hat: Wochen mit
+ * Gedächtnismahl oder Kongress und einzeln gestrichene Zusammenkünfte. NWS
+ * kennt beides nicht und teilte sonst ins Leere. Die Woche des Kreisaufsehers
+ * nur, wenn App und NWS sie nicht übereinstimmend als solche führen.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
@@ -110,6 +121,7 @@ import {
   restKlient,
   versammlungHolen,
   wocheSchreiben,
+  WOCHENTAG_NAMEN,
   zugangsdaten,
 } from './gemeinsam.mjs'
 import {
@@ -117,6 +129,7 @@ import {
   docxDokument,
   exportNamensAufloeser,
   monatAusDateiname,
+  tageAusLebenUndDienst,
   wochenAusUebersicht,
 } from './nws-exporte.mjs'
 
@@ -374,8 +387,14 @@ function setPaar(arr, i, feld, name) {
  */
 export function loeseWoche(w, bind) {
   const b = (n) => (n == null ? null : bind(n))
+  // Der Kreisaufseher ist ein Gast: Sein Name bleibt Text, wie bei einem
+  // Gastredner. Er hält beide Vorträge der Woche — den unter der Woche, den NWS
+  // ihm zuteilt, und den Schlussvortrag am Wochenende, den die Woche des
+  // Kreisaufsehers erst mitbringt (`setDienstwoche`) und NWS nicht eigens führt.
+  const kreisaufseher = w.mid.kreisaufseher ? { name: w.mid.kreisaufseher } : null
   return {
     mid: {
+      kreisaufseher,
       chairman: b(w.mid.chairman), openingPrayer: b(w.mid.openingPrayer),
       closingPrayer: b(w.mid.closingPrayer), auxCounselor: b(w.mid.auxCounselor),
       treasuresTalk: b(w.mid.treasuresTalk), spiritualGems: b(w.mid.spiritualGems),
@@ -385,6 +404,7 @@ export function loeseWoche(w, bind) {
       helpers: loeseHelpers(w.mid.helpers, b, w.mid.cleaning),
     },
     we: {
+      kreisaufseher,
       chairman: b(w.we.chairman), watchtowerReader: b(w.we.watchtowerReader),
       speaker: w.we.speaker ? { ...bindSpeaker(w.we.speaker, bind) } : null,
       openingSong: w.we.openingSong, closingSong: w.we.closingSong,
@@ -523,8 +543,10 @@ export function verteileMitte(meeting, mid, zaehler, nurLeere, keyMap) {
 
   const leben = partItems(byFarbe(meeting, 'wein') ?? {})
   if (leben.length) {
+    // Der letzte Punkt: das Bibelstudium — in der Woche des Kreisaufsehers sein
+    // Dienstvortrag, mit einem Platz und ohne Leser.
     const vbs = leben[leben.length - 1]
-    setSlot(vbs.names, 0, mid.cbs, zaehler, nurLeere)
+    setSlot(vbs.names, 0, mid.cbs ?? mid.kreisaufseher, zaehler, nurLeere)
     if (vbs.names.length > 1) setSlot(vbs.names, 1, mid.cbsReader, zaehler, nurLeere)
     leben.slice(0, -1).forEach((p, k) => setSlot(p.names, 0, mid.living[k], zaehler, nurLeere))
   }
@@ -562,6 +584,10 @@ export function verteileWochenende(meeting, we, zaehler, nurLeere, keyMap) {
   const wt = partItems(byFarbe(meeting, 'wein') ?? {})
   if (wt.length) setSlot(wt[wt.length - 1].names, 1, we.watchtowerReader, zaehler, nurLeere)
 
+  // Der Schlussvortrag des Kreisaufsehers — die goldene Sektion gibt es nur in seiner Woche.
+  const schlussvortrag = partItems(byFarbe(meeting, 'gold') ?? {})[0]
+  if (schlussvortrag) setSlot(schlussvortrag.names, 0, we.kreisaufseher, zaehler, nurLeere)
+
   const schlussItem = partItems(abschluss)[0]
   if (schlussItem && we.closingSong != null) {
     schlussItem.title = mitLiedNummer(schlussItem.title, we.closingSong)
@@ -593,30 +619,166 @@ export function verteileWoche(data, gebunden, nurLeere, keyMap) {
 }
 
 /**
+ * **Den Ablauf von „Unser Leben als Christ" an NWS angleichen** (3.11.2026).
+ *
+ * In diesem Abschnitt ändert eine Versammlung ihr Programm: Sie schiebt einen
+ * Punkt ein („Kreiskongress Wiederholung"), gibt einem Punkt des Arbeitshefts
+ * ihr eigenes Thema, kürzt Minuten, und in der Woche des Kreisaufsehers steht
+ * sein Vortrag mit eigenem Thema an der Stelle des Bibelstudiums. Bis hierher kam
+ * davon nichts an — ein eingeschobener Punkt fiel samt seinem Bruder still weg.
+ *
+ * Geändert wird mit den Funktionen, mit denen der Planer den Abschnitt
+ * bearbeitet (`app`: `lacAdd`, `lacTitel`, `lacMinuten`, `setPartThema` aus
+ * `meeting-edit.ts`): Sie spiegeln jede Änderung in die Sprachvarianten, ziehen
+ * das Ende nach und vermerken den Umbau. Hineingereicht, weil dieses Modul ohne
+ * App-Code laden soll (Tests, `--daten`).
+ *
+ * **Zugeordnet wird über die Nummer** (`programmPunkt`): Eine NWS-Zeile mit
+ * Nummer ist der Punkt des Arbeitshefts mit dieser Nummer (`num`). Eine ohne
+ * nimmt den nächsten Punkt, den keine spätere Zeile beansprucht — einen Punkt des
+ * Hefts mit eigenem Thema —, sonst ist sie eingeschoben. Eingeschoben wird wie in
+ * der App vor dem Bibelstudium bzw. dem Dienstvortrag; steht der Punkt in NWS
+ * weiter vorn oder fehlt ein Punkt des Hefts, passt der Ablauf nicht (`fehler`).
+ * Was nur in der App steht (ein eigener Punkt ohne Nummer), bleibt und wird
+ * genannt.
+ *
+ * `ablauf` leer: NWS führt den Abschnitt in dieser Woche nicht — nichts zu tun.
+ *
+ * Liefert die Woche und `reihe`: für jeden Punkt des Abschnitts außer dem
+ * letzten den Index in `living`, dessen Bruder ihn hält (−1: keiner) — die
+ * Zuteilung folgt damit dem Punkt, nicht seiner Stelle. Reine Funktion.
+ */
+export function ablaufAngleichen(data, ablauf, app) {
+  if (!ablauf?.length) return { data, reihe: null, nurApp: [] }
+  const si = data.mid.sections.findIndex((s) => app.istArt(s, 'lac'))
+  if (si < 0) return { fehler: 'in der App fehlt der Abschnitt „Unser Leben als Christ"' }
+  let weeks = [data]
+  const teile = () => partItems(weeks[0].mid.sections[si])
+  const istVbs = (t) => t.names.some((n) => n.bereichsKey === 'leser') && !app.istCoPunkt(t)
+  const benannt = (t) => (t.num != null ? `Punkt ${t.num} („${t.title}")` : `„${t.title}"`)
+
+  const T = teile()
+  const plan = []
+  const nurApp = []
+  let p = 0
+  for (const [j, z] of ablauf.entries()) {
+    let k
+    if (z.art === 'ka') k = T.findIndex((t, i) => i >= p && app.istCoPunkt(t))
+    else if (z.art === 'vbs') k = T.findIndex((t, i) => i >= p && istVbs(t))
+    else if (z.nr != null) k = T.findIndex((t, i) => i >= p && t.num === z.nr)
+    else {
+      const t = T[p]
+      const spaeter = new Set(ablauf.slice(j + 1).map((x) => x.nr).filter((n) => n != null))
+      const amEnde = t && (istVbs(t) || app.istCoPunkt(t))
+      if (t && !amEnde && !(t.num != null && spaeter.has(t.num))) k = p
+      else if (amEnde) {
+        plan.push({ zeile: z, neu: true })
+        continue
+      } else {
+        return { fehler: t ? `„${z.titel}" steht in NWS vor ${benannt(t)} — eingeschoben wird vor dem Bibelstudium` : `„${z.titel}" steht in NWS hinter dem Bibelstudium` }
+      }
+    }
+    if (k < 0) {
+      const was = z.art === 'ka' ? 'der Dienstvortrag' : z.art === 'vbs' ? 'das Bibelstudium' : `Punkt ${z.nr} („${z.titel}")`
+      return { fehler: `${was} steht in NWS, aber nicht an dieser Stelle in der App` }
+    }
+    for (const t of T.slice(p, k)) {
+      if (t.num != null) return { fehler: `${benannt(t)} fehlt in NWS` }
+      nurApp.push(t.title)
+    }
+    plan.push({ zeile: z, iid: T[k].iid, umbenennen: z.art === 'teil' && z.nr == null })
+    p = k + 1
+  }
+  for (const t of T.slice(p)) {
+    if (t.num != null) return { fehler: `${benannt(t)} fehlt in NWS` }
+    nurApp.push(t.title)
+  }
+
+  const stelle = (iid) => weeks[0].mid.sections[si].items.findIndex((x) => !app.isSong(x) && x.iid === iid)
+  for (const schritt of plan) {
+    const z = schritt.zeile
+    if (schritt.neu) {
+      const bisher = new Set(teile().map((t) => t.iid))
+      weeks = app.lacAdd(weeks, 0, 'mid', si, z.titel)
+      schritt.iid = teile().find((t) => !bisher.has(t.iid))?.iid
+      if (!schritt.iid) return { fehler: `ein Punkt ohne Titel ist in NWS eingeschoben` }
+    }
+    const ii = stelle(schritt.iid)
+    const item = weeks[0].mid.sections[si].items[ii]
+    if (z.art === 'ka' && z.titel && z.titel !== app.TITEL_DIENSTVORTRAG && app.themaVon(item.title, app.TITEL_DIENSTVORTRAG) !== z.titel) {
+      weeks = app.setPartThema(weeks, 0, 'mid', si, ii, app.TITEL_DIENSTVORTRAG, z.titel)
+    } else if (schritt.umbenennen) {
+      weeks = app.lacTitel(weeks, 0, 'mid', si, ii, z.titel)
+    }
+    if (z.min != null) weeks = app.lacMinuten(weeks, 0, 'mid', si, ii, z.min)
+  }
+
+  const inLiving = new Map()
+  for (const s of plan.filter((x) => x.zeile.art === 'teil')) inLiving.set(s.iid, inLiving.size)
+  const reihe = teile().slice(0, -1).map((t) => inLiving.get(t.iid) ?? -1)
+  return { data: weeks[0], reihe, nurApp }
+}
+
+/**
+ * Die Brüder unter „Unser Leben als Christ" in der Folge der App-Punkte, so wie
+ * `verteileMitte` sie Stelle für Stelle liest — nach der `reihe` aus
+ * `ablaufAngleichen`. Ohne `reihe` bleibt die Folge aus NWS.
+ */
+export function livingNachReihe(living, reihe) {
+  return reihe ? reihe.map((j) => (j >= 0 ? (living[j] ?? null) : null)) : living
+}
+
+/** Anzeige der Anlässe (`AnlassArt`) im Bericht. */
+const ANLASS_ANZEIGE = { co: 'Kreisaufseher', mem: 'Gedächtnismahl', kongress: 'Kongress' }
+
+/**
  * Was ein Import an einer Woche ändert, Platz für Platz — für den Bericht des
- * Trockenlaufs. Verglichen werden Namen samt Person-Id, die Titel der
- * Programmpunkte (das Vortragsthema, die Liednummern) und die Hilfsdienste.
- * Die Struktur der Woche ändert der Import nicht; Punkte stehen also an
- * derselben Stelle. Reine Funktion.
+ * Trockenlaufs. Verglichen werden Namen samt Person-Id, Titel und Minuten der
+ * Programmpunkte (das Vortragsthema, die Liednummern), die Hilfsdienste, dazu
+ * der Ablauf: ein neuer Anlass, ein verlegter Tag, Punkte, die dazukommen oder
+ * wegfallen. Punkte werden über ihre Kennung (`iid`) einander zugeordnet, nicht
+ * über ihre Stelle — ein eingeschobener verschiebt die übrigen. Reine Funktion.
  */
 export function wochenUnterschiede(vorher, nachher) {
   const out = []
   const wer = (s) => (s?.name ? s.name : '—')
   const anders = (a, b) => (a?.name ?? '') !== (b?.name ?? '') || (a?.pid ?? null) !== (b?.pid ?? null)
+  const anlass = (w) => ANLASS_ANZEIGE[w?.anlass?.art] ?? w?.anlass?.art ?? '—'
+  if (anlass(vorher) !== anlass(nachher)) out.push({ tab: 'woche', punkt: 'Anlass', platz: 'Art', alt: anlass(vorher), neu: anlass(nachher) })
+  const tag = (w, tab) => (w?.dev?.[tab]?.wd != null ? WOCHENTAG_NAMEN[w.dev[tab].wd] : '—')
   for (const tab of ['mid', 'we']) {
     const a = vorher?.[tab]
     const b = nachher?.[tab]
     if (!a || !b) continue
+    if (tag(vorher, tab) !== tag(nachher, tab)) out.push({ tab, punkt: 'Zusammenkunft', platz: 'verlegt auf', alt: tag(vorher, tab), neu: tag(nachher, tab) })
+    // Ohne Kennung (Proben, Altbestand) die Stelle.
+    const kennung = (it, si, ii) => it.iid ?? `@${si}:${ii}`
+    const alte = new Map()
+    ;(a.sections ?? []).forEach((sec, si) => (sec.items ?? []).forEach((it, ii) => Array.isArray(it.names) && alte.set(kennung(it, si, ii), it)))
+    const gesehen = new Set()
     ;(b.sections ?? []).forEach((sec, si) => {
       ;(sec.items ?? []).forEach((it, ii) => {
-        const alt = a.sections?.[si]?.items?.[ii]
-        if (!alt) return
+        if (!Array.isArray(it.names)) return
+        const k = kennung(it, si, ii)
+        gesehen.add(k)
+        const alt = alte.get(k)
+        if (!alt) {
+          out.push({ tab, punkt: it.title, platz: 'Punkt', alt: '—', neu: it.mins != null ? `neu, ${it.mins} Min.` : 'neu' })
+          it.names.forEach((s, ni) => s?.name && out.push({ tab, punkt: it.title, platz: s.rolle || `Platz ${ni + 1}`, alt: '—', neu: wer(s) }))
+          return
+        }
         if (alt.title !== it.title) out.push({ tab, punkt: alt.title, platz: 'Titel', alt: alt.title, neu: it.title })
-        ;(it.names ?? []).forEach((s, ni) => {
-          if (anders(alt.names?.[ni], s)) out.push({ tab, punkt: it.title, platz: s?.rolle || `Platz ${ni + 1}`, alt: wer(alt.names?.[ni]), neu: wer(s) })
-        })
+        if ((alt.mins ?? null) !== (it.mins ?? null)) out.push({ tab, punkt: it.title, platz: 'Minuten', alt: String(alt.mins ?? '—'), neu: String(it.mins ?? '—') })
+        const plaetze = Math.max(alt.names?.length ?? 0, it.names.length)
+        for (let ni = 0; ni < plaetze; ni++) {
+          const s = it.names[ni]
+          const vorig = alt.names?.[ni]
+          if (!anders(vorig, s)) continue
+          out.push({ tab, punkt: it.title, platz: (s ?? vorig)?.rolle || `Platz ${ni + 1}`, alt: wer(vorig), neu: s ? wer(s) : 'entfällt' })
+        }
       })
     })
+    for (const [k, it] of alte) if (!gesehen.has(k)) out.push({ tab, punkt: it.title, platz: 'Punkt', alt: 'da', neu: 'entfällt' })
     if (anders(a.auxRatgeber, b.auxRatgeber)) out.push({ tab, punkt: 'Zusätzliche Klasse', platz: 'Ratgeber', alt: wer(a.auxRatgeber), neu: wer(b.auxRatgeber) })
     for (const key of new Set([...Object.keys(a.helpers ?? {}), ...Object.keys(b.helpers ?? {})])) {
       const la = a.helpers?.[key] ?? []
@@ -719,9 +881,15 @@ export function gruppenNamensAufloeser(fieldServiceGroups) {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
-  const exporte = typeof arg.wochenuebersicht === 'string' ? arg.wochenuebersicht.split(',').map((s) => s.trim()).filter(Boolean) : null
+  const liste = (wert) => (typeof wert === 'string' ? wert.split(',').map((s) => s.trim()).filter(Boolean) : null)
+  const exporte = liste(arg.wochenuebersicht)
   if (arg.wochenuebersicht && (!exporte?.length || typeof arg.personen !== 'string')) {
     console.error('Zur Wochenübersicht gehören die Dateien und die Personenliste: --wochenuebersicht "<a.docx>,<b.docx>" --personen "<Personen.csv>"')
+    process.exit(2)
+  }
+  const lebenUndDienst = liste(arg['leben-und-dienst'])
+  if (arg['leben-und-dienst'] && (!lebenUndDienst?.length || !exporte)) {
+    console.error('--leben-und-dienst "<a.docx>,<b.docx>" gehört zur Wochenübersicht (--wochenuebersicht, --personen).')
     process.exit(2)
   }
   const { url, key } = await zugangsdaten()
@@ -755,6 +923,7 @@ export async function main(argv = process.argv.slice(2)) {
   let nwsWochen
   let nwsNamen
   let ausExporten = null
+  const tageMitte = new Map()
   if (exporte) {
     ausExporten = wochenAusExporten(
       exporte.map((pfad) => ({ name: path.basename(pfad), xml: docxDokument(pfad) })),
@@ -763,6 +932,11 @@ export async function main(argv = process.argv.slice(2)) {
     )
     nwsWochen = ausExporten.wochen
     nwsNamen = ausExporten.nwsNamen
+    // Der Tag der Zusammenkunft unter der Woche steht nur im Programm der
+    // Leben-und-Dienst-Zusammenkunft: Montag → Tag.
+    for (const pfad of lebenUndDienst ?? []) {
+      for (const tag of tageAusLebenUndDienst(docxDokument(pfad))) tageMitte.set(mondayOf(tag), tag)
+    }
   } else {
     const nwsNameOf = nwsNamensAufloeser(tabellen.persons, appById)
     const groupNameOf = gruppenNamensAufloeser(tabellen.fieldServiceGroups)
@@ -794,7 +968,7 @@ export async function main(argv = process.argv.slice(2)) {
   // verfallen (siehe `wocheSchreiben`). Wie weit zurück, ebenso (T125), und
   // wer das Wachtturm-Studium leitet.
   appCodeBereit()
-  const [{ changedSlotKeys, festenWtLeiterEintragen }, { MEETING_TABS }, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }] =
+  const [{ changedSlotKeys, festenWtLeiterEintragen }, helpers, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }, bearbeiten, { setAnlass }] =
     await Promise.all([
       import('../src/data/planning.ts'),
       import('../src/data/helpers.ts'),
@@ -802,7 +976,12 @@ export async function main(argv = process.argv.slice(2)) {
       import('../src/lib/zeilen.ts'),
       import('../supabase/functions/_shared/planung.ts'),
       import('../supabase/functions/_shared/gleicher-inhalt.ts'),
+      import('../src/data/meeting-edit.ts'),
+      import('../src/data/anlass.ts'),
     ])
+  const { MEETING_TABS } = helpers
+  // Den Ablauf ändern dieselben Funktionen wie in der App (`ablaufAngleichen`).
+  const app = { ...helpers, ...bearbeiten }
   const ab = aufbewahrtAb(VERTEILUNG_WOCHEN)
   const appPersonen = personen.map(zeilen.personFromRow)
   const appAbwesenheiten = abwesenheiten.map(zeilen.absenceFromRow)
@@ -832,36 +1011,53 @@ export async function main(argv = process.argv.slice(2)) {
   let wtLeiter = 0, wtVertreter = 0
   const geschrieben = []
   const ohneAnlass = []
+  const passtNicht = []
+  const nurInDerApp = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
     // Älter als ein Jahr: gar nicht erst hinein (T125).
     if (montag < ab) { zuAlt++; continue }
     const zeile = nachStart.get(montag)
     if (!zeile) { ohneWoche++; continue }
-    // Wochen mit Anlass bleiben dem Planer überlassen: Beim Kreisaufseher ist
-    // das Programm umgebaut (Dienstvortrag statt VBS) — Plätze verschieben sich,
-    // NWS trägt sie anders —, beim Gedächtnismahl entfällt eine Zusammenkunft,
-    // beim Kongress die ganze Woche. Geprüft wird wie `anlassArt()` in der App.
-    // Alle drei Arten sind Aussagen über die Woche, deshalb genügt „hat einen
-    // Anlass".
-    if (zeile.data.anlass?.art) { sonder++; continue }
-    // Führt NWS die Woche als besondere („Kreisaufseher" in der Wochenübersicht),
-    // die App aber noch ohne Anlass, stünde das gewöhnliche Programm da und
-    // bekäme die Plätze der Sonderwoche. Erst der Anlass in der App — dann gilt
-    // die Regel darüber.
-    if (roh.besonderheit) { ohneAnlass.push(`${montag} „${roh.besonderheit}"`); continue }
+    // Ein Anlass baut den Ablauf um: beim Kreisaufseher der Dienstvortrag statt
+    // des Bibelstudiums, beim Gedächtnismahl fällt eine Zusammenkunft aus, beim
+    // Kongress die Woche. Die Woche des Kreisaufsehers führt NWS selbst
+    // („Kreisaufseher" in der Wochenübersicht) und teilt sie zu — die übernimmt
+    // der Import samt Anlass (3.11.2026; bis dahin blieb sie dem Planer). Die
+    // anderen Anlässe kennt NWS nicht, und führt nur eine Seite die Woche als
+    // die des Kreisaufsehers, passt nichts zusammen: Dort plant der Planer.
+    // Geprüft wird wie `anlassArt()` in der App.
+    const art = zeile.data.anlass?.art
+    const kreisaufseher = roh.besonderheit === 'Kreisaufseher'
+    if (art && !(art === 'co' && kreisaufseher)) { sonder++; continue }
+    if (roh.besonderheit && !kreisaufseher) { ohneAnlass.push(`${montag} „${roh.besonderheit}"`); continue }
+    // Der Stand davor sagt, wer einen Platz verliert und was sich am Ablauf
+    // ändert. Mit dem Montag, den `festenWtLeiterEintragen` unten dazugibt:
+    // Sonst zählte ein Blob ohne `start` bei jedem Lauf als geändert.
+    const vorher = structuredClone({ ...zeile.data, start: montag })
+    let data = kreisaufseher && !art ? setAnlass([zeile.data], 0, 'co')[0] : zeile.data
+    // Der Tag folgt NWS: verlegt, wo NWS die Zusammenkunft an einem anderen Tag
+    // hält (in der Woche des Kreisaufsehers am Dienstag), sonst der Rhythmus.
+    const tag = tageMitte.get(montag)
+    if (tag) {
+      const wd = new Date(`${tag}T12:00:00Z`).getUTCDay()
+      const soll = wd === zeiten.mid.wd ? undefined : wd
+      if (data.dev?.mid?.wd !== soll) data = bearbeiten.setAbweichung([data], 0, 'mid', { wd: soll })[0]
+    }
+    const angeglichen = ablaufAngleichen(data, roh.mid.ablauf, app)
+    if (angeglichen.fehler) { passtNicht.push(`${montag}: ${angeglichen.fehler}`); continue }
+    data = angeglichen.data
+    if (angeglichen.nurApp.length) nurInDerApp.push(`${montag}: ${angeglichen.nurApp.map((t) => `„${t}"`).join(', ')}`)
     getroffen++
     const gebunden = loeseWoche(roh, bind)
-    // `verteileWoche` schreibt in die Woche selbst — der Stand davor sagt, wer
-    // einen Platz verliert. Mit dem Montag, den `festenWtLeiterEintragen` unten
-    // dazugibt: Sonst zählte ein Blob ohne `start` bei jedem Lauf als geändert.
-    const vorher = structuredClone({ ...zeile.data, start: montag })
-    const z = verteileWoche(zeile.data, gebunden, nurLeere, keyMap)
+    // Die Brüder unter „Unser Leben als Christ" gehen an ihren Punkt, nicht an seine Stelle.
+    gebunden.mid.living = livingNachReihe(gebunden.mid.living, angeglichen.reihe)
+    const z = verteileWoche(data, gebunden, nurLeere, keyMap)
     gesetzt += z.gesetzt; ohnePid += z.ohnePid; fehlplatz += z.fehlplatz; gestrichen += z.gestrichen
     helfer += z.helfer; helferOhnePid += z.helferOhnePid; helferOhneDienst += z.helferOhneDienst
     // Nach den NWS-Zuteilungen: Wer dort schon eingeteilt ist, leitet nicht.
     // Den Montag aus der Spalte, wie beim Laden der App: Der Blob muss ihn
     // nicht tragen, und ohne ihn fände sich keine Abwesenheit zur Woche.
-    const wt = festenWtLeiterEintragen({ ...zeile.data, start: montag }, appPersonen, appAbwesenheiten, zeiten)
+    const wt = festenWtLeiterEintragen({ ...data, start: montag }, appPersonen, appAbwesenheiten, zeiten)
     zeile.data = wt.week
     wtLeiter += wt.eingetragen.length
     wtVertreter += wt.eingetragen.filter((p) => !p.priv.wtLeiter).length
@@ -890,7 +1086,14 @@ export async function main(argv = process.argv.slice(2)) {
 
   console.log(`\nGetroffene Wochen: ${getroffen} (davon schon auf dem Stand von NWS: ${unveraendert}) · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
   if (ohneAnlass.length) {
-    console.log(`  ! Laut NWS besonders, in der App ohne Anlass — nicht übernommen: ${ohneAnlass.join(' · ')}. Erst den Anlass in der App setzen.`)
+    console.log(`  ! Laut NWS besonders, ohne Gegenstück in der App — nicht übernommen: ${ohneAnlass.join(' · ')}. Diese Wochen plant der Planer.`)
+  }
+  if (passtNicht.length) {
+    console.log(`  ! Ablauf von „Unser Leben als Christ" passt nicht zu NWS — Woche nicht übernommen:`)
+    for (const p of passtNicht) console.log(`    ${p}`)
+  }
+  if (nurInDerApp.length) {
+    console.log(`  Eigene Punkte, die nur in der App stehen (bleiben): ${nurInDerApp.join(' · ')}`)
   }
   if (zuAlt) console.log(`Älter als ein Jahr (vor ${ab}), nicht übernommen: ${zuAlt} NWS-Wochen`)
   if (gestrichen) console.log(`Gestrichene Zusammenkünfte übersprungen: ${gestrichen}`)
@@ -919,7 +1122,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (arg.trocken) {
     const n = geschrieben.length
     console.log(`\n--trocken: nichts geschrieben. ${n === 0 ? 'Keine Woche würde sich ändern.' : n === 1 ? 'Eine Woche würde sich ändern:' : `${n} Wochen würden sich ändern:`}`)
-    const ZK = { mid: 'Mitte', we: 'Wochenende' }
+    const ZK = { woche: 'Woche', mid: 'Mitte', we: 'Wochenende' }
     for (const g of geschrieben) {
       console.log(`\n  ${g.montag}`)
       for (const u of g.unterschiede) console.log(`    ${ZK[u.tab]} · ${u.punkt} · ${u.platz}: ${u.alt} → ${u.neu}`)
