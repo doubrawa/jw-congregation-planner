@@ -5,6 +5,7 @@ import { istSchuelerteil } from '../data/aux-class'
 import { dauerAbtrennen, rolleMitHerkunft, istArt, istCoPunkt, isGuestRole, isSong, liedImKopf, mtab, splitOpeningSong } from '../data/helpers'
 import { closingSongNr, hatLiedPlatz, openingSongNr, TALK_PLACEHOLDER, themaVon } from '../data/meeting-edit'
 import { auswahlFuer } from '../data/plaetze'
+import { punktKey } from '../data/planning'
 import { nurZiffern } from '../data/ziffern'
 import { useKonflikte } from './useKonflikte'
 import { useZusage } from './useZusage'
@@ -104,6 +105,8 @@ export function MeetingSection({
   const tab = mtab(state.tab)
   // Die Abschnitte der kanonischen Woche — an ihnen erkennt `schlussgebetVorOrt` das Wochenende.
   const abschnitte = state.weeks[state.week]?.[tab].sections ?? []
+  // Die Kennung der Woche — für den Schlüssel eines Platzes (`punktKey`).
+  const woche = state.weeks[state.week]?.start ?? ''
 
   // Wer oben unter „Zu klären" steht, wird hier an seinem Platz rot.
   const konflikte = useKonflikte(tab)
@@ -282,7 +285,7 @@ export function MeetingSection({
                         key={ni}
                         name={slot.name}
                         rolle={rolle ? tu(rolle) : undefined}
-                        {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+                        {...platzAnzeige(slot, stand, konflikte.von(slot, punktKey(woche, tab, keyItem.iid, ni, aux)), t)}
                         leer={schlussgebetVorOrt(abschnitte, rawSection, slot) ? t.schlussgebetVorOrt : undefined}
                         gewaehlt={istGewaehlt(state.slotSel, { kind: 'part', wi: state.week, tab, si, ii, ni, aux })}
                         onClick={() => openPartSlot(ii, ni, item, slot, aux)}

@@ -6,21 +6,26 @@ import { idAufloeser } from '../data/helpers'
 import { kennungVon, weekConflicts, type Conflict } from '../data/planning'
 import type { MeetingKey, Person } from '../data/types'
 
-/** Was von einer Zuteilung gebraucht wird, um sie einer Person und ihrem Platz zuzuordnen. */
+/** Was von einer Zuteilung gebraucht wird, um sie einer Person zuzuordnen. */
 interface Zugeteilt {
   name?: string
   pid?: string
-  /** Der Bereich des Platzes — manche Konflikte treffen nur einen (`Conflict.bereich`). */
-  bereichsKey?: string | null
 }
+
+/**
+ * Der Konflikt einer Zuteilung an ihrem Platz — `platz` ist sein `task_key`
+ * (`platzKey`). Pflicht, auch wo heute kein Konflikt nur einen Platz trifft:
+ * Ohne Schlüssel fiele ein solcher Konflikt dort still weg.
+ */
+type KonfliktVon<T> = (z: Zugeteilt | undefined, platz: string) => T
 
 export interface Konflikte {
   /** Die Konflikte der Zusammenkunft — „Zu klären" nennt sie (`BesetzungKarte`). */
   liste: Conflict[]
   /** Der Konflikt, in dem diese Zuteilung steht — die Abwesenheit vor einer Doppelbelegung. */
-  von: (z: Zugeteilt | undefined) => Conflict | undefined
+  von: KonfliktVon<Conflict | undefined>
   /** Steht diese Zuteilung in einem der Konflikte? */
-  betrifft: (z: Zugeteilt | undefined) => boolean
+  betrifft: KonfliktVon<boolean>
 }
 
 /**
@@ -34,18 +39,19 @@ export interface Konflikte {
  * den abwesenden Ordner im Banner stehen, während sein Chip unmarkiert blieb.
  *
  * Steht eine Person in mehreren, gilt die Abwesenheit: Sie sagt, warum der
- * Platz so nicht bleiben kann. Ein Konflikt, der nur einen Bereich trifft
- * (`Conflict.bereich`, das unpassende Paar), gilt nur an dessen Plätzen — ihr
- * Hilfsdienst am selben Abend steht deshalb nicht in Frage.
+ * Platz so nicht bleiben kann. Ein Konflikt, der nur einen Platz trifft
+ * (`Conflict.platz`, das unpassende Paar), gilt nur dort — ihr Hilfsdienst am
+ * selben Abend steht deshalb nicht in Frage, und ebenso wenig ihr zweiter
+ * Schülerteil, wenn sie dort zum Gesprächsführer passt.
  */
-export function machKonfliktVon(persons: Person[], conflicts: Conflict[]): (z: Zugeteilt | undefined) => Conflict | undefined {
+export function machKonfliktVon(persons: Person[], conflicts: Conflict[]): KonfliktVon<Conflict | undefined> {
   const werIst = idAufloeser(persons)
   const je = new Map<string, Conflict[]>()
   for (const c of conflicts) je.set(c.kennung, [...(je.get(c.kennung) ?? []), c])
-  return (z) => {
+  return (z, platz) => {
     if (!z?.name) return undefined
     const kennung = werIst(z as { name: string; pid?: string }) ?? kennungVon(z.name)
-    const hier = (je.get(kennung) ?? []).filter((c) => !c.bereich || c.bereich === z.bereichsKey)
+    const hier = (je.get(kennung) ?? []).filter((c) => !c.platz || c.platz === platz)
     return hier.find((c) => c.kind === 'absent') ?? hier[0]
   }
 }
@@ -88,7 +94,7 @@ export function konflikteVon(
   if (fertig) return fertig
   const liste = weekConflicts(weeks, wi, persons, services, tab, abwesend)
   const von = machKonfliktVon(persons, liste)
-  const neu: Konflikte = { liste, von, betrifft: (z) => von(z) !== undefined }
+  const neu: Konflikte = { liste, von, betrifft: (z, platz) => von(z, platz) !== undefined }
   speicher.set(schluessel, neu)
   return neu
 }

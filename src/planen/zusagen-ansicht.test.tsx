@@ -101,6 +101,30 @@ describe('Die Zusagen der Woche', () => {
     })
   })
 
+  it('ein unpassender Partner steht unter „Zu klären" — nur mit dem Platz, an dem er nicht passt', () => {
+    // Andreas Müller begleitet Lena Hoffmann (eine Schwester, nicht sein
+    // Haushalt) und Simon Krüger. Zu klären ist nur der erste Platz.
+    const s = demoZustand()
+    const weeks = s.weeks.map((w) => {
+      if (w.start !== '2026-09-07') return w
+      const sections = w.mid.sections.map((sec) => ({
+        ...sec,
+        items: sec.items.map((it) =>
+          'names' in it && (it.iid === 'dw5' || it.iid === 'dw6')
+            ? { ...it, names: it.names.map((n, ni) => (ni === 1 ? { ...n, name: 'Andreas Müller', pid: 'p17' } : n)) }
+            : it,
+        ),
+      }))
+      return { ...w, mid: { ...w.mid, sections } }
+    })
+    const { container } = zeige({ weeks })
+    const zeilen = (titel: string) =>
+      [...(karte(container, titel)?.querySelectorAll('.zusage-zeile') ?? [])].filter((z) => z.textContent?.includes('Andreas Müller'))
+    const zuKlaeren = zeilen(t.zuKlaeren)
+    expect(zuKlaeren).toHaveLength(1)
+    expect(zuKlaeren[0]?.querySelector('.zusage-grund')?.textContent).toContain(t.paarPasstNicht)
+  })
+
   it('wer wartet, steht mit seinem Tag und seit wann die Nachricht draußen ist', () => {
     const { container } = zeige()
     const zeilen = [...karte(container, t.zusagenWarten)!.querySelectorAll('.zusage-zeile')].map((z) => z.textContent)

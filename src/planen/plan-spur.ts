@@ -115,7 +115,7 @@ export function besetzungDerWoche(
   week: Week,
   q: Pick<SpurQuellen, 'services' | 'confirmations' | 'persoenlich' | 'zeiten'>,
   heute: Date,
-  imKonflikt: (tab: MeetingKey) => (slot: SlotAssignment) => boolean,
+  imKonflikt: (tab: MeetingKey) => (slot: SlotAssignment, platz: string) => boolean,
 ): Besetzung {
   const summe: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
   for (const tab of anstehende(week, q.zeiten, heute)) {

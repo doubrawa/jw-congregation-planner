@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { useState } from 'react'
+import { ausklingen } from '../../tests/verlauf'
 import { useBackDismiss, type Ebene } from './useBackDismiss'
 import {
   WaechterAttrappe,
@@ -36,11 +37,6 @@ let basis = ''
 const zustand = () => (history.state ?? {}) as Record<string, unknown>
 /** Steht der Verlauf auf dem Grundeintrag — kein Eintrag darüber, keiner zu wenig? */
 const amGrund = () => zustand().basis === basis && zustand().cpOverlay === undefined
-
-/** Ein paar Durchläufe weiter: Effekte, eigenes Aufräumen und dessen `popstate` sind dann durch. */
-async function ausklingen(): Promise<void> {
-  for (let i = 0; i < 8; i++) await new Promise<void>((fertig) => setTimeout(fertig, 0))
-}
 
 /** Eine Ebene, die verschwindet, sobald sie geschlossen wird — wie in der App. */
 function Probe({ name, ebene = 'blatt', protokoll }: { name: string; ebene?: Ebene; protokoll: string[] }) {

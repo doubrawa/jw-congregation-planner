@@ -26,6 +26,7 @@ import {
   assignSlot,
   clearAssignments,
   helferKey,
+  punktKey,
   slotValue,
   tabsImUmfang,
   weekConflicts,
@@ -1183,8 +1184,8 @@ describe('Konfliktprüfungen (Planen)', () => {
     punkt(w, 1).names[0] = { ...punkt(w, 1).names[0]!, ...am(leute.anna) }
     punkt(w, 1).names[1] = { ...punkt(w, 1).names[1]!, ...am(leute.bernd) }
     expect(weekConflicts([w], 0, Object.values(leute), [], 'mid')).toEqual([
-      // Nur am Platz des Partners (`bereich`) — sein Hilfsdienst steht nicht in Frage.
-      { kind: 'partner', name: 'Bernd Bauer', kennung: 'p-bernd', tab: 'mid', zu: 'Anna Acker', bereich: 'schulungPartner' },
+      // Nur am Platz des Partners (`platz`) — sein Hilfsdienst steht nicht in Frage.
+      { kind: 'partner', name: 'Bernd Bauer', kennung: 'p-bernd', tab: 'mid', zu: 'Anna Acker', platz: punktKey('2026-09-07', 'mid', 'g1', 1, false) },
     ])
   })
 
@@ -1200,7 +1201,7 @@ describe('Konfliktprüfungen (Planen)', () => {
     expect(weekConflicts([w], 0, familie, [], 'mid')).toEqual([
       // Anna steht in beiden Räumen — und Carl passt nicht zu ihr.
       { kind: 'double', name: 'Anna Acker', kennung: 'p-anna', tab: 'mid', count: 2 },
-      { kind: 'partner', name: 'Carl Christ', kennung: 'p-carl', tab: 'mid', zu: 'Anna Acker', bereich: 'schulungPartner' },
+      { kind: 'partner', name: 'Carl Christ', kennung: 'p-carl', tab: 'mid', zu: 'Anna Acker', platz: punktKey('2026-09-07', 'mid', 'g1', 1, true) },
     ])
   })
 

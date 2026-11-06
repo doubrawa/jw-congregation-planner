@@ -1108,6 +1108,30 @@ function fensterBreite(px: number): void {
 }
 
 /**
+ * **Am Handy steht „Drucken" als Zeichen neben dem Termin** — das Gegenstück
+ * zu „Ab dem Tablet": Neben der Wochenwahl ist dort kein Platz für ein Wort.
+ * Ohne diese Proben könnte das Handy die Fassung des Tablets zeigen, ohne dass
+ * eine Probe es merkt.
+ */
+describe('Am Handy', () => {
+  beforeEach(() => fensterBreite(393))
+
+  it('„Drucken" steht als Zeichen neben dem Termin, nicht neben der Wochenwahl', () => {
+    const { container } = zeige()
+    const s = seite(container)
+    expect(s.querySelector('.prog-meta-row .druck-knopf')).not.toBeNull()
+    expect(s.querySelector('.druck-knopf--text')).toBeNull()
+    expect(s.querySelector('.wochenwahl .druck-knopf')).toBeNull()
+  })
+
+  it('ebenso über den Treffpunkten', () => {
+    const { container } = zeige({ tab: 'fs' })
+    expect(seite(container).querySelector('.druck-zeile .druck-knopf')).not.toBeNull()
+    expect(seite(container).querySelector('.wochenwahl .druck-knopf')).toBeNull()
+  })
+})
+
+/**
  * **Ab dem Tablet trägt „Drucken" sein Wort** (T121, `GTabletWoche`) und steht
  * rechts neben der Wochenwahl — über beiden Themen mit Woche. Neben dem
  * Termin bleibt dann nur der Termin.

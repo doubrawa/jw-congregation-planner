@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { useState } from 'react'
+import { ausklingen, beiRueckschritt } from '../../tests/verlauf'
 import { useBackDismiss } from './useBackDismiss'
 
 /**
@@ -50,19 +51,6 @@ function Stapel({ protokoll }: { protokoll: string[] }) {
       )}
     </>
   )
-}
-
-/** `ausloesen()` anstoßen und auf das daraus folgende `popstate` warten (ohne feste Frist). */
-function beiRueckschritt(ausloesen: () => void): Promise<void> {
-  return new Promise<void>((fertig) => {
-    window.addEventListener('popstate', () => fertig(), { once: true })
-    ausloesen()
-  })
-}
-
-/** Ein paar Durchläufe weiter: Ein eigenes Aufräumen samt seinem `popstate` ist dann durch. */
-async function ausklingen(): Promise<void> {
-  for (let i = 0; i < 5; i++) await new Promise<void>((fertig) => setTimeout(fertig, 0))
 }
 
 afterEach(cleanup)

@@ -95,9 +95,10 @@ export function zusageMitBescheid(
 
 /**
  * Die Besetzung einer Zusammenkunft: jeder Platz einmal, der des Lesers
- * (`meinKey`) gesondert. Beim Planen fragt sie dazu, wer in einem Konflikt
- * steht (`imKonflikt`) — sein Platz ist ein Problem. Ein Platz mit dem Haken
- * „weiß Bescheid" ist voll (`zusageMitBescheid`).
+ * (`meinKey`) gesondert. Beim Planen fragt sie dazu, wer an seinem Platz (dem
+ * `task_key`) in einem Konflikt steht (`imKonflikt`) — der Platz ist ein
+ * Problem. Ein Platz mit dem Haken „weiß Bescheid" ist voll
+ * (`zusageMitBescheid`).
  */
 export function besetzung(
   meeting: Meeting,
@@ -107,7 +108,7 @@ export function besetzung(
   woche: string,
   tab: MeetingKey,
   meinKey: string | null,
-  imKonflikt: (slot: SlotAssignment) => boolean = () => false,
+  imKonflikt: (slot: SlotAssignment, platz: string) => boolean = () => false,
 ): Besetzung {
   const b: Besetzung = { voll: 0, wartet: 0, problem: 0, offen: 0, du: false }
   for (const platz of allePlaetze(meeting, services)) {
@@ -120,7 +121,7 @@ export function besetzung(
       continue
     }
     const zusage = key !== null && platzMitZusage(platz) ? zusageMitBescheid(confirmations, persoenlich, key, slot?.name ?? '') : null
-    b[lageVon(slot, zusage, Boolean(slot && imKonflikt(slot)))]++
+    b[lageVon(slot, zusage, Boolean(slot && key !== null && imKonflikt(slot, key)))]++
   }
   return b
 }

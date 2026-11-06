@@ -68,6 +68,11 @@
  * frei, damit Protokolle und Notizen von damals weiter auf dieselben Fälle
  * zeigen.
  *
+ * (9) misst an einer eigenen Woche im Jahr 2099 (`uebernahmeAnlage`), mit der
+ * fremden Person aus der Testversammlung im Platz: `take` weist Vergangenes ab
+ * (`past`), bevor es fragt, ob Ersatz gesucht ist — und die Wochen der
+ * Testversammlung veralten.
+ *
  * Anders als (1)–(10) findet die Probe dafür **keinen Bestand** vor:
  * Gruppenbesuche und Pläne gibt es in der Probeversammlung nicht von selbst.
  * Der Admin legt sie an — im Jahr 2099, jede Kennung mit dem Kennzeichen des
@@ -339,14 +344,14 @@ export function fremdeSlots(week, eigenePid) {
         if (!Array.isArray(item.names)) return
         item.names.forEach((slot, ni) => {
           if (!slot.pid || slot.pid === eigenePid) return
-          out.push({ art: 'Programm', wer: slot.name, key: slotSchluessel(item, week.start, tab, ni) })
+          out.push({ art: 'Programm', wer: slot.name, pid: slot.pid, key: slotSchluessel(item, week.start, tab, ni) })
         })
       })
     })
     for (const [svc, plaetze] of Object.entries(meeting.helpers ?? {})) {
       plaetze.forEach((slot, pos) => {
         if (!slot.pid || slot.pid === eigenePid) return
-        out.push({ art: `Hilfsdienst ${svc}`, wer: slot.name, key: helferSchluessel(week.start, tab, svc, pos) })
+        out.push({ art: `Hilfsdienst ${svc}`, wer: slot.name, pid: slot.pid, key: helferSchluessel(week.start, tab, svc, pos) })
       })
     }
   }
@@ -1049,20 +1054,45 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, adminName,
 }
 
 /**
+ * Eine Woche, wie die Probe sie anlegt: ohne Programm, das Kennzeichen als
+ * Zeitraum, je Zusammenkunft nur die genannten Hilfsdienste — dazu eine
+ * Abweichung im Ablauf (`dev`), wo ein Fall sie braucht.
+ */
+function probeWoche(c, start, marke, { mid = {}, we = {} } = {}, dev) {
+  const zusammenkunft = (helpers) => ({ date: '', end: '', sections: [], helpers })
+  return {
+    congregation_id: c,
+    start,
+    data: { range: marke, book: '', start, mid: zusammenkunft(mid), we: zusammenkunft(we), ...(dev ? { dev } : {}) },
+  }
+}
+
+/**
  * Was der Planer für (40) und (80) anlegt — hinter allem anderen der Probe, im
  * Jahr 2099: eine Woche, wie der Import sie anlegt (ohne Programm), und eine
  * Person. Die Woche trägt das Kennzeichen in ihrem Zeitraum, die Person im
  * Vornamen; die Person braucht eine echte `uuid` (`persons.id`).
  */
 export function verwaltungAnlage({ marke, versammlung: c, tag0, personId }) {
-  const start = tagPlus(tag0, 7 * 20)
   return {
-    woche: {
-      congregation_id: c,
-      start,
-      data: { range: marke, book: '', start, mid: { date: '', end: '', sections: [], helpers: {} }, we: { date: '', end: '', sections: [], helpers: {} } },
-    },
+    woche: probeWoche(c, tagPlus(tag0, 7 * 20), marke),
     person: { id: personId, congregation_id: c, fn: marke, ln: 'Probe' },
+  }
+}
+
+/**
+ * Die Woche für (9), im Jahr 2099 an einem Montag, den die Probe sonst nicht
+ * belegt (25 Wochen nach `tag0`: nach der Woche aus (40), vor denen des
+ * Tauschens). Unter der Woche der Dienst `svc` an Platz 0, besetzt von
+ * `inhaber` — der fremden Person, die in der Testversammlung auf diesem Dienst
+ * steht. Niemand hat abgesagt, also bleibt `take` nach Bereich, Dienst, Termin
+ * und Abwesenheit nur die Frage, ob Ersatz gesucht ist (`not-sought`).
+ */
+export function uebernahmeAnlage({ marke, versammlung: c, tag0, svc, inhaber }) {
+  const start = tagPlus(tag0, 7 * 25)
+  return {
+    woche: probeWoche(c, start, marke, { mid: { [svc]: [{ name: inhaber.name, pid: inhaber.pid }] } }),
+    key: helferSchluessel(start, 'mid', svc, 0),
   }
 }
 
@@ -1926,12 +1956,8 @@ export const vorbeiKandidaten = (heute) => [tagPlus(heute, -1), heute]
  */
 export function tauschAnlage({ marke, versammlung: c, tag0, svc, vorbei, mitglied, aufseher, ohneKontoId, anfrageId }) {
   const ohneKonto = { id: ohneKontoId, name: `${marke} Tauschpartner` }
-  const zusammenkunft = (p) => ({ date: '', end: '', sections: [], helpers: p ? { [svc]: [{ name: p.name, pid: p.id }] } : {} })
-  const woche = (start, { mid, we }, dev) => ({
-    congregation_id: c,
-    start,
-    data: { range: marke, book: '', start, mid: zusammenkunft(mid), we: zusammenkunft(we), ...(dev ? { dev } : {}) },
-  })
+  const dienst = (p) => (p ? { [svc]: [{ name: p.name, pid: p.id }] } : {})
+  const woche = (start, { mid, we }, dev) => probeWoche(c, start, marke, { mid: dienst(mid), we: dienst(we) }, dev)
   const montag = (wochen) => tagPlus(tag0, 7 * wochen)
   const wochen = {
     abgeben: woche(montag(30), { we: mitglied }),
@@ -2785,48 +2811,66 @@ export async function main(arg = process.argv.slice(2)) {
   const { daten: meinePerson } = mitglied.pid
     ? await mitglied.rest(`persons?select=priv&id=eq.${mitglied.pid}`)
     : { daten: null }
+  const was9 = 'fremden Platz übernehmen'
   if (!dienst) {
-    ungemessen(9, 'fremden Platz übernehmen', 'kein fremder Hilfsdienst-Platz in der Woche')
+    ungemessen(9, was9, 'kein fremder Hilfsdienst-Platz in der Woche')
   } else if (!mitglied.pid) {
-    ungemessen(9, 'fremden Platz übernehmen', 'keine Person mit dem Konto verknüpft')
+    ungemessen(9, was9, 'keine Person mit dem Konto verknüpft')
   } else {
     // Ist das Mitglied für den Dienst nicht freigeschaltet, wiese `take` schon
     // mit „not-qualified" ab, und über S13 wäre nichts gesagt. Dann schaltet die
     // Probe es für die Dauer von (9) frei — wie das Trolley-Recht für (71)–(79)
     // — und stellt danach den vorigen Stand her. In der Testversammlung ist das
-    // Mitglied eine Schwester ohne Hilfsdienst; dort blieb (9) am 3.10.2026
-    // ungemessen.
+    // Mitglied eine Schwester ohne Hilfsdienst.
     const privVorher = meinePerson?.[0]?.priv ?? {}
     const freischalten = !qualifiziertFuer(meinePerson?.[0], svc)
     const person = `persons?id=eq.${mitglied.pid}`
-    const frei = freischalten ? await planer.rest(person, 'PATCH', { priv: { ...privVorher, [`svc:${svc}`]: true } }, 'return=minimal') : { status: 204 }
-    try {
-      if (frei.status >= 400) {
-        ungemessen(9, 'fremden Platz übernehmen', `Freischalten für „${svc}" scheiterte (HTTP ${frei.status})`)
-      } else {
-        const vorher = dienst.wer
-        const a9 = await mitglied.funktion('substitute', { action: 'take', taskKey: dienst.key })
-        // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
-        // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
-        // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
-        const { status: l9, daten: w9 } = await planer.rest(`weeks?select=data&start=eq.${wochen[0].start}`)
-        const jetzt = fremdeSlots({ ...w9?.[0]?.data, start: wochen[0].start }, mitglied.pid).find((s) => s.key === dienst.key)
-        // Ein Urteil über S13 ist allein „not-sought" — abgewiesen, weil niemand
-        // abgesagt hat. `forbidden`, `not-qualified`, `slot-taken` oder
-        // `bad-request` sagen darüber nichts, auch wenn sie ebenfalls abweisen.
-        const e9 = bewerteVersuch(a9.status, jetzt?.wer !== vorher, false, {
-          leseStatus: l9,
-          urteil: a9.status < 400 || a9.daten?.error === 'not-sought',
-        })
-        const zusatz = freischalten ? `; für „${svc}" vorübergehend freigeschaltet` : ''
-        ergebnis(9, `fremden Platz übernehmen, ohne dass Ersatz gesucht ist (${dienst.wer}${zusatz})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
-        if (e9.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a9.daten)}`)
-        if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.wer ?? '(leer)'} statt ${vorher}`)
-      }
-    } finally {
-      if (freischalten) {
-        const zurueck = await planer.rest(person, 'PATCH', { priv: privVorher }, 'return=minimal')
-        if (zurueck.status >= 400) console.log(`      !! Freischaltung für „${svc}" blieb stehen (${zurueck.status}) !!`)
+    // Die eigene Woche (siehe Kopf): Steht dort schon eine, wird nichts überschrieben.
+    const a = uebernahmeAnlage({ marke, versammlung, tag0: ersterMontagAb('2099-01-01'), svc, inhaber: { name: dienst.wer, pid: dienst.pid } })
+    const zeile9 = `weeks?congregation_id=eq.${versammlung}&start=eq.${a.woche.start}`
+    const vorher9 = await planer.rest(`weeks?select=start&start=eq.${a.woche.start}`)
+    if (vorher9.status >= 400 || zeilenVon(vorher9).length > 0) {
+      kaputt(9, was9, vorher9.status >= 400 ? `die Woche ist nicht lesbar (HTTP ${vorher9.status})` : `in der Woche ${a.woche.start} steht schon eine — nicht überschrieben`, false)
+    } else {
+      const frei = freischalten ? await planer.rest(person, 'PATCH', { priv: { ...privVorher, [`svc:${svc}`]: true } }, 'return=minimal') : { status: 204 }
+      const angelegt = frei.status < 400 ? await planer.rest('weeks', 'POST', a.woche, 'return=minimal') : null
+      try {
+        if (!angelegt) {
+          ungemessen(9, was9, `Freischalten für „${svc}" scheiterte (HTTP ${frei.status})`)
+        } else if (angelegt.status >= 400) {
+          kaputt(9, was9, `Anlage der Woche ${a.woche.start} scheiterte (HTTP ${angelegt.status})`, false)
+        } else {
+          const a9 = await mitglied.funktion('substitute', { action: 'take', taskKey: a.key })
+          // Nachgesehen wird an der Woche selbst: Der Statuscode allein genügt nicht,
+          // denn geschrieben wird mit Service-Role — ein Fehlschlag danach sähe wie
+          // eine Ablehnung aus, während der Platz längst umgeschrieben wäre.
+          const gelesen = await planer.rest(`weeks?select=data&start=eq.${a.woche.start}`)
+          const woche9 = zeilenVon(gelesen)[0]?.data
+          const jetzt = woche9?.mid?.helpers?.[svc]?.[0]
+          // Ein Urteil über S13 ist allein „not-sought" — abgewiesen, weil niemand
+          // abgesagt hat. `forbidden`, `not-qualified`, `past` oder `bad-request`
+          // sagen darüber nichts, auch wenn sie ebenfalls abweisen.
+          const e9 = bewerteVersuch(a9.status, jetzt?.pid !== dienst.pid, false, {
+            // Fehlt die Woche beim Nachsehen, ist nichts gesehen — kein Urteil.
+            leseStatus: woche9 ? gelesen.status : Math.max(gelesen.status, 404),
+            urteil: a9.status < 400 || a9.daten?.error === 'not-sought',
+          })
+          const zusatz = freischalten ? `; für „${svc}" vorübergehend freigeschaltet` : ''
+          ergebnis(9, `${was9}, ohne dass Ersatz gesucht ist (${dienst.wer} in der Woche ${a.woche.start}${zusatz})`, e9, e9.durch ? 'S13 STEHT NOCH OFFEN' : `abgewiesen (${a9.daten?.error ?? '—'})`)
+          if (e9.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(a9.daten)}`)
+          if (e9.durch) console.log(`      Auf dem Platz steht jetzt: ${jetzt?.name ?? '(leer)'} statt ${dienst.wer}`)
+        }
+      } finally {
+        // Auch nach einer Abweisung: Die Woche gehört der Probe — aber nur, wenn
+        // sie sie anlegen konnte. Sonst stünde dort womöglich eine fremde.
+        if (angelegt && angelegt.status < 400) {
+          const weg = await planer.rest(zeile9, 'DELETE', undefined, 'return=minimal')
+          if (weg.status >= 400) console.log(`      !! Woche ${a.woche.start} blieb stehen (${weg.status}) !!`)
+        }
+        if (freischalten) {
+          const zurueck = await planer.rest(person, 'PATCH', { priv: privVorher }, 'return=minimal')
+          if (zurueck.status >= 400) console.log(`      !! Freischaltung für „${svc}" blieb stehen (${zurueck.status}) !!`)
+        }
       }
     }
   }

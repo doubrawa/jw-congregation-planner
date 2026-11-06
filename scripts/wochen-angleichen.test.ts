@@ -109,7 +109,30 @@ describe('angleichen', () => {
     expect(e?.gruende).toEqual([])
     expect(e?.treffpunkte).toBeNull()
   })
+
+  it('vergleicht wie beim Schreiben einer Woche: die Reihenfolge der Schlüssel zählt nicht, die der Listen schon', async () => {
+    /*
+      `jsonb` legt die Schlüssel selbst ab, eine gelesene Woche kommt anders
+      geordnet zurück, als die App sie baut. Am Ablauf allein fiele ein
+      Vergleich, der die Reihenfolge zählt, nicht auf: Was die App nicht
+      ändert, gibt sie als dasselbe Objekt zurück. Er schlüge erst zu, wenn ein
+      Schritt neu baut — dann schriebe jeder Lauf alles neu.
+    */
+    const app = await appFunktionen(HEUTE)
+    const [e] = angleichen({ wochen: [zeile('2026-09-07')], fsWochen: [], regeln: [REGEL], personen: [], auxClass: true }, app)
+    expect(app.gleich(wieJsonb(e!.nachher), e!.nachher)).toBe(true)
+    expect(app.gleich(wieJsonb(e!.fsNachher), e!.fsNachher)).toBe(true)
+    expect(app.gleich(['a', 'b'], ['b', 'a'])).toBe(false)
+  })
 })
+
+/** Wie `jsonb` die Schlüssel ablegt und zurückgibt: kürzere zuerst, gleich lange nach ihren Bytes. */
+function wieJsonb(wert: unknown): unknown {
+  if (Array.isArray(wert)) return wert.map(wieJsonb)
+  if (wert === null || typeof wert !== 'object') return wert
+  const schluessel = Object.keys(wert).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0))
+  return Object.fromEntries(schluessel.map((k) => [k, wieJsonb((wert as Record<string, unknown>)[k])]))
+}
 
 describe('main', () => {
   // `main` rechnet das Ladefenster vom heutigen Tag — im Test von HEUTE.

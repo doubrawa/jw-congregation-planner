@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { auswahlFuer } from '../data/plaetze'
+import { ratgeberKey } from '../data/planning'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
@@ -40,7 +41,7 @@ export function AuxCounselorPanel({ meeting }: { meeting: Meeting }) {
         <PlatzZeile
           name={slot.name}
           rolle={t.auxRatgeber}
-          {...platzAnzeige(slot, stand, konflikte.von(slot), t)}
+          {...platzAnzeige(slot, stand, konflikte.von(slot, ratgeberKey(state.weeks[state.week]?.start ?? '', 'mid')), t)}
           gewaehlt={istGewaehlt(state.slotSel, { kind: 'ratgeber', wi: state.week, tab: 'mid' })}
           onClick={open}
         />

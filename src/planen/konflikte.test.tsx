@@ -14,11 +14,12 @@ import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
 import { KEINE_ABWESENHEIT } from '../data/absence'
-import { type Conflict, weekConflicts } from '../data/planning'
+import { type Conflict, punktKey, weekConflicts } from '../data/planning'
+import { besetzung } from '../data/saal'
 import type { Meeting, Person, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { HelpersPanel } from './HelpersPanel'
-import { machKonfliktVon } from './useKonflikte'
+import { konflikteVon, machKonfliktVon } from './useKonflikte'
 import { problemGrund } from './platz-anzeige'
 
 /**
@@ -344,8 +345,8 @@ describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
     const doppelt: Conflict = { kind: 'double', name: 'Anna', kennung: anna.id, tab: 'mid', count: 2 }
     const weg: Conflict = { kind: 'absent', name: 'Anna', kennung: anna.id, tab: 'mid' }
     const platz = { name: 'Anna', pid: anna.id }
-    expect(machKonfliktVon([anna], [doppelt, weg])(platz)?.kind).toBe('absent')
-    expect(machKonfliktVon([anna], [weg, doppelt])(platz)?.kind).toBe('absent')
+    expect(machKonfliktVon([anna], [doppelt, weg])(platz, 'k')?.kind).toBe('absent')
+    expect(machKonfliktVon([anna], [weg, doppelt])(platz, 'k')?.kind).toBe('absent')
   })
 
   it('ein unpassendes Paar sagt es am Platz selbst — nicht „An diesem Tag schon"', () => {
@@ -377,8 +378,35 @@ describe('Der Grund am Platz: die Abwesenheit vor der Doppelbelegung', () => {
     }
     const liste = weekConflicts([woche(0, meeting)], 0, [anna, bernd], DIENSTE, 'mid', KEINE_ABWESENHEIT)
     const von = machKonfliktVon([anna, bernd], liste)
-    expect(von(partner)?.kind).toBe('partner')
-    expect(von(gebet), 'das Gebet steht nicht in Frage').toBeUndefined()
+    const woche0 = MONTAGE[0]!
+    expect(von(partner, punktKey(woche0, 'mid', 'g1', 1, false))?.kind).toBe('partner')
+    expect(von(gebet, punktKey(woche0, 'mid', 'e1', 0, false)), 'das Gebet steht nicht in Frage').toBeUndefined()
+  })
+
+  it('Partner in zwei Schülerteilen: rot nur dort, wo er nicht zum Gesprächsführer passt', () => {
+    // Bernd begleitet Anna (eine Schwester, nicht aus seinem Haushalt: passt
+    // nicht) und Carl (passt). Derselbe Bereich, zwei Plätze — nur der erste
+    // steht in Frage, im Plan wie im Balken der Planungs-Karte.
+    const anna = { ...person('p-anna', 'Anna'), female: true }
+    const bernd = person('p-bernd', 'Bernd')
+    const carl = person('p-carl', 'Carl')
+    const partner = { name: 'Bernd', pid: bernd.id, rolle: 'Partner', bereichsKey: 'schulungPartner' }
+    const meeting: Meeting = {
+      date: '', end: '', helpers: {},
+      sections: [{
+        label: 'UNS IM DIENST VERBESSERN', farbe: 'gold',
+        items: [
+          { iid: 'g1', title: 'Gespräche beginnen', meta: '', names: [{ name: 'Anna', pid: anna.id, bereichsKey: 'schulung' }, partner] },
+          { iid: 'g2', title: 'Interesse fördern', meta: '', names: [{ name: 'Carl', pid: carl.id, bereichsKey: 'schulung' }, partner] },
+        ],
+      }],
+    }
+    const personen = [anna, bernd, carl]
+    const woche0 = MONTAGE[0]!
+    const k = konflikteVon([woche(0, meeting)], 0, personen, DIENSTE, 'mid', KEINE_ABWESENHEIT)
+    expect(k.von(partner, punktKey(woche0, 'mid', 'g1', 1, false))?.kind).toBe('partner')
+    expect(k.von(partner, punktKey(woche0, 'mid', 'g2', 1, false)), 'bei Carl passt er').toBeUndefined()
+    expect(besetzung(meeting, DIENSTE, {}, {}, woche0, 'mid', null, k.betrifft).problem).toBe(1)
   })
 })
 

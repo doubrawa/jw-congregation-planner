@@ -2,6 +2,7 @@
 // jsdom statt happy-dom: Hier zählt der echte Verlauf — sein `popstate` kommt wie im Browser erst nach `history.back()` (tests/dom-umgebung.ts).
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
+import { beiRueckschritt } from '../../tests/verlauf'
 import { useBackDismiss } from './useBackDismiss'
 
 /**
@@ -25,23 +26,6 @@ import { useBackDismiss } from './useBackDismiss'
 function Blatt({ onClose }: { onClose: () => void }) {
   useBackDismiss(true, onClose)
   return <div />
-}
-
-/**
- * `ausloesen()` anstoßen und auf das daraus folgende `popstate` warten.
- *
- * **Keine feste Frist.** Hier stand `await new Promise(r => setTimeout(r, 20))`,
- * und das war ein Fehler mit Folgen weit über diese Datei hinaus: Unter Last
- * — etwa wenn die Mutationsprobe die ganze Suite parallel fährt — kam das
- * Ereignis später als die 20 ms, der Test fiel um, und die Probe schrieb
- * **dieser** Datei zehn Regeln gut, die sie nie bewacht hat. Ein Prüfstand, der
- * an der Uhr hängt, misst irgendwann etwas anderes als das, was er behauptet.
- */
-function beiRueckschritt(ausloesen: () => void): Promise<void> {
-  return new Promise<void>((fertig) => {
-    window.addEventListener('popstate', () => fertig(), { once: true })
-    ausloesen()
-  })
 }
 
 /**

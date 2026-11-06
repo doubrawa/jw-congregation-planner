@@ -59,7 +59,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
       sentLog,
       persoenlich,
       zeiten,
-      konfliktVon: (tab, slot) => konfliktVon[tab](slot),
+      konfliktVon: (tab, slot, key) => konfliktVon[tab](slot, key),
       heute: fromIso(tag),
     })
   }, [rawWeek, weeks, state.week, persons, services, confirmations, sentLog, persoenlich, zeiten, abwesend, tag])

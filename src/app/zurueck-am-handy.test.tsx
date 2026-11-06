@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { AppState } from './context'
+import { ausklingen } from '../../tests/verlauf'
 import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
 import type { WeitererPlan } from '../data/types'
 import {
@@ -83,11 +84,6 @@ function zeige(over: Partial<AppState> = {}, link?: string) {
       <AppShell />
     </AppProvider>,
   )
-}
-
-/** Ein paar Durchläufe weiter: Effekte, eigenes Aufräumen und dessen `popstate` sind dann durch. */
-async function ausklingen(): Promise<void> {
-  for (let i = 0; i < 8; i++) await new Promise<void>((fertig) => setTimeout(fertig, 0))
 }
 
 /** Ein echter Zurück-Druck — warten, bis sein `popstate` da und alles verarbeitet ist. */

@@ -61,7 +61,8 @@ export interface ZusagePlatz {
 /**
  * Jeder besetzte Platz beider Zusammenkünfte einer Woche, der etwas zu
  * bestätigen hat, mit seiner Lage. `konfliktVon` ist dieselbe Frage wie im
- * Plan (`machKonfliktVon` je Zusammenkunft); `heute` sagt, was vorbei ist.
+ * Plan (`machKonfliktVon` je Zusammenkunft), mit dem Schlüssel des Platzes;
+ * `heute` sagt, was vorbei ist.
  */
 export function zusagenDerWoche(args: {
   week: Week
@@ -70,7 +71,7 @@ export function zusagenDerWoche(args: {
   sentLog: SentLog
   persoenlich: PersoenlichLog
   zeiten: MeetingTimes
-  konfliktVon: (tab: MeetingKey, slot: SlotAssignment) => Conflict | undefined
+  konfliktVon: (tab: MeetingKey, slot: SlotAssignment, key: string) => Conflict | undefined
   heute: Date
 }): ZusagePlatz[] {
   const { week, services, confirmations, sentLog, persoenlich, zeiten, konfliktVon, heute } = args
@@ -78,7 +79,7 @@ export function zusagenDerWoche(args: {
   const out: ZusagePlatz[] = []
   eachAssignedSlot([week], services, zeiten, (slot, key, aufgabe, { tab, platz }) => {
     if (vorbei.has(tab)) return
-    const konflikt = konfliktVon(tab, slot)
+    const konflikt = konfliktVon(tab, slot, key)
     const lage = lageVon(slot, zusageStatus(confirmations, key), konflikt !== undefined)
     if (lage === 'offen') return
     const tagebuch = sentKey(key, slot.name)

@@ -23,6 +23,7 @@ import {
   TAUSCH_TITEL,
   tauschAnlage,
   trolleyAnlage,
+  uebernahmeAnlage,
   verwaltungAnlage,
   vorbeiKandidaten,
   vortragAnlage,
@@ -35,6 +36,7 @@ import { helferKey, punktKey } from '../src/data/planning'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
+import { stehtImDienst, uebernahmeHindernis } from '../supabase/functions/_shared/freie-plaetze.ts'
 import { heuteUtc, STANDARD_ZEITEN } from '../supabase/functions/_shared/planung.ts'
 import { ueberschneiden, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
 import { offeneDerWoche, type Week } from '../supabase/functions/_shared/zuteilungen.ts'
@@ -661,6 +663,55 @@ describe('Was der Planer anlegt (40, 80): die Regeln, die mit den Rechten nichts
 
   it('die Person mit dem Kennzeichen im Vornamen und einer echten Kennung', () => {
     expect(a.person).toEqual({ id: '00000000-0000-4000-8000-0000000000aa', congregation_id: 'c', fn: 'PROBE-1', ln: 'Probe' })
+  })
+})
+
+describe('(9) an der eigenen Woche: `take` bleibt nur „not-sought"', () => {
+  /*
+    `take` prüft Bereich, Dienst, Termin und Abwesenheit vor der Frage, ob
+    Ersatz gesucht ist. Träfe die Woche eine dieser Regeln, wiese die Function
+    aus dem falschen Grund ab — die Probe meldete „kaputt" statt eines Urteils.
+    Gehalten an der Regel der Function selbst (`uebernahmeHindernis`).
+  */
+  const tag0 = ersterMontagAb('2099-01-01')
+  const fremd = { name: 'Probe Fremd', pid: 'p-fremd' }
+  const a = uebernahmeAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc: 'mik', inhaber: fremd })
+  const mitglied = { id: 'p-mitglied', name: 'Probe Mitglied' }
+  // „Heute" wie in `substitute`; die Probe schickt keinen Tag des Geräts mit.
+  const heute = new Date(heuteUtc(undefined)).toISOString().slice(0, 10)
+  /** Die Reihe des Dienstes unter der Woche, wie `take` sie liest. */
+  const reihe = (a.woche.data as Week).mid?.helpers?.mik ?? []
+  /** Die Lage, wie `take` sie für das freigeschaltete Mitglied prüft — an einer Woche, die mit `start` beginnt. */
+  const hindernis = (start: string) =>
+    uebernahmeHindernis({
+      svc: { key: 'mik' },
+      hatBereich: (bereich) => bereich === serviceQualKey('mik'),
+      imDienst: stehtImDienst(reihe, mitglied),
+      vorbei: start < heute,
+      abwesend: false,
+    })
+
+  it('ein Montag, den keine andere Woche der Probe belegt — mit dem Kennzeichen im Zeitraum', () => {
+    expect(wochentag(a.woche.start)).toBe(1)
+    const verwaltung = verwaltungAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, personId: 'x' }).woche.start
+    const tausch = tauschAnlage({
+      marke: 'PROBE-1', versammlung: 'c', tag0, svc: 'mik', vorbei: null, mitglied: { ...mitglied, uid: 'u' }, aufseher: { id: 'p-a', name: 'A' }, ohneKontoId: 'o', anfrageId: 'q',
+    }).wochen
+    const starts = [verwaltung, ...Object.values(tausch).flatMap((w) => (w ? [w.start] : []))]
+    expect(starts).not.toContain(a.woche.start)
+    expect(a.woche.data.range).toBe('PROBE-1')
+    expect(a.woche.data.start).toBe(a.woche.start)
+  })
+
+  it('der Schlüssel ist der der App und nennt den Platz der fremden Person', () => {
+    expect(a.key).toBe(helferKey(a.woche.start, 'mid', 'mik', 0))
+    expect(reihe).toEqual([fremd])
+  })
+
+  it('keine Regel vor dem Gesuch weist ab — an einer vergangenen Woche dagegen „past"', () => {
+    expect(hindernis(a.woche.start)).toBeNull()
+    // Die Wochen einer Testversammlung veralten: Dort wiese `take` mit „past" ab.
+    expect(hindernis('2026-10-12')).toBe('past')
   })
 })
 

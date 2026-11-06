@@ -6478,7 +6478,7 @@ die Probe seither mit (71)–(79), T121 Phase 7.)
 
 ## Aufgenommen am 10. Oktober 2026 — Neues Design (T121)
 
-### T121 · Neues Design: B · Saal in Graphit · Minze 🏗 ☐ offen
+### T121 · Neues Design: B · Saal in Graphit · Minze 🏗 ✅ erledigt (6. November 2026)
 
 **Wortlaut:** *„überleg dir ein ganz neues design für die app. es soll noch
 schöner und aufgeräumter aussehen. mach ein paar vorschläge und lass dich nicht
@@ -6895,6 +6895,11 @@ eventuell nochmal etwas nachentscheiden sollte?"*:
 - Der Grundplan bekommt **keinen festen Leiter** („Nein, wie heute") — die
   Zeile „Leiter: …" aus `GGrundplan` entfällt.
 
+**Abgeschlossen am 6. November 2026:** Die Prüfung auf echten Geräten bestand
+(Betreiber: „hake als erfolgreich ab"), und die Mitgliedsrechte-Probe nach
+„Alles Planen" lief am selben Tag gegen die Testversammlung grün — 0 von 47
+verbotenen Versuchen durch, alle 41 Gegenproben durch.
+
 ---
 
 ## Aufgenommen am 12. Oktober 2026 — Vortragsplan (T122)
@@ -7163,6 +7168,10 @@ das echte Recht.
   `ansicht…` (zwölf Sprachen), das Feld `ansicht` und die Aktion `setAnsicht`,
   je eine Zeile in `rechteVon`/`rechteStufe`, die Einträge `ansicht-…` im
   Mutationskatalog, der Abschnitt im Handbuch.
+
+**Am 6. November 2026: Die Ansicht bleibt, unbefristet** (Betreiber, nach den
+Tests auf echten Geräten). Die Liste oben gilt damit nicht mehr als Auftrag;
+sie bleibt stehen, falls die Ansicht doch einmal gehen soll.
 
 ## Aufgenommen am 16. Oktober 2026 — Aufbewahrung und Auswertung (T125, T126)
 
@@ -9763,15 +9772,87 @@ als Verkündiger (ein Verweis, Pfeil gespiegelt).
 **Live seit 1.11.2026 09:32** mit dem Push von `ae01f2a0` (Pages grün,
 `sw.js` → `shell-ae01f2a`). Keine Function betroffen.
 
+## Aufgenommen am 6. November 2026 (T165)
+
+### T165 · Reste ohne Auftrag: der Paar-Konflikt je Platz, Proben, die ihre Sabotagen fangen 🔧 ✅ umgesetzt (6. November 2026)
+
+„löse: Bekannte Reste, die niemand beauftragt hat" — drei Punkte aus der
+Übersicht vom 6. November. Dazu die Mitgliedsrechte-Probe, die am selben Tag in
+(9) kein Urteil fand.
+
+- **Der Paar-Konflikt hängt am Platz** (`Conflict.platz` statt
+  `Conflict.bereich`). Wer an einem Abend in zwei Schülerteilen Partner ist und
+  nur zu einem der beiden Gesprächsführer nicht passt, stand an beiden Plätzen
+  rot: Der Konflikt hing am Bereich `schulungPartner`. Jetzt trägt er den
+  `task_key` des Platzes (`platzKey`), und Plan, Zuteilen-Blatt und der Balken
+  der Planungs-Karte fragen mit dem Schlüssel ihres Platzes
+  (`konflikte.von(slot, platz)`, `besetzung(…, imKonflikt(slot, platz))`).
+  Probe in `konflikte.test.tsx`; mit dem alten Filter über den Bereich wird
+  genau sie rot.
+- **Die Zurück-Buchführung** (`useBackDismiss`): Fünf Sabotagen blieben am
+  31. Oktober in der ganzen Suite grün. Jetzt fängt sie
+  `zurueck-buchfuehrung.test.tsx`, jede rot: Aufräumen, während der eigene
+  Rückschritt unterwegs ist (zwei `back()` zugleich träfen dasselbe Ziel);
+  Aufräumen sofort statt in der Mikroaufgabe (Bildschirm und Unteransicht gehen
+  dann in zwei Schritten statt in einem `go(-2)`); `austragen` ohne die
+  vorgemerkten Einträge (ein `pushState` ohne Geste für ein Blatt, das schon zu
+  ist); nach dem eigenen `popstate` nicht weiter aufräumen (ein Eintrag bleibt
+  liegen); `oberste` ohne „schon getroffen" (zwei Drücke schließen zweimal
+  dasselbe Blatt).
+- **Die Tablet-Weiche im Programm**: `useMedia(TABLET_BREITE)` auf `true` blieb
+  grün — es gab nur Proben ab dem Tablet. Neu „Am Handy" in
+  `ProgrammScreen.test.tsx`: „Drucken" als Zeichen neben dem Termin, im
+  Programm wie über den Treffpunkten.
+- **Der Vergleich in `wochen-angleichen.mjs`**: Ein Vergleich, der die
+  Reihenfolge der Schlüssel zählt, blieb grün — was die App nicht ändert, gibt
+  sie als dasselbe Objekt zurück. Die Probe hält den Vergleich des Skripts jetzt
+  direkt an eine Woche samt Treffpunkten in der Ordnung von `jsonb`.
+- **Mitgliedsrechte-Probe (9)**: `take` wies mit `past` ab, bevor es nach dem
+  Gesuch fragte — die Wochen der Testversammlung (angelegt am 12. Oktober)
+  waren vorbei. (9) legt sich jetzt eine eigene Woche im Jahr 2099 an
+  (`uebernahmeAnlage`, 25 Wochen nach `tag0`, an keinem Montag, den die Probe
+  sonst belegt) und räumt sie danach weg, auch nach einem Fehler. Proben in
+  `mitgliedsrechte-probe.test.ts` (an der Regel der Function selbst,
+  `uebernahmeHindernis`) und in `schema-probe.test.ts` (die Woche ist am Ende
+  fort); Gegenproben — die Woche auf einem Montag des Tauschens, der Schlüssel
+  am Wochenende, die Woche bleibt liegen — alle rot. Zweiter Lauf gegen die
+  Testversammlung: 0 von 47 verbotenen Versuchen durch, alle 41 Gegenproben
+  durch, nichts ungemessen.
+
+**/simplify** (Winkel nacheinander): Die Helfer der Zurück-Proben
+(`beiRueckschritt`, `ausklingen`) standen in fünf Dateien — jetzt einmal in
+`tests/verlauf.ts`; die leere Zusammenkunft der Probe dreimal — jetzt
+`probeWoche`; „heute" in der Probe zu (9) wie in `substitute` (`heuteUtc`);
+`fremdeSlots` trägt die Person bei beiden Arten; drei Kommentare sagten
+Geschichte statt Geltendes. Verworfen: `platzKey({ art: 'programm', … })`
+gegen `punktKey(…)` — gleichwertig, der zentrale Weg bleibt.
+
+**/code-review max** (Winkel nacheinander; 3 Befunde, 3 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | „Zusagen der Woche" fragte den Konflikt ohne Platz — ein unpassender Partner stand dort nicht mehr unter „Zu klären" (`ZusagenAnsicht`, `zusagenDerWoche`). Jetzt mit dem Schlüssel aus `eachAssignedSlot`; Proben in `zusagen.test.ts` und `zusagen-ansicht.test.tsx` |
+| 2 | behoben | Der Platz war beim Fragen nach dem Konflikt freiwillig — wer ihn vergaß, verlor platzgebundene Konflikte still (so entstand Nr. 1). Jetzt Pflicht (`KonfliktVon`); der Compiler fand vier Aufrufer, auch Hilfsdienst und Ratgeber |
+| 3 | behoben | (9) löschte die Woche auch, wenn ihre Anlage scheiterte — stand dort eine fremde, wäre sie fort. Probe in `schema-probe.test.ts` |
+
+Gegenproben rot: `zusagenDerWoche` ohne Schlüssel, `ZusagenAnsicht` ohne
+Schlüssel, (9) löscht nach gescheiterter Anlage. Grün bleibt ein falscher
+Schlüssel am Hilfsdienst: Heute trifft kein Konflikt nur einen
+Hilfsdienst-Platz — gleichwertig. Laufzeit auf `/demo.html`: im Plan nur der
+Platz bei Lena Hoffmann rot, in „Zusagen der Woche" derselbe unter „Zu klären",
+der zweite unter „Warten auf Zusage"; Hilfsdienst-Konflikte weiter rot.
+
+Suite 7955/7955, tsc, Lint (nur die bekannte Warnung in `Spur.tsx`).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
 | --- | --- |
 | ~~**S2/S3 praktisch nachweisen**~~ | ✅ **gemessen am 19., geschlossen am 23. August 2026** (migration-022). Siehe T89. |
 | ~~**S10/S11/S13 praktisch nachweisen**~~ | ✅ **gemessen am 3. Oktober 2026** — `scripts/mitgliedsrechte-probe.mjs` gegen eine neu angelegte Testversammlung: 0 von 23 verbotenen Versuchen kamen durch, alle 12 Gegenproben gingen durch. Derselbe Lauf misst seither auch die Rechte aus T120 (Fälle 11–34), siehe T120. |
-| **D7 Mehrbenutzer-Konflikt** | die Voraussetzung ist seit T78 da (zwei Konten derselben Versammlung); statisch belegt (siehe T39), praktisch noch nicht |
-| **D4 echte Geräte** | das dokumentierte `pointercancel`-Verhalten ist nicht emulierbar |
-| **D5 fachliche Abnahme** | nur ein Koordinator kann beurteilen, ob die Abläufe stimmen |
+| ~~**D7 Mehrbenutzer-Konflikt**~~ | ✅ **abgehakt am 6. November 2026** (Betreiber): Der Nachweis im Code reicht — die Datenbank prüft beim Schreiben den Stand der Woche, seit dem 2. November samt der Zusagen in einem Aufruf (`woche_speichern`); siehe T39 |
+| ~~**D4 echte Geräte**~~ | ✅ **abgehakt am 6. November 2026** (Betreiber): auf echten Geräten erfolgreich geprüft, siehe T121 |
+| ~~**D5 fachliche Abnahme**~~ | ✅ **abgehakt am 6. November 2026** (Betreiber): abgenommen |
 
 **Vom Betreiber am 23. August 2026 gestrichen**, nicht vergessen:
 
@@ -9790,7 +9871,7 @@ als Verkündiger (ein Verweis, Pfeil gespiegelt).
 
 ## Fortschritt
 
-Stand 1. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 6. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -9799,17 +9880,16 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 22./23. August ☑☑☑☑☑☑☑☑☑ · 28. August ☑ · 29. August ☑ · 30. August ☑☑ ·
 31. August ☑ · 13. September ☑ · 17. September ☑ · 20. September ☑☑☑☑☑ ·
 21. September ☑☑☑☑☑☑☑ · 25. September ☑☑ · 26. September ☑ · 3. Oktober ☑ ·
-10. Oktober ☐ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
+10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑
+1. November ☑ · 6. November ☑
 
-**163 der 164 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist eine:**
-
-| | Aufgabe | Stand |
-| --- | --- | --- |
-| **T121** | Neues Design | ☐ Umbau auf main fertig: Phasen 1 bis 10 sind live, zuletzt der Feinschliff (Logo und Bedienleiste, Code in der Mail, „Alles Planen", die Wochen beim Planen mit „Holen", die alten Namen fort), samt Review. Offen: die Prüfung auf echten Geräten (Entscheid vom 13. Oktober) und die Mitgliedsrechte-Probe nach „Alles Planen". Die Leinwand wird nicht mehr veröffentlicht. T106 und T114 sind mit Phase 8 aufgegangen |
+**Alle 165 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Zuletzt am 6. November **T121** (Neues Design):
+Die Prüfung auf echten Geräten bestand (Betreiber), und die
+Mitgliedsrechte-Probe nach „Alles Planen" lief grün. Was ohne Aufgabennummer
+aussteht, steht unter „Was offen ist und warum".
 
 Am 30. Oktober ausgerollt: **T152** (Anwesende), **T153** (Tauschen) und
 **T154** (Adressen und Gründe) — nach `/simplify` und `/code-review max`
@@ -9840,8 +9920,27 @@ Zeichenzeile.
 > `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
 > offenen übrig.
 
-**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 28. Oktober
-2026, abends):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
+**Der Betrieb steht auf dem Stand von `main` (nachgesehen am 6. November
+2026, mittags):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
+lief `60cdfb3` (`sw.js` nannte `shell-60cdfb3`), der Kopf von `main`, die
+letzten Pages-Läufe grün. Die acht Edge Functions tragen die Versionen des
+Ausrollens vom 2. November abends (Gesamt-Review, `ad5e5464`): `anmelden` 15,
+`import-week` 57, `send-invite` 28, `send-plan` 38, `send-reminders` 64,
+`substitute` 48, `tauschen` 4 und `trolley` 9; seither hat kein Commit
+`supabase/functions` berührt. Im Schema kamen zuletzt das Delta vom
+2. November (`woche_speichern`, `treffpunkte_speichern`, `anmelde_versuch` und
+weitere) und davor `abgelehnte_gesuche` (`e63e3a40`, 1. November) dazu. Die
+Zeitpläne laufen: die Erinnerungen (täglich 08:00 UTC) zuletzt am 6. November,
+das Aufräumen (montags 03:30 UTC) zuletzt am 2. November, beide ohne
+Fehlschlag in den zehn Tagen davor. Auf GitHub steht nur `main`, ohne offene
+PRs und Issues.
+
+**Beim Betreiber liegt außerhalb des Repos nichts mehr:** Registrieren ist
+seit dem 6. November aus (`disable_signup: true`). Resend braucht es seit T160
+nicht mehr: `RESEND_API_KEY` ist seit dem 6. November aus den Secrets,
+`INVITE_FROM` war nie gesetzt.
+
+**Stand vom 28. Oktober** (abends): Das Frontend geht mit jedem Push hinaus; vor jenem Eintrag
 lief `f427e8f` (`sw.js` nannte `shell-f427e8f`), der Kopf von `main`, die
 letzten Pages-Läufe grün. Die sieben Edge Functions tragen die Versionen ihrer
 letzten Deploys: `substitute` 46 (25. Oktober, 08:17 Uhr, T142 mit Review),
@@ -9860,7 +9959,7 @@ die Erinnerungen (täglich 08:00 UTC) zuletzt am 28. Oktober, das Aufräumen aus
 T125 (montags 03:30 UTC) zuletzt am 26. Oktober, beide ohne Fehlschlag in den
 acht Tagen davor. Auf GitHub steht nur `main`, ohne offene PRs und Issues.
 
-**Beim Betreiber liegen, außerhalb des Repos:** Resend mit dem Secret
+**Am 28. Oktober lag beim Betreiber, außerhalb des Repos:** Resend mit dem Secret
 `INVITE_FROM` (am 28. Oktober weiter nicht gesetzt; `RESEND_API_KEY` steht)
 und das Abschalten der Registrierung (`disable_signup` am 28. Oktober noch
 `false`). Einen eigenen SMTP-Server braucht es nicht mehr: Ohne Kennwort und
@@ -10231,37 +10330,84 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 28. Oktober 2026, alles Offene an einer Stelle** (gemessen: 145 Köpfe,
-offen nur noch T121; keine PR, kein Issue, außer `main` kein Zweig, auch lokal
-nicht; `sw.js` = HEAD (`shell-f427e8f`); die Functions passen zu `main` — siehe
-„Der Betrieb steht auf dem Stand von `main`" unter „Fortschritt"; Secrets ohne
-`INVITE_FROM`, `disable_signup` noch `false`; die Erinnerungen am 28. Oktober
-und das Aufräumen am 26. Oktober erfolgreich, kein Fehlschlag in acht Tagen).
-Neu in der Tabelle: der **Umzug weg von Supabase** (erwogen am 25. Oktober, bis
-dahin nur im Memory) und der **App-Name im Kopf der Schublade** (gefunden bei
-der Messung vom 28. Oktober). Das „Offen:" aus `a2e578d5` — in der Schublade
-brach bei 320 px und Stufe 1,45 „My / Assignment|s" — stand nur in der
-Commit-Nachricht; am 28. Oktober behoben (unten und bei T128). Beschlossenes ist
-im Code nichts mehr offen; was aussteht, braucht den Betreiber, ein Gerät oder
-eine Entscheidung.
+**Stand 6. November 2026, alles Offene an einer Stelle** (gemessen: 165 Köpfe,
+keiner offen — seit dem 28. Oktober kamen T146–T165 dazu, und T121 ist
+abgeschlossen; keine PR, kein Issue, außer `main` kein Zweig, auch lokal nicht;
+`sw.js` = HEAD (`shell-60cdfb3`, vor dem Push dieses Stands); die acht
+Functions passen zu `main` — siehe „Der Betrieb steht auf dem Stand von `main`"
+unter „Fortschritt"; in den Secrets kein `INVITE_FROM` und seit heute kein
+`RESEND_API_KEY` mehr; `disable_signup` seit heute `true`; die Erinnerungen am
+6. November und das Aufräumen am 2. November erfolgreich, kein Fehlschlag in
+zehn Tagen; die neun Sitzungen zu diesem Repo seit dem 31. Oktober enden ohne
+offene Frage). Dazugekommen, bis dahin nur in Commits, im Memory oder im
+Abschnitt ihrer Aufgabe: die **Wochen ab dem 21. Dezember**, **E3 und E4** aus
+dem Gesamt-Review vom 2. November und die **Auswahl ohne `field-sizing`**
+(T162). Die 13 Commits seit dem 1. November, 09:32 Uhr, berührten todo.md
+nicht. Danach mit dem Betreiber Punkt für Punkt durchgegangen; was dabei
+herausfiel, steht unter der Tabelle. Was bleibt, braucht NWS-Exporte, den
+Neuaufbau oder einen allgemeinen Ersatz für `field-sizing`.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124; am 28. Oktober: noch nicht). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
+| **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
+| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
+| **T162** | Auswahl ohne `field-sizing` | In Browsern ohne `field-sizing` (etwa Firefox) ist die Auswahl in „Weitere Pläne" so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz (Befund 11 des Reviews zu T162) |
+
+Am 6. November herausgenommen, jeder Punkt einzeln mit dem Betreiber:
+
+- **Registrieren aus**: Der Betreiber hat den Schalter „Allow new users to
+  sign up" abgestellt (Authentication → Sign In / Providers → User Signups);
+  um 13:50 Uhr meldete `/auth/v1/settings` `"disable_signup":true`. Konten legt
+  die App über die Admin-Schnittstelle an (`anmelden`), die der Schalter nicht
+  sperrt; kein Skript und keine Function nutzt den Weg über `/auth/v1/signup`.
+
+- **T121** und mit ihm die Prüfung auf echten Geräten — Betreiber: erfolgreich
+  geprüft. Damit auch die dunkle Bedienleiste, das Badge der Meldungen (T146),
+  Zurück nach einem Push-Tipp und „Plan senden" an echte Empfänger.
+- **Die Mitgliedsrechte-Probe**, samt den Fällen aus T152–T154 und dem
+  Tauschen: gefahren am 6. November gegen die Testversammlung — 0 von 47
+  verbotenen Versuchen kamen durch, alle 41 Gegenproben gingen durch, nichts
+  blieb ungemessen. Im ersten Lauf urteilte (9) nicht (T165).
+- **T124** bleibt — unbefristet (Betreiber).
+- **Umzug weg von Supabase**: Es bleibt bei Supabase. Betreiber: Seit T160
+  speichert die App weder Telefonnummern noch E-Mail-Adressen; was bleibt,
+  steht auch am schwarzen Brett der Versammlung und ist damit öffentlich
+  einsehbar.
+- **`RESEND_API_KEY`** aus den Secrets entfernt (Claude, auf Wort des
+  Betreibers); die App schickt seit T160 keine E-Mails.
+- Abgehakt, so wie sie sind: die Übersetzungsfragen aus T123, die zwei
+  Fachbegriffe aus T25, der Grund nach dem Abmelden ohne Versammlung, das alte
+  Zugangstoken nach dem Entfernen, das Blatt nach einem langsamen Start und
+  `sprache-fehlt` beim Wochen-Import. Unter „Was bewusst offen bleibt" ebenso
+  D4, D5 und D7.
+- **Die Reste ohne Auftrag** aus der Übersicht — der Paar-Konflikt, die
+  Zurück-Buchführung, der Vergleich in `wochen-angleichen.mjs` — sind als
+  T165 umgesetzt.
+
+**Bis zum 6. November standen darüber hinaus in der Tabelle** (der Wortlaut
+von damals, zum Nachlesen):
+
+| | Punkt | Warum offen |
+| --- | --- | --- |
+| **T124** | Rechte zum Testen umschalten | eingebaut am 17. Oktober, befristet — nach den Tests wieder ausbauen (Liste in T124). Schreiben in der Ansicht bleibt erlaubt (bestätigt am 17. Oktober) |
 | **Bewusst offen** | Der Grund nach dem Abmelden ohne Versammlung | Den Satz „Dein Konto gehört zu keiner Versammlung mehr" zeigt die Anmeldung nur, wenn das Laden die fehlende Mitgliedschaft findet — in der ersten Stunde nach dem Entfernen. Danach scheitert schon die Erneuerung des Tokens (das Konto ist gelöscht), supabase-js meldet `SIGNED_OUT` ohne Grund, und die Anmeldung steht ohne Satz da. Ihn auch dann zu zeigen, hieße erzwungenes und eigenes Abmelden zu unterscheiden — Betreiber am 21. Oktober: „wir müssen da keine komplexe logik einbauen" (Review vom 21. Oktober) |
 | **Bewusst offen** | Altes Zugangstoken nach dem Entfernen | Ein schon ausgestelltes Token gilt bis zu seinem Ablauf (höchstens eine Stunde) und sieht ohne Mitgliedschaft nichts. Wird die Person in dieser Stunde neu eingeladen, gilt es für das neue Konto: Es trägt wieder ihre Person-Id (`anmelden`). Vermerkt am Trigger in `schema.sql` (Review vom 21. Oktober) |
 | **Zurückgestellt** | Übersetzungsfragen aus T123 | Anrede und Genus im Arabischen, Rollenwort des Ratgebers (ru, uk, tr), persisch „تکلیف" gegen „وظیفه", russisch „учётная запись" gegen „аккаунт". Betreiber am 16. Oktober: „bleibt erst mal so" — wieder aufnehmen, wenn ein Muttersprachler prüft; Belege in [t123-uebersetzungen.md](t123-uebersetzungen.md) |
 | **T121** | Neues Design | Umbau fertig, alle zehn Phasen live (siehe T121); offen die Prüfung auf echten Geräten. Was die ersten Phasen offen ließen, ist am 13. Oktober nachentschieden |
-| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren |
+| **Betreiber** | Mitgliedsrechte-Probe nach „Alles Planen" | `node scripts/mitgliedsrechte-probe.mjs` — die Testversammlung `edac60cb` und `.env.probe` stehen noch; umgedreht sind (35), (38)–(40), (42), (50), (53), (55), (60), neu (80) und (81). Seit dem 19. Oktober auch (82)–(85): die Leseregel der Abwesenheiten vom 17. Oktober (`absences_select`: über acht Wochen zurück nur, wer zuteilt, und die eigene) — im Skript und an der Attrappe geprüft, live noch nicht gefahren. Seit dem 1. November auch (111)–(113): „Nein, danke" am Konto (`abgelehnte_gesuche`, `e63e3a40`) |
 | **Gerät** | Dunkle Bedienleiste am Handy | wirkt erst mit der aktualisierten WebAPK (`about://webapks` → „Update", oder neu installieren) |
-| **Betreiber** | Registrieren aus | in Supabase den Schalter für neue Nutzer abstellen (`disable_signup`). Resend und `INVITE_FROM` braucht es seit T160 (31. Oktober) nicht mehr: Die App schickt keine E-Mails; `RESEND_API_KEY` kann aus den Secrets |
+| **Gerät** | Badge der Meldungen | seit T146 (29. Oktober) eine eigene Maske, weiß auf durchsichtig (`npm run icons`; die Probe in `tests/service-worker.test.ts` lässt höchstens 40 % Deckung durch); am Android-Handy noch nicht angesehen |
 | **Betreiber** | Umzug weg von Supabase | Am 25. Oktober erwogen: Supabase ist eine US-Firma, und die Daten zeigen die Religionszugehörigkeit (Art. 9 DSGVO). Empfohlen: die quelloffene Supabase-Software selbst auf einem Server in Deutschland. Betreiber: „Nicht jetzt, ich überlege noch." Fällt die Entscheidung dafür, legt der Betreiber Konto, Server und Vertrag an; Einrichten und Umziehen per Skript macht Claude |
 | **Betreiber** | Nach T152–T154 messen | alle drei am 30. Oktober ausgerollt (Function `tauschen` v1, Schema, Push `c83df1d7`; seit dem 31.10. `tauschen` v3). Offen: die Mitgliedsrechte-Probe fahren — Fälle 87 und 90–92 (Gründe per REST gesperrt; 86, 88 und 89 maßen die Adressen und sind mit T160 entfallen) und seit dem 31. Oktober (93)–(110), die das Tauschen gegen die Testversammlung messen (T157); Function und `wochen_tauschen` liefen bis dahin nur gegen Attrappen |
-| **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen — die App ist noch nicht ausgerollt, am 19. September war `assignment_log` leer |
+| **Betrieb** | „Plan senden" an echte Empfänger | nie gemessen, ob Glocken-Zeile und Push ankommen. Seit dem 3. November gilt bis zum 30. November jeder Platz als gesendet und zugesagt (Startstand per `startstand-setzen.mjs`), der Dezember nicht; seither kam keine Zeile ins Versand-Tagebuch (1844 Zeilen, die jüngste vom 3. November, 08:02 Uhr — gemessen am 6. November). Das erste „Plan senden" für den Dezember ist die Gelegenheit |
 | **Gerät** | Zurück nach einem Push-Tipp | die Brücke über `CloseWatcher` (`5e0c110`, 4. Oktober) ist im Produktions-Build nachgefahren, auf einem Android-Handy nicht. Auf Geräten geprüft wird nach dem Umbau (Entscheid vom 13. Oktober) |
 | **Phase 5** | T25, zwei Fachbegriffe | „Gedächtnismahl-Ansprache" und „Symbole herumreichen" bleiben unübersetzt, bis die App ein Gedächtnismahl-Programm erzeugt |
 | **Bewusst offen** | Das Blatt nach einem langsamen Start | Kommen die Daten erst nach dem Vorgriff (4 s), legt das Blatt beim Öffnen eine seither neue Zuteilung nicht vor (nach über einer Stunde ebenso seit `30a5a80d`). Betreiber am 19. Oktober: nur der eigene Hinweis — der Streifen sagt seitdem „Verbindung langsam" statt „Offline", solange die Daten noch kommen können; das Blatt bleibt so |
 | **Bewusst offen** | `sprache-fehlt` beim Wochen-Import | zählt weiter als Ende des Kalenders. Strenger gäbe es im Alltag Fehlalarme; betroffen wäre nur eine anderssprachige Versammlung mit Geschichte (Review vom 18. Oktober, `42dff943`) |
+
+Am 6. November aufgenommen und am selben Tag herausgenommen: das **Badge der
+Meldungen** (bis dahin nur in `280673db`) und die **Lücken ohne Auftrag** —
+siehe oben.
 
 Am 29. Oktober herausgenommen: **der App-Name im Kopf der Schublade** — er
 schrumpft jetzt, statt hinauszuragen (T151). Aufgenommen: **T152** und

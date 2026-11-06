@@ -3,7 +3,7 @@ import { abwesenheitAm } from '../data/absence'
 import { fsKonfliktVon, fsLeiterZuteilung, fsTag, fsWeekConflicts } from '../data/fs'
 import { idAufloeser, type Zuteilung } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
-import { platzDerAuswahl, platzMitZusage } from '../data/plaetze'
+import { platzDerAuswahl, platzKey, platzMitZusage } from '../data/plaetze'
 import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Absence, SlotSelection } from '../data/types'
 import { useT } from '../i18n/useT'
@@ -63,7 +63,7 @@ export function useAktuellerPlatz(sel: SlotSelection): AktuellerPlatz | undefine
   if (!platz || !slot?.name) return undefined
   // Wie die Zeilen im Plan: Die Reinigungsgruppe steht in keinem Konflikt, und
   // nach der Absage eines Hilfsdienstes sucht die App selbst Ersatz.
-  const konflikt = platz.art === 'helper' && platz.svc.groups ? undefined : konflikte.von(slot)
+  const konflikt = platz.art === 'helper' && platz.svc.groups ? undefined : konflikte.von(slot, platzKey(platz, week.start, sel.tab))
   const stand = platzMitZusage(platz) && zusage.moeglich(sel.tab) ? zusage.platz(sel.tab, platz) : null
   return {
     name: slot.name,

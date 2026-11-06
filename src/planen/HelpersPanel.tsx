@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { mtab } from '../data/helpers'
 import { auswahlFuer } from '../data/plaetze'
+import { helferKey } from '../data/planning'
 import { platzName, useT } from '../i18n/useT'
 import type { Meeting, Service } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'
@@ -24,6 +25,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
   // Programmpunkt", „zweimal Hilfsdienst") — sie dürfen bei der Markierung
   // nicht fehlen.
   const konflikte = useKonflikte(tab)
+  const woche = state.weeks[state.week]?.start ?? ''
 
   const openHelperSlot = (service: Service, pos: number) => {
     const slot = meeting.helpers[service.key]?.[pos]
@@ -52,7 +54,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
                 key={`${service.key}-${pos}`}
                 name={platzName(name, gruppe, { tu })}
                 rolle={tu(service.name)}
-                {...platzAnzeige(slot, stand, gruppe ? undefined : konflikte.von(slot), t, t.spurErsatzGesucht)}
+                {...platzAnzeige(slot, stand, gruppe ? undefined : konflikte.von(slot, helferKey(woche, tab, service.key, pos)), t, t.spurErsatzGesucht)}
                 gewaehlt={istGewaehlt(state.slotSel, { kind: 'helper', wi: state.week, tab, svc: service.key, pos })}
                 onClick={() => openHelperSlot(service, pos)}
               />

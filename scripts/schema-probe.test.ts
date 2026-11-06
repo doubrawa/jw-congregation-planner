@@ -21,7 +21,7 @@ import {
   type Zeile,
 } from './schema-attrappe'
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
-import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
+import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, uebernahmeAnlage, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 import { abschnitt, tabelle, wochenKopf, wochenuebersichtDocx } from './wochenuebersicht-attrappe'
 import { LABEL_WT_STUDIUM } from '../src/data/constants'
@@ -1010,14 +1010,26 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
   })
 
   it('mitgliedsrechte-probe: fehlt die Freischaltung für den Dienst, gibt (9) sie vorübergehend — und nimmt sie wieder', async () => {
-    // Sonst wiese `take` mit „not-qualified" ab, und über S13 wäre nichts
-    // gesagt — so blieb (9) in der Testversammlung am 3.10.2026 ungemessen.
+    // Sonst wiese `take` mit „not-qualified" ab, und über S13 wäre nichts gesagt.
     const persons = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.persons!.map((p) => (p.id === P2 ? { ...p, priv: {} } : p))
     const { ausgabe, aufrufe, tabellen } = await mitBestand({ persons })
     const priv = (a: Aufruf) => (a.method === 'PATCH' && tabelleVon(a) === 'persons' ? (a.body as { priv?: Record<string, unknown> }).priv : undefined)
     expect(aufrufe.some((a) => priv(a)?.['svc:mik'] === true)).toBe(true)
-    expect(ausgabe.join('\n')).toMatch(/\(9\) fremden Platz übernehmen, ohne dass Ersatz gesucht ist \(Probe Planer; für „mik" vorübergehend freigeschaltet\)/)
+    expect(ausgabe.join('\n')).toMatch(/\(9\) fremden Platz übernehmen, ohne dass Ersatz gesucht ist \(Probe Planer in der Woche 2099-\d\d-\d\d; für „mik" vorübergehend freigeschaltet\)/)
     expect(tabellen.persons!.find((p) => p.id === P2)!.priv).toEqual({})
+    // Die eigene Woche von (9) — wie jede Woche, die die Probe anlegt — ist wieder fort.
+    expect(aufrufe.some((a) => a.method === 'POST' && tabelleVon(a) === 'weeks')).toBe(true)
+    expect((tabellen.weeks ?? []).filter((w) => String(w.start) >= '2099')).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe: scheitert die Anlage der Woche für (9), sagt sie es — und löscht dort nichts', async () => {
+    // Eine Woche, die die Probe nicht anlegen konnte, gehört ihr nicht: Steht dort
+    // eine fremde, bliebe sie stehen.
+    const start = uebernahmeAnlage({ marke: '', versammlung: '', tag0: ersterMontagAb('2099-01-01'), svc: 'mik', inhaber: { name: '', pid: '' } }).woche.start
+    const anlage9 = (a: Aufruf) => a.method === 'POST' && tabelleVon(a) === 'weeks' && (a.body as { start?: string }).start === start
+    const { ausgabe, aufrufe } = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (anlage9(a) ? kaputt : undefined))
+    expect(ausgabe.join('\n')).toMatch(new RegExp(`\\(9\\) fremden Platz übernehmen.*\\n.*PROBE KAPUTT — Anlage der Woche ${start} scheiterte \\(HTTP 400\\)`))
+    expect(aufrufe.filter((a) => a.method === 'DELETE' && tabelleVon(a) === 'weeks' && a.pfad.includes(start))).toEqual([])
   })
 
   it('mitgliedsrechte-probe (T120): scheitert die Anlage, heißt das „PROBE KAPUTT", nicht „unsichtbar"', async () => {

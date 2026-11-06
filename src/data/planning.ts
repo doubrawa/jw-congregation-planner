@@ -10,7 +10,7 @@
  */
 
 import { buildAbsences, istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from './absence'
-import { allePlaetze, gespeicherteHelfer, leerVorOrt, platzKey, platzMitZusage, type Platz } from './plaetze'
+import { allePlaetze, gespeicherteHelfer, leerVorOrt, platzKey, platzMitZusage, type Platz, type ProgrammPlatz } from './plaetze'
 import { istSchuelerBereich, istSchuelerteil, programmPlaetze, RATGEBER_ROLLE, ratgeberSlot, slotsOf } from './aux-class'
 import {
   dieselbePerson,
@@ -1724,11 +1724,14 @@ export interface Conflict {
   /** partner: der Gesprächsführer, zu dem sie nicht passt. */
   zu?: string
   /**
-   * Nur Plätze dieses Bereichs trifft der Konflikt — beim Paar den Platz des
-   * Partners. Ohne Angabe jeden Platz der Person in der Zusammenkunft: Wer
-   * abwesend ist oder doppelt steht, fehlt überall.
+   * Nur diesen Platz trifft der Konflikt — sein `task_key` (`platzKey`), beim
+   * Paar der Platz des Partners. Ohne Angabe jeden Platz der Person in der
+   * Zusammenkunft: Wer abwesend ist oder doppelt steht, fehlt überall.
+   *
+   * Der Platz, nicht sein Bereich: Wer an einem Abend in zwei Schülerteilen
+   * Partner ist, passt vielleicht nur zu einem der beiden Gesprächsführer.
    */
-  bereich?: string
+  platz?: string
   /**
    * Wen es betrifft — Person-Id, sonst `name:<Anzeigename>` (`kennungVon`).
    *
@@ -1831,14 +1834,15 @@ function belegungen(meeting: Meeting, services: Service[], wer: IdVon): Belegung
  * der Zeit, als die Regel nur eine Richtung kannte, oder nachdem sich eine
  * Person geändert hat. Je Punkt und Raum.
  */
-function unpassendePaare(meeting: Meeting, persons: Person[]): Array<{ partner: SlotAssignment; fuehrer: SlotAssignment }> {
-  const out: Array<{ partner: SlotAssignment; fuehrer: SlotAssignment }> = []
-  for (const { slot, item, aux } of programmPlaetze(meeting)) {
+function unpassendePaare(meeting: Meeting, persons: Person[]): Array<{ partner: ProgrammPlatz; fuehrer: SlotAssignment }> {
+  const out: Array<{ partner: ProgrammPlatz; fuehrer: SlotAssignment }> = []
+  for (const platz of programmPlaetze(meeting)) {
+    const { slot, item, aux } = platz
     if (slot.bereichsKey !== 'schulungPartner' || !slot.name) continue
     const plaetze = slotsOf(item, aux)
     const fuehrer = plaetze.find((n) => n.bereichsKey === 'schulung')
     const partner = persons.find((p) => gehoertZu(slot, p))
-    if (fuehrer?.name && partner && !passtZumPaar(plaetze, slot, persons)(partner)) out.push({ partner: slot, fuehrer })
+    if (fuehrer?.name && partner && !passtZumPaar(plaetze, slot, persons)(partner)) out.push({ partner: platz, fuehrer })
   }
   return out
 }
@@ -1985,8 +1989,9 @@ export function weekConflicts(
   // partner: Gesprächsführer und -partner, die nicht zueinander passen.
   for (const tb of tabs) {
     for (const { partner, fuehrer } of unpassendePaare(week[tb], persons)) {
-      const b = belegung(partner, werIst)
-      conflicts.push({ kind: 'partner', name: b.name, kennung: b.kennung, tab: tb, zu: fuehrer.name, bereich: 'schulungPartner' })
+      const b = belegung(partner.slot, werIst)
+      const platz = platzKey({ art: 'programm', ...partner }, week.start, tb)
+      conflicts.push({ kind: 'partner', name: b.name, kennung: b.kennung, tab: tb, zu: fuehrer.name, platz })
     }
   }
 

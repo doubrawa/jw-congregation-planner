@@ -130,6 +130,25 @@ describe('Die Zusagen der Woche', () => {
     const aus = { ...WOCHE, dev: { we: { cancelled: true } } } as unknown as Week
     expect(zusagen({ week: aus }).map((p) => p.slot.name)).not.toContain('Gustav Test')
   })
+
+  it('ein Konflikt, der nur einen Platz trifft, macht nur diesen Platz zum Problem — er kommt mit dessen Schlüssel', () => {
+    // Wie das unpassende Paar: Steht dieselbe Person auf zwei Plätzen, gilt er
+    // nur an einem. Ohne Schlüssel fände die Frage den Konflikt gar nicht.
+    const doppelt = {
+      ...WOCHE,
+      mid: zusammenkunft([punkt('Gespräche beginnen', 'Hans Test'), punkt('Interesse fördern', 'Hans Test')]),
+    } as unknown as Week
+    const nurHier = key('mid', 'Gespräche beginnen')
+    const paar = { kind: 'partner', name: 'Hans Test', kennung: 'Hans Test', tab: 'mid', zu: 'Ida Test', platz: nurHier } as Conflict
+    const liste = zusagenDerWoche({
+      week: doppelt, services: DIENSTE, confirmations: {}, sentLog: {}, persoenlich: {}, zeiten: ZEITEN, heute: MONTAG_FRUEH,
+      konfliktVon: (_tab, _slot, k) => (k === paar.platz ? paar : undefined),
+    })
+    expect(liste.filter((p) => p.tab === 'mid').map((p) => [p.key, p.lage])).toEqual([
+      [nurHier, 'problem'],
+      [key('mid', 'Interesse fördern'), 'wartet'],
+    ])
+  })
 })
 
 /**
