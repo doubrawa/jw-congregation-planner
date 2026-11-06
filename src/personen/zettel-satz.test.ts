@@ -4,7 +4,8 @@ import { encode } from 'uqr'
 import { dict } from '../i18n/ui'
 import { zahlBinden } from '../i18n/zahl-binden'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
-import { qrBild, zettelSatz } from './zettel-satz'
+import { qrBild } from '../lib/qr-bild'
+import { zettelSatz } from './zettel-satz'
 
 /**
  * **Der QR-Code auf dem Zettel liest sich** (T121, Phase 8).

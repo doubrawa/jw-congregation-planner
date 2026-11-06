@@ -154,6 +154,7 @@ const SPIEGEL: Record<string, Spiegel> = {
 /** Tabellen mit Verweis, die im Zustand keinen Spiegel haben — mit Grund. */
 const OHNE_SPIEGEL: Record<string, string> = {
   assignment_log: 'Das Versand-Tagebuch steht im Zustand nur als `sentLog` (Schlüssel und Name → Zeitpunkt), ohne Person.',
+  anmelde_einmalcodes: 'Einmal-Codes liest kein Client — nur die Function `anmelden`; im Zustand stehen sie nie.',
 }
 
 const FK = fremdschluessel()
@@ -221,6 +222,11 @@ describe('Geht die Mitgliedschaft, geht das Konto', () => {
     )
     const rumpf = ohneKommentare.match(/function public\.konto_mit_mitgliedschaft_loeschen\(\)[^$]*\$\$([^$]*)\$\$/)?.[1] ?? ''
     expect(rumpf).toMatch(/delete from auth\.users where id = old\.user_id;/)
+  })
+
+  it('mit ihr geht ein offener Einmal-Code der Person — eingelöst legte er sonst ein neues Konto an', () => {
+    const rumpf = ohneKommentare.match(/function public\.konto_mit_mitgliedschaft_loeschen\(\)[^$]*\$\$([^$]*)\$\$/)?.[1] ?? ''
+    expect(rumpf).toMatch(/delete from public\.anmelde_einmalcodes where person_id = old\.person_id;/)
   })
 
   it('aufrufen lässt sie sich von außen nicht', () => {

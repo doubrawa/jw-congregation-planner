@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 import { Logo } from '../bausteine/Logo'
+import { QrSvg } from '../bausteine/QrSvg'
 import { seiten } from '../components/druck-seiten'
 import { isRTL } from '../i18n/langs'
 import { fill } from '../i18n/useT'
@@ -56,8 +57,6 @@ export function AnmeldeZettelBogen({ satz }: { satz: ZettelSatz }) {
 
 function AnmeldeZettel({ zettel, satz, versammlung }: { zettel: Zettel; satz: ZettelSatz; versammlung: string }) {
   const { t } = satz
-  const rand = 2
-  const kante = zettel.qr.groesse + 2 * rand
   return (
     <div className="anmelde-zettel">
       <p className="anmelde-zettel-kopf">
@@ -71,11 +70,7 @@ function AnmeldeZettel({ zettel, satz, versammlung }: { zettel: Zettel; satz: Ze
         </span>
       </p>
       <div className="anmelde-zettel-code">
-        {/* Der helle Rand gehört zum Code: Ohne ihn finden manche Kameras ihn nicht. */}
-        <svg className="anmelde-qr" viewBox={`${-rand} ${-rand} ${kante} ${kante}`} shapeRendering="crispEdges">
-          <rect x={-rand} y={-rand} width={kante} height={kante} fill="#fff" />
-          <path d={zettel.qr.pfad} fill="#000" />
-        </svg>
+        <QrSvg qr={zettel.qr} className="anmelde-qr" />
         <span className="anmelde-code-text">
           <span className="anmelde-klein">{t.codeLbl}</span>
           <span className="anmelde-code" dir="ltr">

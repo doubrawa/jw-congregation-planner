@@ -47,7 +47,7 @@ export const DE = {
     codePasst: 'Der Code passt',
     codeNichtDu: 'Das bist nicht du? Dann frag bitte in deiner Versammlung nach.',
     codeUnbekannt: 'Diesen Code gibt es nicht. Prüfe ihn bitte noch einmal.',
-    codeAbgelaufen: 'Dieser Code gilt nicht mehr. Frag die Ältesten nach einem neuen Zettel.',
+    codeAbgelaufen: 'Dieser Code gilt nicht mehr. Einen neuen zeigt das Profil auf einem angemeldeten Gerät — sonst frag die Ältesten.',
     angemeldetBleiben: 'Danach bleibst du auf diesem Gerät angemeldet.',
     linkUngueltig: 'Dieser Link gilt nicht mehr. Frag die Ältesten nach einem neuen.',
     anmeldenFehler: 'Die Anmeldung hat nicht geklappt. Versuche es bitte noch einmal.',
@@ -450,6 +450,19 @@ export const DE = {
     handbuch: 'Handbuch',
     handbuchVerkuendiger: 'Für Verkündiger',
     handbuchPlaner: 'Für Planer',
+    // Anmeldung im Profil (`AnmeldungKarte`): ein Einmal-Code fürs nächste
+    // Gerät und „Zugang erneuern". {zeit} die Uhrzeit, bis zu der der Code gilt;
+    // {knopf} der Knopf auf der Anmeldeseite (`codeEintippen`).
+    anmeldungKarte: 'Anmeldung',
+    geraetText: 'Mit einem Code meldest du ein weiteres Gerät an. Er gilt nur kurz und nur einmal.',
+    codeAnzeigen: 'Code anzeigen',
+    einmalCodeGilt: 'Gilt bis {zeit}, nur einmal',
+    einmalCodeAnleitung: 'Auf dem anderen Gerät die App öffnen, auf „{knopf}“ tippen und den Code eingeben — oder den QR-Code scannen.',
+    zugangErneuernText: 'Zettel verloren? Nach dem Erneuern gelten Zettel und Link nicht mehr, und alle anderen Geräte werden abgemeldet. Dieses Gerät bleibt angemeldet.',
+    zugangErneuern: 'Zugang erneuern',
+    zugangErneuernSicher: 'Wirklich erneuern?',
+    zugangErneuert: 'Zugang erneuert. Die anderen Geräte werden abgemeldet.',
+    zugangFehler: 'Das hat nicht geklappt. Versuche es bitte noch einmal.',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt

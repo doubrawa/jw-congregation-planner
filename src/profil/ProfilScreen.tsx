@@ -15,6 +15,7 @@ import type { Dict } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
+import { AnmeldungKarte } from './AnmeldungKarte'
 import { AnsichtKarte } from './AnsichtKarte'
 import { Diagnose } from './Diagnose'
 import { HandbuchKarte } from './HandbuchKarte'
@@ -42,6 +43,7 @@ const FS_LABELS = {
  *    Push-Mitteilungen (auf dem iPhone erst als App, dann steht dort der Hinweis).
  *  - **Abwesenheiten**: die eigenen, die anstehen — und „Abwesenheit eintragen".
  *  - **Verwaltung** (Admins, nur am Handy — ab dem Tablet steht sie im Menü).
+ *  - **Anmeldung**: ein Einmal-Code fürs nächste Gerät, „Zugang erneuern".
  *  - **Handbuch**: für Verkündiger, wer planen darf auch für Planer (GitHub).
  *  - App installieren, der Film „Erste Schritte", Abmelden und der Stand der App.
  */
@@ -175,6 +177,8 @@ export function ProfilScreen() {
               </button>
             </section>
           )}
+
+          <AnmeldungKarte />
 
           {/* Das Handbuch gleich über „Erste Schritte" — beides Hilfe. */}
           <HandbuchKarte fuerPlaner={rechte.zuteilen} />

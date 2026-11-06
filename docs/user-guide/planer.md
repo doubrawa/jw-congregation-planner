@@ -1281,6 +1281,11 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
   neuer Link ersetzt den alten, auch den auf einem Zettel. Ist die Person
   angemeldet, steht **Konto verknüpft** da, und das ✕ nimmt das Konto aus der
   Versammlung – mit ihm geht ihr Link. Beim eigenen fehlt es.
+  **Wer schon angemeldet ist, braucht für ein weiteres Gerät keinen neuen
+  Link:** Im Profil zeigt **Code anzeigen** einen Einmal-Code, und **Zugang
+  erneuern** sperrt einen verlorenen Zettel selbst (siehe Handbuch für
+  Verkündiger, Abschnitt 7). Danach steht die Person ohne Link da – angemeldet
+  bleibt sie.
 - **Zettel** druckt die App auf A4, sechs je Blatt zum Ausschneiden, in der
   Sprache der Versammlung: Name, QR‑Code, Code und bis wann er gilt. Der
   Zettel meldet an – gib ihn nur der Person selbst.

@@ -21,8 +21,11 @@ export type AnmeldeFehler = 'ungueltig' | 'abgelaufen' | 'zu-viele' | 'netz' | '
 
 type Antwort = Record<string, unknown>
 
-/** Die Function rufen. Den Grund einer Abweisung liest `fehlerAntwort`. */
-async function rufen(body: object): Promise<{ ok: true; daten: Antwort } | { ok: false; fehler: AnmeldeFehler }> {
+/**
+ * Die Function `anmelden` rufen — von der Anmeldeseite wie aus dem Profil
+ * (`zugang.ts`). Den Grund einer Abweisung liest `fehlerAntwort`.
+ */
+export async function anmeldenRufen(body: object): Promise<{ ok: true; daten: Antwort } | { ok: false; fehler: AnmeldeFehler }> {
   if (!supabase) return { ok: true, daten: {} }
   const { data, error } = await supabase.functions.invoke('anmelden', { body })
   if (!error) return { ok: true, daten: (data ?? {}) as Antwort }
@@ -44,7 +47,7 @@ async function sitzungUebernehmen(daten: Antwort): Promise<AnmeldeFehler | null>
 
 /** Mit dem Link aus der Nachricht anmelden (`#anmelden=<token>`). `null` heißt: angemeldet. */
 export async function mitLinkAnmelden(token: string): Promise<AnmeldeFehler | null> {
-  const r = await rufen({ aktion: 'link', token })
+  const r = await anmeldenRufen({ aktion: 'link', token })
   return r.ok ? sitzungUebernehmen(r.daten) : r.fehler
 }
 
@@ -52,13 +55,13 @@ export async function mitLinkAnmelden(token: string): Promise<AnmeldeFehler | nu
 export type CodeGeprueft = { ok: true; name: string; versammlung: string } | { ok: false; fehler: AnmeldeFehler }
 
 export async function codePruefen(code: string): Promise<CodeGeprueft> {
-  const r = await rufen({ aktion: 'code', code, pruefen: true })
+  const r = await anmeldenRufen({ aktion: 'code', code, pruefen: true })
   if (!r.ok) return r
   return { ok: true, name: String(r.daten.name ?? ''), versammlung: String(r.daten.versammlung ?? '') }
 }
 
 /** Mit dem Code vom Zettel anmelden. `null` heißt: angemeldet. */
 export async function mitCodeAnmelden(code: string): Promise<AnmeldeFehler | null> {
-  const r = await rufen({ aktion: 'code', code })
+  const r = await anmeldenRufen({ aktion: 'code', code })
   return r.ok ? sitzungUebernehmen(r.daten) : r.fehler
 }

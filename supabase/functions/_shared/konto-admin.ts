@@ -27,6 +27,13 @@ export interface KontoAdmin {
    * `null`, wenn es nicht ging.
    */
   sitzungFuer(email: string): Promise<Sitzung | null>
+  /**
+   * Alle übrigen Sitzungen eines Kontos beenden — mit seiner eigenen
+   * (`authorization`: der Kopf der Anfrage), die bleibt. Supabase widerruft
+   * deren Auffrischungen; ein schon ausgestelltes Zugangstoken läuft noch bis
+   * zu seinem Ablauf (höchstens eine Stunde). `true`, wenn es ging.
+   */
+  andereAbmelden(authorization: string): Promise<boolean>
 }
 
 export function kontoAdmin(supabaseUrl: string, serviceKey: string): KontoAdmin {
@@ -87,6 +94,12 @@ export function kontoAdmin(supabaseUrl: string, serviceKey: string): KontoAdmin 
       // „magiclink" ist der Typ, unter dem der Link ausgestellt wurde; neuere
       // Fassungen von Supabase Auth nennen ihn „email".
       return (await einloesen(hash, 'magiclink')) ?? (await einloesen(hash, 'email'))
+    },
+
+    async andereAbmelden(authorization) {
+      const res = await fetch(auth('logout?scope=others'), { method: 'POST', headers: { apikey: serviceKey, Authorization: authorization } })
+      if (!res.ok) console.error(`logout ${res.status}: ${await res.text()}`)
+      return res.ok
     },
   }
 }

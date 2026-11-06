@@ -56,6 +56,11 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   deshalb auf. Ein angemeldetes Gerät bleibt angemeldet. Ist beides weg oder
   abgelaufen, bekommst du von den Ältesten einen neuen Link – der alte gilt dann
   nicht mehr.
+- **Ist schon ein Gerät angemeldet**, brauchst du für ein weiteres keinen
+  Zettel: Im [Profil](#7-profil-darstellung-schriftgröße--sprache) zeigt
+  **Code anzeigen** einen Code, der nur kurz und nur einmal gilt. Du gibst ihn
+  auf dem neuen Gerät über **Code eintippen** ein, genau wie den Code vom
+  Zettel.
 - Unten kannst du die **Sprache der App** wählen.
 - Ganz unten steht die Adresse, an die man schreibt, wenn eine **neue
   Versammlung** die App nutzen möchte. Ein Tipp darauf öffnet eine fertige
@@ -624,9 +629,9 @@ statt der Kopfzeile der Pfeil zurück und **Alle gelesen**.
 
 Das **Profil** öffnest du über deinen Namen unten im Menü. Oben stehen deine
 Initialen, dein Name, deine Rolle und deine Gruppe; darunter stellst du
-persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5), öffnest
-dieses Handbuch und meldest dich ab. Admins finden am Handy hier auch
-**Personen** und **Einstellungen**.
+persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5), meldest ein
+weiteres Gerät an, öffnest dieses Handbuch und meldest dich ab. Admins finden
+am Handy hier auch **Personen** und **Einstellungen**.
 
 ![Profil](screenshots/verkuendiger-profil.png)
 
@@ -660,6 +665,24 @@ dieses Handbuch und meldest dich ab. Admins finden am Handy hier auch
 - **App installieren** – steht da, solange dein Browser das Installieren
   anbietet (etwa Chrome auf Android) und die App noch nicht installiert ist
   (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
+- **Anmeldung** – für ein weiteres Gerät und für den Fall, dass dein Zettel
+  verloren ist:
+  - **Code anzeigen** zeigt einen Code mit QR‑Code. Er gilt etwa eine
+    Viertelstunde (die Uhrzeit steht darunter) und meldet genau ein Gerät an;
+    danach verschwindet er. Auf dem anderen Gerät öffnest du die App, tippst auf
+    **Code eintippen** und gibst ihn ein – oder du scannst den QR‑Code. Wie beim
+    Zettel zeigt die App vorher, wem der Code gehört. Danach steht, wie bei
+    jeder weiteren Anmeldung, **Neue Anmeldung** in deinen Mitteilungen.
+  - **Zugang erneuern** – für einen verlorenen Zettel oder wenn jemand deinen
+    Link kennt. Danach gelten Zettel und Link aus der Nachricht nicht mehr, und
+    alle anderen Geräte werden abgemeldet – spätestens nach einer Stunde sind
+    sie draußen. Dieses Gerät bleibt angemeldet. Der erste Tipp fragt „Wirklich
+    erneuern?", erst der zweite erneuert. Einen neuen Zettel brauchst du danach
+    nicht: Ein weiteres Gerät meldest du mit **Code anzeigen** an. Nur wenn du
+    auf keinem Gerät mehr angemeldet bist, geben dir die Ältesten einen neuen
+    Link.
+  - Deinen bisherigen Code zeigt die App nicht: Gespeichert ist nur eine
+    Prüfsumme davon, damit niemand ihn aus der Datenbank lesen kann.
 - **Handbuch** – öffnet dieses Handbuch im Browser, außerhalb der App. Wer
   planen darf, findet darunter auch das [Handbuch für Planer](planer.md). Die
   Handbücher gibt es nur auf Deutsch; ist die App auf eine andere Sprache

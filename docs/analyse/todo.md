@@ -9844,6 +9844,88 @@ der zweite unter „Warten auf Zusage"; Hilfsdienst-Konflikte weiter rot.
 
 Suite 7955/7955, tsc, Lint (nur die bekannte Warnung in `Spur.tsx`).
 
+## Aufgenommen am 6. November 2026 (T166)
+
+### T166 · Anmeldung im Profil: Einmal-Code fürs nächste Gerät, Zugang erneuern 🔧 ✅ umgesetzt und ausgerollt (6. November 2026)
+
+„im eigenen profil sollte es die möglichkeit geben sich den eigenen code
+anzuzeigen und einen neuen zu generieren — oder spricht aus sicherheitsgründen
+etwas dagegen?" Den bisherigen Code anzuzeigen geht nicht: Gespeichert ist nur
+seine Prüfsumme, und ihn lesbar zu speichern hieße, wer die Tabelle liest,
+meldet sich als jede Person an. Am 15. Oktober war „Code im Profil für ein
+weiteres Gerät" schon einmal verworfen — damals trug jede Anmelde-Mail einen
+neuen Code; seit T160 gibt es keine Mails mehr. Entschieden hat der Betreiber
+(„Einmal-Code + Erneuern"):
+
+- **Einmal-Code** (Karte „Anmeldung" im Profil, `AnmeldungKarte`): „Code
+  anzeigen" holt über `anmelden` (`aktion: 'einmalcode'`) einen Code, der 15
+  Minuten gilt (`EINMAL_MINUTEN`) und genau ein Gerät anmeldet — zum Eintippen
+  und als QR-Code (`#code=`, dieselbe Form wie der Zettel). Eingetippt wird er
+  auf der Anmeldeseite wie der Code vom Zettel; vorher zeigt sie, wem er
+  gehört. Läuft er ab, verschwindet er. Der Zettel bleibt gültig.
+- **Zugang erneuern** (zwei Tipps): sperrt Link, Zettel und einen offenen
+  Einmal-Code und meldet alle übrigen Geräte ab (`logout?scope=others` mit der
+  eigenen Sitzung); dieses bleibt angemeldet. Erst sperren, dann abmelden —
+  andersherum könnte sich dazwischen noch ein Gerät mit dem alten Code
+  anmelden. Ein schon ausgestelltes Zugangstoken läuft bis zu einer Stunde
+  weiter. Einen neuen Zettel braucht es danach nicht; ein weiteres Gerät kommt
+  mit dem Einmal-Code dazu.
+- **Sicherheit:** Die Person kommt allein aus der Sitzung (`eigenePerson`),
+  nie aus der Anfrage; ein Konto ohne Person bekommt 403. Der Code steht nur
+  als SHA-256 in der neuen Tabelle `anmelde_einmalcodes` (eine Zeile je Person,
+  ein neuer ersetzt den alten), an der kein Client ein Recht hat. Eingelöst wird
+  durch Löschen mit Fristfilter — zwei Geräte mit demselben Code kommen nicht
+  beide hinein, und einer, der zwischen Lesen und Einlösen abläuft, meldet
+  niemanden an. Ein neuer Code ist nie einer, den schon ein Zettel trägt
+  (`freierCode`). Jede Anmeldung damit meldet „Neue Anmeldung" wie jedes
+  weitere Gerät; die Bremse gegen Raten gilt wie beim Zettel.
+- **Mit dabei:** `codeAbgelaufen` nennt jetzt beide Wege (Profil eines
+  angemeldeten Geräts, sonst die Ältesten); der QR-Baustein des Zettels
+  (`lib/qr-bild.ts`, `bausteine/QrSvg.tsx`) dient beiden. Aufräumen nimmt
+  abgelaufene Einmal-Codes am Montag mit; Zurücksetzen, Mandantennachweis
+  (`keinZugriff`) und Aufbewahrungsprobe kennen die Tabelle. Texte in 12
+  Sprachen, Matrix gegengelesen; Handbuch für Verkündiger (Abschnitte 1 und 7)
+  und für Planer (Konto), Profilbild neu.
+
+Proben: `_test/anmelden.test.ts` (19 neue Fälle) mit zehn Gegenproben, alle
+rot; `AnmeldungKarte.test.tsx`, `lib/zugang.test.ts`. Laufzeit auf
+`/demo.html`: Profil bei 920 px hell und bei 320 px, Stufe 1,45, Arabisch,
+dunkel — kein Überlauf, QR-Code schwarz auf Weiß, Code von links nach rechts;
+Zugang erneuern mit zwei echten Tipps.
+
+**/simplify** (Winkel nacheinander): `zugang.ts` ruft die Function über
+`anmeldenRufen` aus `anmelden.ts` statt einer eigenen Abschrift samt
+Fehlerauswertung; die Karte lädt Code und QR-Baustein gleichzeitig und gibt den
+Knopf auch nach einem Wurf wieder frei (`waehrenddessen`); Ticketnummern aus den
+neuen Kommentaren; drei Kommentare sprachen noch von E-Mails. Verworfen: der
+Schalter `linkVermerken` (klar genug), beide Suchen in `mitCode` gleichzeitig
+(der Code vom Zettel ist der häufige Weg und fände dann eine Abfrage zu viel).
+
+**/code-review max** (Winkel nacheinander; 5 Befunde, 5 behoben):
+
+| Nr. | Status | Befund |
+| --- | --- | --- |
+| 1 | behoben | Entfernte der Admin ein Konto, gingen Mitgliedschaft und Link, ein offener Einmal-Code aber nicht — eingelöst legte er binnen 15 Minuten ein neues Konto mit den vorgemerkten Rechten an. Jetzt löscht ihn der Trigger `konto_mit_mitgliedschaft_loeschen` mit |
+| 2 | behoben | Scheiterte das Einlösen an der Datenbank, hieß es „abgelaufen" (410) statt 500 — der Code galt aber weiter |
+| 3 | behoben | Wann der Code im Profil verschwindet, hing an der Uhr des Geräts: Ging sie vor, verschwand er sofort. Jetzt `sichtbarMs` — höchstens `EINMAL_MINUTEN`, bei unsinniger Rechnung die volle Dauer |
+| 4 | behoben | Das Manifest der Handbuchbilder nannte für das Profil noch die alte Höhe |
+| 5 | behoben | Hier stand eine falsche Zahl neuer Fälle |
+
+Gegenproben zu 1–3 rot; zum neuen Wurf-Fall der Karte ebenso. Suite
+7993/7993, tsc, Lint, Build; die Karte nach dem Umbau noch einmal auf
+`/demo.html` angeklickt.
+
+**Ausgerollt am 6. November 2026:** das Delta aus `schema.sql` (Tabelle
+`anmelde_einmalcodes`, der Trigger `konto_mit_mitgliedschaft_loeschen`, die
+Aufräumfunktion) in einer Transaktion; danach gelesen: Tabelle da, RLS an,
+keine Richtlinie, kein Recht für `anon`/`authenticated`, beide Funktionen mit
+dem neuen Rumpf, die Aufräumregel zählt im Trockenlauf ohne Fehler. Dann die
+Function `anmelden` (v17; per `functions download` alle 9 Dateien gleich dem
+Arbeitsstand) — ohne Sitzung antworten `einmalcode` und `erneuern` 401, eine
+unbekannte Aktion 400, ein unvollständiger Code 404. Mit Sitzung (Einmal-Code
+holen und einlösen, `logout?scope=others`) live noch nicht gefahren — das
+braucht ein angemeldetes Gerät.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9883,13 +9965,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑
+1. November ☑ · 6. November ☑☑
 
-**Alle 165 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+**Alle 166 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
 „kein Mangel" zurückgewiesen. Zuletzt am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
-Mitgliedsrechte-Probe nach „Alles Planen" lief grün. Was ohne Aufgabennummer
-aussteht, steht unter „Was offen ist und warum".
+Mitgliedsrechte-Probe nach „Alles Planen" lief grün; dazu **T166** (Anmeldung
+im Profil), ausgerollt. Was ohne Aufgabennummer aussteht, steht unter „Was
+offen ist und warum".
 
 Am 30. Oktober ausgerollt: **T152** (Anwesende), **T153** (Tauschen) und
 **T154** (Adressen und Gründe) — nach `/simplify` und `/code-review max`
@@ -9934,6 +10017,13 @@ Zeitpläne laufen: die Erinnerungen (täglich 08:00 UTC) zuletzt am 6. November,
 das Aufräumen (montags 03:30 UTC) zuletzt am 2. November, beide ohne
 Fehlschlag in den zehn Tagen davor. Auf GitHub steht nur `main`, ohne offene
 PRs und Issues.
+
+**Nachtrag am 6. November, nachmittags (T166):** `anmelden` läuft als v17 mit
+dem Stand dieses Commits; die übrigen sieben stehen eine Version höher als
+oben, ohne neuen Code — Supabase stellt nach einer Änderung der Secrets
+(`RESEND_API_KEY` entfernt) jede Function neu bereit. Im Schema neu: die
+Tabelle `anmelde_einmalcodes`, der Trigger `konto_mit_mitgliedschaft_loeschen`
+und die Aufräumfunktion mit ihrer Regel.
 
 **Beim Betreiber liegt außerhalb des Repos nichts mehr:** Registrieren ist
 seit dem 6. November aus (`disable_signup: true`). Resend braucht es seit T160
@@ -10352,6 +10442,7 @@ Neuaufbau oder einen allgemeinen Ersatz für `field-sizing`.
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
 | **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
 | **T162** | Auswahl ohne `field-sizing` | In Browsern ohne `field-sizing` (etwa Firefox) ist die Auswahl in „Weitere Pläne" so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz (Befund 11 des Reviews zu T162) |
+| **Gerät** | Anmeldung im Profil (T166) | am 6. November ausgerollt; mit Sitzung live noch nicht ausprobiert: „Code anzeigen" und damit ein zweites Gerät anmelden, „Zugang erneuern" (meldet die übrigen Geräte ab) |
 
 Am 6. November herausgenommen, jeder Punkt einzeln mit dem Betreiber:
 

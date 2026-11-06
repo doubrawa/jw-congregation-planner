@@ -321,6 +321,10 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Ein offener Einmal-Code fürs nächste Gerät ginge sonst nicht mit: Den Link
+  -- löscht die App, an diese Tabelle kommt sie nicht heran. Eingelöst legte er
+  -- ein neues Konto an — mit den vorgemerkten Rechten der Person.
+  delete from public.anmelde_einmalcodes where person_id = old.person_id;
   delete from auth.users where id = old.user_id;
   return old;
 end;
@@ -901,7 +905,7 @@ alter table public.assignment_log
   add column if not exists persoenlich_at timestamptz;
 
 -- Anmelde-Links (T121, Phase 8): Ein Kennwort gibt es nicht mehr. Wer in die
--- App soll, bekommt vom Admin einen Link — per E-Mail oder auf einem Zettel mit
+-- App soll, bekommt vom Admin einen Link — per Nachricht oder auf einem Zettel mit
 -- QR-Code und einem Code zum Eintippen (`send-invite` stellt aus, `anmelden`
 -- löst ein). **Eine Zeile je Person**: Ein neuer Link ersetzt den alten sofort.
 -- Er gilt mehrfach (Handy und Tablet), bis `gueltig_bis` (ein Jahr, bis zum
@@ -920,8 +924,8 @@ create table if not exists public.anmelde_links (
   code_hash       text not null unique,
   gueltig_bis     timestamptz not null,
   erstellt_at     timestamptz not null default now(),
-  -- Zuletzt per E-Mail verschickt — bremst die Selbstbedienung auf der
-  -- Anmeldeseite (eine Mail je Person in zehn Minuten).
+  -- Zuletzt per E-Mail verschickt. Die App schickt keine Mails mehr; die Spalte
+  -- bleibt leer, die Ansicht des Admins zeigt dann `erstellt_at`.
   gesendet_at     timestamptz,
   -- Zuletzt zum Anmelden benutzt.
   benutzt_at      timestamptz,
@@ -932,6 +936,22 @@ create table if not exists public.anmelde_links (
 
 create index if not exists anmelde_links_congregation_idx
   on public.anmelde_links (congregation_id);
+
+-- Einmal-Codes fürs nächste Gerät: im Profil eines angemeldeten Kontos
+-- erzeugt (`anmelden`, `aktion: 'einmalcode'`), kurz gültig und nur einmal
+-- einzulösen — wer ihn über die Schulter sieht, hat danach nichts in der Hand.
+-- Eine Zeile je Person: Ein neuer ersetzt den alten. Wie bei `anmelde_links`
+-- steht der Code nur als SHA-256 da, und kein Client darf die Tabelle lesen
+-- oder schreiben (unten).
+create table if not exists public.anmelde_einmalcodes (
+  person_id       uuid primary key,
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  code_hash       text not null unique,
+  gueltig_bis     timestamptz not null,
+
+  constraint anmelde_einmalcodes_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
 
 -- Fehlgeschlagene Anmeldeversuche mit einem Code — die Bremse gegen Raten
 -- (`anmelden`): je Absender und insgesamt eine Grenze je Stunde. Nur die
@@ -2099,9 +2119,12 @@ create policy trolley_termine_select on public.trolley_termine
 -- der Dienstrolle. **Die Prüfsummen bleiben unsichtbar**: Spaltenrechte statt
 -- einer Ansicht, damit `select=*` scheitert, statt sie doch zu zeigen.
 alter table public.anmelde_links enable row level security;
+alter table public.anmelde_einmalcodes enable row level security;
 alter table public.anmelde_fehlversuche enable row level security;
 
 revoke all on public.anmelde_links from anon, authenticated;
+-- Einmal-Codes: nur die Function — kein Recht, keine Richtlinie.
+revoke all on public.anmelde_einmalcodes from anon, authenticated;
 revoke all on public.anmelde_fehlversuche from anon, authenticated;
 grant select (person_id, congregation_id, gueltig_bis, erstellt_at, gesendet_at, benutzt_at)
   on public.anmelde_links to authenticated;
@@ -2385,6 +2408,8 @@ begin
         ('reminder_log', 'sent_on < $1', acht_wochen),
         ('trolley_termine', 'datum < $1', acht_wochen),
         ('anmelde_links', 'gueltig_bis < $1', acht_wochen),
+        -- Ein Einmal-Code, der nicht eingelöst wurde: sobald er abgelaufen ist.
+        ('anmelde_einmalcodes', 'gueltig_bis < $1', now()),
         -- Die Bremse gegen Raten: ein Tag.
         ('anmelde_fehlversuche', 'at < $1', now() - interval '1 day'),
         -- Das Protokoll von Supabase Auth: acht Wochen.
@@ -2442,7 +2467,7 @@ revoke all on function public.alte_daten_loeschen(boolean) from anon, authentica
 -- nicht.
 --
 -- Ein Kennwort und ein Registrieren gibt es nicht (seit 15.10.2026). Jedes
--- weitere Mitglied bekommt seinen Link vom Admin in der App — per E-Mail oder
+-- weitere Mitglied bekommt seinen Link vom Admin in der App — per Nachricht oder
 -- auf einem Zettel (`send-invite`); das Konto entsteht bei der ersten Anmeldung
 -- (`anmelden`), die Rechte kommen aus der Vormerkung an der Person. Bis zum
 -- 16.10.2026 stand hier noch der Weg über Dashboard-Konto und Einladungscode.

@@ -184,6 +184,9 @@ export const LEEREN = [
   'tausch_anfragen',
   // Und das „Nein, danke" auf Ersatzgesuche (1.11.2026) — ebenso.
   'abgelehnte_gesuche',
+  // Und die Einmal-Codes fürs nächste Gerät — sie gelten Minuten, und
+  // die Personen, an denen sie hängen, kommen hier neu.
+  'anmelde_einmalcodes',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

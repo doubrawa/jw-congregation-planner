@@ -198,6 +198,54 @@
   }
 }
 
+/* ---- Anmeldung: Einmal-Code und Zugang erneuern ------------------------------ */
+
+.anmeldung-knopf,
+.anmeldung-erneuern {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-block: 12px;
+}
+
+/* QR-Code und Code nebeneinander, solange beide passen — sonst untereinander. */
+.anmeldung-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding-block: 12px;
+}
+
+/* Groß genug für eine Kamera auf Armlänge — und nie breiter als die Karte. */
+.anmeldung-qr {
+  flex: none;
+  width: min(calc(132px * var(--fs)), 100%);
+  height: auto;
+}
+
+.anmeldung-code-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Die beiden Vierergruppen dürfen untereinander rücken, nie mitten in einer. */
+.anmeldung-code-wert {
+  font-size: calc(26px * var(--fs));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.anmeldung-anleitung {
+  flex-basis: 100%;
+}
+
 /* ---- Installieren, Abmelden, Stand der App ----------------------------------- */
 
 .profil-knoepfe {

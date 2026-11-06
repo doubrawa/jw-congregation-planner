@@ -1,14 +1,8 @@
-import { encode } from 'uqr'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import type { Lang } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import type { AusgestellterLink } from '../lib/links-ausstellen'
-
-/** Der QR-Code eines Zettels: Kantenlänge in Modulen und ein SVG-Pfad aus den dunklen. */
-export interface QrBild {
-  groesse: number
-  pfad: string
-}
+import { qrBild, type QrBild } from '../lib/qr-bild'
 
 /** Ein Anmelde-Zettel, fertig zum Druck. */
 export interface Zettel {
@@ -29,28 +23,6 @@ export interface ZettelSatz {
   /** Die Adresse der App ohne Weg („versammlung.app") — für den, dessen Kamera nicht will. */
   adresse: string
   zettel: Zettel[]
-}
-
-/**
- * **Der QR-Code eines Zettels** als SVG-Pfad. Ein eigener Pfad statt
- * `renderSVG` von `uqr`: Das gäbe eine fertige Zeichenkette, und die käme nur
- * über `dangerouslySetInnerHTML` auf die Seite. Je Zeile wird ein Lauf dunkler
- * Module zu einem Rechteck — das hält den Pfad kurz.
- *
- * Fehlerkorrektur „M": Ein geknickter oder bekritzelter Zettel liest sich noch.
- */
-export function qrBild(text: string): QrBild {
-  const { data, size } = encode(text, { ecc: 'M', border: 0 })
-  let pfad = ''
-  data.forEach((zeile, y) => {
-    for (let x = 0; x < zeile.length; x++) {
-      if (!zeile[x]) continue
-      const von = x
-      while (zeile[x + 1]) x++
-      pfad += `M${von} ${y}h${x - von + 1}v1h-${x - von + 1}z`
-    }
-  })
-  return { groesse: size, pfad }
 }
 
 /**

@@ -133,6 +133,8 @@ describe('Aufräumen in der Datenbank', () => {
       expect(frist[t], t).toBe('acht_wochen')
     }
     expect(frist.anmelde_fehlversuche).toBe("now() - interval '1 day'")
+    // Ein Einmal-Code fürs nächste Gerät geht, sobald er abgelaufen ist.
+    expect(frist.anmelde_einmalcodes).toBe('now()')
     // Ein „Nein, danke" auf ein Gesuch, dessen Woche vorbei ist, fragt niemand mehr ab (1.11.2026).
     expect(frist.abgelehnte_gesuche).toBe('montag::timestamptz')
     expect(REGELN.find((r) => r.tabelle === 'abgelehnte_gesuche')?.bedingung).toContain('woche_im_schluessel(task_key)')

@@ -9,7 +9,7 @@
  * und REST; die Attrappe wertet Filter aus und hält ihren Stand.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { codeVollstaendig, pruefsumme } from '../_shared/anmeldung.ts'
+import { codeVollstaendig, EINMAL_MINUTEN, pruefsumme } from '../_shared/anmeldung.ts'
 import { anmeldeTexte, TEXT_NEUE_ANMELDUNG, TITEL_NEUE_ANMELDUNG } from '../anmelden/texte.ts'
 import { filterWert, jsonRes, nurSpalten } from './attrappe.ts'
 import { reset as pushZuruecksetzen, sent as gesendetePushes } from './web-push.stub.ts'
@@ -57,6 +57,18 @@ let verifyKaputt: boolean
 let wettlauf: boolean
 /** Auth legt kein Konto an. */
 let kontoKaputt: boolean
+/** Einmal-Codes: je Person einer, nur als Prüfsumme. */
+let einmal: Array<{ person_id: string; congregation_id: string; code_hash: string; gueltig_bis: string }>
+/** Mit welcher Sitzung „die übrigen Geräte abmelden" kam — je Aufruf. */
+let abgemeldet: string[]
+/** Supabase Auth meldet die übrigen Geräte nicht ab. */
+let abmeldenKaputt: boolean
+/** Jeder Aufruf an Auth und REST, in Reihenfolge: „METHODE pfad". */
+let protokoll: string[]
+/** Das Lesen eines Einmal-Codes sieht ihn noch gültig — er läuft erst danach ab. */
+let einmalLaeuftGleichAb: boolean
+/** Das Einlösen (DELETE) eines Einmal-Codes scheitert an der Datenbank. */
+let einloesenKaputt: boolean
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -88,7 +100,18 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   const url = String(input)
   const method = init?.method ?? 'GET'
   const body = init?.body === undefined ? undefined : JSON.parse(String(init.body))
+  protokoll.push(`${method} ${url.replace(/^.*\/(auth|rest)\/v1\//, '')}`)
 
+  // Die Sitzung eines Kontos heißt hier „Bearer sitzung:<Konto-Id>".
+  if (url.endsWith('/auth/v1/user')) {
+    const id = /^Bearer sitzung:(.+)$/.exec(init?.headers?.Authorization ?? '')?.[1]
+    return id ? jsonRes({ id }) : new Response('{"msg":"invalid JWT"}', { status: 401 })
+  }
+  if (url.endsWith('/auth/v1/logout?scope=others') && method === 'POST') {
+    if (abmeldenKaputt) return new Response('{"msg":"kaputt"}', { status: 500 })
+    abgemeldet.push(init?.headers?.Authorization ?? '')
+    return new Response(null, { status: 204 })
+  }
   if (url.includes('/auth/v1/admin/users/')) {
     const id = decodeURIComponent(url.split('/auth/v1/admin/users/')[1] ?? '')
     return konten.has(id) ? jsonRes({ id, email: konten.get(id) }) : new Response('{"msg":"User not found"}', { status: 404 })
@@ -123,6 +146,38 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       for (const l of getroffen) Object.assign(l, body)
       return jsonRes(getroffen.map((l) => ({ person_id: l.person_id })))
     }
+    if (method === 'DELETE') {
+      const pid = filterWert(path, 'person_id')
+      const weg = links.filter((l) => l.person_id === pid)
+      links = links.filter((l) => l.person_id !== pid)
+      return jsonRes(weg.map(sichtbar))
+    }
+  }
+  if (path.startsWith('anmelde_einmalcodes')) {
+    const c = filterWert(path, 'code_hash')
+    const pid = filterWert(path, 'person_id')
+    const nach = /[?&]gueltig_bis=gt\.([^&]*)/.exec(path)?.[1]
+    const trifft = (z: (typeof einmal)[number]) =>
+      (c === null || z.code_hash === c) && (pid === null || z.person_id === pid) && (nach === undefined || z.gueltig_bis > decodeURIComponent(nach))
+    const ohneSumme = (z: (typeof einmal)[number]) => ({ person_id: z.person_id, congregation_id: z.congregation_id, gueltig_bis: z.gueltig_bis })
+    if (method === 'GET') {
+      const gelesen = einmal.filter(trifft).map(ohneSumme)
+      return jsonRes(einmalLaeuftGleichAb ? gelesen.map((z) => ({ ...z, gueltig_bis: zukunft() })) : gelesen)
+    }
+    if (method === 'DELETE') {
+      if (einloesenKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
+      const weg = einmal.filter(trifft)
+      einmal = einmal.filter((z) => !trifft(z))
+      return jsonRes(weg.map(ohneSumme))
+    }
+    if (method === 'POST') {
+      // Upsert über `person_id` — wie `on_conflict=person_id`; die Prüfsumme ist eindeutig.
+      for (const z of body as typeof einmal) {
+        if (einmal.some((e) => e.code_hash === z.code_hash && e.person_id !== z.person_id)) return new Response('{"code":"23505"}', { status: 409 })
+        einmal = [...einmal.filter((e) => e.person_id !== z.person_id), z]
+      }
+      return new Response(null, { status: 201 })
+    }
   }
   if (path.startsWith('persons')) {
     const id = filterWert(path, 'id')
@@ -139,6 +194,8 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       members.push(body)
       return jsonRes([{ user_id: body.user_id }])
     }
+    const uid = filterWert(path, 'user_id')
+    if (uid) return jsonRes(nurSpalten(members.filter((m) => m.user_id === uid), path))
     const pid = filterWert(path, 'person_id')
     const ids = inListe(path, 'person_id')
     return jsonRes(members.filter((m) => (pid ? m.person_id === pid : ids.includes(m.person_id ?? ''))))
@@ -191,14 +248,25 @@ interface Antwort {
   sitzung?: { access_token: string; refresh_token: string }
   name?: string
   versammlung?: string
+  code?: string
+  zettelUrl?: string
+  gueltigBis?: string
 }
 
-async function call(body: unknown, opts: { ip?: string; env?: Record<string, string> } = {}): Promise<{ status: number; body: Antwort }> {
+/** `sitzung`: das Konto, als das gefragt wird — sonst wie ohne Anmeldung. */
+async function call(
+  body: unknown,
+  opts: { ip?: string; env?: Record<string, string>; sitzung?: string } = {},
+): Promise<{ status: number; body: Antwort }> {
   const handler = await loadFn(opts.env)
   const res = await handler(
     new Request('https://fn.test/anmelden', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-forwarded-for': `${opts.ip ?? '203.0.113.7'}, 10.0.0.1` },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': `${opts.ip ?? '203.0.113.7'}, 10.0.0.1`,
+        ...(opts.sitzung ? { Authorization: `Bearer sitzung:${opts.sitzung}` } : {}),
+      },
       body: JSON.stringify(body),
     }),
   )
@@ -219,6 +287,12 @@ beforeEach(async () => {
   verifyKaputt = false
   wettlauf = false
   kontoKaputt = false
+  einmal = []
+  abgemeldet = []
+  abmeldenKaputt = false
+  protokoll = []
+  einmalLaeuftGleichAb = false
+  einloesenKaputt = false
 })
 
 describe('anmelden: mit dem Link aus der Nachricht', () => {
@@ -457,6 +531,194 @@ describe('anmelden: eine weitere Anmeldung erfährt das Konto', () => {
       expect(res.status).toBe(200)
       expect(((await res.json()) as Antwort).sitzung).toBeDefined()
       expect(err).toHaveBeenCalledWith('anmelden: Meldung', 'weg')
+    } finally {
+      err.mockRestore()
+    }
+  })
+})
+
+/*
+ * **Der eigene Zugang im Profil**: ein Einmal-Code fürs nächste Gerät
+ * und „Zugang erneuern". Beides nur mit Sitzung, und die Person kommt aus ihr —
+ * nie aus der Anfrage.
+ */
+describe('anmelden: ein Einmal-Code fürs nächste Gerät', () => {
+  const BERT = { sitzung: 'konto-bert' }
+  const holen = async () => (await call({ aktion: 'einmalcode' }, BERT)).body
+
+  it('ohne Sitzung → 401, nichts angelegt', async () => {
+    const r = await call({ aktion: 'einmalcode' })
+    expect(r.status).toBe(401)
+    expect(einmal).toEqual([])
+  })
+
+  it('ein Konto ohne Person (der Betreiber) → 403, nichts angelegt', async () => {
+    members.push({ user_id: 'konto-betreiber', congregation_id: CONG, person_id: null, planner: true, zuteiler: false, email: '' })
+    const r = await call({ aktion: 'einmalcode' }, { sitzung: 'konto-betreiber' })
+    expect(r.status).toBe(403)
+    expect(einmal).toEqual([])
+  })
+
+  it('gibt den Code, die Adresse für den QR-Code und die Frist — gespeichert nur die Prüfsumme', async () => {
+    const vorher = Date.now()
+    const r = await holen()
+    expect(r.code).toMatch(/^[A-HJ-NP-Z2-9]{4} [A-HJ-NP-Z2-9]{4}$/)
+    const code = r.code!.replace(' ', '')
+    expect(r.zettelUrl).toBe(`https://app.test/#code=${code}`)
+    const frist = new Date(r.gueltigBis!).getTime() - vorher
+    expect(frist).toBeGreaterThan((EINMAL_MINUTEN - 1) * 60e3)
+    expect(frist).toBeLessThanOrEqual(EINMAL_MINUTEN * 60e3 + 1000)
+    expect(einmal).toEqual([{ person_id: P_BERT, congregation_id: CONG, code_hash: await pruefsumme(code), gueltig_bis: r.gueltigBis }])
+  })
+
+  it('die Person kommt aus der Sitzung — eine mitgeschickte fremde zählt nicht', async () => {
+    await call({ aktion: 'einmalcode', personId: P_ANNA, person_id: P_ANNA }, BERT)
+    expect(einmal.map((z) => z.person_id)).toEqual([P_BERT])
+  })
+
+  it('ein neuer ersetzt den noch offenen — der alte meldet niemanden mehr an', async () => {
+    const alt = (await holen()).code!
+    const neu = (await holen()).code!
+    expect(einmal).toHaveLength(1)
+    expect((await call({ aktion: 'code', code: alt })).status).toBe(404)
+    expect((await call({ aktion: 'code', code: neu })).body.sitzung).toBeDefined()
+  })
+
+  it('meldet ein weiteres Gerät an — als das eigene Konto, und nur einmal', async () => {
+    const code = (await holen()).code!
+    const r = await call({ aktion: 'code', code })
+    expect(r.body.sitzung?.access_token).toBe('zugang:h:bert-alt@example.org')
+    expect(einmal).toEqual([])
+    expect(angelegt).toEqual([])
+    // Das zweite Mal ist er fort — und zählt als Fehlversuch wie jeder unbekannte.
+    const zweites = await call({ aktion: 'code', code })
+    expect(zweites.status).toBe(404)
+    expect(fehlversuche).toHaveLength(1)
+  })
+
+  it('„prüfen" nennt Name und Versammlung und löst nicht ein', async () => {
+    const code = (await holen()).code!
+    const r = await call({ aktion: 'code', code, pruefen: true })
+    expect(r.body).toEqual({ ok: true, name: 'Bert Brand', versammlung: 'Musterstadt' })
+    expect(einmal).toHaveLength(1)
+  })
+
+  it('die Anmeldung steht in der Glocke des Kontos — wie bei jedem weiteren Gerät', async () => {
+    await call({ aktion: 'code', code: (await holen()).code! })
+    expect(glocke.map((z) => [z.user_id, z.type])).toEqual([['konto-bert', 'anmeldung']])
+  })
+
+  it('berührt den Link der Person nicht', async () => {
+    links.push(await linkZeile(P_BERT, 'B'.repeat(43), 'Q2LF6JXD'))
+    await call({ aktion: 'code', code: (await holen()).code! })
+    expect(links.find((l) => l.person_id === P_BERT)?.benutzt_at).toBeNull()
+    expect(protokoll.filter((z) => z.startsWith('PATCH anmelde_links'))).toEqual([])
+  })
+
+  it('abgelaufen → 410, keine Sitzung, kein Fehlversuch', async () => {
+    const code = (await holen()).code!
+    einmal[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
+    const r = await call({ aktion: 'code', code })
+    expect(r.status).toBe(410)
+    expect(r.body.sitzung).toBeUndefined()
+    expect(fehlversuche).toEqual([])
+  })
+
+  it('läuft er zwischen Lesen und Einlösen ab, meldet er niemanden an (410)', async () => {
+    const code = (await holen()).code!
+    einmal[0]!.gueltig_bis = new Date(Date.now() - 1000).toISOString()
+    einmalLaeuftGleichAb = true
+    const r = await call({ aktion: 'code', code })
+    expect(r.status).toBe(410)
+    expect(r.body.sitzung).toBeUndefined()
+  })
+
+  it('scheitert das Einlösen an der Datenbank → 500, nicht „abgelaufen" — und der Code gilt weiter', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const code = (await holen()).code!
+      einloesenKaputt = true
+      const r = await call({ aktion: 'code', code })
+      expect(r.status).toBe(500)
+      expect(r.body.sitzung).toBeUndefined()
+      einloesenKaputt = false
+      expect((await call({ aktion: 'code', code })).body.sitzung).toBeDefined()
+    } finally {
+      err.mockRestore()
+    }
+  })
+
+  it('zwei Geräte zugleich mit demselben Code: nur eines kommt hinein', async () => {
+    const code = (await holen()).code!
+    // Eine Function, zwei Anfragen zugleich — beide lesen den Code, bevor eine ihn einlöst.
+    const handler = await loadFn()
+    const anfrage = () =>
+      handler(new Request('https://fn.test/anmelden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aktion: 'code', code }) }))
+    const [a, b] = await Promise.all([anfrage(), anfrage()])
+    expect([a.status, b.status].sort()).toEqual([200, 410])
+    expect(protokoll.filter((z) => z.startsWith('GET anmelde_einmalcodes'))).toHaveLength(2)
+  })
+
+  it('ein Code, den schon ein Zettel trägt, wird nicht vergeben — die Function zieht einen neuen', async () => {
+    // Der Zufall liefert zuerst Annas Zettelcode, dann einen freien.
+    const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    const zuge = [CODE_ANNA, 'M3ZE7KQR'].map((c) => [...c].map((z) => ALPHABET.indexOf(z)))
+    const zufall = vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(<T extends ArrayBufferView | null>(feld: T): T => {
+      ;(feld as unknown as Uint8Array).set(zuge.shift() ?? [])
+      return feld
+    })
+    try {
+      expect((await holen()).code).toBe('M3ZE 7KQR')
+    } finally {
+      zufall.mockRestore()
+    }
+  })
+})
+
+describe('anmelden: Zugang erneuern', () => {
+  const BERT = { sitzung: 'konto-bert' }
+
+  beforeEach(async () => {
+    links.push(await linkZeile(P_BERT, 'B'.repeat(43), 'Q2LF6JXD'))
+  })
+
+  it('ohne Sitzung → 401: nichts gesperrt, niemand abgemeldet', async () => {
+    expect((await call({ aktion: 'erneuern' })).status).toBe(401)
+    expect(links.map((l) => l.person_id).sort()).toEqual([P_ANNA, P_BERT].sort())
+    expect(abgemeldet).toEqual([])
+  })
+
+  it('sperrt Link und offenen Einmal-Code der eigenen Person und meldet die übrigen Geräte ab — mit der eigenen Sitzung', async () => {
+    await call({ aktion: 'einmalcode' }, BERT)
+    const r = await call({ aktion: 'erneuern' }, BERT)
+    expect(r.body).toEqual({ ok: true })
+    expect(links.map((l) => l.person_id)).toEqual([P_ANNA])
+    expect(einmal).toEqual([])
+    expect(abgemeldet).toEqual(['Bearer sitzung:konto-bert'])
+  })
+
+  it('danach meldet der alte Zettel niemanden mehr an', async () => {
+    await call({ aktion: 'erneuern' }, BERT)
+    expect((await call({ aktion: 'code', code: 'Q2LF6JXD' })).status).toBe(404)
+    expect((await call({ aktion: 'link', token: 'B'.repeat(43) })).status).toBe(404)
+  })
+
+  it('erst sperren, dann abmelden — dazwischen meldet sich mit dem alten Code niemand mehr an', async () => {
+    await call({ aktion: 'erneuern' }, BERT)
+    const sperren = protokoll.findIndex((z) => z.startsWith('DELETE anmelde_links'))
+    const abmelden = protokoll.findIndex((z) => z.startsWith('POST logout'))
+    expect(sperren).toBeGreaterThanOrEqual(0)
+    expect(abmelden).toBeGreaterThan(sperren)
+  })
+
+  it('scheitert das Abmelden, sagt es die Antwort (500) — ein zweiter Versuch meldet ab', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      abmeldenKaputt = true
+      expect((await call({ aktion: 'erneuern' }, BERT)).status).toBe(500)
+      abmeldenKaputt = false
+      expect((await call({ aktion: 'erneuern' }, BERT)).body).toEqual({ ok: true })
+      expect(abgemeldet).toEqual(['Bearer sitzung:konto-bert'])
     } finally {
       err.mockRestore()
     }

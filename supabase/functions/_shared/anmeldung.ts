@@ -2,8 +2,9 @@
 // Geteilt: Anmelden per Link (T121, Phase 8)
 // =============================================================================
 // Ein Kennwort gibt es nicht mehr. Wer in die App soll, bekommt vom Admin einen
-// **Link** — per E-Mail oder auf einem Zettel mit QR-Code und einem Code zum
-// Eintippen. Ein Tipp darauf, und man ist angemeldet; das Gerät bleibt es.
+// **Link** — per Nachricht oder auf einem Zettel mit QR-Code und einem Code zum
+// Eintippen. Ein Tipp darauf, und man ist angemeldet; das Gerät bleibt es. Ein
+// weiteres Gerät meldet ein schon angemeldetes mit einem Einmal-Code an.
 //
 // Hier steht, was die Functions (`send-invite` stellt aus, `anmelden` löst ein)
 // und die App (liest `#anmelden=` aus der Adresse, nimmt den getippten Code
@@ -24,6 +25,17 @@
  * „Link senden" auf der Anmeldeseite. Ein neuer Link ersetzt ihn sofort.
  */
 export const LINK_TAGE = 365
+
+/**
+ * So lange gilt ein Einmal-Code fürs nächste Gerät: genug, um das andere
+ * Gerät zu holen und ihn einzutippen — zu kurz, um ihn sich für später zu merken.
+ */
+export const EINMAL_MINUTEN = 15
+
+/** Bis wann ein Einmal-Code gilt, der jetzt entsteht — als ISO-Zeitpunkt. */
+export function einmalGueltigBis(jetzt: number): string {
+  return new Date(jetzt + EINMAL_MINUTEN * 60e3).toISOString()
+}
 
 /** Der Name, unter dem der Link sein Token in der Adresse trägt: `…/#anmelden=<token>`. */
 export const LINK_PARAMETER = 'anmelden'

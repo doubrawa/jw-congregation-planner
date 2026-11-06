@@ -44,6 +44,8 @@ const FORMATE = {
   monatKurz: { month: 'short' },
   /** „2026" — über den Monaten eines Jahres in der Auswertung einer Person */
   jahr: { year: 'numeric' },
+  /** „14:35" — bis wann ein Einmal-Code im Profil gilt */
+  uhrzeit: { hour: '2-digit', minute: '2-digit' },
 } as const satisfies Record<string, Intl.DateTimeFormatOptions>
 
 export type DatumsFormat = keyof typeof FORMATE

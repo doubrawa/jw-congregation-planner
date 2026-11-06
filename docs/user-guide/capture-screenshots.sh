@@ -97,9 +97,9 @@ SHOTS=(
   # den Ordner-Bereich, und die Ordner-Plätze der ersten Woche sind offen;
   # deren Plan gilt auf der Entwicklerseite als gesendet (`demoVersand`).
   "verkuendiger-freie-plaetze|s=freie&pl=0&me=p7"
-  # Höher, damit unten das Handbuch, „Erste Schritte" und „Abmelden" ganz
-  # draufstehen — bis zum 1.11.2026 schnitt das Bild die Knöpfe ab.
-  "verkuendiger-profil|s=profil&pl=0&me=p9|${W}x1200"
+  # Höher, damit unten Anmeldung, Handbuch, „Erste Schritte" und „Abmelden"
+  # ganz draufstehen — sonst schneidet das Bild die Knöpfe ab.
+  "verkuendiger-profil|s=profil&pl=0&me=p9|${W}x1480"
   # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
   "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"

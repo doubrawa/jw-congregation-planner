@@ -47,8 +47,10 @@
 }
 
 /* Abmelden nach dem ersten Tipp („Wirklich abmelden?") — in der Farbe der
-   übrigen Zwei-Tipp-Knöpfe (Leeren, Person löschen). */
-.abmelden.is-armed {
+   übrigen Zwei-Tipp-Knöpfe (Leeren, Person löschen). `.zwei-tipp` für jeden
+   weiteren Umriss-Knopf, der so nachfragt („Zugang erneuern"). */
+.abmelden.is-armed,
+.zwei-tipp.is-armed {
   border-color: var(--problem);
   background: var(--problem);
   color: var(--karte);
