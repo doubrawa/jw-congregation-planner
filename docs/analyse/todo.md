@@ -9926,6 +9926,12 @@ unbekannte Aktion 400, ein unvollständiger Code 404. Mit Sitzung (Einmal-Code
 holen und einlösen, `logout?scope=others`) live noch nicht gefahren — das
 braucht ein angemeldetes Gerät.
 
+**Live seit 6.11.2026 16:36** mit `76f6f273` (`sw.js` → `shell-76f6f27`). Der
+Pages-Lauf zum Push hing zehn Minuten in „updating_pages" (Zeitüberschreitung
+der Action), der erneut gestartete Job brach sofort ab („Deployment
+cancelled" — dieselbe Kennung wie der abgebrochene); ein frisch angestoßener
+Lauf (`gh workflow run deploy.yml --ref main`) ging durch.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
