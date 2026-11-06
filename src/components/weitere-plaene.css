@@ -67,8 +67,10 @@
 
 /* Eine Woche oder ein Monat: wann, rechts die Gruppe. Passt die Gruppe nicht
    daneben, rückt sie darunter: Tag und Monat sind gebunden (T128), schmaler
-   als „20. September" wird die Spanne nicht. */
+   als „20. September" wird die Spanne nicht. Die Zeile misst sich selbst
+   (`container-type`) — an ihr endet die Auswahl (`.wp-gruppe-wahl`). */
 .wp-vorschau-zeile {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -127,12 +129,18 @@
 
    So breit wie das Gewählte, nicht wie der längste Name unter hundert
    Personen — sonst rückte sie in jeder Zeile unter die Woche (31.10.2026). Wo
-   `field-sizing` fehlt, tut sie das eben; neben dem ✕ wird sie nie breiter als
-   die Zeile. */
+   `field-sizing` fehlt, tut sie das eben; neben dem ✕ (44 px und der Abstand)
+   wird sie nie breiter als die Zeile.
+
+   Die Grenze misst an der Zeile (`cqi`), nicht in Prozent: `.wp-vorschau-wahl`
+   ist nur so breit wie Auswahl und ✕, die Grenze läge also genau auf dem
+   Namen. In Firefox 159 fiel sie dort 1/60 px zu schmal aus, und
+   `text-overflow: ellipsis` machte aus „Erik Kühn" „Erik Kü…" (gemessen
+   6.11.2026). */
 .wp-gruppe-wahl {
   field-sizing: content;
   min-width: 0;
-  max-width: calc(100% - 54px);
+  max-width: calc(100cqi - 54px);
   min-height: 44px;
   padding-inline-start: 16px;
   border: 1.5px solid var(--umriss);

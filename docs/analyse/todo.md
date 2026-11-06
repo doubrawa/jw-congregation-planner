@@ -9538,7 +9538,7 @@ Einträge).
 | 8 | behoben | Kein Test für den inneren Umbruch (Gegenprobe blieb grün) — Probe in `kein-wortbruch.test.ts` |
 | 9 | behoben | Handbuch: „übernimmt etwa eine Familie" — gewählt wird eine Person |
 | 10 | behoben | Schema-Test verbot `drop column if exists person_id` für jede Tabelle, nicht nur `plan_eintraege` |
-| 11 | offen | Ohne `field-sizing` (etwa Firefox) ist die Auswahl so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz |
+| 11 | erledigt | Ohne `field-sizing` (etwa Firefox) ist die Auswahl so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz. **6.11.2026:** Firefox 159 kann `field-sizing`, die Auswahl steht neben der Woche (Betreiber in seinem Firefox, dazu headless gemessen). Dabei fiel auf: Die Grenze `calc(100% - 54px)` maß an `.wp-vorschau-wahl`, die nur so breit ist wie Auswahl und ✕ — sie lag genau auf dem Namen, fiel in Firefox um 1/60 px zu schmal aus, und `text-overflow: ellipsis` machte aus „Erik Kühn" „Erik Kü…" (beim Betreiber „Gruppe…"). Jetzt misst sie an der Zeile (`100cqi`, `container-type` an `.wp-vorschau-zeile`). Firefox 159: von 109 Namen kürzte die alte Grenze je Schriftstufe 1 bis 14, die neue keinen; in 16 Läufen (320–1440 px, Stufe 1 und 1,45, de und ar) meldet die neue nie mehr als die alte, schmal kürzen beide dieselben langen Namen neben dem ✕. Chromium: alle Breiten wie vorher (113 Namen bei 1440 px; 320 px bei Stufe 1,45 auf Deutsch mit gespanntem ✕ und auf Arabisch). Werkzeug und Zahlen in `docs/analyse/firefox-werkzeug` |
 
 Gegenproben zu 2–8 rot. Suite 7568/7568, tsc, Lint, Druck nachgemessen (die
 Personenzeile 32 px hoch wie die übrigen).
@@ -10441,16 +10441,23 @@ dem Gesamt-Review vom 2. November und die **Auswahl ohne `field-sizing`**
 (T162). Die 13 Commits seit dem 1. November, 09:32 Uhr, berührten todo.md
 nicht. Danach mit dem Betreiber Punkt für Punkt durchgegangen; was dabei
 herausfiel, steht unter der Tabelle. Was bleibt, braucht NWS-Exporte, den
-Neuaufbau oder einen allgemeinen Ersatz für `field-sizing`.
+Neuaufbau oder einen Versuch mit echter Sitzung (T166).
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
 | **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
-| **T162** | Auswahl ohne `field-sizing` | In Browsern ohne `field-sizing` (etwa Firefox) ist die Auswahl in „Weitere Pläne" so breit wie der längste Name und steht in jeder Zeile unter der Woche — bedienbar, nur höher; kein einfacher allgemeiner Ersatz (Befund 11 des Reviews zu T162) |
 | **Gerät** | Anmeldung im Profil (T166) | am 6. November ausgerollt; mit Sitzung live noch nicht ausprobiert: „Code anzeigen" und damit ein zweites Gerät anmelden, „Zugang erneuern" (meldet die übrigen Geräte ab) |
 
 Am 6. November herausgenommen, jeder Punkt einzeln mit dem Betreiber:
+
+- **T162, Auswahl ohne `field-sizing`**: Firefox kann es inzwischen — der
+  Betreiber hat „Weitere Pläne" in seinem Firefox angesehen, die Auswahl steht
+  neben der Woche („sieht gut aus"). In seinem Bild stand eine Gruppe aber als
+  „Gruppe…": Die Grenze der Auswahl lag genau auf dem Namen und fiel in
+  Firefox 159 um 1/60 px zu schmal aus. Nachgestellt in Firefox 159 headless
+  („Gruppe 5", „Erik Kü…"), behoben mit einer Grenze an der Zeile (`100cqi`) —
+  Befund 11 im Abschnitt zu T162.
 
 - **Registrieren aus**: Der Betreiber hat den Schalter „Allow new users to
   sign up" abgestellt (Authentication → Sign In / Providers → User Signups);

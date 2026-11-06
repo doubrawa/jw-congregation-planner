@@ -394,7 +394,16 @@ describe('Was neben einem Namen steht, rückt darunter, statt ihn zu zerbrechen'
     expect(daneben).toMatch(/flex-wrap:\s*wrap/)
     expect(daneben).toMatch(/justify-content:\s*flex-end/)
     // Neben dem ✕ kürzt die Auswahl ihren Namen, statt das ✕ verwaist darunter zu schieben.
-    expect(deklarationen(W, '.wp-gruppe-wahl')).toMatch(/max-width:\s*calc\(100% - 54px\)/)
+    expect(deklarationen(W, '.wp-gruppe-wahl')).toMatch(/max-width:\s*calc\(100cqi - 54px\)/)
+  })
+
+  it('die Grenze der Auswahl misst an der Zeile — in Prozent kürzte Firefox „Erik Kühn" zu „Erik Kü…"', () => {
+    // Gemessen am 6.11.2026 in Firefox 159: `.wp-vorschau-wahl` ist nur so breit
+    // wie Auswahl und ✕, `100% - 54px` lag genau auf dem Namen und fiel 1/60 px
+    // zu schmal aus. Ohne `container-type` an der Zeile hieße `cqi` ein anderer Rahmen.
+    const W = 'components/weitere-plaene.css'
+    expect(deklarationen(W, '.wp-vorschau-zeile')).toMatch(/container-type:\s*inline-size/)
+    expect(deklarationen(W, '.wp-gruppe-wahl')).not.toMatch(/max-width:\s*calc\(100%/)
   })
 
   it('bei den Zusagen gelten dieselben Regeln für jede Zeile — „Zuteilen" und der Haken rücken ebenso um', () => {

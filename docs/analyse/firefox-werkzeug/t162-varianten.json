@@ -1,0 +1,4 @@
+[
+  { "name": "neu", "css": "" },
+  { "name": "alt", "css": ".wp-vorschau-zeile { container-type: normal } .wp-gruppe-wahl { max-width: calc(100% - 54px) }" }
+]
