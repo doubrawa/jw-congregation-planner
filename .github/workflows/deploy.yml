@@ -1,6 +1,8 @@
 name: Deploy to GitHub Pages
 
-# Baut die Vite-App und veröffentlicht sie auf GitHub Pages.
+# Baut die Vite-App, rollt Datenbank und Edge Functions aus (ausrollen.yml) und
+# veröffentlicht erst danach auf GitHub Pages — kein neues Frontend gegen alte
+# Functions oder ein altes Schema (T170). „Run workflow" rollt alles aus.
 # Voraussetzung: Repo-Einstellungen → Pages → Source: "GitHub Actions".
 
 on:
@@ -10,13 +12,10 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Nur ein Deployment gleichzeitig; laufende bei neuem Push abbrechen.
-concurrency:
-  group: pages
-  cancel-in-progress: true
+# Keine Sperre über den ganzen Lauf: Ein neuer Push bräche sonst ein laufendes
+# Ausrollen mittendrin ab. Gesperrt wird je Job — das Ausrollen ohne Abbruch
+# (in ausrollen.yml), das Veröffentlichen mit.
 
 jobs:
   build:
@@ -50,9 +49,24 @@ jobs:
         with:
           path: dist
 
-  deploy:
+  ausrollen:
     needs: build
+    uses: ./.github/workflows/ausrollen.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      actions: read
+
+  deploy:
+    needs: [build, ausrollen]
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    # Nur ein Veröffentlichen gleichzeitig; ein neues bricht ein laufendes ab.
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

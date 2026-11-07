@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ABSCHNITTE, katalog as katalogVon } from '../scripts/katalog.mjs'
 import { leerePostgres } from '../scripts/pglite-postgres.mjs'
 
 /**
@@ -39,75 +40,16 @@ function migrationsDateien(ordner = MIGRATIONS): string[] {
     .sort()
 }
 
-/**
- * **Je Abschnitt des Katalogs eine Abfrage** — und damit nur eine Liste, nicht
- * zwei: Verglichen wird, was hier steht (`ABSCHNITTE` leitet sich daraus ab).
- * Eine neunte Abfrage ist von selbst im Vergleich; eine zweite, von Hand
- * gepflegte Liste hätte sie vergessen können, und der neue Abschnitt wäre
- * stillschweigend ungeprüft geblieben.
- *
- * Gefragt wird `pg_catalog`, nicht `information_schema`, wo es genauer ist:
- * Die Rechte stehen dort als ACL am Objekt (`relacl`, `attacl`, `proacl`) und
- * nennen damit auch die **Spaltenrechte**, auf denen in diesem Projekt der
- * Schutz der Abwesenheitsgründe und der Link-Prüfsummen beruht.
+/*
+ * Die Abfragen je Abschnitt stehen in `scripts/katalog.mjs` — dieselben, mit
+ * denen `ausrollen-pruefen.mjs` die Produktion gegen die Migrationen hält.
+ * Ein neuer Abschnitt dort ist von selbst auch hier im Vergleich.
  */
-const ABFRAGEN = {
-  tabellen: `
-    select c.relname, c.relkind, c.relrowsecurity, c.relforcerowsecurity, c.relacl::text
-    from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm')
-    order by c.relname`,
-  spalten: `
-    select c.relname as tabelle, a.attnum, a.attname, format_type(a.atttypid, a.atttypmod) as typ,
-           a.attnotnull, a.attidentity, a.attgenerated, pg_get_expr(d.adbin, d.adrelid) as vorgabe, a.attacl::text
-    from pg_attribute a
-      join pg_class c on c.oid = a.attrelid
-      join pg_namespace n on n.oid = c.relnamespace
-      left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
-    where n.nspname = 'public' and c.relkind in ('r', 'p') and a.attnum > 0 and not a.attisdropped
-    order by c.relname, a.attnum`,
-  bedingungen: `
-    select conrelid::regclass::text as tabelle, conname, contype, pg_get_constraintdef(oid) as def
-    from pg_constraint where connamespace = 'public'::regnamespace
-    order by conrelid::regclass::text, conname`,
-  indizes: `
-    select tablename, indexname, indexdef from pg_indexes where schemaname = 'public'
-    order by tablename, indexname`,
-  funktionen: `
-    select p.proname, pg_get_function_identity_arguments(p.oid) as parameter,
-           pg_get_function_result(p.oid) as ergebnis, p.prosecdef, p.provolatile,
-           p.proconfig::text, p.proacl::text, l.lanname, md5(p.prosrc) as rumpf
-    from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-      join pg_language l on l.oid = p.prolang
-    where n.nspname = 'public'
-    order by p.proname, pg_get_function_identity_arguments(p.oid)`,
-  trigger: `
-    select tgrelid::regclass::text as tabelle, tgname, pg_get_triggerdef(oid) as def
-    from pg_trigger
-    where not tgisinternal and tgrelid in (select oid from pg_class where relnamespace = 'public'::regnamespace)
-    order by tgrelid::regclass::text, tgname`,
-  richtlinien: `
-    select tablename, policyname, cmd, permissive, roles::text, qual, with_check
-    from pg_policies where schemaname = 'public'
-    order by tablename, policyname`,
-  sequenzen: `
-    select c.relname, s.seqtypid::regtype::text as typ, s.seqstart, s.seqincrement
-    from pg_sequence s join pg_class c on c.oid = s.seqrelid join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' order by c.relname`,
-}
-
-type Abschnitt = keyof typeof ABFRAGEN
-type Katalog = Record<Abschnitt, Zeile[]>
 type Zeile = Record<string, unknown>
-const ABSCHNITTE = Object.keys(ABFRAGEN) as Abschnitt[]
+type Katalog = Record<string, Zeile[]>
 
-/** Der Katalog einer Datenbank: jede Abfrage aus `ABFRAGEN`, der Reihe nach. */
-async function katalog(db: { query: (sql: string) => Promise<{ rows: unknown[] }> }): Promise<Katalog> {
-  const out = {} as Katalog
-  for (const abschnitt of ABSCHNITTE) out[abschnitt] = (await db.query(ABFRAGEN[abschnitt])).rows as Zeile[]
-  return out
-}
+const katalog = (db: { query: (sql: string) => Promise<{ rows: unknown[] }> }): Promise<Katalog> =>
+  katalogVon(db) as Promise<Katalog>
 
 let ausSchema: Katalog
 let ausMigrationen: Katalog
@@ -119,15 +61,16 @@ let datenbanken: { close: () => Promise<void> }[] = []
 beforeAll(async () => {
   const migrationen = migrationsDateien().map((f) => fs.readFileSync(path.join(MIGRATIONS, f), 'utf8'))
   /*
-   * Die Störung der Gegenprobe trifft drei Abschnitte auf einmal: eine Spalte,
-   * die es nur hier gibt, eine aufgeweichte Richtlinie und ein entzogenes
-   * Recht. Ohne sie bestünde die Probe auch dann, wenn `katalog()` an der
-   * falschen Stelle fragte und überall leere Listen zurückkäme.
+   * Die Störung der Gegenprobe trifft vier Abschnitte auf einmal: eine Spalte,
+   * die es nur hier gibt, eine aufgeweichte Richtlinie, ein entzogenes Recht
+   * und ein Kommentar. Ohne sie bestünde die Probe auch dann, wenn `katalog()`
+   * an der falschen Stelle fragte und überall leere Listen zurückkäme.
    */
   const STOERUNG = `
     alter table public.persons add column probe_spalte text;
     alter policy persons_select on public.persons using (true);
     revoke select on public.weeks from authenticated;
+    comment on column public.persons.role is 'Probe';
   `
   datenbanken = await Promise.all([leerePostgres([SCHEMA]), leerePostgres(migrationen), leerePostgres([SCHEMA, STOERUNG])])
   const [a, b, c] = datenbanken as unknown as { query: (sql: string) => Promise<{ rows: unknown[] }> }[]
@@ -175,15 +118,17 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
     expect(ausSchema.spalten.filter((s) => s.attacl).length).toBeGreaterThan(5)
     // Und keine Abfrage läuft ins Leere: Eine, die nichts findet (vertippter
     // Schemaname, falscher `relkind`), wäre beidseitig leer und damit still
-    // grün — die Zahlen darüber fangen nur die acht, die hier genannt sind.
-    expect(ABSCHNITTE.filter((a) => ausSchema[a].length === 0)).toEqual([])
+    // grün — die Zahlen darüber fangen nur die, die hier genannt sind.
+    // Kommentare darf es keine geben; dass ihre Abfrage greift, zeigt die
+    // Gegenprobe darunter.
+    expect(ABSCHNITTE.filter((a) => a !== 'kommentare' && ausSchema[a]!.length === 0)).toEqual([])
   })
 
   it.each(ABSCHNITTE)('%s sind gleich', (abschnitt) => {
     expect(ausMigrationen[abschnitt]).toEqual(ausSchema[abschnitt])
   })
 
-  it.each(['spalten', 'richtlinien', 'tabellen'] as const)('Gegenprobe: eine Änderung an %s fällt auf', (abschnitt) => {
+  it.each(['spalten', 'richtlinien', 'tabellen', 'kommentare'] as const)('Gegenprobe: eine Änderung an %s fällt auf', (abschnitt) => {
     // **Gegen die Migrationen verglichen, nicht gegen sich selbst.** Genau so
     // liefe der Vergleich oben, stünde die Störung in `schema.sql`: eine
     // Spalte, eine Richtlinie, ein Recht nur dort — und der Abschnitt wird rot.
@@ -206,5 +151,8 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
     const recht = (k: Katalog): unknown => k.tabellen.find((t) => t.relname === 'weeks')?.relacl
     expect(recht(ausSchema)).toContain('authenticated=')
     expect(recht(gestoert)).not.toBe(recht(ausSchema))
+    const kommentar = (k: Katalog): unknown => k.kommentare.find((c) => c.objekt === 'persons' && c.spalte === 'role')?.kommentar
+    expect(kommentar(gestoert)).toBe('Probe')
+    expect(kommentar(ausSchema)).toBeUndefined()
   })
 })
