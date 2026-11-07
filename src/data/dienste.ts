@@ -25,7 +25,7 @@
  */
 
 import { MEETING_TABS } from './helpers'
-import { helferKey } from './planning'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type { ConfirmationMap, Person, Service, Week } from './types'
 
 /** Den Aufgabenbereich eines gelöschten Dienstes aus allen Personen nehmen. */

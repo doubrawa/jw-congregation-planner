@@ -3,7 +3,7 @@ import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { displayName, isSong, serviceQualKey } from './helpers'
 import { partWorkload, workloadOf } from './auslastung'
 import type { AbsenceSet } from './absence'
-import { autoAssignMeeting, clearAssignments } from './planning'
+import { autoAssignMeeting, clearAssignments } from './planung/automatik'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
 /** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */

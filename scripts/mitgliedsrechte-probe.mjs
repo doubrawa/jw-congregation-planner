@@ -299,7 +299,7 @@
 
 import { alsSkript, anfrageKaputt, istDienstSchluessel, probeDatei, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
 
-/* ===================== Schlüssel (Spiegel von planning.ts) ================ */
+/* ===================== Schlüssel (Spiegel von aufgaben-schluessel.ts) ===== */
 
 /**
  * Stabiler Schlüssel eines Programmpunkt-Slots — dasselbe wie `punktKey` in

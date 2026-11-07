@@ -37,7 +37,7 @@ import {
 } from './helpers'
 import { isoDay, meetingDate, montagVon, tagNach, versatzAbMontag } from './meeting-dates'
 import { editTalkTheme, openingSongNr, setOpeningSong, TALK_PLACEHOLDER } from './meeting-edit'
-import { assignSlot } from './planning'
+import { assignSlot } from './planung/zuteilen'
 import type { MeetingTimes, PartItem, PartSlotSelection, Person, Week } from './types'
 
 /** Was am Vortragsplatz einer Woche steht — so, wie der Import es setzt. */

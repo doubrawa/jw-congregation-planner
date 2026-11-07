@@ -1,5 +1,5 @@
 import { schluesselTeile, type SchluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-import { wochenIndex } from '../data/planning'
+import { wochenIndex } from '../data/planung/schluessel'
 import { themaVon } from '../data/rechte'
 import type { MyTask, Notification, SubstituteReq, Week } from '../data/types'
 import type { AppAction } from './context'

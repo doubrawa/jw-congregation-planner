@@ -29,8 +29,8 @@ vi.mock('./kandidaten', async (orig) => {
   const echt = await orig<typeof import('./kandidaten')>()
   return { ...echt, kandidaten: vi.fn(echt.kandidaten) }
 })
-vi.mock('../data/planning', async (orig) => {
-  const echt = await orig<typeof import('../data/planning')>()
+vi.mock('../data/planung/s89', async (orig) => {
+  const echt = await orig<typeof import('../data/planung/s89')>()
   return { ...echt, alleS89DerWoche: vi.fn(echt.alleS89DerWoche) }
 })
 
@@ -38,7 +38,7 @@ const { AppProvider } = await import('../app/store')
 const { useApp } = await import('../app/context')
 const { demoZustand } = await import('../../tests/testdaten/demo-start')
 const { kandidaten } = await import('./kandidaten')
-const { alleS89DerWoche } = await import('../data/planning')
+const { alleS89DerWoche } = await import('../data/planung/s89')
 const { PlanenScreen } = await import('./PlanenScreen')
 
 const liste = vi.mocked(kandidaten)

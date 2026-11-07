@@ -20,7 +20,7 @@ import { angebotsBereich } from '../../supabase/functions/_shared/freie-plaetze.
 import { displayName } from './helpers'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import { gesendeteWochen, platzAuswahl } from './offene-plaetze'
-import { assignSlot } from './planning'
+import { assignSlot } from './planung/zuteilen'
 import type { MeetingTimes, MyTask, Person, SentLog, Service, Week } from './types'
 
 /** Eine offene Anfrage — nur die beiden, um die es geht, bekommen sie (RLS). */

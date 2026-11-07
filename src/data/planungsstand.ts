@@ -35,7 +35,9 @@ import { fsTagVorbei, fsWeekConflicts } from './fs'
 import { istAusgefallen, MEETING_TABS } from './helpers'
 import { istVorbei, kalendertagMs, meetingDateMs, weekEndMs } from './meeting-dates'
 import { offeneMeldungen, type OffeneMeldung } from './plan-versand'
-import { countOpenSlots, taskKeyWeek, weekConflicts } from './planning'
+import { weekConflicts } from './planung/konflikte'
+import { countOpenSlots } from './planung/offen'
+import { taskKeyWeek } from './planung/schluessel'
 import type {
   Absence,
   ConfirmationMap,

@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { hatAuxKlasse, ratgeberSlot } from '../data/aux-class'
 import { auswahlFuer } from '../data/plaetze'
-import { ratgeberKey } from '../data/planning'
+import { ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { useT } from '../i18n/useT'
 import type { Meeting } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'

@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { demoZustand } from '../../tests/testdaten/demo-start'
-import { sentKey } from '../data/planning'
+import { sentKey } from '../data/planung/schluessel'
 import type { TauschAnfrage } from '../data/tausch'
 import type { Person, Week } from '../data/types'
 import { dict } from '../i18n/ui'

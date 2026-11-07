@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildDemoConfirmations } from './demo-zusagen'
 import { deriveMyFsTasks } from '../../src/data/fs'
-import { deriveMyTasks, helferKey } from '../../src/data/planning'
+import { deriveMyTasks } from '../../src/data/planung/aufgaben'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { buildDemoFsWeeks, buildDemoWeeks, DEMO_SERVICES, DEMO_UNBESTAETIGT } from './testdaten'
 import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
 

@@ -968,9 +968,10 @@ export async function main(argv = process.argv.slice(2)) {
   // verfallen (siehe `wocheSchreiben`). Wie weit zurück, ebenso (T125), und
   // wer das Wachtturm-Studium leitet.
   appCodeBereit()
-  const [{ changedSlotKeys, festenWtLeiterEintragen }, helpers, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }, bearbeiten, { setAnlass }] =
+  const [{ changedSlotKeys }, { festenWtLeiterEintragen }, helpers, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }, bearbeiten, { setAnlass }] =
     await Promise.all([
-      import('../src/data/planning.ts'),
+      import('../src/data/planung/zuteilen.ts'),
+      import('../src/data/planung/automatik.ts'),
       import('../src/data/helpers.ts'),
       import('../src/data/aufbewahrung.ts'),
       import('../src/lib/zeilen.ts'),

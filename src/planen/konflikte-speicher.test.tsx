@@ -26,15 +26,15 @@ vi.mock('../lib/supabase', async (orig) => ({
   supabase: null,
   isSupabaseConfigured: false,
 }))
-vi.mock('../data/planning', async (orig) => {
-  const echt = await orig<typeof import('../data/planning')>()
+vi.mock('../data/planung/konflikte', async (orig) => {
+  const echt = await orig<typeof import('../data/planung/konflikte')>()
   return { ...echt, weekConflicts: vi.fn(echt.weekConflicts) }
 })
 
 const { AppProvider } = await import('../app/store')
 const { useApp } = await import('../app/context')
 const { demoZustand } = await import('../../tests/testdaten/demo-start')
-const { weekConflicts } = await import('../data/planning')
+const { weekConflicts } = await import('../data/planung/konflikte')
 const { abwesenheitenVon } = await import('../data/absence')
 const { konflikteVon } = await import('./useKonflikte')
 const { PlanenScreen } = await import('./PlanenScreen')

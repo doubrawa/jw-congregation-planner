@@ -17,7 +17,7 @@ import { auswerten, FAST_KNAPP_UNTER, istFastKnapp, istKnapp, lageVon, personBil
 import { displayName, privSetzen, privWert } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { allePlaetze, platzKey } from '../data/plaetze'
-import { bereichVon } from '../data/planning'
+import { bereichVon } from '../data/planung/zuteilen'
 import type { Absage, FsInstance, Lang, Week } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'

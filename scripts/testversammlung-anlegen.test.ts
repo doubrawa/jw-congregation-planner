@@ -19,7 +19,7 @@ import {
 } from './testversammlung-anlegen.mjs'
 import { regelFehler } from './treffpunkt-regeln-setzen.mjs'
 import { isGuestRole } from '../src/data/helpers'
-import { weekConflicts } from '../src/data/planning'
+import { weekConflicts } from '../src/data/planung/konflikte'
 import type { Person, Service, Week } from '../src/data/types'
 import { STANDARD_DIENSTE } from '../src/data/vorgaben'
 

@@ -12,26 +12,13 @@ import {
 import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
 import { helperWorkload, partWorkload, workloadOf } from './auslastung'
 import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'
-import {
-  alleS89DerWoche,
-  aufgabenBezeichnung,
-  assignmentsInMeeting,
-  autoAssignMeeting,
-  buildS89ForSlot,
-  changedSlotKeys,
-  openSlotLabels,
-  countOpenSlots,
-  deriveMyTasks,
-  deriveSubstituteReqs,
-  assignSlot,
-  clearAssignments,
-  helferKey,
-  punktKey,
-  slotValue,
-  tabsImUmfang,
-  weekConflicts,
-  zuteilbarePlaetze,
-} from './planning'
+import { aufgabenBezeichnung, deriveMyTasks, deriveSubstituteReqs } from './planung/aufgaben'
+import { autoAssignMeeting, clearAssignments, tabsImUmfang, zuteilbarePlaetze } from './planung/automatik'
+import { weekConflicts } from './planung/konflikte'
+import { openSlotLabels, countOpenSlots } from './planung/offen'
+import { alleS89DerWoche, buildS89ForSlot } from './planung/s89'
+import { assignmentsInMeeting, changedSlotKeys, assignSlot, slotValue } from './planung/zuteilen'
+import { helferKey, punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { emptyQualifications } from './helpers'
 import type { Meeting, MeetingSlotSelection, PartItem, Person, Section, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'

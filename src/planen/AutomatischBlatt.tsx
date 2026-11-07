@@ -6,7 +6,7 @@ import { Sheet } from '../components/Sheet'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { mtab } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
-import { tabsImUmfang, zuteilbarePlaetze, type AssignScope, type Umfang } from '../data/planning'
+import { tabsImUmfang, zuteilbarePlaetze, type AssignScope, type Umfang } from '../data/planung/automatik'
 import type { Meeting, MeetingKey, Service, Week } from '../data/types'
 import { besetzungText, fill, useT } from '../i18n/useT'
 

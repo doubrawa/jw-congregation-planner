@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { sentKey, type Conflict } from './planning'
+import type { Conflict } from './planung/konflikte'
+import { sentKey } from './planung/schluessel'
 import type {
   ConfirmationMap,
   Meeting,

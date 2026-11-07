@@ -4,7 +4,7 @@
  * Aus `AssignSheet.tsx` herausgelöst: dort lagen Filter, Geschlechtsregeln,
  * Auslastung und Sortierung mitten im JSX und waren dadurch nicht prüfbar. Die
  * Regeln sind aber dieselben, nach denen auch die Auto-Zuteilung entscheidet
- * (`planning.ts`) — nur eben mit dem Planer statt dem Algorithmus als
+ * (`planung/waehler.ts`) — nur eben mit dem Planer statt dem Algorithmus als
  * Entscheider. Wo sie auseinanderlaufen, entsteht genau die Art Fehler, die
  * niemand bemerkt: der Gesprächsführer wurde hier immer im Hauptsaal gesucht,
  * auch wenn es um einen Platz der Zusätzlichen Klasse ging.
@@ -32,7 +32,8 @@ import {
 import { lastFenster, workloadOf } from '../data/auslastung'
 import { meetingDate } from '../data/meeting-dates'
 import { platzDerAuswahl } from '../data/plaetze'
-import { assignmentsInMeeting, rangfolgeFuer, zuletztImBereich } from '../data/planning'
+import { rangfolgeFuer } from '../data/planung/automatik'
+import { assignmentsInMeeting, zuletztImBereich } from '../data/planung/zuteilen'
 import type { Absence, MeetingAssignment, MeetingKey, Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
@@ -271,7 +272,7 @@ function personenKandidaten(
  * (Vortrag, Ratgeber), und ein Gesprächspartner muss zum Gesprächsführer
  * passen — zum Führer **desselben Raums**. Wurde er immer im Hauptsaal
  * gesucht, richtete sich die Zusätzliche Klasse nach dem falschen Platz; die
- * Auto-Zuteilung macht es richtig und begründet es ausdrücklich (planning.ts).
+ * Auto-Zuteilung macht es richtig und begründet es ausdrücklich (planung/waehler.ts).
  *
  * Den Ratgeber fragte die Liste bis zum 16.10.2026 nicht: Eine Schwester mit
  * versehentlich gesetztem Bereich stand zur Wahl, obwohl der Platz `male` trägt.

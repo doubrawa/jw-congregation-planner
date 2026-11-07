@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { allePlaetze, platzKey } from '../data/plaetze'
-import { sentKey } from '../data/planning'
+import { sentKey } from '../data/planung/schluessel'
 import { besetztVon } from '../data/saal'
 import type { FsInstance, MeetingTimes, Service, Week } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'

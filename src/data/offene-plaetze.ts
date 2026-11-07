@@ -28,7 +28,8 @@ import { displayName, isQualified, istAusgefallen, MEETING_TABS } from './helper
 import { stehtImDienst, uebernahmeHindernis } from '../../supabase/functions/_shared/freie-plaetze.ts'
 import { istVorbei, meetingDateMs, meetingDateText } from './meeting-dates'
 import { allePlaetze, auswahlFuer, platzKey } from './plaetze'
-import { assignmentsInMeeting, wochenIndex } from './planning'
+import { wochenIndex } from './planung/schluessel'
+import { assignmentsInMeeting } from './planung/zuteilen'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type {
   MeetingAssignment,

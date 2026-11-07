@@ -47,15 +47,10 @@ import { describe, expect, it } from 'vitest'
 import { bedarfJeBereich } from './bedarf'
 import { emptyQualifications } from './helpers'
 import { partWorkload, workloadOf } from './auslastung'
-import {
-  assignmentsInMeeting,
-  autoAssignMeeting,
-  changedSlotKeys,
-  clearAssignments,
-  countOpenSlots,
-  deriveMyTasks,
-  openSlotLabels,
-} from './planning'
+import { deriveMyTasks } from './planung/aufgaben'
+import { autoAssignMeeting, clearAssignments } from './planung/automatik'
+import { countOpenSlots, openSlotLabels } from './planung/offen'
+import { assignmentsInMeeting, changedSlotKeys } from './planung/zuteilen'
 import { dropPersonPid, pidsNachtragen, renameInWeeks } from './namensbindung'
 import { allePlaetze, gespeicherteHelfer, platzKey } from './plaetze'
 import {

@@ -12,7 +12,7 @@ import {
 } from '../../tests/testdaten/testdaten'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
-import { sentKey } from '../data/planning'
+import { sentKey } from '../data/planung/schluessel'
 import type { MyTask, Trolley, TrolleyTermin, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.

@@ -1447,7 +1447,7 @@ $$;
 -- — Wochen-Kennung, Zusammenkunft, Platz. Nachgeschlagen wird die
 -- Speicherform, nicht die Fachregel.
 --
--- SCHLÜSSELFORMEN (src/data/planning.ts, src/data/fs.ts)
+-- SCHLÜSSELFORMEN (src/data/planung/schluessel.ts, src/data/fs.ts)
 --   <woche>|<mid|we>|part|<iid>|<ni>          Programmpunkt, stabile Kennung
 --   <woche>|<mid|we>|aux|…                    dasselbe in der Zusätzlichen Klasse
 --   <woche>|<mid|we>|ratgeber                 Ratgeber der Zusätzlichen Klasse

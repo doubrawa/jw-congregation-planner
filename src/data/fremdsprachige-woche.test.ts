@@ -11,14 +11,11 @@ import {
   zuteilungsLabel,
 } from './helpers'
 import { setDienstwoche, itemMinutes, lacAdd, lacAddIndex } from './meeting-edit'
-import {
-  alleS89DerWoche,
-  autoAssignMeeting,
-  buildS89ForSlot,
-  deriveMyTasks,
-  openSlotLabels,
-  weekConflicts,
-} from './planning'
+import { deriveMyTasks } from './planung/aufgaben'
+import { autoAssignMeeting } from './planung/automatik'
+import { weekConflicts } from './planung/konflikte'
+import { openSlotLabels } from './planung/offen'
+import { alleS89DerWoche, buildS89ForSlot } from './planung/s89'
 import { zahl, zahlWieVorlage } from './ziffern'
 import type { Meeting, PartItem, Person, Section, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'

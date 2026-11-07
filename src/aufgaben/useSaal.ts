@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useApp } from '../app/context'
-import { taskKeyWeek, wochenIndex } from '../data/planning'
+import { taskKeyWeek, wochenIndex } from '../data/planung/schluessel'
 import { besetztVon, besetzung, LAGE_DER_ZUSAGE, saalLagen, type DuLage, type SaalLage } from '../data/saal'
 import type { MyTask } from '../data/types'
 import { besetzungText, useT } from '../i18n/useT'

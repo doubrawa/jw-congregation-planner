@@ -29,7 +29,8 @@ const { persist } = await import('./persist')
 const { aufgabenAbgeleitet, reducer } = await import('./reducer')
 const { initialState } = await import('./init')
 const { emptyQualifications } = await import('../data/helpers')
-const { helferKey, sentKey } = await import('../data/planning')
+const { sentKey } = await import('../data/planung/schluessel')
+const { helferKey } = await import('../../supabase/functions/_shared/aufgaben-schluessel.ts')
 
 const W1 = '2026-09-07' // Sonntag 13.9.
 const W2 = '2026-09-14' // Sonntag 20.9.

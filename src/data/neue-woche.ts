@@ -39,7 +39,7 @@ import { syncAuxSlots } from './aux-class'
 import { genFsWeek } from './fs'
 import { besucheInNeueWoche } from './gruppenbesuche'
 import { endeAusStartzeit } from './meeting-edit'
-import { festenWtLeiterEintragen } from './planning'
+import { festenWtLeiterEintragen } from './planung/automatik'
 import type { Absence, FsInstance, FsRule, Gruppenbesuch, MeetingTimes, Person, Week } from './types'
 import { vortragInNeueWoche, type VorgemerkterVortrag } from './vortragsplan'
 

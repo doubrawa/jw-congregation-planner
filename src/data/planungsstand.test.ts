@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { buildAbsences } from './absence'
 import { emptyQualifications, serviceQualKey } from './helpers'
 import { loadedUntilMs } from './holen'
-import { helferKey, punktKey, sentKey } from './planning'
+import { sentKey } from './planung/schluessel'
+import { helferKey, punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { fsTaskKey } from './fs'
 import {
   planungsstand,

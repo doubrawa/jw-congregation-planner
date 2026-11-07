@@ -6,7 +6,7 @@
  *
  * Gerechnet aus den geladenen Wochen — höchstens ein Jahr (T125) —, gespeichert
  * wird nichts. Gemessen wird so, wie die Automatik verteilt (`waehler` in
- * planning.ts); sonst zeigte die Seite eine andere Gerechtigkeit als die, nach
+ * planung/waehler.ts); sonst zeigte die Seite eine andere Gerechtigkeit als die, nach
  * der verteilt wird:
  *
  *  - **Gezählt wird jeder Platz, der eine Zusage kennt** (`platzMitZusage`):
@@ -56,7 +56,8 @@ import { istAbwesend, type AbsenceSet } from './absence'
 import { idAufloeser, isQualified, isSpeakerRole, istArt, istAusgefallen, MEETING_TABS } from './helpers'
 import { meetingOffset, montagVon, tagNach, versatzAbMontag, wochenZwischen } from './meeting-dates'
 import { allePlaetze, platzKey, platzMitZusage, type Platz } from './plaetze'
-import { bereichVon, folgtDemVorsitzIn, vorsitzPlatz } from './planning'
+import { folgtDemVorsitzIn, vorsitzPlatz } from './planung/vorsitz'
+import { bereichVon } from './planung/zuteilen'
 import type { Absage, FsInstance, Group, MeetingKey, MeetingTimes, Person, Service, Week } from './types'
 
 /**

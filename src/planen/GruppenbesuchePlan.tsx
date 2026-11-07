@@ -22,7 +22,7 @@ import {
 } from '../data/gruppenbesuche'
 import { displayName, isQualified, personCompare } from '../data/helpers'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
-import { zusageStatus } from '../data/planning'
+import { zusageStatus } from '../data/planung/aufgaben'
 import type { Gruppenbesuch, Person } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'

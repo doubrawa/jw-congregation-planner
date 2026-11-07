@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { itemNameCount, lacMove, lacMoveTarget, lacRemove } from './meeting-edit'
-import { punktKey, itemZusagenKeys } from './planning'
+import { itemZusagenKeys } from './planung/schluessel'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type { ConfirmationMap, Meeting, PartItem, Week } from './types'
 
 /**

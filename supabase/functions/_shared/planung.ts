@@ -85,7 +85,7 @@ function artVon(abschnitt: AbschnittsKopf): string | undefined {
  * Wochenenden. Der Leser im Versammlungsbibelstudium unter der Woche folgt
  * nicht: Sein Abschnitt ist ein anderer. Leitet der Vorsitzende das Studium
  * selbst, liest ein anderer — das sieht nur, wer die ganze Zusammenkunft kennt:
- * Der Client fragt deshalb `folgtDemVorsitzIn` (`planning.ts`).
+ * Der Client fragt deshalb `folgtDemVorsitzIn` (`planung/vorsitz.ts`).
  */
 export function folgtDemVorsitz(abschnitt: AbschnittsKopf, slot: { rolle?: string } | undefined): boolean {
   switch (artVon(abschnitt)) {

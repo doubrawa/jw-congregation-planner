@@ -9,13 +9,9 @@ import {
   rolleBasis,
 } from './helpers'
 import { partWorkload } from './auslastung'
-import {
-  assignmentsInMeeting,
-  assignSlot,
-  autoAssignMeeting,
-  clearAssignments,
-  deriveMyTasks,
-} from './planning'
+import { deriveMyTasks } from './planung/aufgaben'
+import { autoAssignMeeting, clearAssignments } from './planung/automatik'
+import { assignmentsInMeeting, assignSlot } from './planung/zuteilen'
 import { pidsNachtragen } from './namensbindung'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'

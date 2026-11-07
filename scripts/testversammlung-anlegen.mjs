@@ -36,7 +36,7 @@
  * Regel** (qualifiziert · Geschlecht · kein Hilfsdienst neben einem
  * Programmpunkt · reihum, und zwar der am wenigsten Belastete unter den am
  * wenigsten Vielseitigen). Das ist **nicht** die
- * Auto-Zuteilung der App (`autoAssignMeeting` in `src/data/planning.ts`): die
+ * Auto-Zuteilung der App (`autoAssignMeeting` in `src/data/planung/automatik.ts`): die
  * wägt Auslastung über Wochen, Abwesenheiten und Abstände ab, und sie ist
  * TypeScript, das Node hier nicht lädt. Für einen Testbestand genügt „plausibel
  * besetzt"; wer die echte Logik sehen will, drückt in der App „Automatisch".
@@ -261,7 +261,7 @@ export function kontenAus(arg) {
 /**
  * Plätze, die **nicht** an eine Person der Versammlung gehen: Gastredner und
  * Kreisaufseher kommen von außen. Dieselbe Regel wie `SKIP_ROLE` in
- * `planning.ts` und `helpers.ts` — dort hängt daran, dass es für sie keinen
+ * `src/data/helpers.ts` — dort hängt daran, dass es für sie keinen
  * Bestätigungs-Flow, keine Erinnerung und keine Ersatzsuche gibt.
  *
  * Ein solcher Platz mit `pid` wäre ein Zustand, den die App nie erzeugt; die
@@ -289,7 +289,7 @@ export function vielseitigkeit(p) {
  *
  * `gesperrt` sind die Personen, die in **dieser** Zusammenkunft nicht (mehr) in
  * Frage kommen. Wer das ist, entscheidet der Aufrufer, denn die App zieht die
- * Grenze nicht dort, wo man sie vermutet (`weekConflicts` in planning.ts): Zwei
+ * Grenze nicht dort, wo man sie vermutet (`weekConflicts` in planung/konflikte.ts): Zwei
  * **Programmpunkte** in einer Zusammenkunft sind ausdrücklich **kein** Konflikt
  * (Vorsitz + Anfangsgebet ist der Normalfall). Gemeldet werden nur
  * *Hilfsdienst + Programmpunkt* am selben Tag und *mehrere Hilfsdienste*.

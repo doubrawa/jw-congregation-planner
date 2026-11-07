@@ -28,12 +28,13 @@ import {
 import { tieHash, wochenVersatz } from './auslastung'
 import { deutschesDatum, fromIso, istVorbei, kalendertagMs, versatzAbMontag, wocheDavor } from './meeting-dates'
 import { fsKey, schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
-// Nur der Typ — `planning.ts` kennt `fs.ts` nicht, es entsteht also kein Zyklus.
-// Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
+// `planung/` kennt `fs.ts` nicht — der Import läuft in eine Richtung, ein Zyklus
+// entsteht nicht. Die Konflikt-Form ist bewusst dieselbe: Zusammenkünfte und Treffpunkte
 // erscheinen im selben Banner und sollen sich für den Planer nicht
 // unterschiedlich anfühlen.
-import { kennungVon, zusageStatus } from './planning'
-import type { Conflict } from './planning'
+import { zusageStatus } from './planung/aufgaben'
+import { kennungVon } from './planung/konflikte'
+import type { Conflict } from './planung/konflikte'
 import type { Zuteilung } from './helpers'
 import type { Absence, ConfirmationMap, FsInstance, FsRule, Group, MyTask, Person } from './types'
 
@@ -894,7 +895,7 @@ export function deriveMyFsTasks(
 
 /**
  * Treffpunkt-Leitungen, deren Zusage im neuen Stand **niemandem mehr gehört** —
- * das Gegenstück zu `changedSlotKeys` (planning.ts) für die zweite Datenquelle.
+ * das Gegenstück zu `changedSlotKeys` (planung/zuteilen.ts) für die zweite Datenquelle.
  *
  * Eine Zusage gibt eine Person, gespeichert wird sie aber unter dem Schlüssel
  * des Platzes (`fsTaskKey`). Wechselt der Leiter, muss sie weg, sonst erbt der

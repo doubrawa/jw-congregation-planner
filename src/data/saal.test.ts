@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { platzKey, allePlaetze } from './plaetze'
-import { sentKey } from './planning'
+import { sentKey } from './planung/schluessel'
 import { besetztVon, besetzung, lageVon, saalLagen, SAAL_PLAETZE, zusagenStand, type Besetzung, type SaalLage } from './saal'
 import type { ConfirmationMap, Meeting, Service } from './types'
 

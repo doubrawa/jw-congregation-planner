@@ -33,22 +33,10 @@ import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
 import { dropPersonPid, renameInWeeks } from '../data/namensbindung'
 import { localizedWeeks } from '../data/localize'
 import { alsFreitext } from '../i18n/translate'
-import {
-  aufgabenBezeichnung,
-  assignmentsInMeeting,
-  assignSlot,
-  autoAssignMeeting,
-  clearAssignments,
-  changedSlotKeys,
-  deriveMyTasks,
-  deriveSubstituteReqs,
-  helperKeyParts,
-  itemZusagenKeys,
-  sentKey,
-  tabsImUmfang,
-  wochenIndex,
-  type Umfang,
-} from '../data/planning'
+import { aufgabenBezeichnung, deriveMyTasks, deriveSubstituteReqs } from '../data/planung/aufgaben'
+import { autoAssignMeeting, clearAssignments, tabsImUmfang, type Umfang } from '../data/planung/automatik'
+import { helperKeyParts, itemZusagenKeys, sentKey, wochenIndex } from '../data/planung/schluessel'
+import { assignmentsInMeeting, assignSlot, changedSlotKeys } from '../data/planung/zuteilen'
 import {
   editTalkTheme,
   lacAdd,

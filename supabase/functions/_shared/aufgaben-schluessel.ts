@@ -33,8 +33,8 @@
  * Deshalb steht beides hier, und zwar **im geteilten Edge-Ordner**: Die
  * Functions können nicht aus `src/` lesen, die App aber sehr wohl von hier —
  * denselben Weg gehen `zeitenAus`, `neueItemId`, `FS_LEITER` und
- * `STANDARD_ZEITEN` bereits. `planning.ts` und `fs.ts` reichen die Erzeuger
- * unter ihren gewohnten Namen weiter.
+ * `STANDARD_ZEITEN` bereits. Jeder Aufrufer holt die Erzeuger von hier; nur
+ * `fs.ts` reicht `fsKey` unter dem gewohnten Namen `fsTaskKey` weiter.
  *
  * **Die Kennung der Woche ist ihr Montag** (T66), nicht mehr ihre Position.
  */

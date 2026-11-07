@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyQualifications, neueItemId } from './helpers'
 import { lacAdd, lacRemove } from './meeting-edit'
-import { deriveMyTasks, punktKey } from './planning'
+import { deriveMyTasks } from './planung/aufgaben'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type { ConfirmationMap, Meeting, PartItem, Person, Week } from './types'
 
 /**

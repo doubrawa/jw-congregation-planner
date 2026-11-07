@@ -44,7 +44,8 @@ import { schluesselTeile, wochenPraefixe } from '../../supabase/functions/_share
 import { fsTag, fsTagVorbei, fsTaskKey, fsTerminText } from './fs'
 import { dieselbePerson, hatAuxKlasse, istAusgefallen, MEETING_TABS } from './helpers'
 import { istVorbei, kalendertagMs, meetingDateMs } from './meeting-dates'
-import { aufgabenBezeichnung, eachAssignedSlot, sentKey, taskKeyWeek } from './planning'
+import { aufgabenBezeichnung, eachAssignedSlot } from './planung/aufgaben'
+import { sentKey, taskKeyWeek } from './planung/schluessel'
 import type {
   ConfirmationMap,
   FsInstance,

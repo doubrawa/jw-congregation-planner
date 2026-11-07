@@ -27,7 +27,8 @@ const { persist } = await import('./persist')
 const { aufgabenAbgeleitet, reducer } = await import('./reducer')
 const { initialState } = await import('./init')
 const { emptyQualifications } = await import('../data/helpers')
-const { helferKey, punktKey, sentKey } = await import('../data/planning')
+const { sentKey } = await import('../data/planung/schluessel')
+const { helferKey, punktKey } = await import('../../supabase/functions/_shared/aufgaben-schluessel.ts')
 
 const MONTAG = '2026-09-07'
 const KEY = helferKey(MONTAG, 'mid', 'mik', 0)

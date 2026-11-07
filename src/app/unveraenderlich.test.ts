@@ -31,7 +31,7 @@ import type { PartItem, Week } from '../data/types'
  * gezeichnet, und beides fällt erst beim nächsten Laden auf.
  *
  * Nachlesen kann man das nicht: Es sind über 90 Aktionen, und der Weg führt
- * durch `planning.ts`, `fs.ts`, `meeting-edit.ts`, `aux-class.ts` und
+ * durch `planung/`, `fs.ts`, `meeting-edit.ts`, `aux-class.ts` und
  * `termine.ts`. Hier wird es deshalb erzwungen — der Zustand geht
  * **tiefgefroren** hinein. Jeder Schreibzugriff auf ein eingefrorenes Objekt
  * wirft im strikten Modus (und ES-Module sind immer strikt), der Test schlägt

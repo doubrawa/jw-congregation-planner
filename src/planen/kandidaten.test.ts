@@ -545,7 +545,7 @@ describe('Gruppen-Slots liefern Gruppen statt Personen', () => {
 
   it('ohne angelegte Gruppen bleibt die Liste leer — das Sheet zeigt dafür einen Hinweis', () => {
     // Die Auto-Zuteilung trägt in diesem Fall trotzdem „Gruppe 1…3" ein
-    // (feste Dreizahl in planning.ts). Dass hier nichts zur Auswahl steht, ist
+    // (feste Dreizahl in planung/waehler.ts). Dass hier nichts zur Auswahl steht, ist
     // der Anlass für den Hinweis im Zuteilungs-Sheet: sonst sieht der Planer
     // eine Zuteilung, die er nicht ändern kann, und keinen Grund dafür.
     const state: KandidatenDaten = {

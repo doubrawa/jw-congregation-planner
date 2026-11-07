@@ -7,7 +7,7 @@ import {
   zuletztGesendet,
   zuletztGesendetFuer,
 } from './plan-versand'
-import { sentKey } from './planning'
+import { sentKey } from './planung/schluessel'
 import type { ConfirmationMap, FsInstance, Meeting, PartItem, SentLog, Service, Week } from './types'
 import { STANDARD_ZEITEN } from './vorgaben'
 

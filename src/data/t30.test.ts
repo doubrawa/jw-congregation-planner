@@ -4,13 +4,10 @@ import { emptyQualifications, istAusgefallen, serviceQualKey, weichtAb } from '.
 import { helperWorkload, partWorkload } from './auslastung'
 import { setAbweichung } from './meeting-edit'
 import { meetingDateText, meetingOffset, meetingTime } from './meeting-dates'
-import {
-  autoAssignMeeting,
-  deriveMyTasks,
-  deriveSubstituteReqs,
-  helferKey,
-  weekConflicts,
-} from './planning'
+import { deriveMyTasks, deriveSubstituteReqs } from './planung/aufgaben'
+import { autoAssignMeeting } from './planung/automatik'
+import { weekConflicts } from './planung/konflikte'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type { Meeting, Person, Week } from './types'
 
 /**

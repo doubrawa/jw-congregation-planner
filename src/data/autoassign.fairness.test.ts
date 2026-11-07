@@ -3,7 +3,7 @@ import { syncAuxSlots } from './aux-class'
 import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { displayName, isSong, serviceQualKey } from './helpers'
 import { lastFenster, LOAD_RADIUS, LOAD_WEEKS, partWorkload, workloadOf } from './auslastung'
-import { autoAssignMeeting } from './planning'
+import { autoAssignMeeting } from './planung/automatik'
 import type { Meeting, Person, Qualifications, Service, SlotAssignment, Week } from './types'
 
 /** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */

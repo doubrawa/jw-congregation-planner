@@ -12,7 +12,7 @@ import { LOAD_WEEKS } from '../data/auslastung'
 import { dauerAbtrennen, herkunftVon, isSong, ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER, rolleBasis } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { platzDerAuswahl } from '../data/plaetze'
-import { buildS89ForSlot } from '../data/planning'
+import { buildS89ForSlot } from '../data/planung/s89'
 import { rechteVon } from '../data/rechte'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
 import { versammlungsSprache } from '../i18n/langs'
@@ -423,7 +423,7 @@ function ZuteilenInhalt({
  *
  * Ohne angelegte Gruppen blieb die Liste wortlos leer, während die
  * Auto-Zuteilung trotzdem „Gruppe 1…3" einträgt (feste Dreizahl in
- * planning.ts): Der Planer sah eine Zuteilung, die er nicht ändern konnte, und
+ * planung/waehler.ts): Der Planer sah eine Zuteilung, die er nicht ändern konnte, und
  * nirgends einen Grund. Der Hinweis benennt mit `gruppenCard`, was fehlt, und
  * führt in die Einstellungen.
  *

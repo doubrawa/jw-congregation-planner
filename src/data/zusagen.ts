@@ -21,7 +21,9 @@
 import { dueKind, ERINNERUNG_STUNDE_UTC, type Rhythmus } from '../../supabase/functions/_shared/erinnerung.ts'
 import { kalendertagMs } from './meeting-dates'
 import { vergangeneZusammenkuenfte } from './plan-versand'
-import { eachAssignedSlot, sentKey, zusageStatus, type Conflict } from './planning'
+import { eachAssignedSlot, zusageStatus } from './planung/aufgaben'
+import type { Conflict } from './planung/konflikte'
+import { sentKey } from './planung/schluessel'
 import { lageVon, type PlatzLage } from './saal'
 import type {
   ConfirmationMap,

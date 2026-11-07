@@ -3,7 +3,7 @@ import { type AppState, useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import type { AbsenceSet } from '../data/absence'
 import { idAufloeser } from '../data/helpers'
-import { kennungVon, weekConflicts, type Conflict } from '../data/planning'
+import { kennungVon, weekConflicts, type Conflict } from '../data/planung/konflikte'
 import type { MeetingKey, Person } from '../data/types'
 
 /** Was von einer Zuteilung gebraucht wird, um sie einer Person zuzuordnen. */

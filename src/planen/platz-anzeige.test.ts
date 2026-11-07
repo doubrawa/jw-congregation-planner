@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Conflict } from '../data/planning'
+import type { Conflict } from '../data/planung/konflikte'
 import type { FsInstance } from '../data/types'
 import { dict } from '../i18n/ui'
 import { leiterAnzeige } from './platz-anzeige'

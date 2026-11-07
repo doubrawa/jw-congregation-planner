@@ -7,13 +7,9 @@ import {
   slotsOf,
   syncAuxSlots,
 } from './aux-class'
-import {
-  assignmentsInMeeting,
-  countOpenSlots,
-  punktKey,
-  openSlotLabels,
-  ratgeberKey,
-} from './planning'
+import { countOpenSlots, openSlotLabels } from './planung/offen'
+import { assignmentsInMeeting } from './planung/zuteilen'
+import { punktKey, ratgeberKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { partWorkload } from './auslastung'
 import { togglePartner } from './meeting-edit'
 import type { PartItem, Section, Week } from './types'

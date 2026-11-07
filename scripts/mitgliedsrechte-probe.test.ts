@@ -32,7 +32,7 @@ import {
   zuteilungAenderung,
 } from './mitgliedsrechte-probe.mjs'
 import { TEST_KONTEN } from './testversammlung-anlegen.mjs'
-import { helferKey, punktKey } from '../src/data/planning'
+import { helferKey, punktKey } from '../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
@@ -51,7 +51,7 @@ import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
  * Ein falsch gebauter `task_key` wäre die tückischste Art zu scheitern — die
  * Datenbank nähme ihn anstandslos an, die Probe meldete „durchgelassen", und
  * der Befund wäre trotzdem nicht belegt: Der Schlüssel bezöge sich auf gar
- * keinen Slot. Deshalb wird er gegen `planning.ts` gehalten, nicht gegen eine
+ * keinen Slot. Deshalb wird er gegen `aufgaben-schluessel.ts` gehalten, nicht gegen eine
  * hier abgeschriebene Erwartung.
  */
 

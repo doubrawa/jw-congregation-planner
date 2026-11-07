@@ -176,7 +176,7 @@ function helperPid(entry: HelperEntry | undefined): string | undefined {
  * Planer um, ist es ein anderer Schlüssel — die neue Person zählt als noch
  * nicht benachrichtigt.
  *
- * **Zweitschrift beachten:** `sentKey` in `src/data/planning.ts` bildet
+ * **Zweitschrift beachten:** `sentKey` in `src/data/planung/schluessel.ts` bildet
  * denselben Schlüssel für die Anzeige im Planen-Screen. Laufen die beiden
  * auseinander, zeigt der Knopf eine Zahl an, die nach dem Drücken nicht auf
  * null geht — und niemand sieht, woran es liegt. `edge-parity.test.ts` hält

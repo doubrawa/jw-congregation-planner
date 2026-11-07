@@ -1,7 +1,7 @@
 import { allePlaetze } from './plaetze'
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 import { isQualified, isSpeakerRole, serviceQualKey } from './helpers'
-import { folgtDemVorsitzIn } from './planning'
+import { folgtDemVorsitzIn } from './planung/vorsitz'
 import { istAbwesend, type AbsenceSet } from './absence'
 import type { MeetingKey, Meeting, Person, Service } from './types'
 

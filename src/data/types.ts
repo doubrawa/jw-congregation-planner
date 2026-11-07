@@ -321,7 +321,7 @@ export type Role = 'aeltester' | 'dienstamtgehilfe' | 'verkuendiger' | 'keine'
  * Zwei Sorten von Bereichen:
  *  - **fest**: die Bereichs-Keys der Programm-Slots (`vorsitz` … `studium`).
  *    `wtLeiter`/`wtVertreter` sind keine Slot-Keys, sondern kennzeichnen den
- *    fixen Wachtturm-Studium-Leiter bzw. seinen Vertreter (siehe planning.ts).
+ *    fixen Wachtturm-Studium-Leiter bzw. seinen Vertreter (siehe planung/vorsitz.ts).
  *  - **dynamisch**: je konfiguriertem Hilfsdienst genau ein Bereich mit dem Key
  *    `svc:<dienstKey>` (siehe `serviceQualKey`). Ein neuer Hilfsdienst bringt so
  *    automatisch einen eigenen Schalter im Personen-Detail mit.
@@ -1073,7 +1073,7 @@ export interface MeetingAssignment {
 /**
  * Offenes Ersatzgesuch für einen Hilfsdienst: Der Bearbeiter hat „verhindert"
  * gemeldet; qualifizierte Personen (gleicher Dienst) können einspringen. Rein
- * abgeleitet (planning.ts deriveSubstituteReqs), nicht gespeichert.
+ * abgeleitet (planung/aufgaben.ts deriveSubstituteReqs), nicht gespeichert.
  */
 export interface SubstituteReq {
   key: string // Hilfsdienst-task_key
@@ -1103,7 +1103,7 @@ export interface SubstituteReq {
 
 /**
  * Bestätigungs-Status je Aufgabe (Produktionsmodus). Schlüssel = stabiler
- * Slot-Pfad (siehe taskKey in planning.ts); nur bestätigt/verhindert werden
+ * Slot-Pfad (die Erzeuger in `_shared/aufgaben-schluessel.ts`); nur bestätigt/verhindert werden
  * gespeichert — fehlender Eintrag bedeutet „offen“.
  */
 export type ConfirmationMap = Record<string, TaskStatus>

@@ -14,7 +14,8 @@
  * holen: So rechnet sie auf genau den Wochen, die der Start schon gebunden hat.
  */
 import { fsLeiterZuteilung, fsTaskKey } from '../../src/data/fs'
-import { eachAssignedSlot, helferKey } from '../../src/data/planning'
+import { eachAssignedSlot } from '../../src/data/planung/aufgaben'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { STANDARD_ZEITEN } from '../../src/data/vorgaben'
 import type { ConfirmationMap, FsInstance, Service, Week } from '../../src/data/types'
 

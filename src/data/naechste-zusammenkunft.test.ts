@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { istVorbei, naechsteZusammenkunft } from './meeting-dates'
-import { taskKeyVorbei } from './planning'
+import { taskKeyVorbei } from './planung/schluessel'
 import type { Meeting, Week } from './types'
 
 /**

@@ -17,7 +17,8 @@
  */
 
 import { platzKey, allePlaetze, leerVorOrt, platzMitZusage } from './plaetze'
-import { sentKey, zusageStatus } from './planning'
+import { zusageStatus } from './planung/aufgaben'
+import { sentKey } from './planung/schluessel'
 import type { ConfirmationMap, Meeting, MeetingKey, PersoenlichLog, Service, SlotAssignment, TaskStatus } from './types'
 
 /** Lage eines Platzes im Bild. */

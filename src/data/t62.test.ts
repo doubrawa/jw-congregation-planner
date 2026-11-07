@@ -12,7 +12,8 @@ import {
 import { partWorkload } from './auslastung'
 import { itemMinutes, setDienstwoche, setPartThema, themaVon } from './meeting-edit'
 import { localizedWeek } from './localize'
-import { countOpenSlots, deriveMyTasks } from './planning'
+import { deriveMyTasks } from './planung/aufgaben'
+import { countOpenSlots } from './planung/offen'
 import type { Meeting, PartItem, Person, Week } from './types'
 
 /**

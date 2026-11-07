@@ -15,7 +15,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG, LABEL_LAC, LABEL_VORTRAG } from '../
 import { emptyQualifications, ROLE_CIRCUIT } from '../data/helpers'
 import { TALK_PLACEHOLDER } from '../data/meeting-edit'
 import { ROLE_GUEST_SPEAKER, ROLE_OWN_SPEAKER } from '../data/helpers'
-import { punktKey } from '../data/planning'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { dict } from '../i18n/ui'
 import type { PartItem, Person, Section, Week } from '../data/types'
 import { MeetingSection } from './MeetingSection'

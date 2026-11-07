@@ -164,7 +164,7 @@ src/
     types.ts        Datenmodell aus dem Handoff (Week, Person, Service, …)
     constants.ts    Labels (Rollen, Aufgabenbereiche) + Bereichsfarben-Zuordnung
     helpers.ts      Anzeigename, Initialen, Qualifikations- und Auslastungsprüfung
-    planning.ts     Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots)
+    planung/        Zuteilungslogik (zuteilen/entfernen, Auto-Zuteilung, offene Slots), je Fachbereich ein Modul
   i18n/
     ui.ts           UI-Wörterbücher (12 Sprachen) + Schlüssel-Maps
     translate.ts    Programm-Inhalts-Übersetzer (makeTr): S-38-Begriffe, Daten, Referenzen

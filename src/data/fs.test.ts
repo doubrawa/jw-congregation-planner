@@ -23,7 +23,7 @@ import {
 } from './fs'
 import { emptyQualifications } from './helpers'
 import { montagNach } from './meeting-dates'
-import type { Conflict } from './planning'
+import type { Conflict } from './planung/konflikte'
 import type { Absence, FsInstance, FsRule, Person } from './types'
 
 /** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */

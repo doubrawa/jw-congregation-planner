@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { mtab } from '../data/helpers'
 import { auswahlFuer } from '../data/plaetze'
-import { helferKey } from '../data/planning'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { platzName, useT } from '../i18n/useT'
 import type { Meeting, Service } from '../data/types'
 import { platzAnzeige } from './platz-anzeige'

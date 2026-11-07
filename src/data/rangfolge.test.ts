@@ -3,7 +3,8 @@ import { buildDemoWeeks, buildImportWeek, DEMO_GROUPS, DEMO_PERSONS, DEMO_SERVIC
 import { emptyQualifications, idAufloeser, isGuestRole, MEETING_TABS, partnerGenderOk, privSetzen } from './helpers'
 import { tagNach } from './meeting-dates'
 import { allePlaetze, platzDerAuswahl, type Platz } from './plaetze'
-import { autoAssignMeeting, rangfolgeFuer, zuletztImBereich } from './planning'
+import { autoAssignMeeting, rangfolgeFuer } from './planung/automatik'
+import { zuletztImBereich } from './planung/zuteilen'
 import type { Meeting, MeetingKey, MeetingSlotSelection, PartItem, Person, Week } from './types'
 import { schlussgebetVorOrt } from '../../supabase/functions/_shared/planung.ts'
 

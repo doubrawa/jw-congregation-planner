@@ -205,7 +205,7 @@ export function lastFenster(weeks: Week[], wi: number, radius = LOAD_RADIUS): We
  * dafür, dass jedes Eingabe-Bit alle Ausgabe-Bits erreicht, die Reihenfolge also
  * pro Woche wirklich wechselt.
  *
- * Steht hier und nicht in `planning.ts`, weil die Treffpunkt-Zuteilung
+ * Steht hier und nicht in `planung/waehler.ts`, weil die Treffpunkt-Zuteilung
  * (`fs.ts`) dieselbe Fairness braucht und lange eine eigene, ungemischte Kopie
  * mitschleppte — also genau den Fehler, den dieser Kommentar beschreibt.
  */

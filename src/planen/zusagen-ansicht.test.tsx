@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { offeneMeldungen } from '../data/plan-versand'
-import { sentKey } from '../data/planning'
+import { sentKey } from '../data/planung/schluessel'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'

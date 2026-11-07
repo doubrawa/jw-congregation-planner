@@ -7,7 +7,7 @@ import {
   ohneDienstZusagen,
 } from './dienste'
 import { emptyQualifications, privWert, serviceQualKey } from './helpers'
-import { helferKey } from './planning'
+import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import type { Person, Service, Week } from './types'
 
 /**

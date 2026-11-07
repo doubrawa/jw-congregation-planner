@@ -36,7 +36,7 @@ import {
 import { emptyQualifications, isSong, privSetzen, ROLE_OWN_SPEAKER, serviceQualKey } from './helpers'
 import { tagNach } from './meeting-dates'
 import { allePlaetze, platzKey } from './plaetze'
-import { bereichVon } from './planning'
+import { bereichVon } from './planung/zuteilen'
 import type { Absage, FsInstance, Group, Meeting, MeetingTimes, Person, Week } from './types'
 
 /**

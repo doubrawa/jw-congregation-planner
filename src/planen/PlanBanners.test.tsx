@@ -15,7 +15,8 @@ import { fill } from '../i18n/useT'
 import type { Absence, Person, Qualifications, Section, Service, Week } from '../data/types'
 import { BesetzungKarte } from './WochenStand'
 import { privSetzen } from '../data/helpers'
-import { punktKey, sentKey } from '../data/planning'
+import { sentKey } from '../data/planung/schluessel'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { zahlBinden } from '../i18n/zahl-binden'
 
 /**

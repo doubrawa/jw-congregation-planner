@@ -8,7 +8,7 @@ import {
   TALK_PLACEHOLDER,
 } from './meeting-edit'
 import { isGuestRole } from './helpers'
-import { assignSlot } from './planning'
+import { assignSlot } from './planung/zuteilen'
 import type { Meeting, PartItem, PartSlotSelection, Week } from './types'
 
 /** Wochenend-Vorlage wie aus parse.ts (kanonisch + strukturgleiche en-Variante). */

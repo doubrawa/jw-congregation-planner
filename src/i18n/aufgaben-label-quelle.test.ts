@@ -32,7 +32,7 @@ const ROH = import.meta.glob('../**/*.{ts,tsx}', {
 /**
  * Auf `verzeichnis/datei.ts` normiert, damit die Erwartungen lesbar bleiben.
  *
- * Zwei Formen kommen an: Nachbarverzeichnisse als `../data/planning.ts`,
+ * Zwei Formen kommen an: Nachbarverzeichnisse als `../data/planung/aufgaben.ts`,
  * Dateien **dieses** Verzeichnisses als `./useT.ts` — Vite kürzt den Pfad auf
  * die kürzeste Schreibweise. Wer nur `../` abschneidet, verliert die halbe
  * Liste, ohne dass es auffällt.
@@ -46,7 +46,7 @@ const QUELLEN = new Map(
 )
 
 /** Die beiden Stellen, an denen die Hälften zusammenkommen. */
-const ZUSAMMENSETZER = ['data/planning.ts', 'i18n/useT.ts']
+const ZUSAMMENSETZER = ['data/planung/aufgaben.ts', 'i18n/useT.ts']
 
 /**
  * Wer die Hälften **durchreicht**, ohne sie zu beschriften.
@@ -83,7 +83,7 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenLabel')
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenZeilen')
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenHaelften')
-    expect(QUELLEN.get('data/planning.ts')).toContain('export function aufgabenBezeichnung')
+    expect(QUELLEN.get('data/planung/aufgaben.ts')).toContain('export function aufgabenBezeichnung')
     // `AufgabeText` setzt die Hälften als Elemente, je mit ihrem `lang` (T173).
     expect(QUELLEN.get('aufgaben/AufgabeText.tsx')).toContain('aufgabenHaelften(task, i18n)')
   })

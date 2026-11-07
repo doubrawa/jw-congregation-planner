@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
-import { alleS89DerWoche } from '../data/planning'
+import { alleS89DerWoche } from '../data/planung/s89'
 import { buildDemoWeeks } from '../../tests/testdaten/testdaten'
 import type { PartItem } from '../data/types'
 import { S89Bogen } from './S89Bogen'

@@ -51,7 +51,7 @@ import {
   type Zeilenstand,
 } from '../lib/data'
 import { ANWESENDE_FELDER, anwesenheitDer } from '../data/anwesenheit'
-import { helperKeyParts } from '../data/planning'
+import { helperKeyParts } from '../data/planung/schluessel'
 import { supabase } from '../lib/supabase'
 import { mitverfolgen } from '../lib/schreiben-unterwegs'
 import type { FsInstance, Person, Trolley, Week } from '../data/types'

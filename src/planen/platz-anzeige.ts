@@ -1,5 +1,5 @@
 import { fsLeiterZuteilung } from '../data/fs'
-import type { Conflict } from '../data/planning'
+import type { Conflict } from '../data/planung/konflikte'
 import { lageVon, type PlatzLage } from '../data/saal'
 import type { FsInstance, SlotAssignment } from '../data/types'
 import type { Dict } from '../i18n/ui'

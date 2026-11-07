@@ -25,7 +25,7 @@ import { fsAutoAssign, fsLast, FS_LOAD_WEEKS } from './fs'
 import { displayName, emptyQualifications, idAufloeser, programmPlaetze } from './helpers'
 import { partWorkload } from './auslastung'
 import { montagNach } from './meeting-dates'
-import { autoAssignMeeting } from './planning'
+import { autoAssignMeeting } from './planung/automatik'
 import type { Absence, FsInstance, Person, Qualifications, Week } from './types'
 import { privSetzen } from './helpers'
 

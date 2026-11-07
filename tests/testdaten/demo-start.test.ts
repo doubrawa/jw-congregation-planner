@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '../../src/app/context'
 import { reducer } from '../../src/app/reducer'
-import { deriveMyTasks } from '../../src/data/planning'
+import { deriveMyTasks } from '../../src/data/planung/aufgaben'
 import type { Person } from '../../src/data/types'
 import { BLAETTER, demoZustand, entwicklerStart, parseDebugHash, type Blatt } from './demo-start'
 import { DEMO_PERSONS, DEMO_PLANNER } from './testdaten'
