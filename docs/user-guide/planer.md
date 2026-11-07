@@ -1348,6 +1348,8 @@ der zweite entfernt. Als Admin trägst du hier für andere ein (nach einem Anruf
 „wir sind im Oktober weg"); die meisten Verkündiger haben kein Konto und können
 es nicht selbst. Wer eines hat, sieht dieselben Einträge in seinem **Profil**
 und kann sie dort ebenfalls pflegen – es ist dieselbe Angabe, nicht zwei.
+Trägst du für jemand anderen ein, nennt das Blatt die Person unter der
+Überschrift, damit klar ist, für wen es gilt.
 
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine

@@ -313,7 +313,13 @@ export const DE = {
     von: 'Von', bis: 'Bis', grundOpt: 'Grund (optional)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
     abwEintragen: 'Abwesenheit eintragen',
-    abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt. Bestehende Zuteilungen sehen die Planer als Konflikt.',
+    // Der Hinweis unter dem Kalender: wer nicht eingeteilt wird, dahinter
+    // `abwKonflikt`. `abwHinweisFuer` gilt, wenn der Admin für eine andere
+    // Person einträgt — ohne Genus formuliert: Der Name steht als Subjekt oder
+    // nach einer Präposition, die ihn nicht beugt.
+    abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt.',
+    abwHinweisFuer: 'In dieser Zeit wird {name} nicht eingeteilt.',
+    abwKonflikt: 'Bestehende Zuteilungen sehen die Planer als Konflikt.',
     // Warnung im Planen: Für diesen Bereich sind an dem Tag weniger Leute da
     // als Plätze — Plätze, die offen bleiben MÜSSEN, anders als „offene
     // Zuteilungen", die nur noch nicht getan sind.

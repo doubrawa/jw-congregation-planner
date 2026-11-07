@@ -101,9 +101,16 @@
   min-width: 48px;
 }
 
-/* Umbrechen statt „…": Bis zum 29.10.2026 endete ein langer Text abgeschnitten. */
+/* Umbrechen statt „…": Bis zum 29.10.2026 endete ein langer Text abgeschnitten.
+   `max-width` deckelt die Mindestbreite des Flex-Elements (sein längstes Wort)
+   auf die Zeile: Passt das Wort auch allein nicht, bricht `overflow-wrap` es,
+   statt dass es hinausragt. Ohne Trennwörterbuch stand bei Stufe 1,45
+   „Versammlungsbibelstudium" bei 320 px 17 px über den Fensterrand, bei
+   1024 px 21 px über seine Spalte (gemessen am 7.11.2026).
+   `overflow-wrap: anywhere` hielte den Text dagegen immer neben dem Tag. */
 .start-zeile-text {
   flex: 1 1 0;
+  max-width: 100%;
   font-weight: 600;
   -webkit-hyphens: auto;
   hyphens: auto;

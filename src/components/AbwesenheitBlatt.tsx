@@ -2,13 +2,18 @@ import { useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { ZeitraumKalender } from '../bausteine/ZeitraumKalender'
+import { nameVon } from '../data/helpers'
 import { Sheet } from './Sheet'
-import { useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 
 /**
  * **Abwesenheit eintragen** (T121): ein Zeitraum im Kalender, ein Grund nach
  * Wunsch. In dieser Zeit teilt niemand die Person ein; wo sie schon eingeteilt
  * ist, sehen die Planer einen Konflikt.
+ *
+ * Trägt der Admin für **eine andere** Person ein (Personen-Detail), nennt das
+ * Blatt sie unter der Überschrift und im Hinweis — „wirst du nicht
+ * eingeteilt" sprach sonst den Admin an.
  *
  * Über ein Portal am Ende des Dokuments: Das Blatt liegt `position: fixed`, und
  * ein Vorfahr mit `transform` würde es sonst an sich binden (siehe den
@@ -21,6 +26,7 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
   const [bis, setBis] = useState('')
   const [grund, setGrund] = useState('')
   const grundId = useId()
+  const fuer = personId !== state.personId ? nameVon(state.persons, personId) : ''
 
   const eintragen = () => {
     if (!von || !bis) {
@@ -37,7 +43,7 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
   }
 
   return createPortal(
-    <Sheet label={t.abwEintragen} title={t.abwEintragen} onClose={onClose}>
+    <Sheet label={t.abwEintragen} title={t.abwEintragen} sub={fuer || undefined} onClose={onClose}>
       <div className="sheet-inhalt">
         <ZeitraumKalender
           von={von}
@@ -65,7 +71,9 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
         </div>
       </div>
       <div className="abw-fuss">
-        <p className="klein-text">{t.abwHinweis}</p>
+        <p className="klein-text">
+          {fuer ? fill(t.abwHinweisFuer, { name: fuer }) : t.abwHinweis} {t.abwKonflikt}
+        </p>
         <button type="button" className="knopf-haupt" onClick={eintragen}>
           {t.abwEintragen}
         </button>

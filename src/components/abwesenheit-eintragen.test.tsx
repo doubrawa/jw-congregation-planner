@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import type { Person } from '../data/types'
 import { AbwesenheitEintragen } from './AbwesenheitEintragen'
@@ -35,6 +36,10 @@ const t = dict('de')
 
 const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
+  priv: emptyQualifications(),
+}
+const BERTA: Person = {
+  id: 'p-b', fn: 'Berta', ln: 'Bein', role: 'verkuendiger', female: true,
   priv: emptyQualifications(),
 }
 
@@ -149,6 +154,28 @@ describe('Abwesenheit eintragen', () => {
       type: 'addAbsence',
       absence: expect.objectContaining({ personId: 'p-b', userId: 'u1', from: '2026-10-19', to: '2026-10-19' }),
     })
+  })
+
+  it('für sich selbst spricht der Hinweis dich an und nennt keinen Namen', () => {
+    zeige('p-a', { persons: [ICH, BERTA] })
+    oeffne()
+    expect(blatt()?.querySelector('.sheet-sub')).toBeNull()
+    expect(blatt()?.querySelector('.abw-fuss .klein-text')?.textContent).toBe(`${t.abwHinweis} ${t.abwKonflikt}`)
+  })
+
+  it('für eine ANDERE Person nennt das Blatt sie — unter der Überschrift und im Hinweis, nicht „du"', () => {
+    zeige('p-b', { planner: true, persons: [ICH, BERTA] })
+    oeffne()
+    expect(blatt()?.querySelector('.sheet-sub')?.textContent).toBe('Berta Bein')
+    expect(blatt()?.querySelector('.abw-fuss .klein-text')?.textContent).toBe(
+      `${fill(t.abwHinweisFuer, { name: 'Berta Bein' })} ${t.abwKonflikt}`,
+    )
+  })
+
+  it('ein Admin ohne eigene Person trägt für andere ein — auch dann mit ihrem Namen', () => {
+    zeige('p-b', { planner: true, personId: null, persons: [ICH, BERTA] })
+    oeffne()
+    expect(blatt()?.querySelector('.sheet-sub')?.textContent).toBe('Berta Bein')
   })
 
   it('ein Konto ohne eigene Person trägt ohne Person-Bezug ein', () => {
