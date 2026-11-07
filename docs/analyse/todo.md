@@ -9981,6 +9981,195 @@ Gegen die App: Ohne den Fix aus `ad7729d5` meldet der Lauf die 17 px wieder
 Nicht gemessen: was über den Rand einer Karte ragt, aber im Fenster bleibt,
 und was erst ein Tipp öffnet (Blätter, Dialoge).
 
+## Aufgenommen am 7. November 2026 — Empfehlungen aus der Bewertung (T168–T172)
+
+Am 7. November hat Claude Codequalität und Reife der App bewertet. Der Code
+ist weit (strenge Typen, 8075 Tests, 99 % Zeilenabdeckung, Laufzeit-Messung
+seit T167); die Lücken vor dem Echtbetrieb liegen im Betrieb. Betreiber: „setze
+auch die anderen Empfehlungen um" — hier als Aufgaben, zum Bearbeiten in
+eigenen Sitzungen.
+
+**Reihenfolge:** T168 zuerst — ohne Sicherung kann jeder Fehler Daten kosten.
+T169 vor dem Neuaufbau zum Echtbetrieb; T170 baut darauf auf und liefert das
+Staging-Projekt, in das T168 zur Probe zurückspielt. T171 und T172 hängen an
+nichts, berühren aber beide `src/app/` — nicht gleichzeitig im selben Checkout.
+
+**Für alle fünf gilt:** Das Repo ist öffentlich — keine echten Namen,
+Schlüssel und Passwörter nur als Namen. Was in die echte Datenbank schreibt,
+sperrt der Auto-Modus („Modify Shared Resources"): vorher die Freigabe des
+Betreibers holen, die Sitzung dafür auf „Default". Konten, Projekte und
+Zahlungen legt der Betreiber an. Nach der Umsetzung `/simplify` und
+`/code-review max` anbieten (bei reinen Skript-Änderungen nicht), vor dem Push
+die drei CI-Schritte und `npm run laufzeit`.
+
+### T168 · Sicherung der Datenbank, mit Rückspielprobe 🔧 ☐ offen
+
+**Warum:** Supabase hält für das Projekt keine abrufbare Sicherung. Gemessen
+am 7. November: `npx supabase backups list --remote=<ref>` liefert
+`"backups": []` und `"pitr_enabled": false` (den Tarif im Dashboard unter
+Billing nachsehen). Gesichert wird bisher nur von Hand vor einem Neuaufbau:
+`live-sichern.mjs` in `nws-export/neuaufbau-werkzeug/`, außerhalb des Repos,
+schreibt jede Tabelle aus `schema.sql`, gefiltert auf **eine** Versammlung, als
+JSON — ohne Konten (`auth.users`), und zurückgespielt wurde daraus nur, was
+allein in der App stand (`zurueckspielen.mjs`).
+
+**Was zu tun ist:**
+1. Den Weg wählen und begründen: `npx supabase db dump --remote=<ref>`
+   (Schema und Daten, dazu `auth` — sonst sind nach dem Rückspielen alle Konten
+   fort, und kein Anmeldelink passt mehr) oder die JSON-Sicherung, ins Repo
+   geholt (`scripts/sicherung.mjs`), für alle Versammlungen, die Tabellen
+   weiter aus `schema.sql` abgeleitet statt aufgezählt.
+2. Die Ablage liegt **außerhalb des Repos und nie als Actions-Artefakt** — das
+   Repo ist öffentlich, seine Artefakte kann jeder laden. Vorschlag: beim
+   Betreiber, regelmäßig über die Windows-Aufgabenplanung, nur die letzten
+   Stände behalten; die Aufbewahrung (T125) soll über die Sicherung nicht
+   ausgehebelt werden.
+3. Die **Rückspielprobe**: eine Sicherung in eine leere Datenbank zurückspielen
+   (das Staging-Projekt aus T170, bis dahin lokal), Zeilen je Tabelle gegen die
+   Quelle zählen, dann mit einem Testkonto anmelden und die
+   Mitgliedsrechte-Probe fahren. Den Ablauf in die README (Abschnitt „Supabase
+   einrichten").
+4. `live-sichern.mjs` und `zurueckspielen.mjs` ins Repo holen oder ersetzen —
+   Wissen, das nur außerhalb liegt, geht verloren.
+
+**Entscheidet der Betreiber:** Takt (täglich oder wöchentlich), Ablageort,
+Zahl der Stände, ob eine verschlüsselte Zweitkopie außer Haus, ob ein Tarif
+mit Sicherung in Frage kommt.
+
+**Wie man prüft:** Die Rückspielprobe ist einmal gelaufen (Zeilen je Tabelle
+gleich, Anmelden geht, Mitgliedsrechte-Probe grün); die geplante Aufgabe hat
+zweimal hintereinander eine Sicherung geschrieben; eine Probe verlangt jede
+Tabelle aus `schema.sql` in der Sicherung (Gegenprobe: eine neue Tabelle, die
+fehlt, macht sie rot).
+
+### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ☐ offen
+
+**Warum:** E3 aus dem Gesamt-Review vom 2. November, beschlossen für den
+Neuaufbau zum Echtbetrieb. Heute ist `supabase/schema.sql` die einzige Quelle;
+eine Änderung spielt Claude als einzelnen Block ein (`npx supabase db query
+--remote=<ref> --yes -f <delta>.sql`). Im Echtbetrieb geht kein Neuaufbau mehr
+— er löschte, was nur in der App steht —, und ein vergessener Block fiele
+niemandem auf.
+
+**Was zu tun ist (jetzt, vor dem Neuaufbau):**
+1. `supabase/migrations/` im Format der Supabase-CLI anlegen
+   (`<zeitstempel>_<name>.sql`, eingespielt mit `npx supabase db push`, das
+   sich merkt, was schon drin ist). Die erste Migration ist der Gesamtstand
+   von `schema.sql` **ohne** die Einmal-Aufräumblöcke — heute die
+   `drop … if exists` für `persons.tel` und `mail`, `plaene.vorlage`,
+   `plan_eintraege.mahlzeit`, `vortraege_auswaerts` und die `oz_*`-Reste.
+2. Eine Probe, die `schema.sql` und die Folge der Migrationen gegeneinander
+   hält: beide in eine leere Postgres (PGlite, mit einem Vorspann für `auth`
+   und die Rollen `anon`, `authenticated`, `service_role`), dann den Katalog
+   vergleichen — Tabellen, Spalten, Typen, Constraints, Indizes, Funktionen,
+   Trigger, Richtlinien, Rechte. Gegenprobe: eine Spalte nur in `schema.sql`
+   macht sie rot.
+3. Den Ablauf in die README: Jede Schemaänderung ist eine neue Migration plus
+   der nachgezogene Gesamtstand, die Probe hält beide gleich.
+4. Beim Neuaufbau selbst: die erste Migration als eingespielt eintragen
+   (`npx supabase migration repair --status applied …`) und die Einmal-Blöcke
+   aus `schema.sql` nehmen. E4 (`planner` → `admin`) kommt mit demselben
+   Neuaufbau — Vorschlag: gleich in die erste Migration.
+
+**Entscheidet der Betreiber:** den Termin des Neuaufbaus; ob E4 in die erste
+Migration geht.
+
+**Wie man prüft:** Probe grün, mit Gegenprobe rot; `npx supabase db push
+--dry-run` gegen Staging (T170) nennt genau die erwarteten Migrationen.
+
+### T170 · Staging-Projekt und Ausrollen über die CI 🏗 ☐ offen
+
+**Warum:** Das Frontend geht mit jedem Push hinaus; Functions und Schema rollt
+Claude von Hand aus, in der Reihenfolge Functions, Schema, Push. Dazwischen
+klaffte schon eine Lücke — neues Frontend, alte Function. Proben gegen den
+Betrieb laufen im Produktivprojekt, auch die Testversammlung liegt dort.
+
+**Was zu tun ist:**
+1. Der Betreiber legt ein zweites Supabase-Projekt an (Staging, Region wie
+   Produktion: `eu-central-1`). Claude richtet es per Skript ein: Migrationen
+   (T169), Functions, Secrets, Zeitpläne, Testversammlung
+   (`testversammlung-anlegen.mjs`, nur erfundene Daten). Vorher nachsehen, ob
+   Supabase ein Projekt ohne Nutzung pausiert und wie die CI damit umgeht.
+2. Ein Workflow `ausrollen.yml`: Bei Änderungen unter `supabase/` rollt er
+   zuerst Staging aus (`db push`, `functions deploy … --use-api`), fährt dort
+   die Proben (Rauchtest der Functions, Mitgliedsrechte-Probe) und erst danach
+   Produktion — über eine GitHub-Umgebung mit Freigabe durch den Betreiber.
+   Das Frontend-Deploy wartet darauf (`needs`), damit kein neues Frontend gegen
+   alte Functions läuft.
+3. Secrets in GitHub (Zugangstoken, Datenbank-Passwörter, Projekt-Kennungen)
+   legt der Betreiber an; der Workflow nennt nur ihre Namen.
+4. README „Supabase einrichten" nachziehen: Ausgerollt wird danach nur noch
+   über die CI.
+
+**Abhängigkeit:** T169.
+
+**Entscheidet der Betreiber:** das Staging-Projekt (Konto, Tarif); ob jede
+Produktions-Ausrollung seine Freigabe braucht.
+
+**Wie man prüft:** Eine harmlose Schemaänderung (ein Kommentar an einer
+Spalte) geht über Staging nach Produktion; `functions list` beider Projekte
+zeigt den Stand des Commits; eine absichtlich rote Probe auf Staging hält
+Produktion und Frontend an.
+
+### T171 · Fehlermeldungen von den Geräten 🔧 ☐ offen
+
+**Warum:** Fehler bei den Nutzern sieht heute niemand. `ErrorBoundary` und
+`NachladeGrenze` schreiben nur in die Konsole des Geräts, ein `error` oder
+`unhandledrejection` außerhalb davon verpufft. Bekannt wird nur, was der
+Betreiber selbst bemerkt.
+
+**Was zu tun ist:**
+1. Eine Tabelle für die Meldungen (Name frei, etwa `geraete_fehler`):
+   Zeitpunkt, Stand der App (`__BUILD_ID__`), Bildschirm, Fehlerart und
+   Meldung gekürzt, Stapel gekürzt und ohne Adressparameter, Browser grob
+   (Familie, Version), Versammlung (für Rechte und Aufbewahrung). **Keine**
+   Konto- oder Personen-Id und keine Eingaben — auch eine Meldung kann Daten
+   tragen, deshalb kurz.
+2. Abfangen: `error`, `unhandledrejection`, `ErrorBoundary`, `NachladeGrenze`.
+   Gleiches nur einmal je Sitzung, höchstens einige Meldungen je Stunde —
+   eine Schleife darf die Tabelle nicht fluten. Ohne Netz verwerfen.
+3. Rechte: schreiben nur angemeldete Mitglieder in ihre Versammlung; lesen nur
+   Admins oder nur der Betreiber per Skript. Vor der Anmeldung nichts melden,
+   sonst stünde die Tabelle jedem offen.
+4. Aufbewahrung acht Wochen (T125: eine Regel in `alte_daten_loeschen`, die
+   Wache `tests/aufbewahrung.test.ts` verlangt sie).
+5. Lesen: ein Skript (`scripts/geraete-fehler.mjs`, gruppiert nach Meldung und
+   Stand) oder ein Abschnitt für Admins. Im Handbuch ein Satz, was gemeldet
+   wird und was nicht.
+
+**Entscheidet der Betreiber:** wer die Meldungen liest — er allein per Skript
+oder die Admins in der App.
+
+**Wie man prüft:** Ein ausgelöster Fehler ergibt genau eine Zeile ohne
+Personendaten; derselbe zweimal eine; die Bremse greift; die
+Mitgliedsrechte-Probe bekommt neue Fälle (eine fremde Versammlung liest und
+schreibt nicht, ein Verkündiger liest nicht).
+
+### T172 · Die größten Dateien nach Fachbereich aufteilen 🏗 ☐ offen
+
+**Warum:** `src/lib/data.ts` (2235 Zeilen), `src/data/planning.ts` (2001) und
+`src/app/reducer.ts` (1920) — dort trifft fast jede Änderung zusammen. Über
+600 Zeilen haben 23 Dateien in `src` und den Functions (gezählt am
+7. November, ohne Tests und Wörterbücher).
+
+**Was zu tun ist:**
+1. Erst die Schnitte vorschlagen und mit dem Betreiber abstimmen: je
+   Fachbereich ein Modul — beim Laden und Schreiben etwa Wochen, Personen,
+   Predigtdienst, Pläne, Konto; im Reducer je Bereich ein Teil, zusammengesetzt
+   an einer Stelle; in der Planung Zuteilen, Automatik, offene Plätze,
+   Konflikte. Abhängigkeiten zählen, keine Zyklen.
+2. Verschieben und die Importe nachziehen — ohne Weiterreichen über die alte
+   Datei: Zwei Wege zu einem Helfer sind zwei Gelegenheiten, ihn zu vergessen.
+3. In den verschobenen Teilen die Kommentare auf das kürzen, was gilt (Regel
+   vom 2. November). **Kein** Aufräum-Durchgang über das übrige Repo — den hat
+   der Betreiber nicht gewählt.
+
+**Wie man prüft:** Sichtbar ändert sich nichts — belegt mit einem Abbild
+aller Ansichten vorher und nachher, byte-gleich (vorübergehende Probe, zweimal
+vorher laufen lassen, dann umbauen). Dazu die Suite, die Abdeckung nicht
+niedriger, `npm run laufzeit -- --satz voll` ohne Befund, die Bündelgröße
+vorher und nachher. Nicht gleichzeitig mit T171 im selben Checkout.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -10020,11 +10209,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑
+1. November ☑ · 6. November ☑☑ · 7. November ☑☐☐☐☐☐
 
-**Alle 167 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Am 7. November kam **T167** dazu und ist
-umgesetzt (Laufzeit-Messung im Repo und in der CI). Am 6. November **T121** (Neues Design):
+**167 der 172 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T168–T172**, die Empfehlungen aus
+der Bewertung vom 7. November: Sicherung, Migrationen (E3), Staging und
+Ausrollen per CI, Fehlermeldungen von den Geräten, große Dateien aufteilen.
+Am 7. November kam außerdem **T167** dazu und ist umgesetzt (Laufzeit-Messung
+im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
 Mitgliedsrechte-Probe nach „Alles Planen" lief grün; dazu **T166** (Anmeldung
 im Profil), ausgerollt und am 7. November mit echter Sitzung abgehakt
@@ -10485,7 +10677,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 ### Was offen ist und warum
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
-166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt; keine PR, kein Issue, außer `main` kein Zweig, auch
+166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
+T168–T172 aus der Bewertung, offen; keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
@@ -10493,12 +10686,17 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte oder den Neuaufbau.
+bleibt, braucht NWS-Exporte, den Neuaufbau oder eine der Aufgaben T168–T172.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
-| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
+| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). Vorbereitet wird E3 in T169 |
+| **T168** | Sicherung mit Rückspielprobe | zuerst angehen: Supabase hält keine abrufbare Sicherung (gemessen am 7. November). Takt und Ablage entscheidet der Betreiber |
+| **T169** | Migrationen vorbereiten (E3) | vor dem Neuaufbau zum Echtbetrieb; der Wechsel selbst kommt mit ihm |
+| **T170** | Staging und Ausrollen per CI | nach T169; das Staging-Projekt legt der Betreiber an |
+| **T171** | Fehlermeldungen von den Geräten | bereit; wer sie liest, entscheidet der Betreiber |
+| **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
 ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit
