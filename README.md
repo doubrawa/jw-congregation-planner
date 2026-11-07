@@ -580,6 +580,94 @@ fest: Der Weg stand vorher nur in `rollen-nachtragen.mjs`, und die übrigen
 brachen mit „Invalid API key" ab — fünfmal hintereinander in einem einzigen
 Neuaufbau.
 
+### Sicherung und Rückspielprobe
+
+Supabase hält für dieses Projekt **keine abrufbare Sicherung** bereit: Der
+Tarif kennt keine, `npx supabase backups list --remote=<ref>` gibt `"backups":
+[]` und `"pitr_enabled": false` (gemessen am 7. November 2026). Gesichert wird
+deshalb hier:
+
+```powershell
+node scripts/sicherung.mjs
+```
+
+Jede Tabelle aus `supabase/schema.sql`, alle Versammlungen, dazu die Konten aus
+Supabase Auth — eine JSON-Datei nach `C:\DATA\Claude\jw-sicherungen`
+(`--ziel <ordner>` oder `SICHERUNG_ZIEL` ändert das, `--trocken` zählt nur).
+Es bleiben die letzten **acht Stände** (`--staende`); bei einem Lauf die Woche
+sind das acht Wochen — so lange, wie die App ihre Daten selbst hält
+([Aufbewahrung](#aufbewahrung-t125)), und keinen Tag länger.
+
+Die Tabellen stehen im Skript **nicht aufgezählt**, sondern werden aus
+`schema.sql` abgeleitet; eine neue ist von selbst dabei, und
+`scripts/sicherung.test.ts` wird rot, wenn doch eine fehlt. Ausgenommen ist nur
+`anmelde_fehlversuche` (IP-Adressen, die die Function nach einer Stunde selbst
+abräumt) — mit Begründung im Skript, die die Probe mitliest.
+
+**Warum JSON und nicht `supabase db dump`:** Der `pg_dump`-Abzug wäre
+vollständiger, braucht aber Docker oder die PostgreSQL-Clienttools auf dem
+Rechner, der sichert (ohne Docker bricht `db dump` mit `DockerRunError` ab).
+Was dem JSON fehlt, steht woanders: das Schema in diesem Repo, die Zeitpläne
+daneben, die Konten in der Sicherung selbst (mit ihrer Kennung — `admin/users`
+nimmt `id`, deshalb passt nach dem Zurückspielen jeder Anmelde-Link wieder).
+Nicht dabei sind allein die **offenen Sitzungen**: Wer angemeldet war, meldet
+sich mit seinem Link neu an.
+
+**Wo die Dateien liegen, und wo nicht.** In einer Sicherung stehen alle
+personenbezogenen Daten der Versammlungen. Sie gehört deshalb nicht ins Repo
+(es ist öffentlich — `sicherung.mjs` weigert sich, in den Projektordner zu
+schreiben) und **nie als Artefakt in die CI**: Die Artefakte eines öffentlichen
+Repos kann jeder herunterladen.
+
+Wöchentlich fährt das die **Windows-Aufgabenplanung** (eingerichtet am
+7. November 2026, montags 7:30, „Versammlung.app Sicherung"); sie ruft
+`scripts/sicherung-aufgabe.cmd`, das ins Projekt wechselt (sonst fände
+`zugangsdaten()` die `.env.local` nicht) und alles nach `lauf.log` im
+Sicherungsordner schreibt. Neu eintragen oder ändern:
+
+```powershell
+Register-ScheduledTask -TaskName "Versammlung.app Sicherung" -Force -Action (New-ScheduledTaskAction -Execute "C:\DATA\Claude\jw-congregation-planner\scripts\sicherung-aufgabe.cmd") -Trigger (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At "07:30") -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable)
+```
+
+Entfernen: `Unregister-ScheduledTask -TaskName "Versammlung.app Sicherung"`.
+
+#### Zurückspielen
+
+```powershell
+node scripts/zurueckspielen.mjs C:\DATA\Claude\jw-sicherungen\sicherung-….json --ziel-url https://<ref>.supabase.co --trocken
+```
+
+Erst die leere Datenbank aufbauen (`supabase/schema.sql`, bei Bedarf die
+Zeitpläne daneben), dann dieses Skript: zuerst die Konten, dann die Tabellen in
+der Reihenfolge von `schema.sql`. Es schreibt **nur in eine leere Datenbank**
+und nur in ein Ziel, das ausdrücklich dasteht (`--ziel-url`; das Projekt aus
+`.env.local` nimmt es allein mit `--hierher`). Am Ende zählt es jede Tabelle
+gegen die Sicherung.
+
+`persons.grp` zeigt auf `groups`, `groups.overseer_id` zurück auf `persons` —
+welche Tabelle man zuerst schreibt, ein Verweis zeigt immer ins Leere. Das
+Skript schreibt deshalb jede Spalte, deren Ziel später kommt, zunächst leer und
+trägt sie danach nach; **welche das sind, leitet es aus `schema.sql` ab**, und
+ein Fremdschlüssel, der sich nicht aufschieben lässt, bricht den Lauf ab, statt
+etwas zu verlieren.
+
+**Die Rückspielprobe** gehört zur Sicherung, nicht zur Kür:
+
+```powershell
+npm install --no-save @electric-sql/pglite@0.2.17
+node scripts/rueckspielprobe.mjs C:\DATA\Claude\jw-sicherungen\sicherung-….json
+```
+
+Sie baut `schema.sql` in einer leeren Postgres 16 auf (PGlite, im Prozess, ohne
+Server), spielt die Sicherung mit der Ordnungs-Logik des echten Skripts hinein
+und zählt Tabelle für Tabelle — mit Gegenprobe, dass die Zählung überhaupt
+misst. Gefahren am 7. November 2026 mit einem echten Stand: alle 27 Tabellen
+gleich, 141 nachgetragene Verweise, 7 Konten.
+
+Was sie **nicht** kann: sich anmelden und die Mitgliedsrechte-Probe fahren.
+Dafür braucht es ein echtes Supabase-Projekt — das Staging-Projekt aus T170 in
+`docs/analyse/todo.md`. Bis dahin ist der Teil der Probe offen.
+
 ## Arbeitsheft-Import (Edge Function)
 
 Der Import „NÄCHSTE WOCHE IMPORTIEREN" (Einstellungen → Programm-Import) holt

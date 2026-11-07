@@ -48,6 +48,10 @@ const AUSNAHMEN: Record<string, string> = {
     'misst die Mandantentrennung mit dem **anon**-Schlüssel und vergleicht ihn ausdrücklich gegen den Service-Role-Schlüssel',
   'mitgliedsrechte-probe.mjs':
     'dasselbe: sie muss aus der Sicht eines Mitglieds messen, nicht aus der des Dienstkontos',
+  'zurueckspielen.mjs':
+    'spielt in eine **fremde**, leere Datenbank zurück (T168): Die URL kommt aus `--ziel-url`, nie aus `.env.local` — ' +
+    '`zugangsdaten()` nähme das Produktivprojekt, und dorthin gehört kein ganzer Bestand. Der Schlüssel kommt deshalb ' +
+    'aus `--ziel-key` oder über `secretKey()` aus der Umgebung; für `--hierher` ruft es `zugangsdaten()` wie alle anderen',
 }
 
 describe('Alle Skripte holen den Schlüssel über secretKey()', () => {

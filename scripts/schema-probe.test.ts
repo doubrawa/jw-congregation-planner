@@ -571,6 +571,46 @@ const LAEUFE: Record<string, Lauf[]> = {
     },
   ],
 
+  'sicherung.mjs': [
+    {
+      titel: 'alle Tabellen lesen und wegschreiben',
+      // Das Ziel ist der Eingabeordner der Probe — außerhalb des Projekts, wie
+      // `zielGeprueft` es verlangt; er wird hinterher gelöscht.
+      fahren: (m, dateien) => m.main!(['--ziel', dateien]),
+      umgebung: {
+        bestand: { congregations: [{ id: C, name: 'Probeversammlung' }], persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer' }] },
+        konten: [{ id: U1, email: `${P1}@konten.invalid` }],
+      },
+      // Eine Sicherung liest jede Tabelle; genannt sind die, deren Fehlen am
+      // meisten kostete.
+      erwartet: ['GET congregations', 'GET persons', 'GET weeks', 'GET members', 'GET anmelde_links', 'GET assignment_log'],
+    },
+  ],
+
+  'zurueckspielen.mjs': [
+    {
+      titel: 'eine Sicherung in eine leere Datenbank',
+      fahren: (m, dateien) =>
+        m.main!([path.join(dateien, 'sicherung-2026-11-07_0900.json'), '--ziel-url', ATTRAPPE_URL, '--ziel-key', ATTRAPPE_SCHLUESSEL]),
+      dateien: {
+        'sicherung-2026-11-07_0900.json': {
+          erstellt: '2026-11-07T08:00:00.000Z',
+          projekt: 'probe',
+          konten: [{ id: U1, email: `${P1}@konten.invalid` }],
+          tabellen: {
+            congregations: [{ id: C, name: 'Probeversammlung' }],
+            groups: [{ id: G1, congregation_id: C, name: 'Gruppe 1', position: 0 }],
+            persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', grp: G1 }],
+            members: [{ user_id: U1, congregation_id: C, planner: true, person_id: P1 }],
+          },
+        },
+      },
+      // `PATCH persons` ist der nachgetragene Ring (`persons.grp` → `groups`):
+      // Ohne ihn stünde die Person ohne ihre Gruppe da.
+      erwartet: ['POST congregations', 'POST groups', 'POST persons', 'POST members', 'PATCH persons'],
+    },
+  ],
+
   'mandanten-nachweis.mjs': [
     {
       titel: 'beidseitig, mit Schreibproben',

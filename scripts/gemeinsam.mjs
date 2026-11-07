@@ -435,6 +435,12 @@ export function authKopf(key) {
  * Zwei Ziele, zwei Regeln, zwei Funktionen: Ein Schalter an einer einzigen
  * Funktion würde an der Aufrufstelle entschieden, und das ist die Stelle, an
  * der es zuletzt schiefging.
+ *
+ * **Dieselben Kopfzeilen will die Konten-Schnittstelle von Supabase Auth**
+ * (`/auth/v1/admin/…`, seit 7.11.2026 von `sicherung.mjs` und
+ * `zurueckspielen.mjs` benutzt): Auch sie liest den Dienstschlüssel aus
+ * `Authorization`. Der Name nennt nur den ersten Aufrufer; die Regel ist
+ * „alles außer PostgREST".
  */
 export function funktionsKopf(key) {
   const k = String(key ?? '').trim()

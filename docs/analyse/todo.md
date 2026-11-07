@@ -9989,7 +9989,9 @@ seit T167); die Lücken vor dem Echtbetrieb liegen im Betrieb. Betreiber: „set
 auch die anderen Empfehlungen um" — hier als Aufgaben, zum Bearbeiten in
 eigenen Sitzungen.
 
-**Reihenfolge:** T168 zuerst — ohne Sicherung kann jeder Fehler Daten kosten.
+**Reihenfolge:** T168 zuerst — ohne Sicherung kann jeder Fehler Daten kosten;
+umgesetzt am 7. November, offen bleibt davon nur die Probe gegen ein echtes
+Projekt.
 T169 vor dem Neuaufbau zum Echtbetrieb; T170 baut darauf auf und liefert das
 Staging-Projekt, in das T168 zur Probe zurückspielt. T171 und T172 hängen an
 nichts, berühren aber beide `src/app/` — nicht gleichzeitig im selben Checkout.
@@ -10004,7 +10006,7 @@ Zahlungen legt der Betreiber an. Nach der Umsetzung `/simplify` und
 `/code-review max` anbieten (bei reinen Skript-Änderungen nicht), vor dem Push
 die drei CI-Schritte und `npm run laufzeit`.
 
-### T168 · Sicherung der Datenbank, mit Rückspielprobe 🔧 ☐ offen
+### T168 · Sicherung der Datenbank, mit Rückspielprobe 🔧 ✅ umgesetzt (7. November 2026) — ein Rest wartet auf T170
 
 **Warum:** Supabase hält für das Projekt keine abrufbare Sicherung. Gemessen
 am 7. November: `npx supabase backups list --remote=<ref>` liefert
@@ -10043,6 +10045,87 @@ gleich, Anmelden geht, Mitgliedsrechte-Probe grün); die geplante Aufgabe hat
 zweimal hintereinander eine Sicherung geschrieben; eine Probe verlangt jede
 Tabelle aus `schema.sql` in der Sicherung (Gegenprobe: eine neue Tabelle, die
 fehlt, macht sie rot).
+
+#### Umgesetzt am 7. November 2026
+
+**Der Weg: JSON über die REST-Schnittstelle** (`scripts/sicherung.mjs`). Nicht
+`supabase db dump` — gemessen am 7. November bricht das auf diesem Rechner mit
+`DockerRunError` ab: Die CLI führt `pg_dump` in einem Container aus, und weder
+Docker noch Podman noch die PostgreSQL-Clienttools sind da. Beides zu
+installieren war die Alternative; der Betreiber hat den JSON-Weg gewählt.
+
+Vollständig ist er trotzdem, weil das Fehlende woanders steht — und das war die
+eigentliche Frage der Aufgabe („sonst sind nach dem Rückspielen alle Konten
+fort"):
+
+* **Die Konten kommen mit.** `/auth/v1/admin/users` gibt sie heraus, und
+  `admin/users` nimmt beim Anlegen eine `id` entgegen — so legt die App selbst
+  ein Konto an (`_shared/konto-admin.ts`). Nach dem Zurückspielen passt deshalb
+  jeder Anmelde-Link wieder. Ein Kennwort gibt es seit T160 ohnehin nicht.
+* **Das Schema** liegt im Repo, die Zeitpläne daneben.
+* **Nicht dabei sind die offenen Sitzungen** (`auth.sessions`): Wer angemeldet
+  war, meldet sich mit seinem Link neu an. Die gelten ein Jahr.
+
+**Die Tabellen sind abgeleitet, nicht aufgezählt** — mit ihrem
+Primärschlüssel als Ordnung fürs seitenweise Lesen, beides aus `schema.sql`.
+Ausgenommen ist eine, mit Begründung: `anmelde_fehlversuche` (IP-Adressen, die
+die Function nach einer Stunde selbst abräumt — in einer Sicherung lägen sie
+acht Wochen, länger als in der App). `scripts/sicherung.test.ts` verlangt jede
+andere, und die Gegenprobe (eine Tabelle, die nur im Schema steht) macht sie
+rot.
+
+Beim Lesen des Schemas kam ein Fehler heraus, der schon im Muster steckte:
+**`schema.sql` ist zu zwei Dritteln deutsche Prosa**, und darin kommen Kommas,
+Klammern und das Wort „references" vor. Das erste Muster fand so den
+Fremdschlüssel `absences.und` — geboren aus „…sonst mit, und die Planung…"
+zwei Zeilen über `user_id uuid references auth.users`. Seitdem gehen die
+Kommentare zuerst heraus (`ohneKommentare`), was auch die Klammerzählung
+rettet.
+
+**Die Ablage** (Betreiber entschieden): `C:\DATA\Claude\jw-sicherungen`,
+außerhalb des Repos, nur lokal, keine Zweitkopie außer Haus. **Takt:
+wöchentlich**, montags 7:30 über die Windows-Aufgabenplanung
+(„Versammlung.app Sicherung" → `scripts/sicherung-aufgabe.cmd`, mit
+`StartWhenAvailable`, damit ein versäumter Lauf nachgeholt wird). **Acht
+Stände** — bei einem Lauf die Woche genau acht Wochen, so lange, wie die
+Aufbewahrung (T125) die Daten selbst hält. Länger wäre ein Weg um sie herum.
+Eine Sicherung wiegt 1,5 MB.
+
+**Gemessen:**
+
+| Was | Ergebnis |
+| --- | --- |
+| Sicherung gegen den Betrieb | 2575 Zeilen in 27 Tabellen, 7 Konten, 1554 KB |
+| Geplante Aufgabe, zweimal hintereinander gestartet | beide `0`, zwei Stände, `lauf.log` geschrieben |
+| Rückspielprobe in eine leere Postgres 16 (PGlite) | `schema.sql` ohne Fehler, **alle 27 Tabellen gleich**, 141 nachgetragene Verweise, 7 Konten |
+| Gegenprobe der Zählung | eine Zeile mehr in `congregations` → die Zählung sieht es |
+| Proben | `sicherung.test.ts` + `zurueckspielen.test.ts` (32), `schema-probe.test.ts` fährt beide Skripte mit |
+
+**Der Ring im Schema** war der Kern des Zurückspielens: `persons.grp` zeigt auf
+`groups`, `groups.overseer_id` zurück auf `persons`. Welche Tabelle man zuerst
+schreibt, ein Verweis zeigt ins Leere. `zurueckspielen.mjs` schreibt deshalb
+jede Spalte, deren Ziel später kommt, zunächst leer und trägt sie danach nach —
+abgeleitet aus `schema.sql`, nicht aufgezählt; ein Fremdschlüssel, der sich
+nicht aufschieben lässt (`not null`), bricht den Lauf ab, statt still etwas zu
+verlieren.
+
+**Ins Repo geholt** (Punkt 4 der Aufgabe): `live-sichern.mjs` ist durch
+`scripts/sicherung.mjs` ersetzt — es sicherte nur **eine** Versammlung und
+keine Konten. `zurueckspielen.mjs` aus `nws-export/neuaufbau-werkzeug` bleibt
+dort, weil es etwas anderes tut (nach einem Neuaufbau nur nachspielen, was das
+Zurücksetzen geleert hat); der Name im Repo meint das volle Zurückspielen in
+eine leere Datenbank. Ein Hinweis in `nws-export/LIESMICH.md` sagt, welches
+welches ist.
+
+**Offen, weil es ein Staging-Projekt braucht (T170):** sich nach dem
+Zurückspielen mit einem Testkonto **anmelden** und die **Mitgliedsrechte-Probe**
+fahren. Beides geht nur gegen ein echtes Supabase-Projekt; es gibt bisher nur
+das Produktivprojekt, und dorthin spielt niemand eine Sicherung zur Probe
+zurück. Die lokale Probe deckt ab, was eine leere Datenbank zeigen kann: dass
+jede Zeile hineingeht und jede wieder dasteht.
+
+**Nicht gewählt:** ein Tarif mit Sicherung (Supabase Pro, täglich + PITR) —
+kostet laufend, und das Zurückspielen übt man damit nicht.
 
 ### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ☐ offen
 
@@ -10256,13 +10339,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☐☐☐☐☐☐
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☐☐☐☐☐
 
-**167 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T168–T173**, die Empfehlungen aus
-der Bewertung vom 7. November: Sicherung, Migrationen (E3), Staging und
+**168 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T169–T173**, die übrigen
+Empfehlungen aus der Bewertung vom 7. November: Migrationen (E3), Staging und
 Ausrollen per CI, Fehlermeldungen von den Geräten, große Dateien aufteilen,
-Barrierefreiheit und Sprachauszeichnung mit axe.
+Barrierefreiheit und Sprachauszeichnung mit axe. **T168** (Sicherung mit
+Rückspielprobe) ist am selben Tag umgesetzt — wöchentlich über die
+Aufgabenplanung, die Rückspielprobe lokal grün; nur das Anmelden und die
+Mitgliedsrechte-Probe nach einem Rückspielen warten auf das Staging-Projekt
+aus T170.
 Am 7. November kam außerdem **T167** dazu und ist umgesetzt (Laufzeit-Messung
 im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
@@ -10726,7 +10813,8 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
-T168–T173 aus der Bewertung, offen; keine PR, kein Issue, außer `main` kein Zweig, auch
+T168–T173 aus der Bewertung; T168 ist am Mittag umgesetzt, offen davon nur die
+Probe gegen ein echtes Projekt; keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
@@ -10734,13 +10822,14 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte, den Neuaufbau oder eine der Aufgaben T168–T173.
+bleibt, braucht NWS-Exporte, den Neuaufbau, das Staging-Projekt oder eine der
+Aufgaben T169–T173.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
 | **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). Vorbereitet wird E3 in T169 |
-| **T168** | Sicherung mit Rückspielprobe | zuerst angehen: Supabase hält keine abrufbare Sicherung (gemessen am 7. November). Takt und Ablage entscheidet der Betreiber |
+| **T168** | Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen | der Rest von T168 (am 7. November umgesetzt: `scripts/sicherung.mjs`, wöchentlich über die Aufgabenplanung, acht Stände in `C:\DATA\Claude\jw-sicherungen`; Rückspielprobe gegen eine leere Postgres grün, alle 27 Tabellen gleich). Was fehlt, geht nur gegen ein echtes Projekt: sich nach dem Zurückspielen mit einem Testkonto anmelden und die Mitgliedsrechte-Probe fahren — dafür braucht es das Staging-Projekt aus T170 |
 | **T169** | Migrationen vorbereiten (E3) | vor dem Neuaufbau zum Echtbetrieb; der Wechsel selbst kommt mit ihm |
 | **T170** | Staging und Ausrollen per CI | nach T169; das Staging-Projekt legt der Betreiber an |
 | **T171** | Fehlermeldungen von den Geräten | bereit; wer sie liest, entscheidet der Betreiber |

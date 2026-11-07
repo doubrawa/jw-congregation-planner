@@ -1,6 +1,10 @@
 # Zeilenenden im Repo normalisieren (LF); Windows checkt lokal ggf. CRLF aus.
 * text=auto eol=lf
 
+# Batch-Dateien brauchen CRLF — cmd.exe liest eine Zeile bis zum Wagenrücklauf
+# und stolpert sonst über Sprungmarken.
+*.cmd text eol=crlf
+
 # Binärdateien nicht anfassen
 *.png binary
 *.svg binary

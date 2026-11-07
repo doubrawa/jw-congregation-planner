@@ -534,7 +534,15 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     if (url.pathname.startsWith('/auth/v1/admin/users')) {
       if (method === 'GET') return antwort(200, { users: alleKonten })
       if (method === 'POST') {
-        const konto = { id: randomUUID(), email: String((rumpf as { email?: string })?.email ?? '') }
+        // **Eine mitgeschickte Kennung gilt** — wie bei Supabase Auth. Die App
+        // legt ein Konto mit der Id der Person an (`_shared/konto-admin.ts`),
+        // und das Zurückspielen einer Sicherung mit der alten Id; vergäbe die
+        // Attrappe hier eine eigene, ginge beides durch, ohne gemessen zu sein.
+        const r = rumpf as { id?: string; email?: string }
+        if (r?.id && alleKonten.some((k) => k.id === r.id)) {
+          return antwort(422, { code: 'email_exists', msg: 'A user with this id has already been registered' })
+        }
+        const konto = { id: r?.id ?? randomUUID(), email: String(r?.email ?? '') }
         alleKonten.push(konto)
         return antwort(200, konto)
       }
