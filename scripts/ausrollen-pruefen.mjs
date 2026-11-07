@@ -47,21 +47,47 @@ function migrationenImRepo() {
 }
 
 /**
- * Die Supabase-CLI rufen und ihre JSON-Ausgabe lesen. Vor dem JSON können
- * Zeilen stehen („Initialising login role…"), deshalb ab der ersten Klammer.
+ * Der erste vollständige JSON-Wert in einem Text — was davor oder danach
+ * steht, bleibt draußen.
+ */
+export function ersterJsonWert(text) {
+  const start = text.search(/[[{]/)
+  if (start < 0) throw new Error(`keine JSON-Ausgabe: ${text.slice(0, 200)}`)
+  let tiefe = 0
+  let inText = false
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (inText) {
+      if (c === '\\') i++
+      else if (c === '"') inText = false
+    } else if (c === '"') inText = true
+    else if (c === '{' || c === '[') tiefe++
+    else if ((c === '}' || c === ']') && --tiefe === 0) return JSON.parse(text.slice(start, i + 1))
+  }
+  throw new Error('JSON-Ausgabe bricht ab')
+}
+
+/**
+ * Die Supabase-CLI rufen und ihre JSON-Ausgabe lesen.
+ *
+ * **Immer mit `--agent no`:** Erkennt die CLI einen Agenten (etwa Claude Code),
+ * gibt sie eine andere Form aus — `db query` ein Objekt mit `rows` und einer
+ * Warnung statt eines bloßen Arrays. In der CI erkennt sie keinen; mit dem
+ * Schalter ist die Form überall dieselbe (gemessen am 7.11.2026, nachdem die
+ * Prüfung in der CI am Array scheiterte, das sie lokal nie gesehen hatte).
  *
  * Unter Windows ist `npx` eine `.cmd`-Datei, die Node nur über die Shell
  * startet — dort als eine Zeile mit gequoteten Teilen, denn Argumente neben
  * `shell: true` setzt Node bloß zusammen (DEP0190).
  */
 function cli(args) {
-  const teile = ['npx', '--yes', process.env.SUPABASE_CLI || 'supabase', ...args, '--output-format', 'json']
+  const teile = ['npx', '--yes', process.env.SUPABASE_CLI || 'supabase', ...args, '--output-format', 'json', '--agent', 'no']
   const optionen = { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }
   const aus =
     process.platform === 'win32'
       ? execSync(teile.map((t) => (/[\s"&|<>^]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t)).join(' '), optionen)
       : execFileSync(teile[0], teile.slice(1), optionen)
-  return JSON.parse(aus.slice(aus.indexOf('{')))
+  return ersterJsonWert(aus)
 }
 
 /* ===================== 1. Verlauf ======================================== */
@@ -102,8 +128,9 @@ async function katalogDerProduktion(ref) {
   const datei = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'katalog-')), 'abfrage.sql')
   fs.writeFileSync(datei, katalogAbfrage())
   try {
-    const antwort = cli(['db', 'query', `--remote=${ref}`, '--read-only', '-f', datei])
-    return JSON.parse(antwort.rows[0].katalog)
+    // Ein Array mit einer Zeile (`--agent no`), die Spalte `katalog` als Text.
+    const zeilen = cli(['db', 'query', `--remote=${ref}`, '--read-only', '-f', datei])
+    return JSON.parse(zeilen[0].katalog)
   } finally {
     fs.rmSync(path.dirname(datei), { recursive: true, force: true })
   }
@@ -241,17 +268,21 @@ export async function main(argv = process.argv.slice(2)) {
     [
       'Functions',
       `alle ${soll.length} aktiv, verify_jwt wie config.toml${seit === null ? '' : ', in diesem Lauf ausgerollt'}`,
-      async () => {
-        const antwort = cli(['functions', 'list', `--remote=${ref}`])
-        return functionsBefunde(Array.isArray(antwort) ? antwort : (antwort.functions ?? []), soll, seit)
-      },
+      async () => functionsBefunde(cli(['functions', 'list', `--remote=${ref}`]).functions ?? [], soll, seit),
     ],
     ['Rauchtest', `alle ${soll.length} antworten, wie sie sollen`, () => rauchtest(url, key, soll)],
   ]
 
+  // Jede Prüfung für sich: Scheitert eine schon am Fragen, sollen die übrigen
+  // trotzdem sagen, was sie sehen.
   let rot = 0
   for (const [name, gut, pruefen] of pruefungen) {
-    const befunde = await pruefen()
+    let befunde
+    try {
+      befunde = await pruefen()
+    } catch (err) {
+      befunde = [`nicht prüfbar: ${err instanceof Error ? err.message : err}`]
+    }
     if (befunde.length === 0) {
       console.log(`✓ ${name}: ${gut}`)
       continue

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ersterJsonWert,
   functionsBefunde,
   katalogBefunde,
   rauchtest,
@@ -13,6 +14,27 @@ import {
  * Functions antworten, steht hier als Probe. Die Antworten des Rauchtests sind
  * die, die am 7.11.2026 live gemessen wurden.
  */
+
+describe('ersterJsonWert', () => {
+  it('liest ein Array von vorn — so antwortet `db query` ohne Agenten-Modus', () => {
+    // Am 7.11.2026 scheiterte die Prüfung in der CI genau hier: Ab der ersten
+    // `{` gelesen, blieb das schließende `]` als „Rest nach dem JSON" stehen.
+    const ausgabe = '[\n  {\n    "katalog": "{\\"tabellen\\" : []}"\n  }\n]\n'
+    expect(ersterJsonWert(ausgabe)).toEqual([{ katalog: '{"tabellen" : []}' }])
+  })
+
+  it('überspringt, was davor steht, und lässt stehen, was danach kommt', () => {
+    expect(ersterJsonWert('Initialising login role...\n{"migrations":[]}\nA new version is available')).toEqual({ migrations: [] })
+  })
+
+  it('zählt keine Klammer in einer Zeichenkette mit, auch nicht hinter einem escapten Anführungszeichen', () => {
+    expect(ersterJsonWert('{"a":"} ] \\" {","b":[1]} danach')).toEqual({ a: '} ] " {', b: [1] })
+  })
+
+  it('sagt es, wenn kein JSON kommt', () => {
+    expect(() => ersterJsonWert('Error: not logged in')).toThrow(/keine JSON-Ausgabe/)
+  })
+})
 
 describe('verlaufBefunde', () => {
   const versionen = ['20261107120000', '20261107134500']
