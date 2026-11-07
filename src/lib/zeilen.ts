@@ -3,7 +3,7 @@
  * Wartungsskripte lesen: Personen, Abwesenheiten, Grundplan-Regeln,
  * Gruppenbesuche, vorgemerkte Vorträge.
  *
- * Eine eigene Datei ohne Supabase-Client (5.10.2026): `data.ts` hängt an
+ * Eine eigene Datei ohne Supabase-Client (5.10.2026): `daten/` hängt an
  * `supabase.ts` und damit an `import.meta.env` — außerhalb von Vite lädt es
  * nicht. Die Skripte laden diese Umsetzer über `appCodeBereit`
  * (`scripts/gemeinsam.mjs`) und bauen damit dieselben Objekte wie die App,

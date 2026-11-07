@@ -28,8 +28,8 @@ const t = dict('de')
 
 // „Jetzt erinnern" geht an die Function — hier abgefangen.
 const erinnerungSenden = vi.fn()
-vi.mock('../lib/data', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../lib/data')>()),
+vi.mock('../lib/daten/versand', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/daten/versand')>()),
   erinnerungSenden: (weekStart: string, heute: string) => erinnerungSenden(weekStart, heute),
 }))
 

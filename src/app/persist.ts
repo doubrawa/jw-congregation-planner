@@ -1,6 +1,6 @@
 /**
  * Nebeneffekt-Schicht: schreibt die zu einer Aktion gehörende Änderung nach
- * Supabase (Fire-and-forget über lib/data). Läuft nur im konfigurierten,
+ * Supabase (Fire-and-forget über lib/daten/). Läuft nur im konfigurierten,
  * hydrierten Zustand. Der Reducer bleibt rein; hier werden `prev`/`next`
  * (Zustand vor/nach der Aktion) ausgewertet.
  */
@@ -9,47 +9,44 @@ import { fsTaskKeyWoche } from '../data/fs'
 import { entzogeneAller, type EntzogeneZuteilung } from '../data/plan-versand'
 import { schluesselTeile } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { geaenderteFelder } from '../../supabase/functions/_shared/gleicher-inhalt.ts'
+import { deleteAnmeldeLink, deleteMemberRow, saveMemberRow } from '../lib/daten/konto'
 import {
-  deleteAbsenceRow,
-  deleteConfirmationRows,
-  deleteGroupRow,
-  deleteHouseholdRow,
-  deletePersonRow,
-  deleteAnmeldeLink,
-  deleteMemberRow,
   deleteNotifications,
-  deleteServiceRow,
-  gesuchAblehnen,
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
-  persoenlichBescheid,
+} from '../lib/daten/mitteilungen'
+import {
+  deleteAbsenceRow,
+  deleteHouseholdRow,
+  deletePersonRow,
   saveAbsence,
-  saveConfirmation,
-  saveCongregationInfo,
   saveFamily,
-  saveFsRules,
-  saveFsWeek,
-  saveGroupRow,
-  saveGruppenbesuche,
-  saveMemberRow,
   savePerson,
   savePersonGroup,
+} from '../lib/daten/personen'
+import { savePlaene, savePlanEintraege } from '../lib/daten/plaene'
+import { saveFsRules, saveGruppenbesuche, saveTrolleys } from '../lib/daten/predigtdienst'
+import type { Zeilenstand } from '../lib/daten/schreibweg'
+import {
+  deleteGroupRow,
+  deleteServiceRow,
+  saveCongregationInfo,
+  saveGroupRow,
   saveService,
-  savePlaene,
-  savePlanEintraege,
   saveSettings,
-  saveTrolleys,
-  saveVortraege,
-  saveAnwesenheit,
-  saveWeek,
+} from '../lib/daten/versammlung'
+import { persoenlichBescheid, sendPlanEntzug } from '../lib/daten/versand'
+import { saveFsWeek, saveVortraege, saveAnwesenheit, saveWeek } from '../lib/daten/wochen'
+import {
+  deleteConfirmationRows,
+  gesuchAblehnen,
+  saveConfirmation,
   substituteSeek,
   substituteTake,
   substituteWithdraw,
-  sendPlanEntzug,
   platzFuellen,
-  type Zeilenstand,
-} from '../lib/data'
+} from '../lib/daten/zusagen'
 import { ANWESENDE_FELDER, anwesenheitDer } from '../data/anwesenheit'
 import { helperKeyParts } from '../data/planung/schluessel'
 import { supabase } from '../lib/supabase'
@@ -109,7 +106,7 @@ export function ausstehendesSchreiben(): void {
 /**
  * **Neu geladen: Was gebündelt wartete, fällt weg.** Es beruht auf dem
  * ersetzten Stand. Ginge es danach hinaus, nähme es den frisch geladenen Stand
- * mit (`ladung` in lib/data.ts) und schriebe still zurück, was das Laden eben
+ * mit (`ladung` in lib/daten/wochen.ts) und schriebe still zurück, was das Laden eben
  * gebracht hat — eine Woche, die ein anderer Planer inzwischen geändert hat —,
  * oder etwas, das der Bildschirm nicht mehr zeigt. So steht da, was
  * gespeichert ist; was dabei verloren geht, sieht man.

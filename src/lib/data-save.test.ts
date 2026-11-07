@@ -22,53 +22,48 @@ const chain = vi.hoisted(() => {
 
 vi.mock('./supabase', () => ({ supabase: chain }))
 
+import { deleteAnmeldeLink, deleteMemberRow, saveMemberRow } from './daten/konto'
 import {
-  deleteAbsenceRow,
-  deleteConfirmationRows,
-  deleteGroupRow,
-  deleteAnmeldeLink,
-  deleteMemberRow,
   deleteNotifications,
-  deletePersonRow,
   deletePushSubscription,
-  deleteServiceRow,
-  erinnerungSenden,
   markNotificationRead,
   markNotificationsRead,
   notifyPlanners,
-  persoenlichBescheid,
-  gesuchAblehnen,
-  saveAbsence,
-  saveConfirmation,
-  saveCongregationInfo,
-  saveFsRules,
-  saveFsWeek,
-  saveGroupRow,
-  saveMemberRow,
-  savePerson,
-  savePersonGroup,
   savePushSubscription,
-  saveService,
-  saveSettings,
-  saveTrolleys,
-  saveWeek,
-  saveAnwesenheit,
-  saveVortraege,
-  saveFamily,
-  deleteHouseholdRow,
   savePushLanguage,
   pushAboEigen,
   pushAboEintragen,
-  sendPlan,
-  setEntzugMelder,
-  setKonfliktMelder,
-  setSchreibfehlerMelder,
+} from './daten/mitteilungen'
+import {
+  deleteAbsenceRow,
+  deletePersonRow,
+  saveAbsence,
+  savePerson,
+  savePersonGroup,
+  saveFamily,
+  deleteHouseholdRow,
+} from './daten/personen'
+import { saveFsRules, saveTrolleys } from './daten/predigtdienst'
+import { setKonfliktMelder, setSchreibfehlerMelder } from './daten/schreibweg'
+import {
+  deleteGroupRow,
+  deleteServiceRow,
+  saveCongregationInfo,
+  saveGroupRow,
+  saveService,
+  saveSettings,
+} from './daten/versammlung'
+import { erinnerungSenden, persoenlichBescheid, sendPlan, setEntzugMelder, sendPlanEntzug } from './daten/versand'
+import { saveFsWeek, saveWeek, saveAnwesenheit, saveVortraege } from './daten/wochen'
+import {
+  deleteConfirmationRows,
+  gesuchAblehnen,
+  saveConfirmation,
   substituteSeek,
   substituteTake,
   substituteWithdraw,
   platzFuellen,
-  sendPlanEntzug,
-} from './data'
+} from './daten/zusagen'
 import type { Group, Person, Service, Week } from '../data/types'
 import { schreibenAbwarten } from './schreiben-unterwegs'
 import { isoDay } from '../data/meeting-dates'

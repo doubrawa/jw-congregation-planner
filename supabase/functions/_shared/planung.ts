@@ -242,7 +242,7 @@ export interface ZeitenRow {
  * Ladevorgang — und der läuft an einem `void loadAndHydrate(…)` ohne `catch`
  * hoch, die App blieb also auf „lädt…" stehen. Denkbar ist das an jeder
  * Abfrage, die die Spalten nicht ausdrücklich nennt; `CONG_SPALTEN` in
- * `src/lib/data.ts` verhindert genau das auf der Client-Seite, und hier steht
+ * `src/lib/daten/versammlung.ts` verhindert genau das auf der Client-Seite, und hier steht
  * der Gürtel dazu.
  *
  * Der Rückfall ist derselbe wie ohne Zeile: lieber der übliche Rhythmus als

@@ -206,7 +206,7 @@ async function pruneNotifications(): Promise<void> {
  * also genau die, um die es geht. Die Erinnerungen blieben aus, und im
  * Protokoll stünde ein erfolgreicher Lauf. Der Client begrenzt seine Abfrage
  * ebenso nach dem Datum — ab einem Jahr zurück (`aufbewahrtAb` in
- * `lib/data.ts`, T125).
+ * `lib/daten/laden.ts`, T125).
  *
  * Die Grenzen kommen aus derselben Arithmetik wie `tageBisTermin`: Der Termin
  * liegt bei `start + offset` mit `offset` zwischen 0 und 6. Nach unten deshalb

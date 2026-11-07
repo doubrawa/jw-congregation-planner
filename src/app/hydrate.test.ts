@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
 import { performLogout } from '../lib/abmelden'
-import { loadCongregationData, type CongregationData, type LoadResult } from '../lib/data'
+import { loadCongregationData, type CongregationData, type LoadResult } from '../lib/daten/laden'
 import { verfolgterFetch } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction } from './context'
@@ -9,7 +9,7 @@ import { ausstehendesSchreiben } from './persist'
 import { sitzungBeendet } from './sitzung'
 import { STANDARD_ZEITEN } from '../data/vorgaben'
 
-vi.mock('../lib/data', () => ({ loadCongregationData: vi.fn() }))
+vi.mock('../lib/daten/laden', () => ({ loadCongregationData: vi.fn() }))
 vi.mock('../lib/snapshot', () => ({
   saveSnapshot: vi.fn(),
   readSnapshot: vi.fn(() => null),

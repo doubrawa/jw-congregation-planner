@@ -415,7 +415,7 @@ export function eigeneSlots(week, eigenePid) {
  * darf eine Mitteilung an jemand anderen nicht zurücklesen. Um ein Haar wäre S3
  * als „greift nicht mehr" abgehakt worden, obwohl der Befund steht.
  *
- * Die App macht es richtig: `data.ts:1336` fügt ohne `.select()` ein, also ohne
+ * Die App macht es richtig: `lib/daten/` fügt ohne `.select()` ein, also ohne
  * `RETURNING`. Genau das ahmt die Probe seither nach — geschrieben wird mit
  * `return=minimal`, und ob etwas ankam, wird **am Ziel** nachgesehen, mit einem
  * Konto, das dort lesen darf.
@@ -718,7 +718,7 @@ async function anlegen(planer, tabelle, zeilen) {
 }
 
 /**
- * Ein Upsert, wie die App ihn schickt (`upsert` in `data.ts`). Eine Zeile, die
+ * Ein Upsert, wie die App ihn schickt (`upsert` in `lib/daten/`). Eine Zeile, die
  * es schon gibt, ändert er — und kommt dabei als INSERT an, deshalb vergleichen
  * die Trigger der Rechte-Stufen mit der bestehenden Zeile. Die Probe geht den
  * Weg der App, nicht einen eigenen: Ein PATCH träfe andere Richtlinien.
@@ -1429,7 +1429,7 @@ async function absageProbe(k, a) {
 /**
  * (65)–(70) Vorgemerkte Vorträge (T122): Die Namen auswärtiger Redner sieht und
  * schreibt nur, wer zuteilt — Admin und Planer (`vortraege_zuteilen`). Der
- * Planer schreibt wie die App per Upsert (`loeschenDannSchreiben` in `data.ts`).
+ * Planer schreibt wie die App per Upsert (`loeschenDannSchreiben` in `lib/daten/schreibweg.ts`).
  */
 async function vortragProben(k, a) {
   const { planer, mitglied, zuteiler, aufseher } = k
@@ -2460,7 +2460,7 @@ async function ablehnungProben(k) {
   console.log('\n„Nein, danke" auf ein Ersatzgesuch (seit 1.11.2026):')
   const taskKey = `2000-01-03|we|helper|probe-${marke}|0`
   const zeile = (uid) => ({ congregation_id: versammlung, user_id: uid, task_key: taskKey, abgesagt_von: marke })
-  // Wie die App: ein Upsert, das eine schon gegebene Antwort stehen lässt (`gesuchAblehnen` in data.ts).
+  // Wie die App: ein Upsert, das eine schon gegebene Antwort stehen lässt (`gesuchAblehnen` in lib/daten/zusagen.ts).
   const ablehnen = (wer, uid) =>
     wer.rest('abgelehnte_gesuche?on_conflict=congregation_id,user_id,task_key,abgesagt_von', 'POST', zeile(uid), 'resolution=ignore-duplicates,return=minimal')
   const sicht = (wer, uid) => async () => {
@@ -2794,7 +2794,7 @@ export async function main(arg = process.argv.slice(2)) {
   // Seit dem 24.9.2026 schreibt ein Mitglied keine Mitteilung mehr selbst: Es
   // sieht die Planer nicht (members_select) und könnte sie nicht adressieren.
   // Seine Absage geht über `notify_planners` (security definer) an jeden
-  // Planer — so wie die App es tut (`notifyPlanners` in data.ts). Bis zum
+  // Planer — so wie die App es tut (`notifyPlanners` in lib/daten/mitteilungen.ts). Bis zum
   // 3.10.2026 maß (6) noch die direkte Zeile, die seither jede Richtlinie
   // abweist, und meldete „ZU STRENG".
   const s6 = await mitglied.rest(

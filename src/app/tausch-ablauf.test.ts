@@ -14,17 +14,27 @@ import type { AppState } from './context'
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: {}, isSupabaseConfigured: true }))
-vi.mock('../lib/data', async (importActual) => ({
-  ...(await importActual<typeof import('../lib/data')>()),
-  saveWeek: vi.fn(),
-  saveConfirmation: vi.fn(),
-  deleteConfirmationRows: vi.fn(),
-  sendPlanEntzug: vi.fn(),
-  sendPlanZeugnisAenderung: vi.fn(),
+vi.mock('../lib/daten/mitteilungen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/mitteilungen')>()),
   notifyPlanners: vi.fn(),
 }))
+vi.mock('../lib/daten/versand', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/versand')>()),
+  sendPlanEntzug: vi.fn(),
+}))
+vi.mock('../lib/daten/wochen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/wochen')>()),
+  saveWeek: vi.fn(),
+}))
+vi.mock('../lib/daten/zusagen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/zusagen')>()),
+  saveConfirmation: vi.fn(),
+  deleteConfirmationRows: vi.fn(),
+}))
 
-const data = await import('../lib/data')
+const { sendPlanEntzug } = await import('../lib/daten/versand')
+const { saveWeek } = await import('../lib/daten/wochen')
+const { deleteConfirmationRows, saveConfirmation } = await import('../lib/daten/zusagen')
 const { persist } = await import('./persist')
 const { aufgabenAbgeleitet, reducer } = await import('./reducer')
 const { initialState } = await import('./init')
@@ -93,10 +103,10 @@ describe('Getauscht', () => {
 
   it('niemand bekommt „zurückgezogen", nichts wird von hier geschrieben oder gelöscht', () => {
     tauschen()
-    expect(data.sendPlanEntzug).not.toHaveBeenCalled()
-    expect(data.saveWeek).not.toHaveBeenCalled()
-    expect(data.saveConfirmation).not.toHaveBeenCalled()
-    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(sendPlanEntzug).not.toHaveBeenCalled()
+    expect(saveWeek).not.toHaveBeenCalled()
+    expect(saveConfirmation).not.toHaveBeenCalled()
+    expect(deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
   it('das Tagebuch kennt die neuen Inhaber — wie die Function es schrieb', () => {

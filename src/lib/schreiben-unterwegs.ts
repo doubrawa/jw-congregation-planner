@@ -55,7 +55,7 @@ export function verfolgterFetch(basis?: typeof fetch): typeof fetch {
 
 /**
  * **Was gleich schreiben wird, schon jetzt als unterwegs führen** — die
- * Schreibwege in `lib/data.ts` melden sich hier an, sobald sie losgehen. Am
+ * Schreibwege in `lib/daten/` melden sich hier an, sobald sie losgehen. Am
  * `fetch` allein bliebe eine Lücke, in der das Warten schon vorbei wäre: eine
  * Schreibkette, die noch auf ihren Vorgänger wartet; ein Aufruf, dessen
  * `fetch` erst nach dem Token kommt (supabase-js holt es vorher, nach einer

@@ -11,7 +11,8 @@ import { isRTL } from '../i18n/langs'
 import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { mitLinkAnmelden } from '../lib/anmelden'
-import { type Abweisung, setEntzugMelder, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { type Abweisung, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/daten/schreibweg'
+import { setEntzugMelder } from '../lib/daten/versand'
 import { fehlerKontextSetzen } from '../lib/fehler-melden'
 import { merken } from '../lib/geraetespeicher'
 import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
@@ -143,7 +144,7 @@ export function AppProvider({
     [abonnenten],
   )
 
-  // Fehlgeschlagene Schreibvorgänge sichtbar machen. Die Schreiber in data.ts
+  // Fehlgeschlagene Schreibvorgänge sichtbar machen. Die Schreiber in lib/daten/
   // sind fire-and-forget — der Erfolgs-Toast entsteht im Reducer, bevor die
   // Datenbank überhaupt geantwortet hat. Ohne diese Meldung sieht der Nutzer
   // „Zugeteilt", während nichts gespeichert wurde.

@@ -9,7 +9,8 @@ import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Week } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan, wocheGeschrieben } from '../lib/data'
+import { type Erinnert, erinnerungSenden, type PlanVersand, sendPlan } from '../lib/daten/versand'
+import { wocheGeschrieben } from '../lib/daten/wochen'
 
 /**
  * **Der Versand eines Plans** — was die Sendeknöpfe teilen: der Aktionsleiste

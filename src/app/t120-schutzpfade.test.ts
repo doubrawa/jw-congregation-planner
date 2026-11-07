@@ -21,17 +21,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
-vi.mock('../lib/data', async (importActual) => {
-  const echt = await importActual<typeof import('../lib/data')>()
-  return Object.fromEntries(
-    Object.entries(echt).map(([name, wert]) => [
-      name,
-      typeof wert === 'function' && /^(save|delete|send|notify|mark|substitute|rename|swap)/.test(name) ? vi.fn() : wert,
-    ]),
-  )
+// Dieselbe Fabrik für jedes Modul der Datenschicht (`src/lib/daten/`); dass keins
+// fehlt, prüft `datenschicht()` unten.
+const { SCHREIBT, nachgestellt } = vi.hoisted(() => {
+  const SCHREIBT = /^(save|delete|send|notify|mark|substitute|rename|swap)/
+  const nachgestellt = (echt: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(echt).map(([name, wert]) => [name, typeof wert === 'function' && SCHREIBT.test(name) ? vi.fn() : wert]),
+    )
+  return { SCHREIBT, nachgestellt }
 })
+vi.mock('../lib/daten/konto', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/laden', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/mitteilungen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/personen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/plaene', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/predigtdienst', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/schreibweg', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/versammlung', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/versand', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/wochen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/zusagen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
 
-import * as data from '../lib/data'
 import { persist } from './persist'
 import { reducer } from './reducer'
 import type { AppAction, AppState } from './context'
@@ -74,10 +85,25 @@ function zustand(over: Partial<AppState> = {}): AppState {
   }
 }
 
+/** Die Module der Datenschicht, wie die Attrappen oben sie liefern — ein neues zählt von selbst mit. */
+const DATENSCHICHT = import.meta.glob<Record<string, unknown>>(['../lib/daten/*.ts', '!../lib/daten/*.test.ts'], { eager: true })
+
+/**
+ * Alle Exporte der Datenschicht. Wirft, wenn der Glob (fast) nichts findet oder
+ * ein Modul ohne Attrappe schreiben würde — sonst prüfte die Probe ins Leere.
+ */
+function datenschicht(): Array<[string, unknown]> {
+  const module = Object.entries(DATENSCHICHT)
+  if (module.length < 11) throw new Error(`Datenschicht nicht gefunden (${module.length} Module) — Glob nachziehen`)
+  const echt = module.filter(([, m]) => Object.entries(m).some(([name, wert]) => typeof wert === 'function' && SCHREIBT.test(name) && !vi.isMockFunction(wert)))
+  if (echt.length) throw new Error(`ohne Attrappe: ${echt.map(([pfad]) => pfad).join(', ')} — vi.mock oben ergänzen`)
+  return module.flatMap(([, m]) => Object.entries(m))
+}
+
 /** Die schreibenden Funktionen der Datenschicht, die gerufen wurden — mit Namen. */
 function geschrieben(): string[] {
   vi.runOnlyPendingTimers() // gebündelte Schreiber leeren
-  return Object.entries(data)
+  return datenschicht()
     .filter(([, f]) => vi.isMockFunction(f) && f.mock.calls.length > 0)
     .map(([name]) => name)
 }

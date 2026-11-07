@@ -17,7 +17,7 @@ vi.mock('./supabase', () => ({
     return store.client
   },
 }))
-vi.mock('./data', () => ({
+vi.mock('./daten/wochen', () => ({
   ladungJetzt: () => 7,
   tauschStaendeUebernehmen: (staende: unknown[], geladen: number) => store.staende.push({ staende, geladen }),
 }))

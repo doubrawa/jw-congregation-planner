@@ -19,16 +19,18 @@ import { quelldateien, WURZEL } from './quelldateien'
  *
  * Erlaubt sind die Stellen, die das **echte** Recht brauchen oder befördern:
  * `rechte.ts` selbst, der Reducer (Laden und die Wache von `setAnsicht`),
- * `lib/data.ts` (Mitglieder lesen und schreiben), `aktiveAnsicht` in
- * `ansicht.ts` (für `rechteVon`, `rechteStufe` und die Leiste) und der Schalter
- * — sie fragen am echten Recht, sonst gäbe es aus „Verkündiger" kein Zurück.
+ * `lib/daten/laden.ts` und `lib/daten/konto.ts` (Mitglieder lesen und
+ * schreiben), `aktiveAnsicht` in `ansicht.ts` (für `rechteVon`, `rechteStufe`
+ * und die Leiste) und der Schalter — sie fragen am echten Recht, sonst gäbe es
+ * aus „Verkündiger" kein Zurück.
  */
 
 const ERLAUBT = new Set([
   'src/data/rechte.ts',
   'src/data/ansicht.ts',
   'src/app/reducer.ts',
-  'src/lib/data.ts',
+  'src/lib/daten/konto.ts',
+  'src/lib/daten/laden.ts',
   'src/profil/AnsichtKarte.tsx',
 ])
 

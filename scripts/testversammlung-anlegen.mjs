@@ -176,7 +176,7 @@ export const TEST_FS_REGELN = [
 
 /**
  * Die Zeilen für `fs_rules` — **eine je Regel**, mit den Spalten aus
- * `schema.sql`, wie die App (`fsRuleToRow` in `src/lib/data.ts`) und
+ * `schema.sql`, wie die App (`fsRuleToRow` in `src/lib/zeilen.ts`) und
  * `treffpunkt-regeln-setzen.mjs` sie schreiben.
  *
  * Bis zum 26. September 2026 ging hier der ganze Grundplan als **ein** Objekt

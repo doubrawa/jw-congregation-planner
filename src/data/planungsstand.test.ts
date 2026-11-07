@@ -163,7 +163,7 @@ describe('Die Karte schaut auf die kommenden Wochen, nicht auf die laufende', ()
 
   it('liegt heute in keiner geladenen Woche, beginnt sie bei der nächsten — nicht bei der ältesten', () => {
     /*
-      Die App lädt ein Jahr zurück (lib/data.ts), und die Woche B fehlt im
+      Die App lädt ein Jahr zurück (lib/daten/laden.ts), und die Woche B fehlt im
       Bestand. Wer „ab der laufenden Woche" rechnet, findet keine und fällt auf
       die erste geladene zurück. Die vier Zeilen der Karte gingen dann an vier
       vergangene Wochen — die zählen nichts mehr und stehen nicht da —, und die

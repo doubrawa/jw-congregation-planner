@@ -41,7 +41,8 @@ const rpcMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./supabase', () => ({ supabase: { rpc: rpcMock } }))
 
-import { saveWeek, setKonfliktMelder, setSchreibfehlerMelder } from './data'
+import { setKonfliktMelder, setSchreibfehlerMelder } from './daten/schreibweg'
+import { saveWeek } from './daten/wochen'
 import type { Week } from '../data/types'
 
 function rpc(funktion: string, args: Record<string, unknown>) {

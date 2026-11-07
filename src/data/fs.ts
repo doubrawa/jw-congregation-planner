@@ -1088,7 +1088,7 @@ function mapInsts(fsWeeks: FsInstance[][], fn: (inst: FsInstance) => FsInstance)
 /**
  * Löst die Verweise auf eine gelöschte Person aus den Treffpunkt-Wochen: die
  * `lpid` verschwindet, **der Name bleibt als Text stehen** — genau wie bei den
- * Zusammenkünften (`dropPersonPid` in lib/data.ts).
+ * Zusammenkünften (`dropPersonPid` in namensbindung.ts).
  *
  * Ohne das zeigte der Fremdschlüssel ins Leere: `deriveMyFsTasks` und die
  * Konfliktprüfung entscheiden über die Id und fänden niemanden mehr, während
@@ -1107,7 +1107,7 @@ export function fsDropPersonPid(fsWeeks: FsInstance[][], id: string): FsInstance
 
 /**
  * Leiter-Namen ohne `lpid` an ihre Person binden — das Gegenstück zu
- * `pidsNachtragen` (lib/data.ts) für die zweite Datenquelle.
+ * `pidsNachtragen` (namensbindung.ts) für die zweite Datenquelle.
  *
  * Gebraucht wird es im laufenden Betrieb: Wird eine Person gelöscht, nimmt
  * `fsDropPersonPid` ihre Id aus den Treffpunkten und lässt den Namen stehen.
@@ -1141,7 +1141,7 @@ export function fsLeiterBinden(
 /**
  * Zieht den Anzeigenamen einer umbenannten Person durch die Treffpunkt-Wochen.
  *
- * Gegenstück zu `renameInWeeks` (lib/data.ts). Der Leiter steht als **Text** in
+ * Gegenstück zu `renameInWeeks` (namensbindung.ts). Der Leiter steht als **Text** in
  * den Treffpunkt-Daten, `lpid` ist nur der Fremdschlüssel — ohne dieses
  * Nachziehen stand auf jedem Treffpunkt weiter der alte Name, während die
  * Zusammenkünfte längst den neuen zeigten.

@@ -5,7 +5,7 @@ const daten = vi.hoisted(() => ({
   pushAboEigen: vi.fn(),
   pushAboEintragen: vi.fn(),
 }))
-vi.mock('./data', () => daten)
+vi.mock('./daten/mitteilungen', () => daten)
 const browser = vi.hoisted(() => ({ abo: null as PushSubscription | null }))
 vi.mock('./push', async (importActual) => ({
   ...(await importActual<typeof import('./push')>()),

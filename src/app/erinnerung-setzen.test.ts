@@ -14,12 +14,12 @@ import { type AppAction, type AppState, ERINNERUNG_GRENZEN, type ReminderKey } f
 // Supabase vorhanden (sonst schreibt `persist` gar nichts) — aber kein Netz:
 // Die Schreibfunktion für die Einstellungen ist eine Attrappe.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
-vi.mock('../lib/data', async (importActual) => ({
-  ...(await importActual<typeof import('../lib/data')>()),
+vi.mock('../lib/daten/versammlung', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/versammlung')>()),
   saveSettings: vi.fn(),
 }))
 
-import * as data from '../lib/data'
+import { saveSettings } from '../lib/daten/versammlung'
 import { persist } from './persist'
 import { isViewAction } from './readonly'
 import { reducer } from './reducer'
@@ -79,7 +79,7 @@ describe('setReminder', () => {
 })
 
 describe('setReminder wird gespeichert wie changeReminder', () => {
-  beforeEach(() => vi.mocked(data.saveSettings).mockClear())
+  beforeEach(() => vi.mocked(saveSettings).mockClear())
 
   const angemeldet = (reminders: Reminders): AppState => ({ ...mit(reminders), congregationId: 'c1', userId: 'u1' })
 
@@ -87,8 +87,8 @@ describe('setReminder wird gespeichert wie changeReminder', () => {
     const vorher = angemeldet({ first: 7, last: 1, repeat: false })
     const action: AppAction = { type: 'setReminder', key: 'last', value: 0 }
     persist(vorher, reducer(vorher, action), action)
-    expect(data.saveSettings).toHaveBeenCalledTimes(1)
-    expect(data.saveSettings).toHaveBeenCalledWith(
+    expect(saveSettings).toHaveBeenCalledTimes(1)
+    expect(saveSettings).toHaveBeenCalledWith(
       'c1',
       expect.objectContaining({ reminders: { first: 7, last: 0, repeat: false } }),
     )

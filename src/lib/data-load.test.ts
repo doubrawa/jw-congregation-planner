@@ -22,19 +22,12 @@ vi.mock('./supabase', () => ({
   supabase: { from: fromMock, rpc: rpcMock, functions: { invoke: invokeMock } },
 }))
 
-import {
-  ABWESENHEIT_SPALTEN,
-  loadCongregationData,
-  loadNotifications,
-  PERSON_SPALTEN,
-  platzFuellen,
-  saveFsWeek,
-  saveWeek,
-  SENT_LOG_LIMIT,
-  setKonfliktMelder,
-  substituteTake,
-  wocheGeschrieben,
-} from './data'
+import { loadCongregationData, SENT_LOG_LIMIT } from './daten/laden'
+import { loadNotifications } from './daten/mitteilungen'
+import { ABWESENHEIT_SPALTEN, PERSON_SPALTEN } from './daten/personen'
+import { setKonfliktMelder } from './daten/schreibweg'
+import { saveFsWeek, saveWeek, wocheGeschrieben } from './daten/wochen'
+import { platzFuellen, substituteTake } from './daten/zusagen'
 import { gesuchKennung } from './abgelehnte-gesuche'
 import { aufbewahrtAb, VERTEILUNG_WOCHEN } from '../data/aufbewahrung'
 import type { Week } from '../data/types'

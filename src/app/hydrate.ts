@@ -11,7 +11,7 @@
 
 import type { Dispatch } from 'react'
 import { performLogout } from '../lib/abmelden'
-import { loadCongregationData, type LoadResult } from '../lib/data'
+import { loadCongregationData, type LoadResult } from '../lib/daten/laden'
 import { schreibenAbwarten, schreibStand } from '../lib/schreiben-unterwegs'
 import { clearSnapshot, readSnapshot, saveSnapshot } from '../lib/snapshot'
 import type { AppAction, HydratePayload } from './context'

@@ -28,7 +28,7 @@ vi.mock('../src/lib/supabase', () => ({
   },
 }))
 
-import { loadCongregationData } from '../src/lib/data'
+import { loadCongregationData } from '../src/lib/daten/laden'
 import { fsRuleToRow, personToRow } from '../src/lib/zeilen'
 import { initialState } from '../src/app/init'
 import { reducer } from '../src/app/reducer'

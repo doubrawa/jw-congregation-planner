@@ -5,7 +5,7 @@ import { act, cleanup, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { AppAction } from './context'
 import type { LadeOptionen, StandOptionen } from './hydrate'
-import type { Abweisung } from '../lib/data'
+import type { Abweisung } from '../lib/daten/schreibweg'
 import { DE } from '../i18n/de'
 import { APP_LANGS, isRTL } from '../i18n/langs'
 import { dict, loadOverlay } from '../i18n/ui'
@@ -17,7 +17,7 @@ import { speicherSperren } from '../../tests/ohne-speicher'
  * `store.test.tsx` prüft den Schreibschutz im Offline-Stand. Hier stehen die
  * übrigen Effekte, und jeder davon ist ein eigener Anwendungsfall:
  *
- * - **Fehlgeschlagene Schreibvorgänge melden.** Die Schreiber in `data.ts`
+ * - **Fehlgeschlagene Schreibvorgänge melden.** Die Schreiber in `lib/daten/`
  *   sind fire-and-forget, der Erfolgs-Toast entsteht im Reducer, bevor die
  *   Datenbank geantwortet hat. Ohne diese Meldung liest der Nutzer
  *   „Zugeteilt", während nichts gespeichert wurde.
@@ -91,11 +91,11 @@ vi.mock('../lib/push-abo', () => ({
 }))
 
 /**
- * Die beiden Melder liegen in `data.ts` als Modulvariable; ausgelöst werden sie
+ * Die beiden Melder liegen in `lib/daten/schreibweg.ts` als Modulvariable; ausgelöst werden sie
  * dort beim fehlgeschlagenen bzw. kollidierenden Schreibvorgang. Statt einen
  * echten Schreibvorgang nachzustellen (das prüft `data-save.test.ts`), wird
  * hier die Übergabestelle abgegriffen: Der Provider trägt seine Funktion ein,
- * und der Test ruft genau die auf, die `data.ts` aufrufen würde.
+ * und der Test ruft genau die auf, die `schreibweg.ts` aufrufen würde.
  */
 type Konfliktmelder = (grund?: Abweisung) => void
 const melder = {
@@ -103,7 +103,7 @@ const melder = {
   konflikt: null as Konfliktmelder | null,
   entzug: null as (() => void) | null,
 }
-vi.mock('../lib/data', async (orig) => ({
+vi.mock('../lib/daten/schreibweg', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   setSchreibfehlerMelder: (fn: (() => void) | null) => {
     melder.schreibfehler = fn
@@ -111,6 +111,9 @@ vi.mock('../lib/data', async (orig) => ({
   setKonfliktMelder: (fn: Konfliktmelder | null) => {
     melder.konflikt = fn
   },
+}))
+vi.mock('../lib/daten/versand', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   setEntzugMelder: (fn: (() => void) | null) => {
     melder.entzug = fn
   },
@@ -122,7 +125,7 @@ const { STANDARD_ZEITEN } = await import('../data/vorgaben')
 const { useApp } = await import('./context')
 const { anmeldeAdresseVergessen } = await import('../login/anmelde-adresse')
 
-/** Auslösen, was `data.ts` bei einem Fehlschlag auslösen würde — beim Konflikt mit dem Grund des Servers, wo er einen nennt. */
+/** Auslösen, was `lib/daten/` bei einem Fehlschlag auslösen würde — beim Konflikt mit dem Grund des Servers, wo er einen nennt. */
 function melderAufrufen(art: 'schreibfehler' | 'konflikt', grund?: Abweisung): void {
   if (art === 'konflikt') melder.konflikt?.(grund)
   else melder.schreibfehler?.()

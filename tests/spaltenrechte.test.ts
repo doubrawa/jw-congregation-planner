@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('../src/lib/supabase', () => ({ supabase: null }))
 
 import { schemaSpalten, SCHEMA_SQL } from '../scripts/schema-attrappe'
-import { ABWESENHEIT_SPALTEN } from '../src/lib/data'
+import { ABWESENHEIT_SPALTEN } from '../src/lib/daten/personen'
 import { absenceFromRow } from '../src/lib/zeilen'
 
 /**

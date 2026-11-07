@@ -695,7 +695,7 @@ let appCodeHaken = false
  * Tragfähig, weil `tsconfig.app.json` `verbatimModuleSyntax` und
  * `erasableSyntaxOnly` verlangt: keine `enum`, keine Parameter-Eigenschaften,
  * Typ-Importe stehen als solche da — genau das, was Node abstreifen kann. Was
- * am Supabase-Client hängt (`src/lib/data.ts`, `import.meta.env`), lädt hier
+ * am Supabase-Client hängt (`src/lib/daten/`, `import.meta.env`), lädt hier
  * nicht; die Zeilen-Umsetzer stehen deshalb in `src/lib/zeilen.ts`.
  *
  * Danach mit `await import('../src/…')` laden — ein statischer Import würde

@@ -17,7 +17,7 @@
 import { wasBleibt } from '../../supabase/functions/_shared/trolley.ts'
 import type { TrolleyHindernis } from '../data/trolleys'
 import type { TrolleyTermin } from '../data/types'
-import { trolleyTerminFromRow, type TrolleyTerminRow } from './data'
+import { trolleyTerminFromRow, type TrolleyTerminRow } from './daten/predigtdienst'
 import { fehlerAntwort } from './function-antwort'
 import { supabase } from './supabase'
 

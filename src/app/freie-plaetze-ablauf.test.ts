@@ -11,18 +11,27 @@ import type { AppState } from './context'
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: {}, isSupabaseConfigured: true }))
-vi.mock('../lib/data', async (importActual) => ({
-  ...(await importActual<typeof import('../lib/data')>()),
-  platzFuellen: vi.fn(),
-  saveWeek: vi.fn(),
-  saveConfirmation: vi.fn(),
-  deleteConfirmationRows: vi.fn(),
-  sendPlanEntzug: vi.fn(),
-  sendPlanZeugnisAenderung: vi.fn(),
+vi.mock('../lib/daten/mitteilungen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/mitteilungen')>()),
   notifyPlanners: vi.fn(),
 }))
+vi.mock('../lib/daten/versand', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/versand')>()),
+  sendPlanEntzug: vi.fn(),
+}))
+vi.mock('../lib/daten/wochen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/wochen')>()),
+  saveWeek: vi.fn(),
+}))
+vi.mock('../lib/daten/zusagen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/zusagen')>()),
+  platzFuellen: vi.fn(),
+  saveConfirmation: vi.fn(),
+  deleteConfirmationRows: vi.fn(),
+}))
 
-const data = await import('../lib/data')
+const { saveWeek } = await import('../lib/daten/wochen')
+const { platzFuellen, saveConfirmation } = await import('../lib/daten/zusagen')
 const { persist } = await import('./persist')
 const { aufgabenAbgeleitet, reducer } = await import('./reducer')
 const { initialState } = await import('./init')
@@ -106,9 +115,9 @@ describe('Freie Plätze — vom Angebot zum Eintrag', () => {
     expect(nachher.myTasks.map((t) => t.id)).toContain(KEY)
 
     persist(vorher, nachher, { type: 'platzUebernehmen', key: KEY })
-    expect(data.platzFuellen).toHaveBeenCalledWith(KEY)
-    expect(data.saveWeek).not.toHaveBeenCalled()
-    expect(data.saveConfirmation).not.toHaveBeenCalled()
+    expect(platzFuellen).toHaveBeenCalledWith(KEY)
+    expect(saveWeek).not.toHaveBeenCalled()
+    expect(saveConfirmation).not.toHaveBeenCalled()
   })
 
   it('was nicht angeboten ist, ändert nichts — ein veralteter Tipp, ein Programmpunkt', () => {

@@ -51,7 +51,8 @@ const db = vi.hoisted(() => {
 
 vi.mock('./supabase', () => ({ supabase: db.client }))
 
-import { savePlaene, savePlanEintraege, setSchreibfehlerMelder } from './data'
+import { savePlaene, savePlanEintraege } from './daten/plaene'
+import { setSchreibfehlerMelder } from './daten/schreibweg'
 import type { PlanEintrag, WeitererPlan } from '../data/types'
 
 const plan: WeitererPlan = { id: 'p1', name: 'Grundreinigung', von: '2026-09-21', bis: '2026-10-04', entwurf: true }

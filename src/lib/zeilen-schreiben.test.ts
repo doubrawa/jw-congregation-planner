@@ -44,12 +44,8 @@ const db = vi.hoisted(() => {
 
 vi.mock('./supabase', () => ({ supabase: db.client }))
 
-import {
-  saveFsRules,
-  saveGruppenbesuche,
-  setKonfliktMelder,
-  setSchreibfehlerMelder,
-} from './data'
+import { saveFsRules, saveGruppenbesuche } from './daten/predigtdienst'
+import { setKonfliktMelder, setSchreibfehlerMelder } from './daten/schreibweg'
 import type { FsRule, Gruppenbesuch } from '../data/types'
 
 /** Bis alles Wartende durch die Schlange ist (sie hängt Versprechen aneinander). */

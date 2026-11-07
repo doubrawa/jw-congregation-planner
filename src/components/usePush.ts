@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet } from '../app/eigene-person'
-import { deletePushSubscription, savePushLanguage, savePushSubscription } from '../lib/data'
+import { deletePushSubscription, savePushLanguage, savePushSubscription } from '../lib/daten/mitteilungen'
 import { appInstalled, installAvailable, onInstallChange } from '../lib/install'
 import {
   currentSubscription,

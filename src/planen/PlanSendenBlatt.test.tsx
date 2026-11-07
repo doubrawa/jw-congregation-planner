@@ -43,8 +43,10 @@ const sendPlan = vi.fn()
 /** Wann die Woche geschrieben ist — sofort, außer ein Fall hält es auf. */
 const wocheGeschrieben = vi.fn((_woche: string) => Promise.resolve())
 const ausstehendesSchreiben = vi.fn()
-vi.mock('../lib/data', () => ({
+vi.mock('../lib/daten/versand', () => ({
   sendPlan: (w: string, heute: string) => sendPlan(w, heute),
+}))
+vi.mock('../lib/daten/wochen', () => ({
   wocheGeschrieben: (w: string) => wocheGeschrieben(w),
 }))
 vi.mock('../app/persist', () => ({ ausstehendesSchreiben: () => ausstehendesSchreiben() }))

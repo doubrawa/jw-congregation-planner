@@ -18,17 +18,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
-vi.mock('../lib/data', async (importActual) => {
-  const echt = await importActual<typeof import('../lib/data')>()
-  return Object.fromEntries(
-    Object.entries(echt).map(([name, wert]) => [
-      name,
-      typeof wert === 'function' && /^(save|delete|send|notify|mark|substitute|rename|swap)/.test(name) ? vi.fn() : wert,
-    ]),
-  )
+// Dieselbe Fabrik für jedes Modul der Datenschicht (`src/lib/daten/`); dass keins
+// fehlt, prüft `datenschicht()` unten.
+const { SCHREIBT, nachgestellt } = vi.hoisted(() => {
+  const SCHREIBT = /^(save|delete|send|notify|mark|substitute|rename|swap)/
+  const nachgestellt = (echt: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(echt).map(([name, wert]) => [name, typeof wert === 'function' && SCHREIBT.test(name) ? vi.fn() : wert]),
+    )
+  return { SCHREIBT, nachgestellt }
 })
+vi.mock('../lib/daten/konto', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/laden', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/mitteilungen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/personen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/plaene', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/predigtdienst', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/schreibweg', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/versammlung', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/versand', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/wochen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
+vi.mock('../lib/daten/zusagen', async (importActual) => nachgestellt(await importActual<Record<string, unknown>>()))
 
-import * as data from '../lib/data'
+import { savePlaene, savePlanEintraege } from '../lib/daten/plaene'
+import { saveGruppenbesuche, saveTrolleys } from '../lib/daten/predigtdienst'
+import { sendPlanEntzug } from '../lib/daten/versand'
+import { saveFsWeek, saveWeek } from '../lib/daten/wochen'
+import { deleteConfirmationRows } from '../lib/daten/zusagen'
 import { persist } from './persist'
 import { reducer } from './reducer'
 import type { AppAction, AppState } from './context'
@@ -39,6 +55,21 @@ import { fsSetLeader, fsTaskKey } from '../data/fs'
 import { displayName } from '../data/helpers'
 import { neuerPlan } from '../data/weitere-plaene'
 import type { Trolley, TrolleyTermin, WeitererPlan } from '../data/types'
+
+/** Die Module der Datenschicht, wie die Attrappen oben sie liefern — ein neues zählt von selbst mit. */
+const DATENSCHICHT = import.meta.glob<Record<string, unknown>>(['../lib/daten/*.ts', '!../lib/daten/*.test.ts'], { eager: true })
+
+/**
+ * Alle Exporte der Datenschicht. Wirft, wenn der Glob (fast) nichts findet oder
+ * ein Modul ohne Attrappe schreiben würde — sonst prüfte die Probe ins Leere.
+ */
+function datenschicht(): Array<[string, unknown]> {
+  const module = Object.entries(DATENSCHICHT)
+  if (module.length < 11) throw new Error(`Datenschicht nicht gefunden (${module.length} Module) — Glob nachziehen`)
+  const echt = module.filter(([, m]) => Object.entries(m).some(([name, wert]) => typeof wert === 'function' && SCHREIBT.test(name) && !vi.isMockFunction(wert)))
+  if (echt.length) throw new Error(`ohne Attrappe: ${echt.map(([pfad]) => pfad).join(', ')} — vi.mock oben ergänzen`)
+  return module.flatMap(([, m]) => Object.entries(m))
+}
 
 /** Mit dem Trolley-Recht (`zeugnis`): Manfred (p1) und Simon (p9). */
 function start(over: Partial<AppState> = {}): AppState {
@@ -82,8 +113,8 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date(2026, 8, 7, 9, 0)) // Montag, 7.9.2026
   // Die Wochen gelingen — erst danach geht hinaus, was an ihnen hängt (16.10.2026).
-  vi.mocked(data.saveWeek).mockResolvedValue(true)
-  vi.mocked(data.saveFsWeek).mockResolvedValue(true)
+  vi.mocked(saveWeek).mockResolvedValue(true)
+  vi.mocked(saveFsWeek).mockResolvedValue(true)
 })
 
 /** Bis das Schreiben der Woche geantwortet hat (`nachDemSchreiben` in persist.ts). */
@@ -118,10 +149,10 @@ describe('Trolleys als Ablauf', () => {
     const a = ablauf(start({ planner: true }))
     a.tue({ type: 'trolleyAnlegen', trolley: T1 })
     for (const name of ['T', 'Tr', 'Trolley Saal']) a.tue({ type: 'trolleyAendern', id: 'tr1', patch: { name } })
-    expect(data.saveTrolleys).not.toHaveBeenCalled()
+    expect(saveTrolleys).not.toHaveBeenCalled()
     a.tue({ type: 'logout' })
-    expect(data.saveTrolleys).toHaveBeenCalledTimes(1)
-    expect(data.saveTrolleys).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'tr1', name: 'Trolley Saal' })])
+    expect(saveTrolleys).toHaveBeenCalledTimes(1)
+    expect(saveTrolleys).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'tr1', name: 'Trolley Saal' })])
   })
 
   it('ein Termin aus der Function und der entfernte Trolley: kein Schreiben, und seine Termine gehen mit', () => {
@@ -132,7 +163,7 @@ describe('Trolleys als Ablauf', () => {
     expect(a.state.trolleys).toEqual([])
     expect(a.state.trolleyTermine).toEqual([])
     vi.runOnlyPendingTimers()
-    for (const [name, fn] of Object.entries(data)) {
+    for (const [name, fn] of datenschicht()) {
       if (vi.isMockFunction(fn)) expect(fn, name).not.toHaveBeenCalled()
     }
   })
@@ -194,12 +225,12 @@ describe('Gruppenbesuche als Ablauf', () => {
     const { woche, grp, besuch, keys } = zugesagterBesuch(a)
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(seineSchluessel(a, woche, grp, BESUCHER)).toEqual([])
-    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
+    expect(saveGruppenbesuche).toHaveBeenCalledWith('c1', [], [besuch.id])
     // Seine Zusagen gehen mit der Woche, in einer Transaktion.
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1], expect.arrayContaining(keys))
+    expect(saveFsWeek).toHaveBeenCalledWith('c1', woche, a.state.fsWeeks[1], expect.arrayContaining(keys))
     await geschrieben()
-    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+    expect(deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
     )
   })
@@ -210,11 +241,11 @@ describe('Gruppenbesuche als Ablauf', () => {
     a.tue({ type: 'besuchBesucher', id: besuch.id, pid: ANDERER })
     expect(seineSchluessel(a, woche, grp, ANDERER)).toEqual(keys)
     for (const k of keys) expect(a.state.confirmations[k]).toBeUndefined()
-    expect(data.saveGruppenbesuche).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: besuch.id, pid: ANDERER })], [])
+    expect(saveGruppenbesuche).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: besuch.id, pid: ANDERER })], [])
     await geschrieben()
-    expect(vi.mocked(data.saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual(expect.arrayContaining(keys))
-    expect(data.deleteConfirmationRows).not.toHaveBeenCalled()
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith(
+    expect(vi.mocked(saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual(expect.arrayContaining(keys))
+    expect(deleteConfirmationRows).not.toHaveBeenCalled()
+    expect(sendPlanEntzug).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ key: keys[0], pid: BESUCHER })]),
     )
   })
@@ -239,8 +270,8 @@ describe('Gruppenbesuche als Ablauf', () => {
     a.tue({ type: 'besuchEntfernen', id: besuch.id })
     expect(a.state.fsWeeks[1]!.find((i) => i.id === inst.id)?.leader).toBe('')
     await geschrieben()
-    expect(vi.mocked(data.saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual([key])
-    expect(data.sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key, pid: BESUCHER })])
+    expect(vi.mocked(saveFsWeek).mock.calls.flatMap((c) => c[3] ?? [])).toEqual([key])
+    expect(sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key, pid: BESUCHER })])
   })
 })
 
@@ -252,27 +283,27 @@ describe('Weitere Pläne als Ablauf', () => {
     const plan = neuerPlan('p-neu', new Date())
     a.tue({ type: 'wpPlanAnlegen', plan })
     for (const name of ['W', 'Wi', 'Winter']) a.tue({ type: 'wpPlanAendern', id: 'p-neu', patch: { name } })
-    expect(data.savePlaene).not.toHaveBeenCalled()
+    expect(savePlaene).not.toHaveBeenCalled()
 
     a.tue({ type: 'wpGruppenVerteilen', planId: 'p-neu', abGruppe: DEMO_GROUPS[0]!.id })
     // Der Plan geht vor seinen Einträgen hinaus — einmal, mit Namen, ohne den anderen.
-    expect(data.savePlaene).toHaveBeenCalledTimes(1)
-    expect(data.savePlaene).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'p-neu', name: 'Winter' })], [])
-    const [, verteilt, nichtsWeg] = vi.mocked(data.savePlanEintraege).mock.calls[0]!
+    expect(savePlaene).toHaveBeenCalledTimes(1)
+    expect(savePlaene).toHaveBeenCalledWith('c1', [expect.objectContaining({ id: 'p-neu', name: 'Winter' })], [])
+    const [, verteilt, nichtsWeg] = vi.mocked(savePlanEintraege).mock.calls[0]!
     expect(verteilt).toHaveLength(13)
     expect(nichtsWeg).toEqual([])
-    expect(reihenfolge(data.savePlaene)).toBeLessThan(reihenfolge(data.savePlanEintraege)!)
+    expect(reihenfolge(savePlaene)).toBeLessThan(reihenfolge(savePlanEintraege)!)
 
     // Auf vier Wochen kürzen: Die neun Wochen danach gehen, die vier davor bleiben unberührt.
     const bis = tagNach(plan.von, 4 * 7 - 1)
     a.tue({ type: 'wpPlanAendern', id: 'p-neu', patch: { bis } })
-    const [, geaendert, entfernt] = vi.mocked(data.savePlanEintraege).mock.calls[1]!
+    const [, geaendert, entfernt] = vi.mocked(savePlanEintraege).mock.calls[1]!
     expect(geaendert).toEqual([])
     expect(entfernt).toHaveLength(9)
     expect(a.state.planEintraege.filter((e) => e.planId === 'p-neu')).toHaveLength(4)
     // Das neue Ende ging vor dem Löschen hinaus — und wieder nur dieser Plan.
-    expect(vi.mocked(data.savePlaene).mock.calls[1]).toEqual(['c1', [expect.objectContaining({ id: 'p-neu', bis })], []])
-    expect(reihenfolge(data.savePlaene, 1)).toBeLessThan(reihenfolge(data.savePlanEintraege, 1)!)
+    expect(vi.mocked(savePlaene).mock.calls[1]).toEqual(['c1', [expect.objectContaining({ id: 'p-neu', bis })], []])
+    expect(reihenfolge(savePlaene, 1)).toBeLessThan(reihenfolge(savePlanEintraege, 1)!)
   })
 
   it('erst getippt, dann gelöscht: der Plan geht nur als Löschung hinaus', () => {
@@ -282,7 +313,7 @@ describe('Weitere Pläne als Ablauf', () => {
     a.tue({ type: 'wpPlanLoeschen', id: 'p-neu' })
     a.tue({ type: 'navigate', screen: 'start' })
     // Geschrieben nach dem Löschen, stünde er wieder da.
-    expect(data.savePlaene).toHaveBeenCalledTimes(1)
-    expect(data.savePlaene).toHaveBeenCalledWith('c1', [], ['p-neu'])
+    expect(savePlaene).toHaveBeenCalledTimes(1)
+    expect(savePlaene).toHaveBeenCalledWith('c1', [], ['p-neu'])
   })
 })

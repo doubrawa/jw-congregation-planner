@@ -37,7 +37,7 @@ import { MitteilungenScreen } from './MitteilungenScreen'
 const ladeMitteilungen = vi.fn()
 const ladeAlles = vi.fn()
 
-vi.mock('../lib/data', () => ({
+vi.mock('../lib/daten/mitteilungen', () => ({
   loadNotifications: (...args: unknown[]) => ladeMitteilungen(...args) as unknown,
 }))
 vi.mock('../app/hydrate', () => ({

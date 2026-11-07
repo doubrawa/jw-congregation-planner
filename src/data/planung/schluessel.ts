@@ -78,7 +78,7 @@ export function taskKeyVorbei(
     if (week) return istVorbei(meetingDateMs(week, teile.tab, zeiten), heute)
   }
   // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
-  // lib/data.ts), oder ein Treffpunkt. Auch dann nicht geraten, sondern
+  // lib/daten/laden.ts), oder ein Treffpunkt. Auch dann nicht geraten, sondern
   // gerechnet: Der Schlüssel trägt den Montag, und spätestens sechs Tage
   // später ist der Termin gewesen.
   const montag = Date.parse(teile.woche)

@@ -9,7 +9,7 @@
  * nichts — die fremde Zeile darf er weder ändern noch übernehmen.
  */
 
-import { deletePushSubscription, pushAboEigen, pushAboEintragen } from './data'
+import { deletePushSubscription, pushAboEigen, pushAboEintragen } from './daten/mitteilungen'
 import { subscriptionFields, vorhandenesAbo } from './push'
 
 /** Beim Abmelden: die eigene Zeile löschen, dann das Abo im Browser beenden. */

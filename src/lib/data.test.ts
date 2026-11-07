@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confirmationMap } from './data'
+import { confirmationMap } from './daten/zusagen'
 import { renameInWeeks } from '../data/namensbindung'
 import type { Meeting, PartItem, Week } from '../data/types'
 

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react'
 import { AppStoreContext, useApp } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
-import { loadNotifications } from '../lib/data'
+import { loadNotifications } from '../lib/daten/mitteilungen'
 
 /**
  * **Beim Öffnen still nachladen — aber nur, was die Mitteilungen brauchen.**

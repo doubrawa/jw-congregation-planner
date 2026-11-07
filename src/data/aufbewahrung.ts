@@ -21,7 +21,7 @@ import { isoDay, montagNach, montagVon } from './meeting-dates'
  * - **`SONST_WOCHEN`** für alles andere: Mitteilungen, Erinnerungs-Tagebuch,
  *   Trolley-Termine, abgelaufene Anmelde-Links.
  *
- * Dieselben Zahlen gelten an drei Stellen: beim Laden (`lib/data.ts`), beim
+ * Dieselben Zahlen gelten an drei Stellen: beim Laden (`lib/daten/laden.ts`), beim
  * Aufräumen in der Datenbank (`alte_daten_loeschen` in `supabase/schema.sql`;
  * `tests/aufbewahrung.test.ts` hält beide Seiten gleich) und bei den Importen
  * aus NWS und von jw.org (`scripts/`). Die Wochensuche von `import-week` reicht

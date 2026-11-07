@@ -61,7 +61,7 @@ import {
  * Tests, die eine Aufgabenliste anzeigen, sollen nicht davon abhängen, welcher
  * Tag heute ist. Die Entwicklerseite leitet sie ab (`entwicklerStart`).
  *
- * **Namen an Personen binden wie der echte Ladevorgang** (`lib/data.ts`:
+ * **Namen an Personen binden wie der echte Ladevorgang** (`lib/daten/laden.ts`:
  * `pidsNachtragen`, `fsLeiterBinden`). Die Wochen tragen nur Namen; ohne Id
  * liefen Umbenennungen über den Namensweg, und eine kurzzeitige Namensdublette
  * beim Tippen nahm alle Zuteilungen des Namensvetters mit — gemessen am

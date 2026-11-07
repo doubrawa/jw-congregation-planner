@@ -57,7 +57,7 @@ vi.mock('../lib/push', () => ({
   isStandalone: () => false,
   registerServiceWorker: vi.fn(),
 }))
-vi.mock('../lib/data', async (orig) => ({
+vi.mock('../lib/daten/mitteilungen', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   savePushSubscription: (...a: unknown[]) => savePushSubscription(...a),
   deletePushSubscription: (...a: unknown[]) => deletePushSubscription(...a),

@@ -50,49 +50,67 @@ vi.mock('../lib/supabase', () => ({ supabase: {}, isSupabaseConfigured: true }))
  * in `persist.ts`. Bliebe eine Funktion übrig, liefe sie gegen den leeren
  * Supabase-Stub und flöge; der Test fiele also auf, statt still zu schweigen.
  */
-vi.mock('../lib/data', async (importActual) => ({
-  ...(await importActual<typeof import('../lib/data')>()),
-  deleteAbsenceRow: vi.fn(),
-  deleteConfirmationRows: vi.fn(),
-  renameConfirmationKeys: vi.fn(),
-  swapConfirmationKeys: vi.fn(),
-  deleteGroupRow: vi.fn(),
-  deletePersonRow: vi.fn(),
-  deleteInviteRow: vi.fn(),
+vi.mock('../lib/daten/konto', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/konto')>()),
   deleteMemberRow: vi.fn(),
+  deleteAnmeldeLink: vi.fn(),
+  saveMemberRow: vi.fn(),
+}))
+vi.mock('../lib/daten/mitteilungen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/mitteilungen')>()),
   deleteNotifications: vi.fn(),
-  deleteServiceRow: vi.fn(),
   markNotificationRead: vi.fn(),
   markNotificationsRead: vi.fn(),
   notifyPlanners: vi.fn(),
+}))
+vi.mock('../lib/daten/personen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/personen')>()),
+  deleteAbsenceRow: vi.fn(),
+  deletePersonRow: vi.fn(),
   saveAbsence: vi.fn(),
-  saveConfirmation: vi.fn(),
-  saveCongregationInfo: vi.fn(),
-  saveFsRules: vi.fn(),
-  saveGruppenbesuche: vi.fn(),
-  saveVortraege: vi.fn(),
-  saveFsWeek: vi.fn(),
-  saveGroupRow: vi.fn(),
-  deleteAnmeldeLink: vi.fn(),
-  saveMemberRow: vi.fn(),
-  saveOzEintraege: vi.fn(),
-  saveOzTermine: vi.fn(),
   savePerson: vi.fn(),
   savePersonGroup: vi.fn(),
+}))
+vi.mock('../lib/daten/plaene', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/plaene')>()),
   savePlaene: vi.fn(),
   savePlanEintraege: vi.fn(),
+}))
+vi.mock('../lib/daten/predigtdienst', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/predigtdienst')>()),
+  saveFsRules: vi.fn(),
+  saveGruppenbesuche: vi.fn(),
+}))
+vi.mock('../lib/daten/versammlung', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/versammlung')>()),
+  deleteGroupRow: vi.fn(),
+  deleteServiceRow: vi.fn(),
+  saveCongregationInfo: vi.fn(),
+  saveGroupRow: vi.fn(),
   saveService: vi.fn(),
   saveSettings: vi.fn(),
+}))
+vi.mock('../lib/daten/versand', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/versand')>()),
+  sendPlanEntzug: vi.fn(),
+}))
+vi.mock('../lib/daten/wochen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/wochen')>()),
+  saveVortraege: vi.fn(),
+  saveFsWeek: vi.fn(),
   saveWeek: vi.fn(),
+}))
+vi.mock('../lib/daten/zusagen', async (importActual) => ({
+  ...(await importActual<typeof import('../lib/daten/zusagen')>()),
+  deleteConfirmationRows: vi.fn(),
+  saveConfirmation: vi.fn(),
   substituteSeek: vi.fn(),
   substituteTake: vi.fn(),
   substituteWithdraw: vi.fn(),
-  sendPlanEntzug: vi.fn(),
-  sendPlanZeugnisAenderung: vi.fn(),
   platzFuellen: vi.fn(),
 }))
 
-import * as data from '../lib/data'
+import * as wochen from '../lib/daten/wochen'
 import { persist } from './persist'
 import { reducer } from './reducer'
 
@@ -202,10 +220,15 @@ function folge(s: AppState): AppAction[] {
   ]
 }
 
+/** Die Module der Datenschicht, wie die Attrappen oben sie liefern — ein neues zählt von selbst mit. */
+const DATENSCHICHT = import.meta.glob<Record<string, unknown>>(['../lib/daten/*.ts', '!../lib/daten/*.test.ts'], { eager: true })
+
 /** Jede gemockte Schreibfunktion — dieselbe Menge, die `persist` benutzt. */
 function schreiber(): Array<[string, { mockClear: () => void }]> {
+  const module = Object.values(DATENSCHICHT)
+  if (module.length < 11) throw new Error(`Datenschicht nicht gefunden (${module.length} Module) — Glob nachziehen`)
   const out: Array<[string, { mockClear: () => void }]> = []
-  for (const [name, wert] of Object.entries(data)) {
+  for (const [name, wert] of module.flatMap((m) => Object.entries(m))) {
     if (vi.isMockFunction(wert)) out.push([name, wert as { mockClear: () => void }])
   }
   return out
@@ -227,7 +250,7 @@ describe('Ein Leerlauf schreibt keine Woche', () => {
     let s = basis
     let geschrieben = 0
     const verstoesse: string[] = []
-    const saveWeek = data.saveWeek as unknown as ReturnType<typeof vi.fn>
+    const saveWeek = wochen.saveWeek as unknown as ReturnType<typeof vi.fn>
 
     /*
       **Jede Aktion zweimal.** Der erste Lauf ändert etwas und darf schreiben;
@@ -264,7 +287,7 @@ describe('Ein Leerlauf schreibt keine Woche', () => {
     let s = basis
     let geschrieben = 0
     const verstoesse: string[] = []
-    const saveFsWeek = data.saveFsWeek as unknown as ReturnType<typeof vi.fn>
+    const saveFsWeek = wochen.saveFsWeek as unknown as ReturnType<typeof vi.fn>
     const folgeMitTreffpunkten: AppAction[] = [
       ...folge(basis),
       { type: 'openSlot', sel: { kind: 'fs', wi: 0, instId: basis.fsWeeks[0]![0]!.id, label: 'x', priv: null, groups: false } },
@@ -316,8 +339,8 @@ describe('Eine geänderte Treffpunkt-Woche braucht keinen eigenen Fall', () => {
   it('eine Aktion ohne Treffpunkt-Fall schreibt die Woche, die sich geändert hat — und nur sie', () => {
     const { vorher, nachher } = mitGeaenderterWoche()
     persist(vorher, nachher, { type: 'toggleReminderRepeat' })
-    expect(data.saveFsWeek).toHaveBeenCalledTimes(1)
-    expect(data.saveFsWeek).toHaveBeenCalledWith('c1', vorher.weeks[0]!.start, nachher.fsWeeks[0], [])
+    expect(wochen.saveFsWeek).toHaveBeenCalledTimes(1)
+    expect(wochen.saveFsWeek).toHaveBeenCalledWith('c1', vorher.weeks[0]!.start, nachher.fsWeeks[0], [])
   })
 
   it('was eine Function schreibt oder was geladen wird, geht nicht noch einmal hinaus', () => {
@@ -325,6 +348,6 @@ describe('Eine geänderte Treffpunkt-Woche braucht keinen eigenen Fall', () => {
     persist(vorher, nachher, { type: 'platzUebernehmen', key: 'x' })
     persist(vorher, nachher, { type: 'takeSubstitute', key: 'x' })
     persist(vorher, nachher, { type: 'hydrate', payload: ladung() })
-    expect(data.saveFsWeek).not.toHaveBeenCalled()
+    expect(wochen.saveFsWeek).not.toHaveBeenCalled()
   })
 })

@@ -172,7 +172,7 @@ src/
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
   lib/
     supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset)
-    data.ts         Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben
+    daten/          Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben, je Fachbereich ein Modul
   aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
   auswertung/       Auswertung der Zuteilungen (T126; gerechnet in data/auswertung.ts)
   einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
