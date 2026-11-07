@@ -422,9 +422,9 @@ Datenbank ergeben, stimmt der danach weiter:
 1. [`supabase/neuaufbau.sql`](supabase/neuaufbau.sql) im SQL-Editor ausführen —
    **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
 2. `supabase/schema.sql` ausführen.
-3. Alle Edge Functions deployen (`import-week`, `send-plan`,
-   `send-reminders`, `send-invite`, `anmelden`, `substitute`, `trolley`,
-   `tauschen`).
+3. Die Edge Functions stehen nach jedem Push ohnehin auf dem Stand von `main`
+   (unten, „Ausrollen über die CI"); alle neu: „Run workflow" bei „Deploy to
+   GitHub Pages".
 Den ganzen Rest — Versammlung, Personen, Wochen, Zuteilungen, Abwesenheiten,
 Treffpunkte — fährt **ein** Aufruf:
 
@@ -635,11 +635,12 @@ liest, um das Schema zu verstehen, und aus der eine frische Datenbank entsteht.
    Spaltenrechten, Bedingungen, Indizes, Funktionen samt Rumpf-Prüfsumme,
    Trigger, Richtlinien, Sequenzen. Fehlt die Migration oder fehlt der
    Gesamtstand, ist die Probe rot.
-4. Ausrollen: `npx supabase db push --dry-run --remote=<ref>` nennt, was die
-   CLI einspielen würde, `npx supabase db push --remote=<ref> --yes` spielt es
-   ein. Ein Datenbank-Passwort braucht es nicht: Ohne `--password` meldet sich
-   die CLI über den Zugangstoken mit einer kurzlebigen Rolle an
-   („Initialising login role…").
+4. Committen und pushen — ausgerollt wird über die CI (nächster Abschnitt).
+   Von Hand nur, wenn sie nicht kann: `npx supabase db push --dry-run
+   --remote=<ref>` nennt, was die CLI einspielen würde, `npx supabase db push
+   --remote=<ref> --yes` spielt es ein. Ein Datenbank-Passwort braucht es
+   nicht: Ohne `--password` meldet sich die CLI über den Zugangstoken mit einer
+   kurzlebigen Rolle an („Initialising login role…").
 
 Genau diese Doppelung hatte das Projekt am 17. September 2026 abgeschafft — eine
 Kette von 25 Migrationen lief neben `schema.sql` her, und drei Tabellen fehlten
@@ -666,6 +667,55 @@ Die erste Migration (`20261107120000_grundstand.sql`) ist der Gesamtstand vom
 `vortraege_auswaerts`, die `oz_*`-Reste, die Einladungscodes). Seit der
 Umstellung stehen sie auch nicht mehr in `schema.sql`: In der Produktion ist
 keines der Objekte mehr da, die sie entfernten.
+
+### Ausrollen über die CI
+
+Datenbank und Edge Functions gehen mit dem Push hinaus wie das Frontend — und
+**vor** ihm: [`deploy.yml`](.github/workflows/deploy.yml) baut und prüft
+(`npm test`, darin die PGlite-Proben), ruft dann
+[`ausrollen.yml`](.github/workflows/ausrollen.yml) und veröffentlicht erst,
+wenn das grün ist. Ein neues Frontend gegen alte Functions oder ein altes
+Schema gibt es so nicht mehr. Ein Staging-Projekt gibt es nicht (entschieden
+am 7. November 2026): Geprobt wird vorher in PGlite, nachher lesend gegen die
+Produktion.
+
+| Schritt | Was | Wann |
+| --- | --- | --- |
+| Plan | `scripts/ausrollen-plan.mjs` | immer; gemessen am Commit des **letzten grünen Deploys**, nicht am vorigen Push — eine Änderung aus einem roten Lauf bleibt so nicht liegen |
+| Migrationen | `db push` | etwas unter `supabase/migrations/` hat sich geändert |
+| Functions | `functions deploy`, alle aus `config.toml` | Code unter `supabase/functions/` (ohne Proben) oder `config.toml` hat sich geändert |
+| Prüfen | `scripts/ausrollen-pruefen.mjs` | nach jedem Ausrollen: jede Migration im Verlauf, der Katalog gleich der Folge der Migrationen, jede Function aktiv mit `verify_jwt` wie `config.toml` und frisch ausgerollt, der Rauchtest |
+
+**Von Hand** („Run workflow" bei „Deploy to GitHub Pages") rollt die Strecke
+alles aus — etwa nach einem Neuaufbau. Die Prüfung allein geht lesend auch
+lokal (Zugangstoken vom `supabase login`, Adresse und öffentlicher Schlüssel
+aus `.env.local`):
+
+```powershell
+node scripts/ausrollen-pruefen.mjs
+```
+
+**Wird es rot**, wartet das Frontend. Was die CLI bis dahin eingespielt hat,
+bleibt; der nächste Lauf — ein neuer Push oder „Re-run failed jobs" — misst
+wieder am letzten grünen Deploy und holt nach, was fehlt.
+
+**Hinzu vor dem Code, fort nach ihm.** Ein Lauf spielt die Datenbank vor
+Functions und Frontend ein — eine neue Spalte steht also da, bevor ein Gerät
+sie abfragt. Ein `drop` dagegen trifft alles, was noch damit arbeitet: Käme er
+im selben Push wie der Code, der eine Spalte nicht mehr schreibt, fiele sie
+Minuten vor dem neuen Frontend, und so lange scheiterte jedes Speichern
+(PostgREST weist den unbekannten Schlüssel mit `PGRST204` ab). Darum zwei
+Pushes: erst der Code ohne die Spalte, dann die Migration, die sie entfernt.
+
+**Das Secret** `SUPABASE_ACCESS_TOKEN` ist ein persönlicher Zugangstoken
+(supabase.com/dashboard/account/tokens), angelegt am 7. November 2026 mit
+einem Jahr Laufzeit — er läuft um den 7. November 2027 ab. Danach scheitert
+der nächste Lauf mit Änderungen unter `supabase/` mit einem Anmeldefehler;
+erneuern heißt: neuen Token anlegen, das Secret überschreiben. Er steht nur an
+den Schritten, die die CLI rufen, nicht an `npm ci` (dessen
+Installationsskripte die Umgebung sehen) — `tests/ausrollen-workflow.test.ts`
+hält das fest, ebenso, dass ein neuer Push ein laufendes Ausrollen nicht
+abbricht. Die CLI läuft in fester Version (`SUPABASE_CLI` in `ausrollen.yml`).
 
 ### Sicherung und Rückspielprobe
 
@@ -797,12 +847,12 @@ Schriftstellen, Sektions-Überschriften, Rahmen) stehen dadurch **direkt in der
 Zielsprache**; unsere eigenen Labels (ERÖFFNUNG/ABSCHLUSS, Rollen wie
 Vorsitz/Gebet) bleiben app-sprachig.
 
-Deploy (einmalig, [Supabase CLI](https://supabase.com/docs/guides/cli) nötig):
+Ausgerollt wird sie wie alle Functions über die CI (Abschnitt „Ausrollen über
+die CI"), samt Rauchtest danach. Von Hand, mit der
+[Supabase CLI](https://supabase.com/docs/guides/cli) nach `supabase login`:
 
 ```bash
-supabase login
-supabase link --project-ref <dein-project-ref>   # aus der Supabase-URL
-supabase functions deploy import-week
+npx supabase functions deploy import-week --remote=<project-ref> --use-api --yes
 ```
 
 > **Nach einem Deploy prüfen, ob die Function überhaupt hochgekommen ist.**
@@ -1049,8 +1099,9 @@ Empfänger *heute* eingestellt hat.
   `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` (Schlüsselpaar; der öffentliche steht
   zusätzlich als Konstante in [src/lib/push.ts](src/lib/push.ts)),
   `VAPID_SUBJECT` (mailto-URI), optional `APP_URL`.
-- Deploy: `npx supabase functions deploy send-reminders --no-verify-jwt`, dann
-  `cron-reminders.sql` mit Projekt-Ref + `CRON_SECRET` im SQL-Editor ausführen.
+- Ausgerollt über die CI wie alle Functions — `verify_jwt = false` steht in
+  `supabase/config.toml`, kein Schalter beim Deploy. Dann `cron-reminders.sql`
+  mit Projekt-Ref + `CRON_SECRET` im SQL-Editor ausführen.
 - Test: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<ref>.supabase.co/functions/v1/send-reminders`
   im Dry-Run prüfen, dann `SEND_PUSH=true` setzen.
 - Das Zeitfenster nutzt `week.start` (ISO), das nur bei importierten Wochen

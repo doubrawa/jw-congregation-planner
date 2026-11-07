@@ -10303,7 +10303,7 @@ was jetzt gilt.
 Offen aus E3/E4 bleibt nur **E4** (`planner` → `admin`) — als Migration, wann
 der Betreiber will.
 
-### T170 · Ausrollen über die CI (ohne Staging, entschieden am 7. November) 🏗 ☐ offen
+### T170 · Ausrollen über die CI (ohne Staging, entschieden am 7. November) 🏗 ✅ umgesetzt und abgenommen (7. November 2026)
 
 **Warum:** Das Frontend geht mit jedem Push hinaus; Functions und Schema rollt
 Claude von Hand aus, in der Reihenfolge Functions, Schema, Push. Dazwischen
@@ -10377,11 +10377,77 @@ Betreiber: „dann brauchen wir kein staging" — und die CI soll die Produktion
   gedacht) und der Rest von T168 (Anmelden und Mitgliedsrechte-Probe nach dem
   Zurückspielen — dafür ist die Rückspielprobe jetzt so streng wie PostgREST).
 
-**Offen:** `ausrollen.yml` selbst — es wartet auf das Secret, das der Betreiber
-anlegt; geschrieben wird es, wenn es sich gleich fahren lässt. Geprüft wird
-dann: eine harmlose Schemaänderung (ein Kommentar an einer Spalte) geht über
-die CI in die Produktion, `functions list` zeigt den Stand des Commits, und
-eine absichtlich rote Probe hält Produktion und Frontend an.
+Das Secret hat der Betreiber am selben Abend angelegt (persönlicher
+Zugangstoken, ein Jahr Laufzeit); gebaut und gefahren wurde die Strecke gleich
+danach.
+
+#### Umgesetzt am 7. November 2026, abends
+
+**Die Strecke:** [`deploy.yml`](../../.github/workflows/deploy.yml) baut und
+prüft wie bisher (Lint, `npm test` samt PGlite-Proben, Build), ruft dann
+[`ausrollen.yml`](../../.github/workflows/ausrollen.yml) und veröffentlicht erst,
+wenn das grün ist.
+
+| Schritt | Was |
+| --- | --- |
+| Plan | `scripts/ausrollen-plan.mjs` misst am Commit des **letzten grünen** Deploys (GitHub-API), nicht am vorigen Push — eine Migration aus einem roten Lauf bleibt so nicht liegen. „Run workflow" rollt alles aus |
+| Migrationen | `db push --dry-run`, dann `db push --yes` — wenn sich unter `supabase/migrations/` etwas geändert hat |
+| Functions | alle acht aus `config.toml`, `--use-api`, bei einem Fehlschlag ein zweiter Versuch — wenn sich Code unter `supabase/functions/` (ohne Proben) oder `config.toml` geändert hat |
+| Prüfen | `scripts/ausrollen-pruefen.mjs`, lesend und auch lokal fahrbar: jede Migration im Verlauf; der Katalog der Produktion gleich der Folge der Migrationen in PGlite (dieselben Abschnitte wie `migrationen.test.ts`, aus `scripts/katalog.mjs`); jede Function aktiv, `verify_jwt` wie `config.toml` und, wenn ausgerollt, frischer als der Start des Laufs; der Rauchtest (`OPTIONS` vom Handler, POST mit dem öffentlichen Schlüssel → die Abweisung des Handlers) |
+
+**Was die Strecke zusagt, hält `tests/ausrollen-workflow.test.ts` fest:** Das
+Frontend wartet auf das Ausrollen; ausgerollt wird nur von `main` („Run
+workflow" lässt sich auf jedem Zweig starten, dessen Stand ginge sonst
+ungeprüft in die Produktion); ein neuer Push bricht ein laufendes Ausrollen
+nicht ab (Sperre je Job, `cancel-in-progress: false`); der Zugangstoken steht
+nur an den Schritten, die die CLI rufen, nie an `npm ci`; die CLI läuft in
+fester Version (`supabase@3.0.0`).
+
+**Abnahme**, gefahren auf `main`:
+
+| Schritt | Lauf | Ergebnis |
+| --- | --- | --- |
+| Push ohne etwas zum Ausrollen (`514c97cf`) | 42415351509 | grün; Plan „Migrationen: nein · Functions: nein", Frontend hinaus |
+| „Run workflow", alles (`514c97cf`) | 42415669403 | **rot an der Prüfung**, das Frontend blieb stehen (Ursache unten). Die Datenbank war schon auf Stand, die acht Functions waren ausgerollt |
+| Push mit der Korrektur (`1e4632e6`) | 42416173539 | grün, nichts auszurollen |
+| „Run workflow", alles (`1e4632e6`) | 42416505046 | grün: Datenbank auf Stand, acht Functions ausgerollt, vier von vier Prüfungen, die Functions „in diesem Lauf ausgerollt" |
+| **Absichtlich rot:** Migration 4, ein Kommentar an `persons.fn`, ohne den Gesamtstand (`411be1bc`, mit `837be4ba`) | 42416981508 | Build rot an „kommentare sind gleich", Ausrollen und Veröffentlichen übersprungen. Danach live weiter `shell-1e4632e`, im Verlauf drei Migrationen, `persons.fn` ohne Kommentar |
+| Derselbe Kommentar mit Gesamtstand (`431c2c02`) | 42417340631 | grün: Plan „Migrationen: ja · Functions: nein", `db push` spielt `20261107212000_kommentar-vorname.sql` ein, Verlauf vier von vier, Katalog gleich, acht Functions aktiv, Rauchtest. Danach live `shell-431c2c0`, `migration list` vier von vier, der Kommentar steht an `persons.fn` |
+
+Damit sind alle drei Prüfpunkte erfüllt: Die harmlose Schemaänderung ging
+über die CI in die Produktion, die rote Probe hielt Datenbank und Frontend an,
+und `functions list` zeigt die acht aktiv, mit `verify_jwt` wie `config.toml`,
+ausgerollt im Lauf zu `1e4632e6` — seitdem hat sich unter
+`supabase/functions/` und an `config.toml` nichts geändert. Hart belegt nach
+dem letzten Schritt: `functions download` aller acht, 130 Dateien, jede gleich
+dem Commit `431c2c02`.
+
+**Gefunden beim ersten Lauf:** Die Supabase-CLI 3 antwortet je nach Umgebung in
+anderer Form. In Claude Code läuft sie im Agentenmodus, und `db query` liefert
+ein Objekt (`{boundary, rows, warning}`); in der CI ein nacktes Array. Das
+Lesen begann bei der ersten `{` — mitten im Array — und brach ab. Jetzt ruft
+jede Stelle die CLI mit `--agent no`, lokal und in der CI dieselbe Form, und
+`ersterJsonWert` liest den ersten vollständigen JSON-Wert, ob Objekt oder Array
+(Probe mit beiden Formen).
+
+**Gefunden beim Bau:** Der Katalog-Vergleich kannte keine **Kommentare** —
+ein Kommentar nur in der Migration wäre durch alle acht Abschnitte gerutscht,
+und die rote Probe wäre grün gewesen. `scripts/katalog.mjs` vergleicht sie
+jetzt als neunten Abschnitt (Tabellen, Spalten, Funktionen). Gegen die
+Produktion gleicht der Vergleich an, was Postgres 17 anders schreibt als
+PGlite (Postgres 16): das Tabellenrecht `MAINTAIN` (`m`), die Reihenfolge der
+Einträge in einer ACL und die Spaltennummern nach einem `drop column`.
+
+**Wenn es rot wird:** Das Frontend wartet. Was die CLI bis dahin eingespielt
+hat, bleibt; der nächste Lauf misst wieder am letzten grünen Deploy und holt
+nach. **Eine Spalte, die die App schreibt, fällt in einem zweiten Push nach dem
+Code** — im selben Lauf fiele sie Minuten vor dem neuen Frontend, und jedes
+Speichern scheiterte so lange. Beides steht in der README unter „Ausrollen
+über die CI", ebenso die Handgriffe von früher, die jetzt auf die CI zeigen.
+
+**Das Secret** `SUPABASE_ACCESS_TOKEN` läuft um den 7. November 2027 ab; dann
+scheitert der nächste Lauf mit Änderungen unter `supabase/` an der Anmeldung.
+Erneuern: neuen Token anlegen, das Secret überschreiben.
 
 ### T171 · Fehlermeldungen von den Geräten 🔧 ✅ umgesetzt und ausgerollt (7. November 2026)
 
@@ -10785,12 +10851,14 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☑☑
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑
 
-**172 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist nur T170**: Ausrollen per CI, ohne
-Staging (Betreiber, 7. November abends) — die Produktion folgt seit dem Abend
-den Migrationen; `ausrollen.yml` wartet auf das Secret `SUPABASE_ACCESS_TOKEN`.
+**Alle 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Als letzte kam am 7. November abends **T170**:
+Ausrollen über die CI, ohne Staging — ein Push auf `main` spielt neue
+Migrationen und geänderte Functions vor dem Frontend in die Produktion ein und
+prüft danach lesend; abgenommen mit einer absichtlich roten Probe, die
+Datenbank und Frontend anhielt.
 Am 7. November umgesetzt: **T172** (die drei größten Dateien nach
 Fachbereich aufgeteilt — `src/data/planung/`, `src/lib/daten/`,
 `src/app/aktionen/`; alle Ansichten byte-gleich), **T173** (Barrierefreiheit
@@ -11272,7 +11340,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
 umgesetzt — die Probe gegen ein echtes Projekt entfiel am Abend mit dem
 Staging, der Umstieg auf die Migrationen kam am Abend ohne Neuaufbau; T173 und
-T172 am Abend, ohne Rest;
+T172 am Abend, ohne Rest; T170 am späten Abend, samt Abnahme;
 keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8258221`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
@@ -11281,7 +11349,7 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte, den Neuaufbau oder das Secret für die CI (T170).
+bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -11289,7 +11357,7 @@ bleibt, braucht NWS-Exporte, den Neuaufbau oder das Secret für die CI (T170).
 | **Neuaufbau** | E4 aus dem Gesamt-Review, die Daten zum Echtbetrieb | Der Neuaufbau zum Echtbetrieb (die Daten neu aus NWS und jw.org) kommt noch (Betreiber am 6. November); danach den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
-| **T170** | Ausrollen per CI | **ohne Staging** (Betreiber, 7. November abends): `ausrollen.yml` rollt bei Änderungen unter `supabase/` direkt in die Produktion aus — PGlite-Proben, `db push`, `functions deploy`, lesender Abgleich und Rauchtest, das Frontend wartet. **Wartet auf das GitHub-Secret `SUPABASE_ACCESS_TOKEN`**, das der Betreiber anlegt; ein Datenbank-Passwort braucht die CLI 3 nicht. Wachhalter und zweites Projekt entfallen |
+| **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` läuft um den 7. November 2027 ab. Nicht mehr offen |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | — | **erledigt am 7. November**: `planning.ts`, `data.ts` und `reducer.ts` nach Fachbereich aufgeteilt (`src/data/planung/`, `src/lib/daten/`, `src/app/aktionen/`), alle Ansichten byte-gleich, die Kommentare in den verschobenen Teilen auf das gekürzt, was gilt. Nicht mehr offen |
 | **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |
