@@ -205,6 +205,10 @@ create unique index if not exists persons_name_eindeutig
   on public.persons (congregation_id, lower(btrim(regexp_replace(fn || ' ' || ln, '\s+', ' ', 'g'))))
   where btrim(fn || ' ' || ln) <> '';
 
+-- Dasselbe in der Datenbank selbst — zu sehen im Dashboard und mit `\d+`.
+comment on column public.persons.fn is
+  'Vorname. Vor- und Nachname sind je Versammlung eindeutig (persons_name_eindeutig); bei gleichem Namen unterscheidet ein Zusatz am Vornamen.';
+
 create table if not exists public.services (
   id              uuid primary key default gen_random_uuid(),
   congregation_id uuid not null references public.congregations (id) on delete cascade,
