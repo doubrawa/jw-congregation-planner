@@ -10402,6 +10402,49 @@ vorher laufen lassen, dann umbauen). Dazu die Suite, die Abdeckung nicht
 niedriger, `npm run laufzeit -- --satz voll` ohne Befund, die Bündelgröße
 vorher und nachher. Nicht gleichzeitig mit T171 im selben Checkout.
 
+#### Vorschlag vom 7. November 2026 — zur Abstimmung
+
+Gemessen auf `608ca524` (nur gelesen): `data.ts` 2235, `planning.ts` 2001,
+`reducer.ts` 1920 Zeilen. Keine der drei steckt heute in einem Zyklus, und der
+Schnitt bleibt zyklenfrei. Die „23 Dateien über 600 Zeilen" zählen 7 CSS-Dateien
+mit; TypeScript allein sind es 16.
+
+| Datei | Wird zu | Module |
+| --- | --- | --- |
+| `src/lib/data.ts` | `src/lib/daten/` | `schreibweg` (Melder und Schreibschlangen — der ganze Modulzustand, je genau einmal), `laden` (~560 Z.), `wochen`, `personen`, `versammlung`, `predigtdienst`, `plaene` (Pläne und Einträge teilen eine Schlange), `zusagen`, `versand`, `mitteilungen`, `konto` |
+| `src/data/planning.ts` | `src/data/planung/` | `vorsitz`, `zuteilen`, `waehler` (intern), `automatik`, `offen`, `s89`, `schluessel`, `aufgaben`, `konflikte` — `waehler` und `automatik` an der Naht, die der Code selbst beschreibt |
+| `src/app/reducer.ts` | Teile in `src/app/aktionen/` | `sitzung`, `ansicht`, `personen`, `versammlung`, `programm`, `zuteilen`, `predigtdienst`, `plaene`, `zusagen`, `gemeinsam`, dazu `app/vorlegen.ts` |
+
+**Der Reducer** bleibt die eine Verteilstelle (`reducer.ts`, ~400 Z., samt der
+Ableitung der Aufgaben): ein `switch`, die Fallmarken je Teil gruppiert, jeder
+Teil nimmt genau `Extract<AppAction, …>` — eine vergessene Aktion bleibt ein
+Übersetzungsfehler. Zwei Rückgriffe werden aufgelöst: `setAnsicht` ruft den
+Fall `navigate` direkt statt `reducer`, `vorzulegen` zieht nach `vorlegen.ts`.
+
+**Umfang:** ~117 Dateien (39 App, 77 Tests, 1 Skript), ~119 → ~230
+Import-Anweisungen, 17 → ~57 `vi.mock`, ~10 Quelltext-Proben, die einen Pfad
+nennen. `supabase/` bleibt unberührt.
+
+**Risiken und Gegenmittel:**
+* Ein `vi.mock` auf einen Pfad, den es nicht mehr gibt, meldet nichts — eine
+  Probe, die jeden `vi.mock`-Pfad auflöst. Sechs heute gemockte Namen gibt es
+  schon nicht mehr (`renameConfirmationKeys` u. a.); sie fallen mit heraus.
+* Vollständigkeitsproben über Listen (`data-ohne-datenbank`,
+  `t120-schutzpfade`, `persist`) prüften nach dem Umzug still weniger — sie
+  laufen per `import.meta.glob` über alle neuen Module.
+* `scripts/wochenplanung-importieren.mjs` lädt `planning.ts` dynamisch; mit
+  `checkJs: false` merkt das nur `schema-probe.test.ts`.
+
+**Zur Entscheidung, mit Empfehlung:**
+1. `punktKey`, `ratgeberKey`, `helferKey` direkt aus
+   `_shared/aufgaben-schluessel.ts` statt über `planning.ts` (26 Dateien) —
+   empfohlen, nach der Regel oben (kein Weiterreichen).
+2. `waehler` und `automatik` getrennt (je ~410 Z.) statt eines Moduls (~815) —
+   empfohlen.
+3. Die Ordnernamen `src/lib/daten/`, `src/data/planung/`, `src/app/aktionen/`.
+4. Alte Pfade in Kommentaren (38 Dateien) mitziehen — nur der Pfad, kein
+   Aufräumen; sonst zeigen sie ins Leere.
+
 ### T173 · Barrierefreiheit und Sprachauszeichnung mit axe prüfen 🔧 ✅ umgesetzt (7. November 2026)
 
 **Warum:** Der letzte axe-Lauf ist vom Juli (`7363736`, `3ad3874`: damals
