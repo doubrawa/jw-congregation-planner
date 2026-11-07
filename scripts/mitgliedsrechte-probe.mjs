@@ -237,6 +237,16 @@
  *  112. Admin: das „Nein, danke" des Mitglieds sehen              → unsichtbar
  *  113. Mitglied: ein „Nein, danke" im Namen des Admins           → abgewiesen
  *
+ * **Fehlermeldungen von den Geräten** (7.11.2026, `geraete_fehler`): Melden
+ * darf jedes angemeldete Mitglied in die eigene Versammlung, lesen nur der
+ * Admin. Die Zeile bleibt stehen — an dieser Tabelle darf niemand löschen;
+ * acht Wochen Frist. Die übrige Matrix (ändern, löschen, ohne Anmeldung, die
+ * Bremse, die Längen) steht in `supabase/geraete-fehler-rechte.test.ts`.
+ *
+ *  115. Mitglied: einen Fehler des eigenen Geräts melden          → durch
+ *  116. Verkündiger: die Fehlermeldungen lesen                    → unsichtbar
+ *  117. Mitglied: in eine fremde Versammlung melden               → abgewiesen
+ *
  * Die Anlage legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
  * je einem Platz eines Dienstes und eine Person ohne Konto, das Kennzeichen
  * im Vornamen. Mitglied und Gruppenaufseher schaltet die Probe für den Dienst
@@ -2478,6 +2488,65 @@ async function ablehnungProben(k) {
   }
 }
 
+/**
+ * (115)–(117) **Fehlermeldungen von den Geräten** (T171, `geraete_fehler`):
+ * Melden darf jedes angemeldete Mitglied in die eigene Versammlung — sonst
+ * wäre das Melden tot. Lesen darf nur der Admin, und in eine fremde
+ * Versammlung meldet niemand.
+ *
+ * **Die Zeile bleibt stehen.** An dieser Tabelle gibt es bewusst keine
+ * Richtlinie zum Löschen (niemand soll eine Meldung verschwinden lassen
+ * können), also kann die Probe nicht aufräumen. Sie trägt ihr Kennzeichen und
+ * fällt nach acht Wochen von selbst heraus; gemeldet wird in die
+ * Testversammlung.
+ *
+ * Die Matrix dahinter — ändern, löschen, ohne Anmeldung, die Bremse, die
+ * Längen — steht in `supabase/geraete-fehler-rechte.test.ts` und läuft gegen
+ * eine echte Postgres bei jedem Push. Hier stehen die drei Fälle, die nur der
+ * Betrieb beantworten kann.
+ */
+async function fehlermeldungProben(k) {
+  const { planer, mitglied, versammlung, marke } = k
+  console.log('\nFehlermeldungen von den Geräten (seit 7.11.2026):')
+  const meldung = `Probe ${marke} — kein echter Fehler`
+  const zeile = (cong) => ({
+    congregation_id: cong,
+    art: 'fehler',
+    meldung,
+    stand: 'probe',
+    bildschirm: 'probe',
+    browser: 'Probe 1',
+  })
+  const melden = (wer, cong) => wer.rest('geraete_fehler', 'POST', zeile(cong), 'return=minimal')
+  const sicht = (wer) => async () => {
+    const r = await wer.rest(`geraete_fehler?select=art&meldung=eq.${encodeURIComponent(meldung)}`)
+    return { status: r.status, sichtbar: zeilenVon(r).length > 0 }
+  }
+
+  const s = await melden(mitglied, versammlung)
+  const beimAdmin = await sicht(planer)()
+  const e = bewerteVersuch(s.status, beimAdmin.sichtbar, true, { leseStatus: beimAdmin.status })
+  k.ergebnis(115, 'Mitglied: einen Fehler des eigenen Geräts melden', e, e.durch ? 'der Weg steht offen' : 'ZU STRENG — dann meldet nie ein Gerät')
+  const anlage = e.durch ? { ok: true } : { ok: false, grund: 'die eigene Meldung kam nicht an' }
+  if (e.durch) console.log('      (die Zeile bleibt stehen — niemand darf hier löschen; acht Wochen Frist)')
+
+  await leseVersuch(k, 116, 'Verkündiger: die Fehlermeldungen lesen', anlage, sicht(mitglied), false, [
+    'AUCH DAS!',
+    'unsichtbar — lesen darf nur der Admin',
+  ])
+
+  /*
+   * Eine Versammlung, die es nicht gibt: Die Richtlinie urteilt vor dem
+   * Fremdschlüssel, der Status ist also 403 und kein 409 (gemessen in
+   * `geraete-fehler-rechte.test.ts`). Damit ist das Ergebnis hier ein Urteil
+   * über die Regel und keine kaputte Probe.
+   */
+  const fremd = await melden(mitglied, '00000000-0000-4000-8000-0000000000ff')
+  const nachher = await sicht(planer)()
+  const e116 = bewerteVersuch(fremd.status, false, false, { leseStatus: nachher.status })
+  k.ergebnis(117, 'Mitglied: in eine fremde Versammlung melden', e116, e116.durch ? 'AUCH DAS!' : 'abgewiesen — nur die eigene Versammlung')
+}
+
 /* ===================== Ausführung ========================================= */
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
@@ -2919,6 +2988,9 @@ export async function main(arg = process.argv.slice(2)) {
 
   // ---- 111) bis 113) „Nein, danke" auf ein Ersatzgesuch (1.11.2026) --------
   await ablehnungProben(k)
+
+  // ---- 115) bis 117) Fehlermeldungen von den Geräten (7.11.2026) -----------
+  await fehlermeldungProben(k)
 
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).

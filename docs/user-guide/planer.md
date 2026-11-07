@@ -2100,6 +2100,7 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 | Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
 | Die Anmeldung eines Geräts, das ein Jahr nicht in der App war | **ein Jahr** – danach braucht es einen neuen Link |
 | Eine Anfrage zum Tauschen, die niemand beantwortet hat | bis zum früheren der beiden Tage |
+| Fehlermeldungen von den Geräten (siehe unten) | **acht Wochen** |
 
 **Warum ein Jahr für die Pläne:** „Automatisch" und die Vorschläge beim
 Zuteilen fragen, wer am längsten nicht dran war. Wer nur alle paar Monate eine
@@ -2123,6 +2124,28 @@ Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.
 
 Beim Blättern reicht die App deshalb höchstens ein Jahr zurück. Auch ein Import
 aus New World Scheduler übernimmt nichts, was älter ist.
+
+### Wenn bei jemandem etwas klemmt
+
+Seit dem 7. November 2026 meldet die App einen Fehler, der auf einem Gerät
+auftritt, von selbst – sonst erfährt niemand davon, und jeder müsste von Hand
+Bescheid geben. Gemeldet wird nur, was zum Suchen nötig ist:
+
+* **wann** es passierte und auf **welchem Bildschirm**,
+* die **Fehlermeldung** des Browsers, gekürzt,
+* welchen **Stand** die App hatte und welcher **Browser** es war (nur die
+  Familie und die Hauptversion, etwa „Chrome 142"),
+* die **Versammlung** – daran hängen die Rechte und die Frist.
+
+**Nicht gemeldet wird, wer den Fehler hatte.** In der Meldung steht kein Konto
+und keine Person, und nichts, was jemand eingetippt hat; die Adresse der Seite
+geht ebenfalls nicht mit, weil in ihr Kennungen stehen können. Ein Fehler, der
+sich wiederholt, wird einmal gemeldet und nicht hundertmal, und ohne Internet
+gar nicht.
+
+**Sehen kann die Meldungen nur der Admin** – niemand sonst in der Versammlung,
+auch nicht, wer sie ausgelöst hat. Verstellen oder löschen kann sie niemand;
+nach acht Wochen gehen sie von selbst.
 
 ---
 

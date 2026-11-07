@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { fehlerMelden } from '../lib/fehler-melden'
 
 /**
  * Fängt Render-Fehler ab, damit aus einem kaputten Bereich nicht der
@@ -35,6 +36,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    /*
+     * Und hinaus damit (T171) — die Konsole eines fremden Handys liest
+     * niemand. Direkt aufgerufen statt über eine Prop: Melden ist keine
+     * Entscheidung des Einsatzorts, und eine neue Pflicht-Prop müsste an jeder
+     * Grenze im Baum nachgetragen werden. Ohne Datenbank oder vor der
+     * Anmeldung tut der Aufruf nichts.
+     *
+     * Vom Komponentenpfad nur der Anfang: Dort stehen die Namen der
+     * Komponenten, und der erste sagt, wo es klemmte.
+     */
+    void fehlerMelden('grenze', error, (info.componentStack ?? '').trim().split('\n').slice(0, 3).join(' ').slice(0, 120))
   }
 
   override render(): ReactNode {

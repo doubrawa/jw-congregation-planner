@@ -1020,7 +1020,7 @@ beide ab dem Montag der laufenden Woche gezählt
 | Frist | Was |
 | --- | --- |
 | **ein Jahr** | die Wochen und was zu ihnen gehört: Programm samt Zuteilungen (`weeks`), Treffpunkte (`fs_weeks`), Zusagen, Absagen (`absagen`), Versand-Tagebuch, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne samt Einträgen — die gerechte Verteilung fragt, wer am längsten wartet; dazu die Abwesenheiten (ab ihrem Ende), mit denen die Auswertung rechnet; und die Anmeldung eines Geräts (`auth.sessions`, IP-Adresse und Browserkennung), wenn sie ein Jahr nicht benutzt wurde — das Gerät braucht danach einen neuen Link |
-| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, der Grund einer Abwesenheit (ab ihrem Ende; der Lauf leert `absences.reason`), Trolley-Termine, abgelaufene Anmelde-Links, das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
+| **acht Wochen** | Mitteilungen, Erinnerungs-Tagebuch, der Grund einer Abwesenheit (ab ihrem Ende; der Lauf leert `absences.reason`), Trolley-Termine, abgelaufene Anmelde-Links, Fehlermeldungen von den Geräten (`geraete_fehler`, siehe unten), das Protokoll von Supabase Auth (`auth.audit_log_entries`: E-Mail und IP-Adresse je Anmeldung) |
 | **ein Tag** | Fehlversuche beim Anmelden (IP-Adressen) |
 
 Abwesenheiten und Absagen bleiben seit dem 17.10.2026 ein Jahr, für die
@@ -1058,6 +1058,45 @@ Dieselbe Grenze gilt an drei Stellen:
 [`tests/aufbewahrung.test.ts`](tests/aufbewahrung.test.ts) hält die Fristen in
 App und SQL gleich und verlangt für jede Tabelle im Schema eine Regel oder einen
 Grund, warum sie keine braucht.
+
+## Fehlermeldungen von den Geräten (T171)
+
+Fehler bei den Nutzern sah bis zum 7. November 2026 niemand: `ErrorBoundary` und
+`NachladeGrenze` schrieben in die Konsole des Geräts, ein `error` oder
+`unhandledrejection` außerhalb davon verpuffte. Seitdem meldet die App sie in die
+Tabelle `geraete_fehler`:
+
+```powershell
+node scripts/geraete-fehler.mjs --tage 14 --stapel
+```
+
+Gruppiert nach Versammlung, Stand der App, Art und Meldung — derselbe Fehler auf
+zwanzig Geräten ist ein Befund, nicht zwanzig, und der Stand sagt, ob er mit dem
+letzten Ausrollen kam. In der App gibt es dafür **keine Oberfläche**:
+Administratives gehört in ein Skript, nicht vor jeden Planer.
+
+**Was in einer Zeile steht:** Zeitpunkt, Stand (`__BUILD_ID__`), Bildschirm
+(`state.screen`), Art, Meldung und Stapel (beide gekürzt), Browser-Familie samt
+Hauptversion, Versammlung. **Nicht** die Konto- oder Person-Id, **nicht** die
+Adresse, **keine** Eingaben. Aus dem Stapel fallen die Adressparameter heraus —
+in einem `#go=…` stünde eine Aufgaben-Id.
+
+**Vier Bremsen** ([`src/lib/fehler-melden.ts`](src/lib/fehler-melden.ts)): ohne
+Versammlung nichts (vor der Anmeldung stünde die Tabelle sonst jedem offen),
+Gleiches einmal je Sitzung, höchstens zehn je Stunde, ohne Netz verwerfen. Die
+ersten drei leben im Speicher des Tabs — führt ein Fehler zum Neuladen und
+scheitert die Seite danach wieder, sind sie weg. Deshalb bremst zusätzlich die
+Datenbank: Der Trigger `geraete_fehler_bremsen` nimmt ab 30 Meldungen je Stunde
+und Versammlung nichts mehr an, **still** (`return null`), denn das Melden eines
+Fehlers darf nie selbst einen auslösen.
+
+**Rechte:** Schreiben darf jedes angemeldete Mitglied in die eigene Versammlung,
+lesen nur der Admin — und der Betreiber per Skript. Ändern und Löschen darf
+niemand (keine Richtlinie dafür); abgeräumt wird allein von
+`alte_daten_loeschen` nach acht Wochen. Gemessen gegen eine echte Postgres:
+[`supabase/geraete-fehler-rechte.test.ts`](supabase/geraete-fehler-rechte.test.ts)
+(zwölf Fälle, läuft bei jedem Push), dazu die Fälle (115)–(117) der
+Mitgliedsrechte-Probe gegen den Betrieb.
 
 **Eingeschaltet am 16.10.2026:** erst das Schema, dann ohne Löschen
 nachgesehen, was ginge (überall 0, ein alter Fehlversuch beim Anmelden), dann

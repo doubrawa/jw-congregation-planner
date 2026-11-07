@@ -10257,12 +10257,34 @@ Betrieb laufen im Produktivprojekt, auch die Testversammlung liegt dort.
 **Entscheidet der Betreiber:** das Staging-Projekt (Konto, Tarif); ob jede
 Produktions-Ausrollung seine Freigabe braucht.
 
+#### Vorentschieden am 7. November 2026 — gebaut wird, sobald das Projekt steht
+
+Angefangen wurde T171 stattdessen: Ohne das zweite Projekt ließe sich hier
+Skript und Workflow schreiben, aber **nichts davon fahren** — und bei einer
+Ausroll-Strecke ist genau das der Teil, der zählt. Der Betreiber hat
+„erst T171" gewählt; T170 kommt in einem Zug, wenn das Projekt da ist.
+
+Drei Punkte sind damit schon geklärt:
+
+* **Pausieren:** Supabase pausiert Projekte des **Free**-Tarifs nach etwa einer
+  Woche ohne Datenbank-Aktivität (Supabase-FAQ, nachgesehen am 7. November;
+  bezahlte Tarife nie). Aufwecken geht nur von Hand im Dashboard, nicht per
+  CLI — ein Staging-Projekt, das nur bei Änderungen unter `supabase/`
+  angefasst wird, schläft also meistens. Entschieden: **wachhalten per
+  Zeitplan** — ein kleiner täglicher Workflow mit einer harmlosen Leseanfrage
+  (laut Supabase genügen ein paar Anfragen am Tag). Kostet im öffentlichen
+  Repo nichts.
+* **Freigabe:** **keine.** Sind die Proben auf Staging grün, geht es
+  automatisch nach Produktion — keine GitHub-Umgebung mit Pflicht-Review.
+* **Der Tarif** bleibt damit offen; Pro wäre nur nötig, wenn das Wachhalten
+  nicht reicht.
+
 **Wie man prüft:** Eine harmlose Schemaänderung (ein Kommentar an einer
 Spalte) geht über Staging nach Produktion; `functions list` beider Projekte
 zeigt den Stand des Commits; eine absichtlich rote Probe auf Staging hält
 Produktion und Frontend an.
 
-### T171 · Fehlermeldungen von den Geräten 🔧 ☐ offen
+### T171 · Fehlermeldungen von den Geräten 🔧 ✅ umgesetzt und ausgerollt (7. November 2026)
 
 **Warum:** Fehler bei den Nutzern sieht heute niemand. `ErrorBoundary` und
 `NachladeGrenze` schreiben nur in die Konsole des Geräts, ein `error` oder
@@ -10295,6 +10317,65 @@ oder die Admins in der App.
 Personendaten; derselbe zweimal eine; die Bremse greift; die
 Mitgliedsrechte-Probe bekommt neue Fälle (eine fremde Versammlung liest und
 schreibt nicht, ein Verkündiger liest nicht).
+
+#### Umgesetzt am 7. November 2026
+
+Die Tabelle heißt `geraete_fehler` und trägt: Zeitpunkt, Stand
+(`__BUILD_ID__`), Bildschirm (`state.screen`), Art, Meldung und Stapel (beide
+gekürzt, Längen in der Datenbank begrenzt), Browser-Familie samt Hauptversion,
+Versammlung. **Keine Konto- oder Person-Id, keine Adresse, keine Eingaben.**
+
+**Wer liest: der Betreiber per Skript** (`scripts/geraete-fehler.mjs`,
+gruppiert nach Versammlung, Stand, Art und Meldung) — keine Oberfläche in der
+App. Entschieden nach der eigenen Vorgabe des Betreibers, dass Administratives
+in ein Skript gehört und nicht vor jeden Planer; ein Abschnitt für Admins
+ließe sich nachrüsten.
+
+**Vier Bremsen im Client** (`src/lib/fehler-melden.ts`): ohne Versammlung
+nichts, Gleiches einmal je Sitzung, höchstens zehn je Stunde, ohne Netz
+verwerfen. Dazu eine **fünfte in der Datenbank** — und die war nicht im
+Auftrag: Die drei Zähler leben im Speicher des Tabs, und genau der ist weg,
+wenn ein Fehler zum Neuladen führt und die Seite danach wieder scheitert. Ein
+solcher Kreis schriebe endlos. Der Trigger `geraete_fehler_bremsen` nimmt
+darum ab 30 Meldungen je Stunde und Versammlung nichts mehr an, **still**
+(`return null`): Das Melden eines Fehlers darf nie selbst einen auslösen. Er
+ist `security definer`, weil ein Verkündiger die Tabelle nicht lesen darf —
+zählte er mit dessen Rechten, käme immer 0 heraus und die Bremse griffe nie.
+
+**Abgefangen** wird an vier Stellen: `error`, `unhandledrejection` (beide in
+`main.tsx`, von Anfang an eingehängt), `ErrorBoundary` und `NachladeGrenze`.
+Den Kontext (Versammlung, Bildschirm) pflegt der Store über ein Modul, nicht
+über React-Kontext: Die globalen Horcher stehen außerhalb des Baums, und genau
+wenn etwas zu melden ist, ist der Baum womöglich nicht mehr da.
+
+**Gemessen:**
+
+| Was | Ergebnis |
+| --- | --- |
+| `supabase/geraete-fehler-rechte.test.ts` gegen eine echte Postgres (PGlite) | 12 Fälle grün: Mitglied meldet in die eigene Versammlung, niemand in eine fremde (42501), ohne Anmeldung nichts, Verkündiger liest nicht, fremder Admin liest nicht, niemand ändert oder löscht, die Bremse hält bei 30 je Versammlung, Länge und Art werden abgewiesen (23514) |
+| `src/lib/fehler-melden.test.ts` | 19 Fälle grün: Kürzen, `#go=`-Deeplink fällt heraus, Zeile ohne Personenfeld, Bremsen, Browser-Erkennung (Edge nennt sich Chrome), Datenbank wirft → Melden bleibt still |
+| Mitgliedsrechte-Probe | drei neue Fälle (115)–(117); fährt der Betreiber gegen den Betrieb |
+| Mandanten-Nachweis | `geraete_fehler` in `RLS_TABELLEN` — die Wache verlangte es von selbst |
+| Suite / Lint / Build / Laufzeit | 8155 Tests grün (34 neue), Build sauber, `npm run laufzeit` 129 Läufe ohne Befund |
+| Ausgerollt | Delta in die Produktionsdatenbank; vorher 0 Tabelle/0 Richtlinien/0 Trigger/keine Frist, nachher 1/2/1/Frist drin. `md5(prosrc)` von `alte_daten_loeschen` und `geraete_fehler_bremse` live gleich wie in `schema.sql` (gegen PGlite verglichen) |
+
+**Die Migration ist der erste echte Gebrauch von T169:** Die Änderung steht in
+`schema.sql` **und** in `supabase/migrations/20261107134500_geraete-fehler.sql`
+— wörtlich aus dem Schema ausgeschnitten, samt der ganzen
+`alte_daten_loeschen` (eine Funktion lässt sich nicht teilweise ändern).
+`migrationen.test.ts` hielt beide Wege gleich, ohne dass etwas nachzuhelfen
+war.
+
+**Drei Wachen schlugen von selbst an** und haben die Arbeit geführt:
+`tests/aufbewahrung.test.ts` verlangte eine Frist, `mandanten-nachweis.test.ts`
+den Eintrag in `RLS_TABELLEN`, `versammlung-zuruecksetzen.test.ts` eine
+Entscheidung, was beim Zurücksetzen mit der Tabelle passiert (sie wird
+geleert). Dazu `schema-probe.test.ts` einen Lauf für das neue Skript und die
+Fallnummern im Kopf der Mitgliedsrechte-Probe — 114 war schon belegt, die
+neuen sind (115)–(117).
+
+**Im Handbuch** steht ein eigener Abschnitt („Wenn bei jemandem etwas
+klemmt"): was gemeldet wird, was nicht, wer es sehen kann.
 
 ### T172 · Die größten Dateien nach Fachbereich aufteilen 🏗 ☐ offen
 
@@ -10405,13 +10486,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☐☐☐
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☐☐
 
-**169 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T170–T173**, die übrigen
-Empfehlungen aus der Bewertung vom 7. November: Staging und Ausrollen per CI,
-Fehlermeldungen von den Geräten, große Dateien aufteilen, Barrierefreiheit und
-Sprachauszeichnung mit axe. Am selben Tag umgesetzt: **T168** (Sicherung mit
+**170 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T170, T172 und T173**: Staging und
+Ausrollen per CI (wartet auf das Staging-Projekt des Betreibers; Pausieren und
+Freigabe sind entschieden), große Dateien aufteilen, Barrierefreiheit und
+Sprachauszeichnung mit axe. Am 7. November umgesetzt: **T171**
+(Fehlermeldungen von den Geräten — `geraete_fehler`, fünf Bremsen, Lesen per
+Skript, ausgerollt) und **T168** (Sicherung mit
 Rückspielprobe — wöchentlich über die Aufgabenplanung, die Rückspielprobe lokal
 grün; nur das Anmelden und die Mitgliedsrechte-Probe nach einem Rückspielen
 warten auf das Staging-Projekt aus T170) und **T169** (`supabase/migrations/`
@@ -10880,10 +10963,11 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
-T168–T173 aus der Bewertung; T168 und T169 sind am Mittag umgesetzt, offen davon
-nur die Probe gegen ein echtes Projekt und der Umstieg beim Neuaufbau;
+T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
+umgesetzt, offen davon nur die Probe gegen ein echtes Projekt und der Umstieg
+beim Neuaufbau;
 keine PR, kein Issue, außer `main` kein Zweig, auch
-lokal nicht; `sw.js` = HEAD (`shell-e227864`); die Functions, die Zeitpläne und
+lokal nicht; `sw.js` = HEAD (`shell-8258221`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
 März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
@@ -10891,7 +10975,7 @@ die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
 bleibt, braucht NWS-Exporte, den Neuaufbau, das Staging-Projekt oder eine der
-Aufgaben T170–T173.
+Aufgaben T170, T172 und T173.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -10899,8 +10983,8 @@ Aufgaben T170–T173.
 | **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist vorbereitet** (T169, 7. November): `supabase/migrations/` steht mit dem Grundstand, `migrationen.test.ts` hält ihn und `schema.sql` gleich. Beim Neuaufbau bleibt: erste Migration als eingespielt eintragen, Einmal-Blöcke aus `schema.sql` nehmen, E4 als Migration 2 |
 | **T168** | Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen | der Rest von T168 (am 7. November umgesetzt: `scripts/sicherung.mjs`, wöchentlich über die Aufgabenplanung, acht Stände in `C:\DATA\Claude\jw-sicherungen`; Rückspielprobe gegen eine leere Postgres grün, alle 27 Tabellen gleich). Was fehlt, geht nur gegen ein echtes Projekt: sich nach dem Zurückspielen mit einem Testkonto anmelden und die Mitgliedsrechte-Probe fahren — dafür braucht es das Staging-Projekt aus T170 |
 | **T169** | Umstieg auf die Migrationen | vorbereitet am 7. November (`supabase/migrations/20261107120000_grundstand.sql`, dazu `migrationen.test.ts`, die ihn und `schema.sql` gegeneinander hält — beide in je eine leere Postgres, acht Katalog-Abschnitte). Zu tun bleibt es **beim Neuaufbau**: Datenbank aus `schema.sql` aufbauen, erste Migration als eingespielt eintragen (`migration repair --status applied 20261107120000`), die Einmal-Aufräumblöcke aus `schema.sql` nehmen. E4 wird dann Migration 2 (Betreiber am 7. November: nicht in die erste) |
-| **T170** | Staging und Ausrollen per CI | nach T169; das Staging-Projekt legt der Betreiber an |
-| **T171** | Fehlermeldungen von den Geräten | bereit; wer sie liest, entscheidet der Betreiber |
+| **T170** | Staging und Ausrollen per CI | **wartet auf das Staging-Projekt**, das der Betreiber anlegt (Region `eu-central-1` wie Produktion) — ohne es ließe sich die Strecke schreiben, aber nicht fahren. T169 ist fertig. Entschieden am 7. November: wachhalten per täglichem Zeitplan (Free-Tarif pausiert nach etwa einer Woche, Aufwecken nur im Dashboard), Produktions-Ausrollung **ohne** Freigabe, sobald die Staging-Proben grün sind |
+| **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |
 | **T173** | Barrierefreiheit und Sprachauszeichnung mit axe | bereit; der letzte axe-Lauf ist vom Juli, vor dem neuen Design. Ausnahmen entscheidet der Betreiber |
 

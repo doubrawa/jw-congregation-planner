@@ -571,6 +571,21 @@ const LAEUFE: Record<string, Lauf[]> = {
     },
   ],
 
+  'geraete-fehler.mjs': [
+    {
+      titel: 'Meldungen gruppiert lesen',
+      fahren: (m) => m.main!(['--tage', '14', '--stapel']),
+      umgebung: {
+        bestand: {
+          geraete_fehler: [
+            { id: k(71), congregation_id: C, at: '2026-09-07T08:00:00.000Z', stand: 'abc1234', bildschirm: 'planen', art: 'fehler', meldung: 'kaputt', stapel: 'at f (…:1:2)', browser: 'Chrome 142' },
+          ],
+        },
+      },
+      erwartet: ['GET geraete_fehler'],
+    },
+  ],
+
   'sicherung.mjs': [
     {
       titel: 'alle Tabellen lesen und wegschreiben',

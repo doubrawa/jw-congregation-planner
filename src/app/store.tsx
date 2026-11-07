@@ -12,6 +12,7 @@ import { bibelbuecherLaden } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
 import { mitLinkAnmelden } from '../lib/anmelden'
 import { type Abweisung, setEntzugMelder, setKonfliktMelder, setSchreibfehlerMelder } from '../lib/data'
+import { fehlerKontextSetzen } from '../lib/fehler-melden'
 import { merken } from '../lib/geraetespeicher'
 import { gespeicherteSitzung } from '../lib/gespeicherte-sitzung'
 import { clearSnapshot } from '../lib/snapshot'
@@ -234,6 +235,19 @@ export function AppProvider({
   useEffect(() => {
     if (userId && congregationId) void pushAboAbgleichen(congregationId, userId, stateRef.current.lang)
   }, [userId, congregationId])
+
+  /*
+   * **Woran eine Fehlermeldung hängt** (T171): die Versammlung — ohne sie geht
+   * keine hinaus — und der Bildschirm, auf dem es klemmte. Beides kennt nur der
+   * Store; die Grenzen und die globalen Horcher stehen außerhalb des Baums und
+   * holen es sich aus dem Modul.
+   *
+   * Die Adresse wäre der naheliegende Ersatz für den Bildschirm und ist der
+   * falsche: In ihrem Hash stehen Kennungen (`#go=<aufgabe>`).
+   */
+  useEffect(() => {
+    fehlerKontextSetzen(congregationId, state.screen)
+  }, [congregationId, state.screen])
 
   // Geht die App in den Hintergrund, geht hinaus, was gebündelt wartet
   // (`ausstehendesSchreiben`): Am Handy hält das System den Zeitgeber dort an

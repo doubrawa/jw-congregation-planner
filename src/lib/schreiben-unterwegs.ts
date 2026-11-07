@@ -25,10 +25,23 @@ function adresseVon(input: RequestInfo | URL): string {
   return input instanceof URL ? input.href : input.url
 }
 
+/**
+ * Tabellen, deren Schreibvorgänge **nicht** zählen, weil sie am geladenen
+ * Bestand nichts ändern.
+ *
+ * `geraete_fehler` (T171): Eine Fehlermeldung geht hinaus, während etwas
+ * klemmt — und das Nachladen wartete sonst auf sie. Es wartet, damit eine eben
+ * gegebene Zusage nicht von veralteten Daten überschrieben wird; eine Meldung
+ * steht in keinem Bildschirm und kann nichts überschreiben. Gezählt hieße
+ * hier: Genau wenn das Netz hakt, hängt auch das Nachladen.
+ */
+const ZAEHLT_NICHT = ['/rest/v1/geraete_fehler']
+
 function aendert(input: RequestInfo | URL, init?: RequestInit): boolean {
   const methode = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
   if (methode === 'GET' || methode === 'HEAD') return false
-  return !adresseVon(input).includes('/auth/v1/')
+  const adresse = adresseVon(input)
+  return !adresse.includes('/auth/v1/') && !ZAEHLT_NICHT.some((pfad) => adresse.includes(pfad))
 }
 
 /** Ein `fetch`, der jeden ändernden Aufruf verfolgt — für den Supabase-Client. */

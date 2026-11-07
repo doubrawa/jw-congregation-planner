@@ -187,6 +187,10 @@ export const LEEREN = [
   // Und die Einmal-Codes fürs nächste Gerät — sie gelten Minuten, und
   // die Personen, an denen sie hängen, kommen hier neu.
   'anmelde_einmalcodes',
+  // Fehlermeldungen von den Geräten (T171): Sie zeigen auf einen Bildschirm in
+  // einem Bestand, den dieses Skript gerade wegräumt. Ein Fehler von vorher
+  // sagt über den neuen Stand nichts.
+  'geraete_fehler',
 ]
 
 /** Gelöscht **und** im selben Lauf aus dem SQL neu angelegt (feste IDs). */

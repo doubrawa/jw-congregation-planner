@@ -122,6 +122,14 @@ export const RLS_TABELLEN = [
   // Fehlversuche beim Anmelden: kein Recht für irgendeinen Client, nicht einmal
   // Lesen — abgewiesen ist hier das Ergebnis, nicht der Fehler (`keinZugriff`).
   { name: 'anmelde_fehlversuche', spalte: 'id', keinZugriff: true },
+  // Fehlermeldungen von den Geräten (T171): Lesen darf nur der Admin der
+  // eigenen Versammlung — und das Konto dieser Probe ist je Seite der Admin.
+  // Deshalb wie jede andere Tabelle mit Mandanten-Spalte: Was zurückkommt, muss
+  // die eigene Versammlung tragen. Geschrieben wird hier nicht (die
+  // Schreibprobe fasst nur die Landmarken an); dass niemand in eine fremde
+  // Versammlung melden kann, prüft `supabase/geraete-fehler-rechte.test.ts`
+  // gegen eine echte Postgres.
+  { name: 'geraete_fehler', spalte: 'congregation_id' },
 ]
 
 /**

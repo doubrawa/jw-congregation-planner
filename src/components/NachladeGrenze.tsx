@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { fehlerMelden } from '../lib/fehler-melden'
 
 type Props = {
   children: ReactNode
@@ -28,6 +29,10 @@ export class NachladeGrenze extends Component<Props, State> {
 
   override componentDidCatch(error: Error): void {
     console.error('[nachladen]', error)
+    // Ein Teil, der nicht kommt, ist nach einem Deploy erwartbar und ohne Netz
+    // normal — gemeldet wird er trotzdem (T171): Häuft er sich auf einem Stand,
+    // fehlt dort ein Bündel. Ohne Netz verwirft `fehlerMelden` selbst.
+    void fehlerMelden('nachladen', error)
     this.props.onFehler()
   }
 

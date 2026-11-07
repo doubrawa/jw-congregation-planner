@@ -1,6 +1,10 @@
 /** @vitest-environment happy-dom */
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const gemeldet = vi.hoisted(() => ({ fehlerMelden: vi.fn(async (_art: string, _fehler: unknown, _zusatz?: string) => undefined) }))
+vi.mock('../lib/fehler-melden', () => gemeldet)
+
 import { ErrorBoundary } from './ErrorBoundary'
 
 /**
@@ -19,6 +23,9 @@ describe('ErrorBoundary', () => {
     // React schreibt den gefangenen Fehler zusätzlich selbst ins Log —
     // erwartetes Rauschen, sonst wäre die Testausgabe unlesbar.
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    // `restoreAllMocks` setzt nur Spione zurück, nicht die Aufrufliste eines
+    // `vi.fn()` — ohne das zählte die Meldeprobe die Fehler der Proben davor mit.
+    gemeldet.fehlerMelden.mockClear()
   })
   afterEach(() => {
     cleanup() // ohne globals räumt Testing Library nicht von selbst auf
@@ -44,6 +51,25 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText(TEXTE.titel)).toBeTruthy()
     expect(screen.getByText(TEXTE.text)).toBeTruthy()
     expect(screen.getByRole('button', { name: TEXTE.aktion })).toBeTruthy()
+  })
+
+  it('meldet den gefangenen Fehler hinaus — mit dem Komponentenpfad', () => {
+    /*
+     * T171: Ohne das stünde der Fehler nur in der Konsole eines fremden Handys,
+     * und die liest niemand. Der Pfad sagt, wo es klemmte; gekürzt, weil in
+     * einem vollen Stack nichts weiter Verwertbares steht.
+     */
+    render(
+      <ErrorBoundary {...TEXTE}>
+        <Kaputt />
+      </ErrorBoundary>,
+    )
+    expect(gemeldet.fehlerMelden).toHaveBeenCalledTimes(1)
+    const [art, fehler, zusatz] = gemeldet.fehlerMelden.mock.calls[0]!
+    expect(art).toBe('grenze')
+    expect((fehler as Error).message).toBe('absichtlich')
+    expect(zusatz).toContain('Kaputt')
+    expect((zusatz ?? '').length).toBeLessThanOrEqual(120)
   })
 
   it('lässt die Geschwister außerhalb der Boundary stehen', () => {

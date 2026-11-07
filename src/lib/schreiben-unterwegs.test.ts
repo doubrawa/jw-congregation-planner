@@ -49,6 +49,22 @@ describe('Was zählt', () => {
     expect(schreibStand()).toBe(vorher)
   })
 
+  it('eine Fehlermeldung vom Gerät zählt nicht — sie ändert am Bestand nichts', async () => {
+    /*
+     * T171: Gemeldet wird, während etwas klemmt — und das Nachladen wartete
+     * sonst auf eine Meldung, die in keinem Bildschirm steht. Genau wenn das
+     * Netz hakt, hinge damit auch das Nachladen.
+     */
+    const f = verfolgterFetch(async () => new Response(null))
+    const vorher = schreibStand()
+    await f('https://db.test/rest/v1/geraete_fehler', { method: 'POST' })
+    expect(schreibStand()).toBe(vorher)
+    // Die Gegenprobe: Eine andere Tabelle zählt weiterhin — sonst hätte die
+    // Ausnahme die Zählung insgesamt abgeschaltet.
+    await f('https://db.test/rest/v1/confirmations', { method: 'POST' })
+    expect(schreibStand() - vorher).toBe(1)
+  })
+
   it('die Antwort geht unverändert an den Aufrufer zurück', async () => {
     const antwort = new Response('{"ok":true}')
     const f = verfolgterFetch(async () => antwort)
