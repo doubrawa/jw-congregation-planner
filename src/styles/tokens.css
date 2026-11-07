@@ -38,7 +38,9 @@
   --akzent: #86e0b8;
   --auf-akzent: #141516;
   --akzent-text: #17694a;
-  --problem: #be3b2b;
+  /* So dunkel, dass es auch auf seiner eigenen Fläche (`--problem-flaeche`,
+     die Marken der Auswertung) 4.5:1 hält — gemessen 4.6:1. */
+  --problem: #b93929;
   --wartet: rgba(20, 21, 22, 0.3);
   --ring: #63676a;
   /* Ein leerer Punkt der Auslastung beim Zuteilen — zart: Die Aussage tragen

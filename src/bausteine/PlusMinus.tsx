@@ -16,6 +16,7 @@ export function PlusMinus({
   max,
   label,
   anzeige = String(wert),
+  anzeigeSprache,
   onWert,
 }: {
   wert: number
@@ -25,6 +26,8 @@ export function PlusMinus({
   label: string
   /** Der Wert, wie er dasteht (mit Einheit, in der Schrift der Sprache). */
   anzeige?: string
+  /** Steht der Wert in einer anderen Sprache als die App (die Minuten im Programm), deren `lang`. */
+  anzeigeSprache?: string
   onWert: (wert: number) => void
 }) {
   const { t } = useT()
@@ -38,7 +41,7 @@ export function PlusMinus({
       >
         <Zeichen name="minus" />
       </GesperrterKnopf>
-      <span className="plus-minus-wert" aria-live="polite">
+      <span className="plus-minus-wert" aria-live="polite" lang={anzeigeSprache}>
         {anzeige}
       </span>
       <GesperrterKnopf

@@ -95,7 +95,7 @@ function zeige(over: Partial<AppState> = {}) {
       <AppDispatchContext.Provider value={dispatch}>
         <AppStoreContext.Provider value={store}>
           <AppStateContext.Provider value={state}>
-            <BesetzungKarte tab="mid" tpw={(s) => s} />
+            <BesetzungKarte tab="mid" tpw={(s) => s} sprache="de" />
           </AppStateContext.Provider>
         </AppStoreContext.Provider>
       </AppDispatchContext.Provider>

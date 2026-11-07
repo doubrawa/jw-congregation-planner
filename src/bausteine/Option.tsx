@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import './bausteine.css'
 
 /**
@@ -15,7 +16,8 @@ export function Option({
 }: {
   an: boolean
   titel: string
-  unter?: string
+  /** Die Zeile darunter — darf ein Element mit eigenem `lang` sein (der Zeitraum aus dem Programm). */
+  unter?: ReactNode
   onWahl: () => void
 }) {
   return (

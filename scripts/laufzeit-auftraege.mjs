@@ -82,28 +82,37 @@ export const WEITERE_SPRACHEN = ['en', 'es', 'fr', 'it', 'pl', 'ru', 'uk', 'ro',
 export const BREITEN = [320, 375, 768, 1024, 1180, 1440]
 
 /**
- * @typedef {{ breite: number, sprache: string, darstellung: 'hell' | 'dunkel', schrift: string }} Fassung
+ * `versammlung` ist die Sprache der Versammlung (jw.org-Code, `c=` im Hash) —
+ * in ihr stehen die Programmtexte, ausgezeichnet mit ihrem `lang`.
+ *
+ * @typedef {{ breite: number, sprache: string, darstellung: 'hell' | 'dunkel', schrift: string, versammlung: string }} Fassung
  * @typedef {Fassung & { zustand: string }} Auftrag
  */
 
 /** @returns {Fassung} */
-const fassung = (/** @type {number} */ breite, /** @type {string} */ sprache, /** @type {'hell' | 'dunkel'} */ darstellung, /** @type {string} */ schrift) => ({
-  breite,
-  sprache,
-  darstellung,
-  schrift,
-})
+export const fassung = (
+  /** @type {number} */ breite,
+  /** @type {string} */ sprache,
+  /** @type {'hell' | 'dunkel'} */ darstellung,
+  /** @type {string} */ schrift,
+  versammlung = 'de',
+) => ({ breite, sprache, darstellung, schrift, versammlung })
 
 /**
  * **Die Sätze.** `kern` läuft nach jedem Push in der CI und soll wenige Minuten
  * dauern: jeder Zustand am schmalsten Handy mit der größten Schrift, am breiten
  * Bildschirm und von rechts nach links. `voll` fährt man von Hand.
  *
+ * Von rechts nach links mit **russischer Versammlung** (T173): Arabische
+ * Oberfläche und kyrillisches Programm unterscheiden sich in der Schrift, und
+ * so sieht die Sprachprüfung beide Richtungen — Oberfläche im `lang` des
+ * Programms und Programm ohne sein `lang`.
+ *
  * @type {Record<string, { fassungen: Fassung[], sprachen: string[] }>}
  */
 export const SAETZE = {
   kern: {
-    fassungen: [fassung(320, 'de', 'dunkel', '1.45'), fassung(1440, 'de', 'hell', '1'), fassung(375, 'ar', 'hell', '1')],
+    fassungen: [fassung(320, 'de', 'dunkel', '1.45'), fassung(1440, 'de', 'hell', '1'), fassung(375, 'ar', 'hell', '1', 'ru')],
     sprachen: [],
   },
   voll: {
@@ -112,8 +121,9 @@ export const SAETZE = {
       fassung(320, 'de', 'dunkel', '1.45'),
       fassung(768, 'de', 'dunkel', '1.45'),
       fassung(1440, 'de', 'dunkel', '1.45'),
-      fassung(375, 'ar', 'hell', '1'),
+      fassung(375, 'ar', 'hell', '1', 'ru'),
       fassung(1024, 'ar', 'hell', '1'),
+      fassung(375, 'de', 'hell', '1', 'ar'),
     ],
     sprachen: WEITERE_SPRACHEN,
   },
@@ -138,7 +148,8 @@ export function auftraege(satz, nur) {
 }
 
 /** Der Hash, mit dem die Entwicklerseite einen Auftrag lädt. */
-export const hashVon = (/** @type {Auftrag} */ a) => `${a.zustand}&l=${a.sprache}&t=${a.darstellung}&fs=${a.schrift}`
+export const hashVon = (/** @type {Auftrag} */ a) => `${a.zustand}&l=${a.sprache}&c=${a.versammlung}&t=${a.darstellung}&fs=${a.schrift}`
 
-/** Wie ein Auftrag in Berichten heißt. */
-export const auftragsName = (/** @type {Auftrag} */ a) => `${a.zustand} · ${a.breite} px · ${a.sprache} · ${a.darstellung} · Stufe ${a.schrift}`
+/** Wie ein Auftrag in Berichten heißt — die deutsche Versammlung ohne Zusatz. */
+export const auftragsName = (/** @type {Auftrag} */ a) =>
+  `${a.zustand} · ${a.breite} px · ${a.sprache}${a.versammlung === 'de' ? '' : ` · Versammlung ${a.versammlung}`} · ${a.darstellung} · Stufe ${a.schrift}`

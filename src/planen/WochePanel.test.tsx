@@ -45,6 +45,10 @@ afterEach(cleanup)
 
 const t = dict('de')
 
+/** Der Datumswähler mit der Beschriftung `label` — sie steht vorlesbar im Feld, vor dem Datum. */
+const datumsfeld = (c: ParentNode, label: string) =>
+  [...c.querySelectorAll<HTMLButtonElement>('.dp-field')].find((b) => b.querySelector('.sr-only')?.textContent?.trim() === label)
+
 // jsdom kennt kein matchMedia; das Blatt des Programms fragt danach.
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
 const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0, planner: true })
@@ -155,13 +159,13 @@ describe('Die Wochen-Ansicht', () => {
 
   it('zeigt die Termin-Felder erst zum passenden Anlass', () => {
     const ohne = basis()
-    const { queryByLabelText, rerender } = render(
+    const { container, rerender } = render(
       <Buehne state={ohne}>
         <WochePanel />
       </Buehne>,
     )
-    expect(queryByLabelText(t.von)).toBeNull()
-    expect(queryByLabelText(t.s89Datum)).toBeNull()
+    expect(datumsfeld(container, t.von)).toBeUndefined()
+    expect(datumsfeld(container, t.s89Datum)).toBeUndefined()
 
     const mit = reducer(ohne, { type: 'setAnlass', art: 'kongress' })
     rerender(
@@ -170,8 +174,8 @@ describe('Die Wochen-Ansicht', () => {
       </Buehne>,
     )
     expect(anlassArt(mit.weeks[0])).toBe('kongress')
-    expect(queryByLabelText(t.von)).not.toBeNull()
-    expect(queryByLabelText(t.bis)).not.toBeNull()
+    expect(datumsfeld(container, t.von)).toBeDefined()
+    expect(datumsfeld(container, t.bis)).toBeDefined()
   })
 })
 
@@ -287,9 +291,7 @@ describe('Der Termin des Anlasses', () => {
 
   /** Im Datumswähler mit der Beschriftung `label` einen Tag anklicken. */
   const waehle = (c: HTMLElement, label: string, tag: string) => {
-    const feld = [...c.querySelectorAll<HTMLButtonElement>('.dp-field')].find(
-      (b) => b.getAttribute('aria-label') === label,
-    )!
+    const feld = datumsfeld(c, label)!
     fireEvent.click(feld)
     const knopf = [...feld.closest('.dp')!.querySelectorAll<HTMLButtonElement>('.dp-day')]
       .filter((b) => !b.className.includes('dp-day--muted'))
@@ -327,9 +329,7 @@ describe('Der Termin des Anlasses', () => {
       type: 'setAnlassTermin', patch: { von: '2026-09-10' },
     })
     const { container } = zeige(state)
-    const bis = [...container.querySelectorAll<HTMLButtonElement>('.dp-field')].find(
-      (b) => b.getAttribute('aria-label') === t.bis,
-    )!
+    const bis = datumsfeld(container, t.bis)!
     fireEvent.click(bis)
     const tage = [...bis.closest('.dp')!.querySelectorAll<HTMLButtonElement>('.dp-day')]
       .filter((b) => !b.className.includes('dp-day--muted'))
@@ -342,9 +342,7 @@ describe('Der Termin des Anlasses', () => {
       type: 'setAnlassTermin', patch: { von: '2026-04-02', zeit: '19:30' },
     })
     const { container } = zeige(state)
-    const feld = [...container.querySelectorAll('.dp-field')].find(
-      (b) => b.getAttribute('aria-label') === t.s89Datum,
-    )!
+    const feld = datumsfeld(container, t.s89Datum)!
     expect(feld.textContent).toContain(zahlBinden('2. Apr. 2026'))
     expect(container.querySelector<HTMLInputElement>('.sonder-time')?.value).toBe('19:30')
   })

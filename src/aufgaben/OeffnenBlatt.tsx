@@ -1,10 +1,10 @@
 import { useApp } from '../app/context'
 import { vorzulegendeGesuche } from '../app/reducer'
 import { Sheet } from '../components/Sheet'
-import { aufgabenZeilen, useT } from '../i18n/useT'
+import { aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { aufgabeWann } from './aufgabe-anzeige'
 import { GesuchText } from './Angebot'
+import { AufgabeWann } from './AufgabeText'
 import './aufgaben.css'
 
 /**
@@ -50,8 +50,12 @@ export function OeffnenBlatt() {
           return (
             <div key={task.id} className="oeffnen-aufgabe">
               <div className="oeffnen-text">
-                <span className="oeffnen-wann">{aufgabeWann(task, state.lang, i18n)}</span>
-                <span className="oeffnen-titel">{titel}</span>
+                <span className="oeffnen-wann">
+                  <AufgabeWann task={task} />
+                </span>
+                <span className="oeffnen-titel" lang={aufgabenTitelSprache(task, state.lang, state.congLang)}>
+                  {titel}
+                </span>
                 {unter && <span className="klein-text">{unter}</span>}
               </div>
               <div className="oeffnen-knoepfe">

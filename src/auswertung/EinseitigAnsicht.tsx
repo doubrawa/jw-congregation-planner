@@ -192,8 +192,11 @@ function MatrixTabelle({ k, bereiche, zeilen }: { k: Kontext; bereiche: readonly
           {bereiche.map((b) => (
             // Je Baustein („Vorsitz · …", `privLabelTeile`) eine senkrechte
             // Zeile, die Zusammenkunft kurz — die längste bestimmt, wie hoch
-            // der Kopf steht. Vorgelesen wird der ganze Name.
-            <th key={b} scope="col" aria-label={k.bereich(b)}>
+            // der Kopf steht. Vorgelesen wird der ganze Name, als Text im
+            // Kopf — ein Kopf, der nur einen Namen (`aria-label`) trägt, gilt
+            // axe als leer (`empty-table-header`).
+            <th key={b} scope="col">
+              <span className="sr-only">{k.bereich(b)}</span>
               <span className="aw-matrix-kopf" aria-hidden="true">
                 {k.bereichKurz(b).map((teil, i) => (
                   <span key={i}>{teil}</span>

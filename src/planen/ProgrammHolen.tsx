@@ -131,18 +131,22 @@ function ProgrammHolenBlatt({
           <>
             {/* Die Stellen so, wie die Liste darunter sie zeigt — aus derselben Fassung. */}
             {befunde.length > 0 && (
-              <HeftBefunde befunde={befunde} week={p.week} tpw={p.tpw} text={t.heftBefundeText} ebene="h3" alarm />
+              <HeftBefunde befunde={befunde} week={p.week} tpw={p.tpw} sprache={p.sprache} text={t.heftBefundeText} ebene="h3" alarm />
             )}
             <div className="holen-woche">
               <div className="holen-kopf">
-                <span className="holen-spanne">{programmSpanne(p)}</span>
+                <span className="holen-spanne" lang={p.sprache}>
+                  {programmSpanne(p)}
+                </span>
                 <span className="klein-text">
                   {fill(t.programmpunkteN, { n: abschnitte.reduce((n, a) => n + a.punkte, 0) })}
                 </span>
               </div>
               {abschnitte.map((a) => (
                 <div key={a.label} className="holen-abschnitt" data-farbe={a.farbe}>
-                  <span className="holen-abschnitt-name">{p.tpw(a.label)}</span>
+                  <span className="holen-abschnitt-name" lang={p.sprache}>
+                    {p.tpw(a.label)}
+                  </span>
                   <span className="klein-text">{fill(t.punkteN, { n: a.punkte })}</span>
                 </div>
               ))}

@@ -147,13 +147,17 @@ describe('oben: die eigenen Termine und wer einen Partner sucht', () => {
 })
 
 describe('am Handy: ein Tag mit einer Spalte je Trolley', () => {
-  it('der Samstag zeigt seine beiden Termine, je mit Zeit und Namen für Vorleseprogramme', () => {
+  it('der Samstag zeigt seine beiden Termine — vorgelesen wird, was dasteht, vorn der Trolley', () => {
+    // Kein eigener Name (`aria-label`): Sprachsteuerung findet einen Termin
+    // unter dem, was man sieht (WCAG 2.5.3); „Partner gesucht" hieß vorgelesen
+    // „sucht einen Partner".
     const { container } = zeige()
     fireEvent.click(tag(container, 'Samstag'))
-    const bloecke = [...container.querySelectorAll('.trolley-termin')].map((b) => b.getAttribute('aria-label'))
-    expect(bloecke).toEqual([
-      fill(t.trolleyTerminLabel, { trolley: 'Trolley 1', zeit: '09:00–11:00', wer: fill(t.trolleyUnd, { a: 'Georg Peters', b: 'Claus Maier' }) }),
-      fill(t.trolleyTerminLabel, { trolley: 'Trolley 3', zeit: '09:30–12:00', wer: fill(t.trolleyUnd, { a: 'Helmut Vogel', b: 'Konrad Sommer' }) }),
+    const bloecke = [...container.querySelectorAll('.trolley-termin')]
+    expect(bloecke.map((b) => b.getAttribute('aria-label'))).toEqual([null, null])
+    expect(bloecke.map((b) => b.textContent)).toEqual([
+      'Trolley 1, 09:00–11:00 Georg Peters, Claus Maier',
+      'Trolley 3, 09:30–12:00 Helmut Vogel, Konrad Sommer',
     ])
   })
 
@@ -241,7 +245,10 @@ describe('am Desktop: die Woche als Raster, das Formular rechts', () => {
     fireEvent.click(frei)
     const seite = container.querySelector('aside.trolley-seite')!
     const zehnter = zahlBinden('10. Sept. 2026')
-    expect(seite.querySelector('.dp-field')?.textContent).toBe(zehnter)
+    // Vorgelesen über `aria-labelledby`: die Beschriftung, dann das Datum (T173).
+    const feld = seite.querySelector('.dp-field')!
+    const name = (feld.getAttribute('aria-labelledby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent)
+    expect(name).toEqual([t.trolleyTag, zehnter])
     expect(knopf(seite, 'Trolley 2')?.getAttribute('aria-pressed')).toBe('true')
   })
 

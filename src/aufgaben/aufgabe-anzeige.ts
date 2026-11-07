@@ -3,7 +3,6 @@ import { isoVonKalendertag } from '../data/meeting-dates'
 import type { Lang, MyTask } from '../data/types'
 import { LOCALES } from '../i18n/langs'
 import { relativeDayLabel } from '../i18n/relative-time'
-import { aufgabenTermin, type I18n } from '../i18n/useT'
 
 /**
  * Wie eine eigene Aufgabe dasteht (T121) — auf dem Start, unter „Meine
@@ -11,25 +10,25 @@ import { aufgabenTermin, type I18n } from '../i18n/useT'
  */
 
 /**
- * Wann: der Abstand in Worten, dann der Termin — „Morgen · Di, 8. September ·
- * 19:00". Ohne Kalendertag (Vorlagen) nur der Termin.
+ * Der Abstand in Worten, wie er vor einem Termin steht — „Morgen"; ohne
+ * Kalendertag (Vorlagen) leer. Angezeigt wird er mit dem Termin zusammen
+ * (`AufgabeWann`): jeder Teil in seiner Sprache.
  */
-export function aufgabeWann(task: MyTask, lang: Lang, i18n: Pick<I18n, 'tp' | 'tu'>): string {
-  return mitAbstand(aufgabenTermin(task, i18n), task.at, lang)
+export function abstandVorn(at: number | null | undefined, lang: Lang, jetzt?: number): string {
+  const abstand = relativeDayLabel(at, lang, jetzt)
+  // „morgen" steht hier am Satzanfang. Wo eine Schrift keine Großbuchstaben
+  // kennt, ändert das nichts.
+  return abstand && abstand.charAt(0).toLocaleUpperCase(LOCALES[lang]) + abstand.slice(1)
 }
 
 /**
- * Der Abstand in Worten vor einem Termin — „Morgen · <Termin>"; ohne
- * Kalendertag nur der Termin. Auch für den Film „Erste Schritte", der dieselbe
- * Zeile zeigt.
+ * Abstand und Termin als eine Zeichenkette — „Morgen · <Termin>"; ohne
+ * Kalendertag nur der Termin. Für den Film „Erste Schritte", der dieselbe
+ * Zeile als Text zeigt; in der App setzt `AufgabeWann` die Teile einzeln.
  */
 export function mitAbstand(termin: string, at: number | null | undefined, lang: Lang, jetzt?: number): string {
-  const abstand = relativeDayLabel(at, lang, jetzt)
-  if (!abstand) return termin
-  // „morgen" steht hier am Satzanfang. Wo eine Schrift keine Großbuchstaben
-  // kennt, ändert das nichts.
-  const gross = abstand.charAt(0).toLocaleUpperCase(LOCALES[lang]) + abstand.slice(1)
-  return `${gross} · ${termin}`
+  const abstand = abstandVorn(at, lang, jetzt)
+  return abstand ? `${abstand} · ${termin}` : termin
 }
 
 /**

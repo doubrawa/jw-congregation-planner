@@ -2,7 +2,7 @@ import { useApp } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { meetingDate, meetingTime, versatzAbMontag } from '../data/meeting-dates'
-import { fill, useT } from '../i18n/useT'
+import { useT } from '../i18n/useT'
 import type { MeetingTab, Week } from '../data/types'
 import { datumsFormat } from './datum-anzeige'
 import './components.css'
@@ -40,10 +40,13 @@ interface MeetingTabsProps {
  * 19:00". Die gewählte ist in der Textfarbe hinterlegt, wie der gedrückte
  * Knopf der `Wahl`. Eine ausgefallene steht durchgestrichen da (T30).
  *
- * Vorgelesen wird „Versammlung Dienstag, 8.9. · 19:00" (`versammlungTag`): Der
- * Wochentag allein unterschiede die Karten, sagte aber nicht, wofür sie stehen.
- * Bei einer ausgefallenen folgt „entfällt" (`druckEntfaellt`) — das
- * Durchstreichen liest kein Vorleseprogramm vor.
+ * Vorgelesen wird, was dasteht — „Dienstag 8.9. · 19:00" —, und wofür die
+ * Karten stehen, sagt ihre Gruppe („Zusammenkünfte"). Ein eigener Name je
+ * Karte („Versammlung Dienstag, …") enthielte in manchen Sprachen den
+ * sichtbaren Text nicht am Stück („Tuesday meeting, 9/8"), und Sprachsteuerung
+ * fände die Karte nicht unter dem, was man sieht (WCAG 2.5.3). Bei einer
+ * ausgefallenen folgt „entfällt" (`druckEntfaellt`) — das Durchstreichen liest
+ * kein Vorleseprogramm vor.
  */
 export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTabsProps) {
   const { state } = useApp()
@@ -53,7 +56,7 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
   const tagZahl = datumsFormat(state.lang, 'tagZahl')
 
   return (
-    <div className="meeting-tabs">
+    <div className="meeting-tabs" role="group" aria-label={t.navZusammenkuenfte}>
       {MEETING_TABS.map((key) => {
         // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus, gezählt
         // vom Montag, 1. Januar 2024 — örtlich zur Mittagszeit, damit keine
@@ -70,11 +73,13 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
             type="button"
             className={tab === key ? 'meeting-tab is-active' : 'meeting-tab'}
             aria-pressed={tab === key}
-            aria-label={[fill(t.versammlungTag, { tag: name }), wann, ...(aus ? [t.druckEntfaellt] : [])].join(', ')}
             onClick={() => onChange(key)}
           >
-            <span className="meeting-tab-name">{aus ? <s>{name}</s> : name}</span>
+            {/* Das Leerzeichen trennt Tag und Zeit im vorgelesenen Text — in
+                der Spalte ist es nicht zu sehen. */}
+            <span className="meeting-tab-name">{aus ? <s>{name}</s> : name}</span>{' '}
             <span className="meeting-tab-wann">{wann}</span>
+            {aus && <span className="sr-only">, {t.druckEntfaellt}</span>}
           </button>
         )
       })}

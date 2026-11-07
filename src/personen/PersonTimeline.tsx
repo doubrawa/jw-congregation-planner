@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
+import { AufgabeText } from '../aufgaben/AufgabeText'
 import { fromIso } from '../data/meeting-dates'
 import { besuchsGruppe } from '../components/gruppenbesuch-anzeige'
 import { Zeitleiste, type ZeitZeile } from '../components/Zeitleiste'
 import { abwesenheitsArt, zeitleisteDatum } from '../components/zeitleiste-gemeinsam'
 import type { Person } from '../data/types'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import { personTimeline, WOCHEN_ZURUECK, type TimelineEntry } from './person-timeline'
 
 /**
@@ -25,8 +26,7 @@ import { personTimeline, WOCHEN_ZURUECK, type TimelineEntry } from './person-tim
  */
 export function PersonTimeline({ person }: { person: Person }) {
   const { state } = useApp()
-  const i18n = useT()
-  const { t, tu } = i18n
+  const { t, tu } = useT()
   // Was vergangen ist, misst der Kalendertag — er rückt um Mitternacht weiter,
   // auch wenn sich sonst nichts ändert (wie bei „Meine Aufgaben"). Bis zum
   // 16.10.2026 galt der Tag, an dem zuletzt gerechnet wurde.
@@ -37,8 +37,9 @@ export function PersonTimeline({ person }: { person: Person }) {
    */
   const entries = useMemo(() => personTimeline(person, state, fromIso(tag)), [person, state, tag])
 
-  const beschriftung = (e: TimelineEntry): string => {
-    if (e.kind === 'meeting') return aufgabenLabel({ title: e.titel, rolle: e.rolle }, i18n)
+  const beschriftung = (e: TimelineEntry): ReactNode => {
+    // Der Programmpunkt mit dem `lang` des Programms, die Rolle in der Sprache des Lesers.
+    if (e.kind === 'meeting') return <AufgabeText task={{ title: e.titel, rolle: e.rolle }} />
     // Der Ort ist frei und darf fehlen — dann ohne Punkt am Ende.
     if (e.kind === 'fs') return [t.privTreffpunkt, tu(e.ort).trim()].filter(Boolean).join(' · ')
     // Der Name, wie die Versammlung ihn vergeben hat („Trolley 3") — er sagt,

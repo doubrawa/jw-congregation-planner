@@ -80,6 +80,26 @@ const PALETTEN = {
   dunkel: rumpf(":root[data-theme='dunkel'] {"),
 }
 
+/** Die gemischten Flächen (`--problem-flaeche` …) stehen für beide Paletten in `:root`. */
+const GEMEINSAM = werte(rumpf(':root {'))
+
+/**
+ * Ein Wert der Palette als Farbe — auch eine Mischung zweier ihrer Farben
+ * (`color-mix(in srgb, var(--a) N%, var(--b))`, wie der Browser sie rechnet).
+ * Ohne die Mischungen bliebe ungeprüft, was auf den getönten Flächen steht.
+ */
+function farbe(key, vars) {
+  const roh = vars[key] ?? GEMEINSAM[key] ?? ''
+  const m = /^color-mix\(in srgb, var\(--([\w-]+)\) (\d+(?:\.\d+)?)%, var\(--([\w-]+)\)\)$/.exec(roh)
+  if (!m) return parseColor(roh)
+  const a = farbe(m[1], vars)
+  const b = farbe(m[3], vars)
+  if (!a || !b) return null
+  const p = Number(m[2]) / 100
+  const misch = (x, y) => x * p + y * (1 - p)
+  return { r: misch(a.r, b.r), g: misch(a.g, b.g), b: misch(a.b, b.b), a: 1 }
+}
+
 /* ---- Zu prüfende Paarungen ---------------------------------------------- */
 
 // [Vordergrund, Hintergrund, Mindestwert, Beschreibung]
@@ -100,6 +120,7 @@ const TEXT = [
   ['grund', 'text', 4.5, 'gedrückter Knopf der Wahl, gewählter Bereich und Tag'],
   ['problem', 'grund', 4.5, 'Problem als Text auf Grund'],
   ['problem', 'karte', 4.5, 'Problem als Text auf Karte'],
+  ['problem', 'problem-flaeche', 4.5, 'Problem als Text auf seiner Fläche (Marken der Auswertung)'],
   ['sek1', 'karte', 4.5, 'Abschnitt 1 auf Karte'],
   ['sek2', 'karte', 4.5, 'Abschnitt 2 auf Karte'],
   ['sek3', 'karte', 4.5, 'Abschnitt 3 auf Karte'],
@@ -132,8 +153,8 @@ for (const [name, text] of Object.entries(PALETTEN)) {
   const zeilen = []
   for (const [art, paare] of [['Text', TEXT], ['Grafik', GRAFIK]]) {
     for (const [fgKey, bgKey, min, label] of paare) {
-      const fgRaw = parseColor(vars[fgKey] ?? '')
-      const bgRaw = parseColor(vars[bgKey] ?? '')
+      const fgRaw = farbe(fgKey, vars)
+      const bgRaw = farbe(bgKey, vars)
       if (!fgRaw || !bgRaw) {
         fehler.push(`${name}: --${fgKey} oder --${bgKey} ist keine lesbare Farbe.`)
         continue

@@ -53,7 +53,7 @@ const ZUSAMMENSETZER = ['data/planning.ts', 'i18n/useT.ts']
  *
  * Die Zeitleiste im Personen-Detail baut aus einer Aufgabe ihren eigenen
  * Eintrag und gibt beide Hälften unverändert weiter — beschriftet wird erst in
- * `PersonTimeline.tsx`, und zwar über `aufgabenLabel`. Wer hier etwas
+ * `PersonTimeline.tsx`, und zwar über `AufgabeText`. Wer hier etwas
  * hinzufügt, muss dasselbe zusichern können.
  */
 const DURCHREICHER = ['personen/person-timeline.ts']
@@ -75,8 +75,8 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
     expect(einzelzugriffe).toEqual(ERLAUBT)
   })
 
-  it('die Zeitleiste beschriftet über aufgabenLabel, nicht selbst', () => {
-    expect(QUELLEN.get('personen/PersonTimeline.tsx')).toContain('aufgabenLabel')
+  it('die Zeitleiste beschriftet über AufgabeText, nicht selbst', () => {
+    expect(QUELLEN.get('personen/PersonTimeline.tsx')).toContain('<AufgabeText')
   })
 
   it('und beide setzen sie auch wirklich zusammen', () => {
@@ -84,14 +84,16 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenZeilen')
     expect(QUELLEN.get('i18n/useT.ts')).toContain('export function aufgabenHaelften')
     expect(QUELLEN.get('data/planning.ts')).toContain('export function aufgabenBezeichnung')
+    // `AufgabeText` setzt die Hälften als Elemente, je mit ihrem `lang` (T173).
+    expect(QUELLEN.get('aufgaben/AufgabeText.tsx')).toContain('aufgabenHaelften(task, i18n)')
   })
 
   it('jede Anzeige einer Aufgabe nimmt eine der Formen', () => {
     // Wer eine Aufgabe beschriftet — an den Klassen ihrer Titelzeilen zu
     // erkennen —, muss über die Helfer gehen: `aufgabenLabel` für eine Zeile,
     // `aufgabenZeilen` für die große Karte mit Titel und Unterzeile,
-    // `aufgabenHaelften` für eine Zeile, deren Hälften je nach ihrer Sprache
-    // trennen (die Zeilen auf dem Start, seit dem 29.10.2026).
+    // `aufgabenHaelften` oder `AufgabeText` für eine Zeile, deren Hälften je
+    // ihre Sprache tragen (die Zeilen auf dem Start und unter „Meine Aufgaben").
     const beschriftet = [...QUELLEN]
       .filter(([pfad]) => pfad.endsWith('.tsx') && !/\.test\.tsx$/.test(pfad))
       .filter(([, text]) => /aufgabe-titel|aufgaben-zeile-titel|oeffnen-titel|start-zeile-text/.test(text))
@@ -107,7 +109,7 @@ describe('Aufgaben-Beschriftung entsteht an einer Stelle', () => {
       'dashboard/DashboardScreen.tsx',
     ])
     for (const datei of beschriftet) {
-      expect(QUELLEN.get(datei), datei).toMatch(/aufgabenLabel|aufgabenZeilen|aufgabenHaelften/)
+      expect(QUELLEN.get(datei), datei).toMatch(/aufgabenLabel|aufgabenZeilen|aufgabenHaelften|<AufgabeText/)
     }
   })
 })

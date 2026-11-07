@@ -2,7 +2,9 @@ name: Laufzeit-Messung
 
 # Lädt jeden Zustand der Entwicklerseite /demo.html in Chrome ohne Fenster und
 # misst, was die Unit-Tests nicht sehen: Überbreite, Konsolenfehler,
-# Fehlergrenzen, Text wie „undefined" (T167, scripts/laufzeit-messung.mjs).
+# Fehlergrenzen, Text wie „undefined" (T167, scripts/laufzeit-messung.mjs),
+# die Sprache der Inhalte und mit axe die Barrierefreiheit nach WCAG 2.2 A/AA
+# (T173) — axe aus node_modules, kein fremder Server.
 #
 # Eigener Workflow neben dem Deploy, nicht davor: Ein Befund soll rot leuchten
 # und eine Mail auslösen, aber ein dringender Fix soll nicht an einer Messung
@@ -50,4 +52,4 @@ jobs:
       - run: npm ci
       # Chrome bringt das Runner-Image mit (`google-chrome`), Trennwörterbücher
       # nicht — gemessen wird der schwerste Fall: Lange Wörter brechen nicht.
-      - run: npm run laufzeit -- --satz ${{ inputs.satz || 'kern' }}
+      - run: npm run laufzeit -- --satz ${{ inputs.satz || 'kern' }} --axe

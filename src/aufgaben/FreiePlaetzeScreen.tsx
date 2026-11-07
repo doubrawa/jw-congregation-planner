@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useApp } from '../app/context'
 import { Punkt } from '../bausteine/Punkt'
-import { aufgabenLabel, aufgabenTermin, useT } from '../i18n/useT'
+import { useT } from '../i18n/useT'
 import { AngebotText, GesuchText } from './Angebot'
+import { AufgabeTermin, AufgabeText } from './AufgabeText'
 import './aufgaben.css'
 
 /**
@@ -15,8 +16,7 @@ import './aufgaben.css'
  */
 export function FreiePlaetzeScreen() {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { t } = useT()
 
   /*
    * **Ein Klick auf „Ersatz gesucht" landet hier beim Einspringen** (T109).
@@ -82,11 +82,7 @@ export function FreiePlaetzeScreen() {
             {state.offenePlaetze.map((platz) => (
               <div key={platz.key} className="aufgaben-zeile">
                 <Punkt art="offen" />
-                <AngebotText
-                  titel={aufgabenLabel(platz, i18n)}
-                  wann={aufgabenTermin(platz, i18n)}
-                  schonHeute={platz.schonHeute}
-                />
+                <AngebotText titel={<AufgabeText task={platz} />} wann={<AufgabeTermin task={platz} />} schonHeute={platz.schonHeute} />
                 <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}>
                   {t.uebernehmen}
                 </button>

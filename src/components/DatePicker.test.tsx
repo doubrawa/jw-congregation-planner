@@ -58,6 +58,21 @@ describe('Der Datumswähler', () => {
     expect(container.querySelector('.dp-field')?.textContent).toContain(zahlBinden('1. Okt. 2026'))
   })
 
+  it('vorgelesen wird die Beschriftung, dann das Datum, wie es dasteht (T173, WCAG 2.5.3)', () => {
+    // Über `aria-labelledby`, nicht über den Inhalt: In einer `<label>` nähme
+    // der Browser sonst deren Text und übergänge das Datum (in Chrome gemessen).
+    const { container } = render(
+      <label>
+        <span>{t.von}</span>
+        <DatePicker value="2026-10-01" onChange={() => {}} locale="de-DE" placeholder={t.datumPh} ariaLabel={t.von} prevLabel="‹" nextLabel="›" />
+      </label>,
+    )
+    const feld = container.querySelector('.dp-field')!
+    expect(feld.getAttribute('aria-label')).toBeNull()
+    const name = (feld.getAttribute('aria-labelledby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent)
+    expect(name).toEqual([t.von, zahlBinden('1. Okt. 2026')])
+  })
+
   it('das Popup ist zu, bis man es öffnet', () => {
     const { container } = zeigeDP()
     expect(container.querySelector('.dp-pop')).toBeNull()

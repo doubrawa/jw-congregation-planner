@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
+import { AufgabeText } from '../aufgaben/AufgabeText'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { Spur } from '../bausteine/Spur'
@@ -15,7 +16,7 @@ import { naechsteErinnerung, zusagenDerWoche, type ZusagePlatz } from '../data/z
 import type { Lang, MeetingKey, Week } from '../data/types'
 import { relativeDayLabel } from '../i18n/relative-time'
 import type { Dict } from '../i18n/ui'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import { relativeZeit } from '../i18n/zeit'
 import { spurDerWoche, zahlenDerWoche } from './plan-spur'
 import { zumPlanDerWoche } from './planen-raster'
@@ -33,10 +34,9 @@ import { useErinnern } from './wochen-versand'
  * „Zuteilen" oder Zurück. Am Desktop stehen die Karten als Spalten
  * nebeneinander. Ein Problem lässt sich von hier aus gleich neu zuteilen.
  */
-export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: Week; tpw: (s: string) => string }) {
+export function ZusagenAnsicht({ week, rawWeek, tpw, sprache }: { week: Week; rawWeek: Week; tpw: (s: string) => string; sprache: string }) {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { t } = useT()
   const tag = useKalendertag()
   const abwesend = useAbwesend()
   const { weeks, persons, services, confirmations, sentLog, persoenlich } = state
@@ -75,8 +75,13 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
   const tagDer = (tab: MeetingKey): string =>
     meetingDateMs(rawWeek, tab, zeiten) === null ? '' : wochentag.format(meetingDate(rawWeek, tab, zeiten))
   const tage: Record<MeetingKey, string> = { mid: tagDer('mid'), we: tagDer('we') }
-  const aufgabeAmTag = (p: ZusagePlatz): string =>
-    [tage[p.tab], aufgabenLabel(p.aufgabe(), i18n)].filter(Boolean).join(' · ')
+  // Der Programmpunkt mit dem `lang` des Programms, Tag und Rolle in der Sprache des Lesers (`AufgabeText`).
+  const aufgabeAmTag = (p: ZusagePlatz): ReactNode => (
+    <>
+      {tage[p.tab] && `${tage[p.tab]} · `}
+      <AufgabeText task={p.aufgabe()} />
+    </>
+  )
 
   const klaeren = plaetze.filter((p) => p.lage === 'problem')
   // Wer kein Konto hat, wartet nicht auf eine Nachricht: Ihn erreicht keine.
@@ -87,7 +92,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw }: { week: Week; rawWeek: We
   return (
     <section className="screen prog zusagen">
       <UnteransichtKopf titel={t.spurZusagen} onZurueck={zumPlan} />
-      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} />
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} sprache={sprache} />
       <Spur schritte={spurDerWoche(zahlen, t, { zuteilen: zumPlan })} label={t.spurWoche} />
       {plaetze.length === 0 ? (
         <section className="karte zusagen-leer">
@@ -168,7 +173,7 @@ function ZusageText({ name, children }: { name: string; children: ReactNode }) {
  * Ein Problem: wer, welche Aufgabe, warum — und „Zuteilen", das den Platz
  * gleich im Zuteilen-Blatt öffnet.
  */
-function KlaerenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }) {
+function KlaerenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: ReactNode }) {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const grund = problemGrund(platz.konflikt, t, platz.hilfsdienst ? t.spurErsatzGesucht : undefined)
@@ -176,7 +181,9 @@ function KlaerenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string 
   return (
     <div className="zusage-zeile">
       <ZusageText name={platz.slot.name}>
-        <span className="zusage-grund">{`${aufgabe} · ${grund}`}</span>
+        <span className="zusage-grund">
+          {aufgabe} · {grund}
+        </span>
       </ZusageText>
       {sel && (
         <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'openSlot', sel })}>
@@ -188,7 +195,7 @@ function KlaerenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string 
 }
 
 /** Wer noch nicht zugesagt hat: wer, welche Aufgabe — und seit wann die Nachricht draußen ist. */
-function WartenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }) {
+function WartenZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: ReactNode }) {
   const { state } = useApp()
   const { t } = useT()
   return (
@@ -244,7 +251,7 @@ function erinnerungsSatz(naechste: number | null, lang: Lang, t: Dict): string {
  * Wer kein Konto hat: wer, welche Aufgabe — und der Haken, sobald der Planer es
  * ihm selbst gesagt hat. Die ganze Zeile schaltet ihn.
  */
-function PersoenlichZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: string }) {
+function PersoenlichZeile({ platz, aufgabe }: { platz: ZusagePlatz; aufgabe: ReactNode }) {
   const { dispatch } = useApp()
   const { t } = useT()
   const name = platz.slot.name

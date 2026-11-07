@@ -13,6 +13,7 @@
  *   npm run laufzeit -- --nur "s=personen"       nur Aufträge, deren Name passt (Regex)
  *   npm run laufzeit -- --url http://localhost:5173   einen laufenden Dev-Server nutzen
  *   --parallel <n>   Tabs zugleich (Vorgabe: halbe Kernzahl, höchstens 4)
+ *   --axe            dazu axe: WCAG 2.2 A und AA samt best practice (T173)
  *   --trennung       mit den Trennwörterbüchern des installierten Chrome (sonst ohne, wie die CI)
  *   --json <datei>   alle Ergebnisse als JSON
  *
@@ -20,17 +21,22 @@
  * die gemessen wird. Meldet die Messung eine davon nicht, ist der Lauf rot.
  *
  * Exitcode 0 ohne Befund, 1 mit Befunden, 2 wenn die Gegenprobe nicht anschlug.
- * Die Seite hat keinen Datenbank-Client — nichts geht hinaus.
+ * Die Seite hat keinen Datenbank-Client — nichts geht hinaus, und axe kommt aus
+ * `node_modules`, nicht von einem fremden Server.
  */
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { starteChrome } from './chrome.mjs'
 import { alsSkript, argumente } from './gemeinsam.mjs'
-import { auftraege, auftragsName, hashVon, SPRACH_ZUSTAENDE } from './laufzeit-auftraege.mjs'
+import { auftraege, auftragsName, fassung, hashVon, SPRACH_ZUSTAENDE } from './laufzeit-auftraege.mjs'
 import {
+  AXE_AUSNAHMEN,
+  AXE_GEGENPROBE_ARTEN,
+  AXE_STICHWOERTER,
+  axeImDokument,
   befundeAus,
   bereitImDokument,
   GEGENPROBE_ARTEN,
@@ -45,6 +51,9 @@ const WURZEL = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Ab dieser Breite misst Chrome wie am Schreibtisch: Rollbalken nehmen Platz, kein Touch. */
 const SCHREIBTISCH_AB = 768
+
+/** Die Höhe des Fensters, in dem gemessen wird. */
+const FENSTER_HOEHE = 900
 
 /** Wie viele Fälle je Befund der Bericht nennt. */
 const FAELLE_IM_BERICHT = 4
@@ -98,15 +107,22 @@ async function messTab(chrome) {
   return { ...tab, meldungen }
 }
 
+/** axe als Quelltext — erst nach der Messung in die Seite, damit er nichts an ihr ändert, was gemessen wird. */
+const axeQuelle = () => readFileSync(fileURLToPath(import.meta.resolve('axe-core/axe.min.js')), 'utf8')
+
 /**
  * Einen Auftrag messen: Fenster setzen, laden, warten bis die Seite steht und
- * das Netz ruht, messen. `stoeren` gilt nur für die Gegenprobe.
+ * das Netz ruht, messen. `stoeren` gilt nur für die Gegenprobe; `axe` ist der
+ * Quelltext von axe, wenn er mitlaufen soll.
  *
+ * @param {{ stoeren?: boolean, axe?: string }} [optionen]
  * @returns {Promise<import('./laufzeit-befunde.mjs').Ergebnis>}
  */
-async function messen(tab, auftrag, basis, nr, stoeren = false) {
+async function messen(tab, auftrag, basis, nr, { stoeren = false, axe } = {}) {
   const handy = auftrag.breite < SCHREIBTISCH_AB
-  await tab.sende('Emulation.setDeviceMetricsOverride', { width: auftrag.breite, height: 900, deviceScaleFactor: handy ? 2 : 1, mobile: handy })
+  const fenster = (/** @type {number} */ height) =>
+    tab.sende('Emulation.setDeviceMetricsOverride', { width: auftrag.breite, height, deviceScaleFactor: handy ? 2 : 1, mobile: handy })
+  await fenster(FENSTER_HOEHE)
   await tab.sende('Emulation.setTouchEmulationEnabled', { enabled: handy, maxTouchPoints: handy ? 5 : 1 })
   tab.meldungen.length = 0
   // Eine neue Abfrage lädt die Seite neu; ein bloß anderer Hash täte das nicht.
@@ -119,7 +135,18 @@ async function messen(tab, auftrag, basis, nr, stoeren = false) {
     await tab.netzRuhig()
   }
   const messung = await tab.werte(`(${messenImDokument})()`)
-  return { auftrag, bereit, meldungen: [...tab.meldungen], messung }
+  if (!axe) return { auftrag, bereit, meldungen: [...tab.meldungen], messung }
+  // axe sieht die ganze Seite auf einmal: Am Rand eines kurzen Fensters läge
+  // die untere Leiste über dem, was beim Rollen frei wird, und axe nennte es
+  // „verdeckt" (`target-size`). Was dann noch verdeckt ist, bleibt es.
+  const hoehe = await tab.werte('document.documentElement.scrollHeight')
+  if (hoehe > FENSTER_HOEHE) {
+    await fenster(hoehe)
+    await tab.werte(`(${ruhigImDokument})()`)
+  }
+  await tab.werte(`${axe}\n;undefined`)
+  const verstoesse = await tab.werte(`(${axeImDokument})(${JSON.stringify({ stichwoerter: AXE_STICHWOERTER, ausnahmen: AXE_AUSNAHMEN })})`)
+  return { auftrag, bereit, meldungen: [...tab.meldungen], messung, axe: verstoesse }
 }
 
 /**
@@ -127,7 +154,7 @@ async function messen(tab, auftrag, basis, nr, stoeren = false) {
  * einen Nachfolger — ein abgestürzter Tab soll nicht jeden weiteren Lauf
  * mitreißen.
  */
-async function abarbeiten(liste, tabs, chrome, basis, melden) {
+async function abarbeiten(liste, tabs, { chrome, basis, axe, melden }) {
   /** @type {import('./laufzeit-befunde.mjs').Ergebnis[]} */
   const ergebnisse = new Array(liste.length)
   let naechster = 0
@@ -138,7 +165,7 @@ async function abarbeiten(liste, tabs, chrome, basis, melden) {
       while (naechster < liste.length) {
         const i = naechster++
         try {
-          ergebnisse[i] = await messen(tab, liste[i], basis, i)
+          ergebnisse[i] = await messen(tab, liste[i], basis, i, { axe })
         } catch (e) {
           ergebnisse[i] = { auftrag: liste[i], fehler: String(e instanceof Error ? e.message : e) }
           await tab.schliessen()
@@ -175,6 +202,8 @@ export async function main(argv = process.argv.slice(2)) {
   const liste = auftraege(satz, typeof arg.nur === 'string' ? arg.nur : undefined)
   if (!liste.length) throw new Error(`Kein Auftrag im Satz „${satz}" passt zu --nur ${arg.nur}.`)
   const parallel = Math.max(1, Number(arg.parallel) || Math.min(4, Math.floor(availableParallelism() / 2)))
+  const axe = arg.axe === true ? axeQuelle() : undefined
+  const gestoert = axe ? [...GEGENPROBE_ARTEN, ...AXE_GEGENPROBE_ARTEN] : GEGENPROBE_ARTEN
   const lauf = (/** @type {import('./laufzeit-befunde.mjs').Ergebnis} */ e) => auftragsName(e.auftrag)
 
   const server = typeof arg.url === 'string' ? { basis: arg.url.replace(/\/$/, ''), schliessen: async () => {} } : await devServerStarten()
@@ -188,17 +217,17 @@ export async function main(argv = process.argv.slice(2)) {
   process.once('SIGINT', abbrechen)
   try {
     chrome = await starteChrome({ trennung: arg.trennung === true })
-    console.log(`Laufzeit-Messung · Satz ${satz} · ${liste.length} Läufe · ${parallel} Tabs · ${server.basis}`)
+    console.log(`Laufzeit-Messung · Satz ${satz}${axe ? ' mit axe' : ''} · ${liste.length} Läufe · ${parallel} Tabs · ${server.basis}`)
     const start = Date.now()
 
     // Anwärmen: Der Dev-Server übersetzt jedes Modul beim ersten Abruf.
     const erster = await messTab(chrome)
     for (const [i, zustand] of SPRACH_ZUSTAENDE.entries()) {
-      await messen(erster, { zustand, breite: 375, sprache: 'de', darstellung: 'hell', schrift: '1' }, server.basis, `warm-${i}`)
+      await messen(erster, { zustand, ...fassung(375, 'de', 'hell', '1') }, server.basis, `warm-${i}`)
     }
 
-    const probe = await messen(erster, { zustand: 's=login', breite: 375, sprache: 'de', darstellung: 'hell', schrift: '1' }, server.basis, 'gegenprobe', true)
-    const luecken = gegenprobeLuecken(befundeAus(probe))
+    const probe = await messen(erster, { zustand: 's=login', ...fassung(375, 'de', 'hell', '1') }, server.basis, 'gegenprobe', { stoeren: true, axe })
+    const luecken = gegenprobeLuecken(befundeAus(probe), gestoert)
     if (luecken.length) {
       console.error(`Gegenprobe schlug nicht an: ${luecken.join(', ')} — die Messung misst nicht, was sie soll.`)
       if (process.env.GITHUB_ACTIONS) console.log(anmerkung('Gegenprobe', `nicht erkannt: ${luecken.join(', ')}`))
@@ -206,15 +235,20 @@ export async function main(argv = process.argv.slice(2)) {
       await erster.schliessen()
       return
     }
-    console.log(`Gegenprobe: alle ${GEGENPROBE_ARTEN.length} Arten erkannt (${GEGENPROBE_ARTEN.join(', ')})`)
+    console.log(`Gegenprobe: alle ${gestoert.length} Arten erkannt (${gestoert.join(', ')})`)
 
     const tabs = [erster, ...(await Promise.all(Array.from({ length: parallel - 1 }, () => messTab(chrome))))]
     let gemeldet = 0
-    const ergebnisse = await abarbeiten(liste, tabs, chrome, server.basis, (n, gesamt) => {
-      if (n === gesamt || n - gemeldet >= Math.max(10, Math.ceil(gesamt / 10))) {
-        console.log(`  ${n}/${gesamt}`)
-        gemeldet = n
-      }
+    const ergebnisse = await abarbeiten(liste, tabs, {
+      chrome,
+      basis: server.basis,
+      axe,
+      melden: (/** @type {number} */ n, /** @type {number} */ gesamt) => {
+        if (n === gesamt || n - gemeldet >= Math.max(10, Math.ceil(gesamt / 10))) {
+          console.log(`  ${n}/${gesamt}`)
+          gemeldet = n
+        }
+      },
     })
     const gruppen = zusammenfassen(ergebnisse, lauf)
     const mitBefund = ergebnisse.filter((e) => befundeAus(e).length).length

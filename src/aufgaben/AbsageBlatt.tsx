@@ -7,8 +7,9 @@ import { gebundenesDatum } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Absence, MyTask } from '../data/types'
 import type { Dict } from '../i18n/ui'
-import { aufgabenLabel, aufgabenTermin, useT } from '../i18n/useT'
+import { useT } from '../i18n/useT'
 import { absageArt, aufgabeTag, type AbsageArt } from './aufgabe-anzeige'
+import { AufgabeTermin, AufgabeText } from './AufgabeText'
 import './aufgaben.css'
 
 /** Längste Nachricht an den Planer — sie steht in seiner Mitteilung und im Push. */
@@ -48,8 +49,7 @@ function eintragbarerTag(task: MyTask, personId: string | null, absences: readon
  */
 export function AbsageBlatt({ task }: { task: MyTask }) {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { t } = useT()
   const [nachricht, setNachricht] = useState('')
   const [abwesend, setAbwesend] = useState(false)
   const feldId = useId()
@@ -93,7 +93,12 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
     <Sheet
       variante="oben"
       label={t.absageFrage}
-      eyebrow={<div className="sheet-marke">{`${aufgabenLabel(task, i18n)} · ${aufgabenTermin(task, i18n)}`}</div>}
+      eyebrow={
+        // Punkt und Termin in der Sprache des Programms, die Rolle in der des Lesers (`AufgabeText`).
+        <div className="sheet-marke">
+          <AufgabeText task={task} /> · <AufgabeTermin task={task} />
+        </div>
+      }
       title={t.absageFrage}
       onClose={() => dispatch({ type: 'closeAbsage' })}
     >

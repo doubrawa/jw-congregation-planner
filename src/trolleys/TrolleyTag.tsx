@@ -11,11 +11,11 @@ import {
   nameVon,
   PLAN_STUNDEN,
   tagLang,
-  werImTermin,
   wochenTage,
   zeitAnStelle,
   zeitSpanne,
 } from './trolley-anzeige'
+import { TrolleyVorsatz } from './TrolleyVorsatz'
 
 /**
  * **Die Tage der Woche zur Wahl** (Entwurf `GZeugnis`): Wochentag kurz, die
@@ -164,19 +164,25 @@ function TerminBlock({
       type="button"
       className={termin.partner ? 'trolley-termin' : 'trolley-termin is-gesucht'}
       style={{ top: `${oben * 100}%`, height: `${hoehe * 100}%` }}
-      aria-label={fill(t.trolleyTerminLabel, { trolley, zeit: zeitSpanne(termin), wer: werImTermin(termin, state.persons, t) })}
       onClick={() => onTermin(termin)}
     >
-      <span className="trolley-termin-zeit">{zeitSpanne(termin)}</span>
+      <TrolleyVorsatz name={trolley} />
+      <span className="trolley-termin-zeit">{zeitSpanne(termin)}</span>{' '}
       <span className="trolley-termin-name" dir="auto">
         {person}
       </span>
       {partner ? (
-        <span className="trolley-termin-name" dir="auto">
-          {partner}
-        </span>
+        <>
+          <span className="sr-only">, </span>
+          <span className="trolley-termin-name" dir="auto">
+            {partner}
+          </span>
+        </>
       ) : (
-        <span className="trolley-termin-gesucht">{t.trolleyPartnerGesucht}</span>
+        <>
+          {' '}
+          <span className="trolley-termin-gesucht">{t.trolleyPartnerGesucht}</span>
+        </>
       )}
     </button>
   )

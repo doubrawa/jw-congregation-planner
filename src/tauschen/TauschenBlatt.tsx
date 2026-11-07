@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { AngebotText } from '../aufgaben/Angebot'
-import { aufgabeWann } from '../aufgaben/aufgabe-anzeige'
+import { AufgabeText, AufgabeWann } from '../aufgaben/AufgabeText'
 import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { nameVon } from '../data/helpers'
 import { anfrageZu } from '../data/tausch'
 import type { MyTask } from '../data/types'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import type { TauschAngebot } from '../lib/tauschen'
 import { usePlatzZeile } from './usePlatzZeile'
 import { tauschFehlerText, useTauschen, useTauschFehler } from './useTauschen'
@@ -26,8 +26,7 @@ import './tauschen.css'
  */
 export function TauschenBlatt({ task }: { task: MyTask }) {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { t } = useT()
   const heute = useKalendertag()
   const tausch = useTauschen()
   const platzZeile = usePlatzZeile()
@@ -61,7 +60,9 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
       <div className="sheet-inhalt tausch-blatt">
         <section className="tausch-abschnitt">
           <h3 className="tausch-kopf">{t.tauschGibstAb}</h3>
-          <p className="tausch-platz">{`${aufgabenLabel(task, i18n)} · ${aufgabeWann(task, state.lang, i18n)}`}</p>
+          <p className="tausch-platz">
+            <AufgabeText task={task} /> · <AufgabeWann task={task} />
+          </p>
         </section>
         {offen ? (
           <section className="tausch-abschnitt">

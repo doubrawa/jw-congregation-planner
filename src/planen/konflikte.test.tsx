@@ -122,7 +122,7 @@ describe('T81 — Serien sind kein Konflikt mehr', () => {
     const { weeks, persons } = mitSerien(6)
     const { container } = render(
       <Buehne state={basis({ weeks, persons })}>
-        <BesetzungKarte tab="mid" tpw={(s) => s} />
+        <BesetzungKarte tab="mid" tpw={(s) => s} sprache="de" />
       </Buehne>,
     )
     expect(probleme(container)).toEqual([])
@@ -254,7 +254,7 @@ describe('Die Konflikt-Sätze', () => {
   const zeigeKonflikt = (over: Partial<AppState>, tab: 'mid' | 'we' = 'mid') =>
     render(
       <Buehne state={basis({ persons: [KAI], week: 0, ...over })}>
-        <BesetzungKarte tab={tab} tpw={(s) => s} />
+        <BesetzungKarte tab={tab} tpw={(s) => s} sprache="de" />
       </Buehne>,
     )
 

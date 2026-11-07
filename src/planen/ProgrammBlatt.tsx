@@ -9,7 +9,7 @@ import { Sheet } from '../components/Sheet'
 import { dauerAbtrennen, istArt, istCoPunkt, isSong, liedImKopf } from '../data/helpers'
 import { itemMinutes, LAC_MAX_MINUTEN, LAC_MIN_MINUTEN, movableIndices } from '../data/meeting-edit'
 import type { Meeting, PartItem, Section } from '../data/types'
-import { fill, programmTermin, useProgWeek, useT } from '../i18n/useT'
+import { programmTermin, useProgWeek, useT } from '../i18n/useT'
 
 /** Welcher Punkt im Blatt darüber offen ist: ein bestehender (seine Kennung) oder ein neuer. */
 type Offen = { iid: string } | 'neu' | null
@@ -39,14 +39,20 @@ export function ProgrammBlatt({ onClose }: { onClose: () => void }) {
   const rawMeeting = rawWeek.mid
   const lacSi = rawMeeting.sections.findIndex((s) => istArt(s, 'lac'))
   const termin = programmTermin(tpw, rawWeek, 'mid', state.congregation.times, meeting.end)
+  // Der Satz in der Sprache des Lesers, der Abschnitt darin in der des Programms.
+  const [vorAbschnitt, nachAbschnitt = ''] = t.programmHinweis.split('{abschnitt}')
 
   return (
     <>
       {createPortal(
-        <Sheet variante="lang" label={t.programmTitel} title={t.programmTitel} sub={termin} onClose={onClose}>
+        <Sheet variante="lang" label={t.programmTitel} title={t.programmTitel} sub={<span lang={sprache}>{termin}</span>} onClose={onClose}>
           <div className="sheet-inhalt programm">
             {lacSi >= 0 && (
-              <p className="klein-text">{fill(t.programmHinweis, { abschnitt: tpw(meeting.sections[lacSi]?.label ?? '') })}</p>
+              <p className="klein-text">
+                {vorAbschnitt}
+                <span lang={sprache}>{tpw(meeting.sections[lacSi]?.label ?? '')}</span>
+                {nachAbschnitt}
+              </p>
             )}
             {meeting.sections.map((section, si) => {
               const rawSection = rawMeeting.sections[si]
@@ -57,6 +63,7 @@ export function ProgrammBlatt({ onClose }: { onClose: () => void }) {
                   section={section}
                   rawSection={rawSection}
                   tpw={tpw}
+                  sprache={sprache}
                   onPunkt={(iid) => setOffen({ iid })}
                   onNeu={() => setOffen('neu')}
                 />
@@ -97,12 +104,15 @@ function ProgrammAbschnitt({
   section,
   rawSection,
   tpw,
+  sprache,
   onPunkt,
   onNeu,
 }: {
   section: Section
   rawSection: Section
   tpw: (s: string) => string
+  /** In welcher Sprache `tpw` schreibt — `lang` jedes Programmtexts. */
+  sprache: string
   onPunkt: (iid: string) => void
   onNeu: () => void
 }) {
@@ -112,8 +122,16 @@ function ProgrammAbschnitt({
   return (
     <section className="prog-abschnitt" data-farbe={section.farbe}>
       <div className="prog-abschnitt-kopf">
-        <h3 className="prog-abschnitt-name">{tpw(section.label)}</h3>
-        <span className="prog-lied">{lac ? lieder.join(' · ') : t.ausArbeitsheft}</span>
+        <h3 className="prog-abschnitt-name" lang={sprache}>
+          {tpw(section.label)}
+        </h3>
+        {lac ? (
+          <span className="prog-lied" lang={sprache}>
+            {lieder.join(' · ')}
+          </span>
+        ) : (
+          <span className="prog-lied">{t.ausArbeitsheft}</span>
+        )}
       </div>
       {section.items.map((item, ii) => {
         const rawItem = rawSection.items[ii]
@@ -121,11 +139,15 @@ function ProgrammAbschnitt({
         const { dauer } = dauerAbtrennen(item.meta ?? '', item.mins)
         const inhalt = (
           <>
-            <span className="programm-titel">
+            <span className="programm-titel" lang={sprache}>
               {item.num != null && <span className="prog-num">{item.num} </span>}
               {tpw(item.title)}
             </span>
-            {dauer && <span className="prog-dauer">{tpw(dauer)}</span>}
+            {dauer && (
+              <span className="prog-dauer" lang={sprache}>
+                {tpw(dauer)}
+              </span>
+            )}
           </>
         )
         return lac && itemMinutes(rawItem) != null ? (
@@ -217,7 +239,11 @@ function ProgrammpunktBlatt({
     <Sheet
       variante="oben"
       label={titelText}
-      eyebrow={<div className="sheet-marke">{tpw(anzeige.sections[si]?.label ?? '')}</div>}
+      eyebrow={
+        <div className="sheet-marke" lang={sprache}>
+          {tpw(anzeige.sections[si]?.label ?? '')}
+        </div>
+      }
       title={<span lang={sprache}>{titelText}</span>}
       onClose={onClose}
     >
@@ -262,10 +288,13 @@ function ProgrammpunktBlatt({
             max={LAC_MAX_MINUTEN}
             label={t.a11yMinuten}
             anzeige={tpw(`${mins} Min.`)}
+            anzeigeSprache={sprache}
             onWert={(wert) => dispatch({ type: 'lacMinuten', si, ii, mins: wert })}
           />
         </div>
-        <p className="klein-text programmpunkt-ende">{tpw(anzeige.end)}</p>
+        <p className="klein-text programmpunkt-ende" lang={sprache}>
+          {tpw(anzeige.end)}
+        </p>
         <div className="programmpunkt-zeile programmpunkt-reihenfolge">
           <GesperrterKnopf
             className="knopf-umriss lac-move-btn"

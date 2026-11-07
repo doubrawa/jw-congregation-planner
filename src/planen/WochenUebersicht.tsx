@@ -42,9 +42,11 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
 
   const diese = montagVon(tag)
   const naechste = montagNach(diese, 1)
-  const unterzeile = (week: Week, tpw: (s: string) => string): string =>
-    anlassName(anlassArt(week), t) ??
-    (week.start === diese ? t.aktuelleWoche : week.start === naechste ? t.naechsteWoche : tpw(week.book))
+  // Ohne Anlass und nach der nächsten Woche das Bibellesen — Programmtext, mit dessen `lang`.
+  const unterzeile = (week: Week, p: { tpw: (s: string) => string; sprache: string }): { text: string; lang?: string } => {
+    const text = anlassName(anlassArt(week), t) ?? (week.start === diese ? t.aktuelleWoche : week.start === naechste ? t.naechsteWoche : null)
+    return text ? { text } : { text: p.tpw(week.book), lang: p.sprache }
+  }
   // Von der Seite der Wochen führt Zurück wieder hierher — auch, wenn der Plan
   // bei den Treffpunkten aufgeht. In der Spalte wechselt ein Tipp nur die
   // Woche, und woher das Planen kam, bleibt (T144).
@@ -63,6 +65,7 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
         const week = state.weeks[k.wi]
         if (!week) return null
         const p = progWeek(week)
+        const unter = unterzeile(week, p)
         const gewaehlt = spalte && state.week === k.wi
         return (
           <div key={week.start} className={gewaehlt ? 'wochen-karte is-gewaehlt' : 'wochen-karte'}>
@@ -72,6 +75,7 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
               <button
                 type="button"
                 className="wochen-karte-knopf"
+                lang={p.sprache}
                 aria-current={gewaehlt ? 'true' : undefined}
                 onClick={() => oeffnen(k)}
               >
@@ -83,7 +87,9 @@ export function WochenListe({ spalte = false }: { spalte?: boolean }) {
                 </span>
               )}
             </div>
-            <span className="wochen-karte-unter">{unterzeile(week, p.tpw)}</span>
+            <span className="wochen-karte-unter" lang={unter.lang}>
+              {unter.text}
+            </span>
             {/* Fällt alles aus (Kongress), gibt es nichts zu besetzen. */}
             {k.zahlen.gesamt > 0 && (
               <Spur form={spalte ? 'punkte' : 'knapp'} schritte={spurDerWoche(k.zahlen, t)} label={t.spurWoche} />

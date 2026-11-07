@@ -6,7 +6,7 @@ import { nameVon } from '../data/helpers'
 import { anfrageZu, tauschbar } from '../data/tausch'
 import type { MyTask } from '../data/types'
 import { aufgabenTitelSprache, aufgabenZeilen, fill, useT } from '../i18n/useT'
-import { aufgabeWann } from './aufgabe-anzeige'
+import { AufgabeWann } from './AufgabeText'
 import { useSaal } from './useSaal'
 import './aufgaben.css'
 
@@ -32,7 +32,9 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
       {besetzung && <Saal key={task.id} lagen={besetzung.lagen} label={besetzung.label} du={besetzung.du} />}
       <div className="aufgabe-wann">
         <Punkt art="du" />
-        <span>{aufgabeWann(task, state.lang, i18n)}</span>
+        <span>
+          <AufgabeWann task={task} />
+        </span>
       </div>
       <h2 className="aufgabe-titel" lang={titelSprache}>{titel}</h2>
       {unter && <div className="aufgabe-unter">{unter}</div>}

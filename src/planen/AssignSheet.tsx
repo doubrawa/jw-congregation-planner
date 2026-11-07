@@ -1,6 +1,7 @@
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useId, useMemo, useState, type ReactNode } from 'react'
 import { useApp, type AppState } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
+import { ZuteilungenText } from '../aufgaben/AufgabeText'
 import { Punkt } from '../bausteine/Punkt'
 import { abwesendText } from '../components/abwesenheit-anzeige'
 import { datumsFormat, gebundenesDatum } from '../components/datum-anzeige'
@@ -14,8 +15,9 @@ import { platzDerAuswahl } from '../data/plaetze'
 import { buildS89ForSlot } from '../data/planning'
 import { rechteVon } from '../data/rechte'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
+import { versammlungsSprache } from '../i18n/langs'
 import { wochenHer } from '../i18n/relative-time'
-import { fill, platzName, useProgWeek, useT, zuteilungenText, type I18n } from '../i18n/useT'
+import { fill, platzName, useProgWeek, useT, type I18n } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { kandidaten, type Candidate } from './kandidaten'
 import { auswahlImPlan } from './planen-raster'
@@ -106,8 +108,8 @@ interface Kopf {
   /** Was ein Vorleseprogramm ansagt: Punkt und Rolle. */
   label: string
   titel: ReactNode
-  /** Tag und Dauer, beim Treffpunkt Zeit und Ort. */
-  sub: string
+  /** Tag und Dauer (die in der Sprache des Programms), beim Treffpunkt Zeit und Ort. */
+  sub: ReactNode
   /** Der Abschnitt über dem Titel, in seiner Farbe und Sprache — nur bei Programmpunkten. */
   abschnitt?: { name: string; farbe?: string; sprache?: string }
 }
@@ -152,20 +154,29 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
   const punkt = item ? tpw(item.title) : tp(sel.label)
   const label = mitRolle(punkt)
   const dauer = item ? dauerAbtrennen(item.meta ?? '', item.mins).dauer : null
+  // Auch die Dauer bleibt bei ihrer Zahl („3 Min.", T128) — und in der Sprache des Programms.
+  const dauerText = dauer ? zahlBinden(tpw(dauer)) : ''
   return {
     label,
     // Der Titel trennt (`.sheet-title`): der Punkt nach der Sprache des
     // Programms, die Rolle dahinter — der Rest der Beschriftung — in der des
-    // Lesers (T128).
+    // Lesers (T128). Ohne Punkt im Programm kommt der Titel über `tp`, also
+    // in der Sprache der Versammlung.
     titel: (
       <>
         {item?.num != null && <span className="prog-num">{item.num} </span>}
-        <span lang={item ? sprache : undefined}>{punkt}</span>
+        <span lang={item ? sprache : versammlungsSprache(state.congLang)}>{punkt}</span>
         {label.slice(punkt.length)}
       </>
     ),
-    // Auch die Dauer bleibt bei ihrer Zahl („3 Min.", T128).
-    sub: zahlBinden([datum, dauer ? tpw(dauer) : ''].filter(Boolean).join(' · ')),
+    sub: dauerText ? (
+      <>
+        {datum && `${datum} · `}
+        <span lang={sprache}>{dauerText}</span>
+      </>
+    ) : (
+      datum
+    ),
     abschnitt: section ? { name: tpw(section.label), farbe: section.farbe, sprache } : undefined,
   }
 }
@@ -511,13 +522,23 @@ function kandidatInfo(
   week: Week | undefined,
   i18n: I18n,
   { lang, congregation }: Pick<AppState, 'lang' | 'congregation'>,
-): { text: string; ton: keyof typeof INFO_KLASSE } {
+): { text: ReactNode; ton: keyof typeof INFO_KLASSE } {
   const { t } = i18n
   if (cand.absent) {
     return { text: cand.abwesenheit ? abwesendText(cand.abwesenheit, t, lang) : t.abwesendChip, ton: 'problem' }
   }
-  if (cand.today.length > 0) return { text: zahlBinden(`${t.sheetSchonHeute}: ${zuteilungenText(cand.today, i18n)}`), ton: 'doppelt' }
-  const teile: string[] = []
+  // Die Zuteilungen je in ihrer Sprache (`ZuteilungenText`): Programmpunkte in der der Versammlung.
+  if (cand.today.length > 0) {
+    return {
+      text: (
+        <>
+          {t.sheetSchonHeute}: <ZuteilungenText liste={cand.today} />
+        </>
+      ),
+      ton: 'doppelt',
+    }
+  }
+  const teile: ReactNode[] = []
   if (cand.zuletzt === null) teile.push(t.zuletztLange)
   else if (cand.zuletzt !== undefined) {
     const her = wochenHer(cand.zuletzt, lang)
@@ -525,9 +546,22 @@ function kandidatInfo(
   }
   if (cand.andererTag && week) {
     const tag = datumsFormat(lang, 'wochentagKurz').format(meetingDate(week, cand.andererTag.tab, congregation.times))
-    teile.push(`${tag} ${zuteilungenText(cand.andererTag.aufgaben, i18n)}`)
+    teile.push(
+      <>
+        {tag} <ZuteilungenText liste={cand.andererTag.aufgaben} />
+      </>,
+    )
   }
-  return { text: teile.join(' · ') || cand.sub, ton: 'leise' }
+  if (!teile.length) return { text: cand.sub, ton: 'leise' }
+  return {
+    text: teile.map((teil, i) => (
+      <Fragment key={i}>
+        {i > 0 && ' · '}
+        {teil}
+      </Fragment>
+    )),
+    ton: 'leise',
+  }
 }
 
 function KandidatZeile({

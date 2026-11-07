@@ -126,7 +126,7 @@ export function PlanungsKarte() {
               (tab) => konflikteVon(state.weeks, w.wi, state.persons, state.services, tab, abwesend).betrifft,
             )
           : null
-        return { ...w, spanne: p ? programmSpanne(p) : '', besetzung }
+        return { ...w, spanne: p ? programmSpanne(p) : '', sprache: p?.sprache, besetzung }
       }),
     [
       stand.wochen,
@@ -208,7 +208,9 @@ export function PlanungsKarte() {
         {zeilen.map((w) => (
           <button key={w.wi} type="button" className="dash-plan-woche" onClick={() => oeffnen(w)}>
             <span className="dash-plan-kopf">
-              <span className="dash-plan-range">{w.spanne}</span>
+              <span className="dash-plan-range" lang={w.sprache}>
+                {w.spanne}
+              </span>
               {w.besetzung && <WochenBalken besetzung={w.besetzung} />}
               {/* Mit den Wörtern der Wochen beim Planen (`lageDerWoche`): erst
                   die Probleme — Konflikte und was nicht besetzbar ist —, dann

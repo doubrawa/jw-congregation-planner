@@ -38,7 +38,7 @@ const OHNE_NAMEN = '…'
 
 /**
  * Die Uhrzeit der Aufgabe, wie das Programm sie schreibt: Die Karte zeigt sie
- * in jeder Sprache so (`aufgabeWann`), auch dort, wo `Intl` „07:00 PM" sagte.
+ * in jeder Sprache so (`AufgabeWann`), auch dort, wo `Intl` „07:00 PM" sagte.
  */
 const UHRZEIT = '19:00'
 

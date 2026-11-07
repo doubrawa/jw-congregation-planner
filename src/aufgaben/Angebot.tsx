@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import type { MeetingAssignment, SubstituteReq } from '../data/types'
-import { aufgabenTermin, useT, zuteilungenText } from '../i18n/useT'
+import { useT } from '../i18n/useT'
+import { AufgabeTermin, ZuteilungenText } from './AufgabeText'
 import './aufgaben.css'
 
 /**
@@ -17,13 +19,14 @@ export function AngebotText({
   schonHeute,
   hinweis,
 }: {
-  titel: string
-  wann: string
+  /** Titel und Termin dürfen aus zwei Sprachen bestehen (`AufgabeText`, `AufgabeWann`). */
+  titel: ReactNode
+  wann: ReactNode
   schonHeute: readonly MeetingAssignment[]
   /** Eine Zeile darunter — beim Tauschen: „Ohne App-Konto — vorher persönlich absprechen". */
   hinweis?: string
 }) {
-  const i18n = useT()
+  const { t } = useT()
   return (
     <span className="angebot-text">
       <span className="angebot-titel">{titel}</span>
@@ -31,7 +34,7 @@ export function AngebotText({
       {hinweis && <span className="klein-text">{hinweis}</span>}
       {schonHeute.length > 0 && (
         <span className="hinweis-schon">
-          {i18n.t.sheetSchonHeute}: {zuteilungenText(schonHeute, i18n)}
+          {t.sheetSchonHeute}: <ZuteilungenText liste={schonHeute} />
         </span>
       )}
     </span>
@@ -43,11 +46,15 @@ export function AngebotText({
  * ohne Übersetzer, wie überall (`platzName`).
  */
 export function GesuchText({ req }: { req: SubstituteReq }) {
-  const i18n = useT()
+  const { tu } = useT()
   return (
     <AngebotText
-      titel={i18n.tu(req.title)}
-      wann={`${aufgabenTermin(req, i18n)} · ${req.declinedBy}`}
+      titel={tu(req.title)}
+      wann={
+        <>
+          <AufgabeTermin task={req} /> · {req.declinedBy}
+        </>
+      }
       schonHeute={req.schonHeute}
     />
   )

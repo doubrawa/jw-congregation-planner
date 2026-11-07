@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { fromIso, isoDay } from '../data/meeting-dates'
 import { Chevron } from './Chevron'
 import { gebundenesDatum } from './datum-anzeige'
@@ -28,6 +28,8 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
   const [open, setOpen] = useState(false)
   const [view, setView] = useState(() => monatVon(value))
   const ref = useRef<HTMLDivElement>(null)
+  const markeId = useId()
+  const wertId = useId()
 
   // Beim Öffnen auf den gewählten (bzw. aktuellen) Monat springen.
   useEffect(() => {
@@ -58,15 +60,22 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
 
   return (
     <div className="dp" ref={ref}>
+      {/* Vorgelesen wird die Beschriftung, dann das Datum, wie es dasteht
+          (WCAG 2.5.3). `aria-labelledby` statt Inhalt: In einer Marke
+          (`BlattFeld`, eine `<label>`) nähme der Browser sonst deren Text als
+          Namen und übergänge das gewählte Datum (gemessen in Chrome). */}
       <button
         type="button"
         className={value ? 'dp-field' : 'dp-field dp-field--empty'}
-        aria-label={ariaLabel}
+        aria-labelledby={`${markeId} ${wertId}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <span>{label || placeholder}</span>
+        <span id={markeId} className="sr-only">
+          {ariaLabel}
+        </span>
+        <span id={wertId}>{label || placeholder}</span>
         <svg className="dp-icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
           <rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
           <path d="M2 6.5h12M5 1.5v3M11 1.5v3" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />

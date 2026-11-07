@@ -373,8 +373,11 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     // und der Kopf liest den ganzen Namen, auch wo er kurz und senkrecht steht.
     // Hinter dem Doppelpunkt steht die Zahl gebunden (T128) — `\s` trifft beide Leerzeichen.
     expect(matrix.querySelector('tbody td')?.getAttribute('aria-label')).toMatch(/^.+, .+:\s.+$/)
-    const vorsitz = [...matrix.querySelectorAll('thead th')].find((th) => th.getAttribute('aria-label')?.startsWith(t.privVorsitz))!
-    expect(vorsitz.getAttribute('aria-label')).toBe(`${t.privVorsitz} · ${t.tabMid}`)
+    // Der ganze Name steht als Text im Kopf, nicht als `aria-label` (axe: `empty-table-header`, T173).
+    const vorlesbar = (th: Element) => th.querySelector('.sr-only')?.textContent ?? ''
+    const vorsitz = [...matrix.querySelectorAll('thead th')].find((th) => vorlesbar(th).startsWith(t.privVorsitz))!
+    expect(vorlesbar(vorsitz)).toBe(`${t.privVorsitz} · ${t.tabMid}`)
+    expect(vorsitz.getAttribute('aria-label')).toBeNull()
     expect([...vorsitz.querySelectorAll('.aw-matrix-kopf > span')].map((s) => s.textContent)).toEqual([t.privVorsitz, t.unterDerWoche])
   })
 

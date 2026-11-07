@@ -150,7 +150,11 @@ export function MeetingSection({
         <h2 className="prog-abschnitt-name" lang={sprache}>
           {tpw(section.label)}
         </h2>
-        {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
+        {lieder.length > 0 && (
+          <span className="prog-lied" lang={sprache}>
+            {lieder.join(' · ')}
+          </span>
+        )}
       </div>
       {section.items.map((item, ii) => {
         if (isSong(item)) return null

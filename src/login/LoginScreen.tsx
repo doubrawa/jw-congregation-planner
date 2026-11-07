@@ -157,8 +157,10 @@ export function LoginScreen() {
           value={state.lang}
           onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
         >
+          {/* Jede Sprache in ihrem eigenen Namen — mit ihrem `lang`, damit
+              ein Vorleseprogramm „Русский" nicht deutsch ausspricht. */}
           {APP_LANGS_SORTED.map(({ code, label }) => (
-            <option key={code} value={code}>
+            <option key={code} value={code} lang={code}>
               {label}
             </option>
           ))}

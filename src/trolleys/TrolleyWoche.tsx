@@ -5,7 +5,8 @@ import { fromIso } from '../data/meeting-dates'
 import type { Trolley, TrolleyTermin } from '../data/types'
 import { versammlungsSprache } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
-import { nameVon, tagLang, werImTermin, wochenTage, zeitSpanne } from './trolley-anzeige'
+import { nameVon, tagLang, wochenTage, zeitSpanne } from './trolley-anzeige'
+import { TrolleyVorsatz } from './TrolleyVorsatz'
 
 /**
  * **Die Woche als Raster** am Desktop (Entwurf `GDesktopTrolleys`): je Tag
@@ -102,17 +103,18 @@ function Buchung({ termin, trolley, onTermin }: { termin: TrolleyTermin; trolley
   const person = nameVon(state.persons, termin.pid)
   const partner = nameVon(state.persons, termin.partner)
   return (
-    <button
-      type="button"
-      className={termin.partner ? 'trolley-buchung' : 'trolley-buchung is-gesucht'}
-      aria-label={fill(t.trolleyTerminLabel, { trolley, zeit: zeitSpanne(termin), wer: werImTermin(termin, state.persons, t) })}
-      onClick={() => onTermin(termin)}
-    >
-      <span className="trolley-termin-zeit">{zeitSpanne(termin)}</span>
+    <button type="button" className={termin.partner ? 'trolley-buchung' : 'trolley-buchung is-gesucht'} onClick={() => onTermin(termin)}>
+      <TrolleyVorsatz name={trolley} />
+      <span className="trolley-termin-zeit">{zeitSpanne(termin)}</span>{' '}
       <span className="trolley-termin-name" dir="auto">
         {partner ? `${person} · ${partner}` : person}
       </span>
-      {!partner && <span className="trolley-termin-gesucht">{t.trolleyPartnerGesucht}</span>}
+      {!partner && (
+        <>
+          {' '}
+          <span className="trolley-termin-gesucht">{t.trolleyPartnerGesucht}</span>
+        </>
+      )}
     </button>
   )
 }

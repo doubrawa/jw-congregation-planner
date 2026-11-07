@@ -21,6 +21,7 @@ export function HeftBefunde({
   befunde,
   week,
   tpw,
+  sprache,
   text,
   markenText,
   ebene,
@@ -31,6 +32,8 @@ export function HeftBefunde({
   /** Die gezeigte Fassung der Woche: Aus ihr kommen Überschriften, Nummern und Titel (`stellenIn`). */
   week: Week
   tpw: (s: string) => string
+  /** In welcher Sprache `tpw` schreibt — `lang` der Titel aus dem Programm. */
+  sprache: string
   /** Was der Leser damit tun soll — im Blatt nach dem Übernehmen prüfen, im Plan hier. */
   text: string
   /**
@@ -78,7 +81,7 @@ export function HeftBefunde({
                 {zeile.titel && (
                   <>
                     {' · '}
-                    <bdi>{zeile.titel}</bdi>
+                    <bdi lang={sprache}>{zeile.titel}</bdi>
                   </>
                 )}
               </span>

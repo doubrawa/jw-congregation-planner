@@ -5,6 +5,7 @@ import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen } from '../bausteine/Zeichen'
 import { aufgabeTag } from '../aufgaben/aufgabe-anzeige'
 import { AufgabeKarte } from '../aufgaben/AufgabeKarte'
+import { AufgabeText } from '../aufgaben/AufgabeText'
 import { zusammenkunftName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
@@ -16,7 +17,7 @@ import type { MyTask, TrolleyTermin } from '../data/types'
 import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
-import { aufgabenHaelften, aufgabenTitelSprache, useT } from '../i18n/useT'
+import { useT } from '../i18n/useT'
 import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
@@ -151,25 +152,6 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
         </button>
       ))}
     </div>
-  )
-}
-
-/**
- * Programmpunkt und Rolle einer Aufgabe in einer Zeile, jede Hälfte in ihrer
- * Sprache: Der Punkt trennt nach den Regeln des Programms wie der Titel der
- * großen Karte, die Rolle nach denen des Lesers. Ein `lang` für beide trennte
- * bei englischer App und deutscher Versammlung „Student" nach deutschen Regeln.
- */
-function AufgabeText({ task }: { task: MyTask }) {
-  const { state } = useApp()
-  const i18n = useT()
-  const { punkt, rolle } = aufgabenHaelften(task, i18n)
-  return (
-    <>
-      {punkt && <span lang={aufgabenTitelSprache(task, state.lang, state.congLang)}>{punkt}</span>}
-      {punkt && rolle && ' · '}
-      {rolle}
-    </>
   )
 }
 

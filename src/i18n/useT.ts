@@ -13,7 +13,7 @@ import { useMemo } from 'react'
 import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import { meetingDateText } from '../data/meeting-dates'
-import type { MeetingAssignment, MeetingKey, MeetingTimes, Week } from '../data/types'
+import type { MeetingKey, MeetingTimes, Week } from '../data/types'
 import { APP_TO_JW, congAppCode, versammlungsSprache } from './langs'
 import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
@@ -131,20 +131,6 @@ export function aufgabenTitelSprache(task: { title: string; lesersprache?: boole
  */
 export function besetzungText(t: Pick<Dict, 'saalBesetzung'>, besetzt: number, gesamt: number): string {
   return zahlBinden(`${t.saalBesetzung}: ${besetzt}/${gesamt}`)
-}
-
-/**
- * Zuteilungen „schon an diesem Tag" als **ein** Satzstück — jede in der
- * Sprache, die ihr Text verlangt (`MeetingAssignment.lang`): Rollen und
- * Dienstnamen in der des Lesers, Programmpunkt-Titel in der der Versammlung.
- * Stand im Zuteilungs-Sheet, im Bestätigen-Dialog und unter „Meine Aufgaben"
- * je einmal ausgeschrieben.
- */
-export function zuteilungenText(
-  liste: readonly MeetingAssignment[],
-  i18n: Pick<I18n, 'tp' | 'tu'>,
-): string {
-  return liste.map((a) => (a.lang === 'u' ? i18n.tu(a.text) : i18n.tp(a.text))).join(', ')
 }
 
 /**

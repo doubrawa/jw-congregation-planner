@@ -29,7 +29,9 @@ describe('Von Hand gebaute „Bezeichnung: Wert"-Zeilen', () => {
   })
 
   it('es gibt sie — sonst prüfte die Probe nichts', () => {
-    expect(treffer.length).toBeGreaterThanOrEqual(5)
+    // Vier seit T173: „Schon an diesem Tag: …" beim Zuteilen setzt seine
+    // Zuteilungen als Elemente, je mit ihrem `lang` (`ZuteilungenText` bindet selbst).
+    expect(treffer.length).toBeGreaterThanOrEqual(4)
   })
 
   it('jede geht durch zahlBinden — die Zahl bricht nicht von ihrer Bezeichnung ab', () => {

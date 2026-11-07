@@ -4,7 +4,7 @@ import { Sheet } from '../components/Sheet'
 import type { MyTask } from '../data/types'
 import { aufgabenLabel, aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
 import { AufgabeHandlungen } from './AufgabeKarte'
-import { aufgabeWann } from './aufgabe-anzeige'
+import { AufgabeWann } from './AufgabeText'
 import { useSaal } from './useSaal'
 import './aufgaben.css'
 
@@ -23,7 +23,11 @@ export function AufgabeBlatt({ task }: { task: MyTask }) {
   return (
     <Sheet
       label={aufgabenLabel(task, i18n)}
-      eyebrow={<div className="aufgabe-wann">{aufgabeWann(task, state.lang, i18n)}</div>}
+      eyebrow={
+        <div className="aufgabe-wann">
+          <AufgabeWann task={task} />
+        </div>
+      }
       // Der Titel trennt (`.sheet-title`): Steht oben der Programmpunkt, nach
       // der Sprache des Programms, sonst trägt die Rolle die des Lesers (T128).
       title={titelSprache ? <span lang={titelSprache}>{titel}</span> : titel}

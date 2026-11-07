@@ -104,7 +104,7 @@ function ProgrammBody() {
   // Der Druckknopf: ab dem Tablet mit Wort neben der Wochenwahl, am Handy als
   // Zeichen neben dem Termin. In der Kongresswoche gibt es nichts zu drucken.
   const druck = kongress ? null : (
-    <DruckWahl zeitraum={programmSpanne({ week, tpw })} erklaerung={isFs ? undefined : t.druckZusammenkuenfte} mitText={breit} />
+    <DruckWahl zeitraum={programmSpanne({ week, tpw })} sprache={sprache} erklaerung={isFs ? undefined : t.druckZusammenkuenfte} mitText={breit} />
   )
   const druckNebenTermin = breit ? null : druck
   // Die volle Breite neben dem Menü nur für die zwei Spalten — die Karte des
@@ -125,7 +125,7 @@ function ProgrammBody() {
         <span>{druckThema(t, state.tab, beideTage)}</span>
       </div>
 
-      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} rechts={breit && druck} />
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} sprache={sprache} rechts={breit && druck} />
 
       {/* Weitere Termine der Woche (T63): über den Karten der Tage, weil sie zu
           keiner Zusammenkunft gehören, sondern zur Woche — und damit bei beiden

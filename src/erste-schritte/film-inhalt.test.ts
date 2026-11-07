@@ -1,9 +1,10 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { aufgabeWann } from '../aufgaben/aufgabe-anzeige'
+import { mitAbstand } from '../aufgaben/aufgabe-anzeige'
 import type { Lang } from '../data/types'
 import { APP_LANGS } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
 import { dict, loadOverlay } from '../i18n/ui'
+import { aufgabenTermin } from '../i18n/useT'
 import { filmInhalt } from './film-inhalt'
 
 /**
@@ -66,11 +67,9 @@ describe('Das Handy im Film', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(MONTAG_NEUN_UHR)
     const tr = makeTr(lang)
-    const karte = aufgabeWann(
-      { id: 'x', title: '', date: 'Dienstag, 8. September · 19:00', at: Date.UTC(2026, 8, 8), status: 'offen', s89: null, lesersprache: true },
-      lang,
-      { tp: tr, tu: tr },
-    )
+    // Der Text, den `AufgabeWann` auf der Karte zusammensetzt: Abstand, dann der Termin.
+    const aufgabe = { date: 'Dienstag, 8. September · 19:00', at: Date.UTC(2026, 8, 8), lesersprache: true }
+    const karte = mitAbstand(aufgabenTermin(aufgabe, { tp: tr, tu: tr }), aufgabe.at, lang)
     expect(inhalt(lang).wann).toBe(karte)
   })
 

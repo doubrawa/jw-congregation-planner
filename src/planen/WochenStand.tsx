@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
 import { useKalendertag } from '../app/useKalendertag'
@@ -76,7 +76,7 @@ const LEGENDE: ReadonlyArray<readonly [PlatzLage, 'zusageBestaetigt' | 'zusageWa
  * Steht an der Stelle der früheren Banner (Konflikte, nicht besetzbar, offene
  * Zuteilungen) und ihrer Legende; deren Zahlen und Sätze bleiben dieselben.
  */
-export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string) => string }) {
+export function BesetzungKarte({ tab, tpw, sprache }: { tab: MeetingKey; tpw: (s: string) => string; sprache: string }) {
   const { state } = useApp()
   const { t, tu } = useT()
   const abwesend = useAbwesend()
@@ -148,13 +148,16 @@ export function BesetzungKarte({ tab, tpw }: { tab: MeetingKey; tpw: (s: string)
                 <span className="klaeren-wo" dir="auto">
                   {/* Die Rolle aus dem Wörterbuch des Lesers, der Titel aus dem
                       der Versammlung — getrennt übersetzt, erst hier
-                      zusammengesetzt (siehe OpenSlot.rolle). */}
-                  {offen
-                    .map(
-                      (slot) =>
-                        `${slot.lang === 'u' ? tu(slot.text) : tpw(slot.text)}${slot.rolle ? ` · ${tu(slot.rolle)}` : ''}${slot.n > 1 ? ` ×${slot.n}` : ''}`,
-                    )
-                    .join(', ')}
+                      zusammengesetzt (siehe OpenSlot.rolle), der Titel mit
+                      dem `lang` des Programms. */}
+                  {offen.map((slot, i) => (
+                    <Fragment key={i}>
+                      {i > 0 && ', '}
+                      {slot.lang === 'u' ? tu(slot.text) : <span lang={sprache}>{tpw(slot.text)}</span>}
+                      {slot.rolle && ` · ${tu(slot.rolle)}`}
+                      {slot.n > 1 && ` ×${slot.n}`}
+                    </Fragment>
+                  ))}
                 </span>
               </span>
             </li>

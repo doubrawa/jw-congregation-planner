@@ -1,4 +1,6 @@
+import { useAppSelector } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
+import { versammlungsSprache } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import type { S89Payload } from '../data/types'
 
@@ -12,21 +14,27 @@ import type { S89Payload } from '../data/types'
  */
 export function S89Karte({ payload }: { payload: S89Payload }) {
   const { t, tp } = useT()
-  const rows: Array<[string, string]> = [
+  const congLang = useAppSelector((s) => s.congLang)
+  // Datum, Aufgabe und Punkt kommen über `tp` aus dem Programm — mit dessen
+  // `lang`; die Namen haben keine Sprache.
+  const programm = versammlungsSprache(congLang)
+  const rows: Array<[string, string, string?]> = [
     [t.s89Name, payload.name],
     ...(payload.partner ? ([[t.s89Partner, payload.partner]] as [string, string][]) : []),
-    [t.s89Datum, tp(payload.date)],
-    [t.s89Aufgabe, tp(payload.type)],
-    ...(payload.point ? ([[t.s89Punkt, tp(payload.point)]] as [string, string][]) : []),
+    [t.s89Datum, tp(payload.date), programm],
+    [t.s89Aufgabe, tp(payload.type), programm],
+    ...(payload.point ? ([[t.s89Punkt, tp(payload.point), programm]] as [string, string, string][]) : []),
   ]
 
   return (
     <>
       <div className="s89-box">
-        {rows.map(([label, value]) => (
+        {rows.map(([label, value, lang]) => (
           <div key={label} className="s89-row">
             <div className="s89-label">{label}</div>
-            <div className="s89-value">{value}</div>
+            <div className="s89-value" lang={lang}>
+              {value}
+            </div>
           </div>
         ))}
         {/*

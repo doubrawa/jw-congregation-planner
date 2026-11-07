@@ -10402,7 +10402,7 @@ vorher laufen lassen, dann umbauen). Dazu die Suite, die Abdeckung nicht
 niedriger, `npm run laufzeit -- --satz voll` ohne Befund, die Bündelgröße
 vorher und nachher. Nicht gleichzeitig mit T171 im selben Checkout.
 
-### T173 · Barrierefreiheit und Sprachauszeichnung mit axe prüfen 🔧 ☐ offen
+### T173 · Barrierefreiheit und Sprachauszeichnung mit axe prüfen 🔧 ✅ umgesetzt (7. November 2026)
 
 **Warum:** Der letzte axe-Lauf ist vom Juli (`7363736`, `3ad3874`: damals
 0 Verstöße in allen acht Farbschemata über alle Bildschirme) — vor dem neuen
@@ -10447,6 +10447,95 @@ Prüfung mit Vorleseprogramm am echten Gerät dazugehört.
 Ausnahmen; die Probe zur Sprache meldet für einen Programmtext ohne `lang`
 einen Befund (Gegenprobe).
 
+#### Umgesetzt am 7. November 2026
+
+**Die Sprachprüfung** läuft in jeder Messung, ohne Schalter: Jeder Buchstabe
+außerhalb der lateinischen Schrift muss in einem Element stehen, dessen `lang`
+dieselbe Schrift hat. Die Schrift einer Sprache kommt aus `Intl.Locale(…)
+.maximize()`, nicht aus einer Liste von Hand. Lateinisch prüft sie nicht —
+Namen und Orte der Testdaten stehen darin, ohne eine Sprache zu haben. Was
+statt des Textes vorgelesen wird (`aria-label`, `title`, `alt`,
+`placeholder`), zählt nur, wenn es **ganz** in einer anderen Schrift steht:
+Ein Attribut lässt sich nicht teilweise auszeichnen, und einen Namen liest ein
+Vorleseprogramm ohnehin in einer Stimme.
+
+Damit sie beide Richtungen sieht — Oberfläche im `lang` des Programms und
+Programm ohne sein `lang` —, tragen die Aufträge jetzt die Versammlungssprache
+(`c=`): Der arabische Kernsatz läuft mit **russischer Versammlung**, zwei
+Schriften, keine davon lateinisch. Der volle Satz hat dazu Deutsch mit
+arabischer Versammlung (576 statt 533 Läufe). `laufzeit-auftraege.test.ts`
+verlangt beides für jeden Zustand.
+
+**axe** (`--axe`): `axe-core` 4.14 als Entwicklungs-Abhängigkeit (MPL-2.0,
+selbst ohne Abhängigkeiten, über einen Monat alt), WCAG 2.2 A und AA samt axes
+„best practice", nur Verstöße, im Bericht nach Wirkung geordnet. Zwei Dinge
+musste die Messung dafür lernen:
+
+* **axe sieht die Seite in voller Höhe.** Im Fenster von 900 px nannte axe
+  alle sieben Trefferflächen-Befunde „teilweise verdeckt" — von der unteren
+  Leiste am Fensterrand, über dem, was beim Rollen frei wird. In voller Höhe
+  waren es null; was dann noch verdeckt ist, bliebe es auch beim Rollen.
+  Kontrast prüft axe auch unterhalb des Fensters (gemessen: 118 Prüfungen auf
+  einer Seite von 3106 px, gleich in beiden Höhen).
+* **Die Gegenprobe braucht Innenabstand.** Die Glyphen von Manrope ragen 1 px
+  über die Zeilenhöhe, und Text, der über seine Fläche ragt, nennt axe „nicht
+  bestimmbar" statt eines Verstoßes. Die Störung für `color-contrast` hat
+  deshalb Innenabstand, wie jeder Knopf der App.
+
+Die Gegenprobe kennt jetzt 11 Arten: dazu `sprache` (kyrillischer Text unter
+`lang="de"`) und mit axe `axe:critical` (Knopf ohne Namen) und `axe:serious`
+(blasser Text). In der CI läuft der Kernsatz mit `--axe` (`laufzeit.yml`).
+
+**Gefunden und behoben** — der erste volle Lauf hatte 44 Befunde in 287 von
+576 Läufen:
+
+| Was | Wo | Wie behoben |
+| --- | --- | --- |
+| Programmtext ohne sein `lang` | Wochenspanne und Bibellesen über Programm und Planen, Lieder (Programm, Planen, Programm-Blatt), Wochenspanne auf dem Start und in der Wochenübersicht, Titel und Termine der Aufgaben (Start, „Meine Aufgaben", Blatt beim Öffnen, Tauschen, freie Plätze, Ersatzgesuche, Zusagen, Zeitleiste einer Person) | `lang` der Programmsprache. Wo Oberfläche und Programm zu **einer** Zeichenkette verklebt waren („Morgen · вторник, 8 сентября"), stehen sie jetzt als Teile: `src/aufgaben/AufgabeText.tsx` mit `AufgabeText`, `AufgabeTermin`, `AufgabeWann` und `ZuteilungenText`. `aufgabeWann` und `zuteilungenText` als Zeichenketten sind fort |
+| Sprachnamen ohne `lang` | Sprachauswahl bei der Anmeldung und im Profil („Русский", „العربية") | `lang` je Eintrag |
+| Sichtbarer Text nicht im vorgelesenen Namen (WCAG 2.5.3) | Reiter der Zusammenkünfte (auf Englisch und Türkisch stand „meeting" zwischen Tag und Uhrzeit), Trolley-Termine (vorgelesen „sucht einen Partner", sichtbar „Partner gesucht"), Datumsfeld (vorgelesen nur „Tag" — das gewählte Datum nicht) | Vorgelesen wird, was dasteht; der Zusammenhang kommt von der Gruppe („Zusammenkünfte") oder einem nur vorgelesenen Vorsatz (`TrolleyVorsatz`: „Trolley 2,", mit dem `lang` der Versammlung). Das Datumsfeld über `aria-labelledby` („Tag 7. Sept. 2026"): Ohne das nahm Chrome in einer `<label>` deren Text und übergab das Datum — in Chrome gemessen. `versammlungTag`, `trolleyTerminLabel`, `trolleyUnd` und `trolleySuchtPartner` sind aus allen zwölf Sprachen entfernt |
+| Kontrast 4.44:1 | Marke „4 mehr" in der Auswertung (`--problem` auf `--problem-flaeche`) | `--problem` hell #be3b2b → #b93929 (4.6:1), im Druck ebenso. `npm run contrast` rechnet jetzt auch `color-mix` und prüft das Paar — vorher blieb ungeprüft, was auf den getönten Flächen steht |
+| Tabellenkopf ohne vorlesbaren Text | Matrix der Auswertung (Name nur als `aria-label`) | Name als Text im Kopf (`sr-only`) |
+
+**Blätter, die die Messung nicht öffnet** — gefunden im Review
+(`/code-review max`, 12 Befunde, alle behoben). Dort standen Programmtexte ohne
+`lang`, zum Teil mit der Oberfläche verklebt: Absage-Blatt und „Plan senden"
+(Punkt, Rolle und Termin in einer Zeichenkette), Programm- und
+Programmpunkt-Blatt (Hinweissatz mit dem Abschnitt, Abschnitt, Minuten, Ende),
+Kopf des Zuteilen-Blatts (Datum und Dauer), S-89, Bibellesen in „Woche
+einrichten", „Programm holen" samt der Befunde des Hefts, die Wahl beim Drucken,
+die Fußzeile „Ende ca." und die offenen Plätze der Besetzung. Nachgeprüft
+einmalig in Chrome, mit der Sprachprüfung der Messung: zwölf Blätter und
+Ansichten, arabische App mit russischer Versammlung, bei 1440 und 375 px —
+ohne Befund; vor dem letzten Fix fand dieselbe Prüfung den Hinweissatz.
+**Nicht umgesetzt:** die Blätter dauerhaft in der Messung (ein Klick-Schritt
+oder Schalter der Entwicklerseite, die sie öffnen) — ohne sie kann ein neues
+Blatt die Fehlerart wieder einführen, ohne dass etwas rot wird.
+
+**Zwei Ausnahmen, vom Betreiber bestätigt** („ausnahmen können so bleiben";
+`AXE_AUSNAHMEN` in `scripts/laufzeit-befunde.mjs`, je Regel und Stelle):
+
+| Regel | Stelle | Grund |
+| --- | --- | --- |
+| `label-content-name-mismatch` | Tage der Trolleys (`.trolley-tagknopf`) | Sichtbar „Mo 7", vorgelesen „Montag, 7. September, mit Terminen". Mit der Abkürzung im Namen läse ein Vorleseprogramm den Tag doppelt; Sprachsteuerung trifft den Knopf über „Montag" oder „7" |
+| `label-content-name-mismatch` | Profil in der schmalen Leiste (`.schmale-leiste-profil`) | Das Kürzel im Kreis („SK") steht für den Namen wie ein Bild; vorgelesen werden Name und „Profil" |
+
+**Gemessen:**
+
+| Was | Ergebnis |
+| --- | --- |
+| `npm run laufzeit -- --satz voll --axe` | 576 Läufe in 263 s, **kein Befund** (vorher 44 Befunde in 287 Läufen); nach den Fixes aus dem Review wieder ohne Befund (213 s) |
+| `npm run laufzeit -- --axe` (Kernsatz, wie die CI) | 129 Läufe in 64 s, kein Befund |
+| Gegenprobe gegen die App | `lang` am Lied entfernt → der Kernsatz meldet `span.prog-lied in lang="ar"` („Песня 1") |
+| `npm run contrast` | vor dem Fix rot (4.43:1 für das neue Paar), danach grün; läuft jetzt als Probe in jeder Suite (`scripts/check-contrast.test.ts`, vorher nur von Hand) — mit dem alten Rot rot |
+| Proben | `laufzeit-befunde.test.ts` (Sprachprüfung und axe aus ihrem Quelltext in happy-dom, Ausnahmen, Gegenprobe; Chinesisch, Japanisch und Koreanisch, deren Schrift `Intl` anders nennt als Unicode), `laufzeit-auftraege.test.ts` (Versammlungssprache, beide Richtungen in jedem Zustand), dazu die Proben der umgebauten Stellen |
+| Suite / Lint / Build | 8176 Tests grün in 382 Dateien, Lint sauber (nur `Spur.tsx:112`), Build sauber |
+
+**Nicht gemessen:** Blätter und Dialoge mit axe (die Sprache dort einmal von
+Hand, siehe oben) und die Bedienung mit der Tastatur. Das Vorlesen mit TalkBack
+oder VoiceOver an einem echten Gerät gehört nicht dazu (Betreiber: „echtes
+gerät als test nicht nötig").
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -10486,13 +10575,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☐☐
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☐☑
 
-**170 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T170, T172 und T173**: Staging und
+**171 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T170 und T172**: Staging und
 Ausrollen per CI (wartet auf das Staging-Projekt des Betreibers; Pausieren und
-Freigabe sind entschieden), große Dateien aufteilen, Barrierefreiheit und
-Sprachauszeichnung mit axe. Am 7. November umgesetzt: **T171**
+Freigabe sind entschieden) und große Dateien aufteilen. Am 7. November
+umgesetzt: **T173** (Barrierefreiheit und Sprachauszeichnung — Sprachprüfung
+in jeder Laufzeit-Messung, axe mit `--axe` auch in der CI; 44 Befunde behoben,
+zwei begründete Ausnahmen, vom Betreiber bestätigt), **T171**
 (Fehlermeldungen von den Geräten — `geraete_fehler`, fünf Bremsen, Lesen per
 Skript, ausgerollt) und **T168** (Sicherung mit
 Rückspielprobe — wöchentlich über die Aufgabenplanung, die Rückspielprobe lokal
@@ -10965,7 +11056,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
 T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
 umgesetzt, offen davon nur die Probe gegen ein echtes Projekt und der Umstieg
-beim Neuaufbau;
+beim Neuaufbau; T173 am Abend, ohne Rest;
 keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8258221`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
@@ -10975,7 +11066,7 @@ die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
 bleibt, braucht NWS-Exporte, den Neuaufbau, das Staging-Projekt oder eine der
-Aufgaben T170, T172 und T173.
+Aufgaben T170 und T172.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -10986,7 +11077,7 @@ Aufgaben T170, T172 und T173.
 | **T170** | Staging und Ausrollen per CI | **wartet auf das Staging-Projekt**, das der Betreiber anlegt (Region `eu-central-1` wie Produktion) — ohne es ließe sich die Strecke schreiben, aber nicht fahren. T169 ist fertig. Entschieden am 7. November: wachhalten per täglichem Zeitplan (Free-Tarif pausiert nach etwa einer Woche, Aufwecken nur im Dashboard), Produktions-Ausrollung **ohne** Freigabe, sobald die Staging-Proben grün sind |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |
-| **T173** | Barrierefreiheit und Sprachauszeichnung mit axe | bereit; der letzte axe-Lauf ist vom Juli, vor dem neuen Design. Ausnahmen entscheidet der Betreiber |
+| **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
 ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit

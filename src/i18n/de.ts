@@ -75,7 +75,6 @@ export const DE = {
     mitteilungenNeu: 'Neu', mitteilungenFrueher: 'Früher',
     aktuelleWoche: 'Aktuelle Woche', tabMid: 'Zusammenkunft unter der Woche', tabWe: 'Zusammenkunft am Wochenende',
     // Kurzlabel der Programm-/Planen-Reiter: „Versammlung <Wochentag>"
-    versammlungTag: 'Versammlung {tag}',
     // Treffpunkte (Zusammenkünfte für den Predigtdienst)
     tabFs: 'Predigtdienst', fsShort: 'Treffpunkte',
     fsVers: 'Versammlungstreffpunkt', fsKeine: 'Keine Treffpunkte in dieser Woche.',
@@ -184,9 +183,6 @@ export const DE = {
     trolleyKlickFrei: 'Klicke in ein freies Feld, dann stehen Tag und Trolley rechts schon drin.',
     trolleyFreiWaehlen: '{trolley}: freie Zeit wählen und eintragen',
     trolleyFreiZelle: '{tag}, {trolley}: frei, eintragen',
-    trolleyTerminLabel: '{trolley}, {zeit}: {wer}',
-    trolleyUnd: '{a} und {b}',
-    trolleySuchtPartner: '{name} sucht einen Partner',
     // Das Blatt „Eintragen" (`GTrolleyEintragen`) und das Blatt eines Termins.
     trolleyZeitHinweis: 'Zwischen 6 und 22 Uhr, in halben Stunden.',
     trolleyMitWem: 'Mit wem',

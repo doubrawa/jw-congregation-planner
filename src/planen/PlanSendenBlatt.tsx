@@ -1,11 +1,12 @@
 import { useApp } from '../app/context'
+import { AufgabeTermin, AufgabeText } from '../aufgaben/AufgabeText'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
 import { istZusammenkunft } from '../data/helpers'
 import type { OffeneWochenMeldung } from '../data/plan-versand'
 import { relativeZeit } from '../i18n/zeit'
-import { aufgabenLabel, aufgabenTermin, fill, useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import type { VersandStand } from './wochen-versand'
 import { PlanSpur } from './WochenStand'
 import type { PlanArt } from './planen-raster'
@@ -62,8 +63,7 @@ export function PlanSendenBlatt({
   onClose: () => void
 }) {
   const { state } = useApp()
-  const i18n = useT()
-  const { t, tu } = i18n
+  const { t, tu } = useT()
   const { laeuft, ohneKonto, senden } = versand
   const n = meldungen.length
   const liste = n !== 0 && n <= LISTEN_GRENZE
@@ -94,8 +94,9 @@ export function PlanSendenBlatt({
                     <span className="senden-name" dir="auto">
                       {meldung.name}
                     </span>
+                    {/* Termin und Punkt in der Sprache des Programms, die Rolle in der des Lesers. */}
                     <span className="klein-text">
-                      {`${aufgabenTermin(aufgabe, i18n)} · ${aufgabenLabel(aufgabe, i18n)}`}
+                      <AufgabeTermin task={aufgabe} /> · <AufgabeText task={aufgabe} />
                     </span>
                   </span>
                 </li>

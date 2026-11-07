@@ -9,8 +9,8 @@ import { eigeneTermine } from '../data/trolleys'
 import { aufgabenLabel, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
-import { aufgabeWann } from './aufgabe-anzeige'
 import { AufgabeKarte } from './AufgabeKarte'
+import { AufgabeText, AufgabeWann } from './AufgabeText'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import './aufgaben.css'
 
@@ -59,8 +59,12 @@ export function AufgabenScreen() {
               <div key={task.id} className="aufgaben-zeile">
                 <Punkt art={LAGE_DER_ZUSAGE[task.status]} />
                 <button type="button" className="aufgaben-zeile-text" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
-                  <span className="aufgaben-zeile-titel">{label}</span>
-                  <span className="klein-text">{aufgabeWann(task, state.lang, i18n)}</span>
+                  <span className="aufgaben-zeile-titel">
+                    <AufgabeText task={task} />
+                  </span>
+                  <span className="klein-text">
+                    <AufgabeWann task={task} />
+                  </span>
                 </button>
                 {task.status === 'offen' ? (
                   <button

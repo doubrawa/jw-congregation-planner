@@ -157,7 +157,7 @@ function PlanenBody() {
 
   // Die Zusagen der Woche (T121, Phase 5g) stehen über beiden Zusammenkünften —
   // eine eigene Ansicht, im Streifen, damit sich die Woche wechseln lässt.
-  if (state.tab === 'zusagen' && rechte.zuteilen) return <ZusagenAnsicht week={week} rawWeek={rawWeek} tpw={tpw} />
+  if (state.tab === 'zusagen' && rechte.zuteilen) return <ZusagenAnsicht week={week} rawWeek={rawWeek} tpw={tpw} sprache={sprache} />
 
   // Die Bearbeiten-Ansicht (T64): Anlass, Sonderwoche und Termine — für Admin
   // und Planer (seit dem 15.10.2026; bis dahin nur der Admin).
@@ -182,7 +182,7 @@ function PlanenBody() {
 
       {/* Ab dem Tablet stehen „Automatisch" und „Plan senden" rechts neben der
           Woche (`GDesktopPlanen`); am Handy unten in der Leiste. */}
-      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} rechts={breit && art ? <PlanenAktionen art={art} /> : undefined} />
+      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} sprache={sprache} rechts={breit && art ? <PlanenAktionen art={art} /> : undefined} />
 
       {!isFs && !isEdit && (
         <MeetingTabs
@@ -214,6 +214,7 @@ function PlanenBody() {
               befunde={rawWeek.befunde}
               week={week}
               tpw={tpw}
+              sprache={sprache}
               text={t.heftBefundePlanText}
               markenText={t.heftBefundeMarkiert}
               ebene="h2"
@@ -224,7 +225,7 @@ function PlanenBody() {
           {/* Wie weit die Woche ist und was zu klären ist (T121, `GPlanen`) —
               an der Stelle der früheren Banner und ihrer Legende. */}
           <PlanSpur tab={tab} />
-          <BesetzungKarte tab={tab} tpw={tpw} />
+          <BesetzungKarte tab={tab} tpw={tpw} sprache={sprache} />
 
           {/* Schulungsaufgaben gibt es nur unter der Woche — der Bogen steht
               deshalb nur dort und zeigt sich gar nicht, wenn keine da sind. */}

@@ -124,7 +124,9 @@ describe('Das Tausch-Blatt', () => {
     const { dispatch } = zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [konto] }))
     expect(screen.getByText(t.tauschGibstAb)).toBeTruthy()
     expect(await screen.findByText('Jonas Berger')).toBeTruthy()
-    expect(screen.getByText(/Mikrofone · .*20\.\sSeptember · 10:00/)).toBeTruthy()
+    // Der Termin steht in eigenem Element, mit dem `lang` des Programms (T173).
+    const wann = [...document.querySelectorAll('.angebot-text .klein-text')].map((e) => e.textContent ?? '')
+    expect(wann.some((z) => /Mikrofone · .*20\.\sSeptember · 10:00/.test(z))).toBe(true)
     fireEvent.click(knopf(t.tauschAnfragen)!)
     await vi.waitFor(() =>
       expect(dispatch).toHaveBeenCalledWith({

@@ -47,21 +47,6 @@ export function andererIm(termin: Pick<TrolleyTermin, 'pid' | 'partner'>, ich: s
   return termin.pid === ich ? termin.partner : termin.pid
 }
 
-/**
- * Wer im Termin steht, für Vorleseprogramme: „Jonas Berger und Simon Krüger"
- * — oder „Jonas Berger sucht einen Partner".
- */
-export function werImTermin(
-  termin: Pick<TrolleyTermin, 'pid' | 'partner'>,
-  persons: readonly Person[],
-  t: Pick<Dict, 'trolleyUnd' | 'trolleySuchtPartner'>,
-): string {
-  const person = nameVon(persons, termin.pid)
-  return termin.partner
-    ? fill(t.trolleyUnd, { a: person, b: nameVon(persons, termin.partner) })
-    : fill(t.trolleySuchtPartner, { name: person })
-}
-
 /** „mit Jonas Berger" — oder „Partner gesucht", wo man allein steht. */
 export function mitWem(
   termin: Pick<TrolleyTermin, 'pid' | 'partner'>,

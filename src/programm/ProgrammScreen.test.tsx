@@ -159,9 +159,12 @@ describe('Kopf und Navigation', () => {
     const w = woche()
     w.dev = { mid: { cancelled: true } }
     const { container } = zeige({ weeks: [w] })
-    const [mitte, ende] = [...seite(container).querySelectorAll('.meeting-tab')].map((b) => b.getAttribute('aria-label'))
-    expect(mitte).toBe(`${fill(t.versammlungTag, { tag: 'Dienstag' })}, 8.9. · 19:00, ${t.druckEntfaellt}`)
-    expect(ende).toBe(`${fill(t.versammlungTag, { tag: 'Sonntag' })}, 13.9. · 10:00`)
+    // Vorgelesen wird, was dasteht (WCAG 2.5.3) — kein eigener Name je Karte;
+    // wofür sie stehen, sagt ihre Gruppe (T173).
+    const karten = [...seite(container).querySelectorAll('.meeting-tab')]
+    expect(karten.map((b) => b.getAttribute('aria-label'))).toEqual([null, null])
+    expect(karten.map((b) => b.textContent)).toEqual([`Dienstag 8.9. · 19:00, ${t.druckEntfaellt}`, 'Sonntag 13.9. · 10:00'])
+    expect(seite(container).querySelector('.meeting-tabs')?.getAttribute('aria-label')).toBe(t.navZusammenkuenfte)
   })
 
   it('der Predigtdienst hat keine Reiter der Zusammenkünfte', () => {

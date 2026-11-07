@@ -54,7 +54,7 @@ export function WochePanel() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const rawWeek = state.weeks[state.week]
-  const { week, tpw } = useProgWeek(rawWeek)
+  const { week, tpw, sprache } = useProgWeek(rawWeek)
   const [programmOffen, setProgrammOffen] = useState(false)
   if (!rawWeek || !week) return null
 
@@ -157,7 +157,11 @@ export function WochePanel() {
         <button type="button" className="einrichten-verweis" onClick={() => setProgrammOffen(true)}>
           <span className="einrichten-verweis-text">
             <span>{t.programmpunkteBearbeiten}</span>
-            {week.book && <span className="klein-text">{tpw(week.book)}</span>}
+            {week.book && (
+              <span className="klein-text" lang={sprache}>
+                {tpw(week.book)}
+              </span>
+            )}
           </span>
           <Zeichen name="weiter" />
         </button>

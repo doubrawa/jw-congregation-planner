@@ -238,10 +238,27 @@ ein Bereich waagerecht, meldet die Konsole einen Fehler, springt eine
 Fehlergrenze an, steht `undefined` oder ein Platzhalter wie `{name}` auf dem
 Bildschirm? Den Dev-Server startet das Skript selbst.
 
-| Satz | Was | Dauer (lokal) |
+Dazu die **Sprache der Inhalte** (T173): Programmtexte stehen in der Sprache
+der Versammlung, die Oberfläche in der des Lesers, und ein Vorleseprogramm
+spricht jeden Text nach seinem `lang` (WCAG 3.1.2). Jeder Buchstabe außerhalb
+der lateinischen Schrift muss deshalb in einem Element stehen, dessen `lang`
+dieselbe Schrift hat. Lateinisch prüft die Messung nicht — Namen und Orte
+stehen darin, ohne eine Sprache zu haben. Damit sie beide Richtungen sieht,
+läuft der arabische Kernsatz mit einer russischen Versammlung (`c=ru`).
+
+| Satz | Was | Dauer mit axe (lokal) |
 | --- | --- | --- |
-| `kern` (Vorgabe) | jeder Zustand bei 320 px mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch | rund 1 min |
-| `voll` (`npm run laufzeit -- --satz voll`) | dazu alle Breiten von 320 bis 1440 px, Stufe 1,45 auch bei 768 und 1440 px, die übrigen zehn Sprachen | rund 3½ min |
+| `kern` (Vorgabe) | jeder Zustand bei 320 px mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch mit russischer Versammlung | rund 1 min |
+| `voll` (`npm run laufzeit -- --satz voll`) | dazu alle Breiten von 320 bis 1440 px, Stufe 1,45 auch bei 768 und 1440 px, Arabisch mit deutscher, Deutsch mit arabischer Versammlung, die übrigen zehn Sprachen | rund 4½ min |
+
+`--axe` prüft jeden Lauf zusätzlich mit [axe](https://github.com/dequelabs/axe-core)
+(aus `node_modules`) nach WCAG 2.2 A und AA samt axes „best practice":
+Kontrast, Namen von Knöpfen und Feldern, Rollen, Überschriften,
+Trefferflächen. axe sieht die Seite dafür in voller Höhe — am Rand eines kurzen
+Fensters läge die untere Leiste über dem, was beim Rollen frei wird. Was
+bewusst bleibt, steht mit Begründung als Ausnahme je Regel und Stelle in
+`AXE_AUSNAHMEN` (`scripts/laufzeit-befunde.mjs`); eine Regel ganz abzuschalten
+ist nicht vorgesehen.
 
 Weitere Schalter: `--nur <Regex>` (etwa `--nur "s=personen"`), `--url
 http://localhost:5173` (einen laufenden Dev-Server nutzen), `--parallel <n>`,
@@ -250,16 +267,19 @@ misst die Messung den schwersten Fall, wie die CI), `--json <datei>`. Chrome
 findet das Skript selbst, sonst die Umgebungsvariable `CHROME` setzen.
 
 Vor jedem Satz läuft eine **Gegenprobe**: Sie stört eine Seite auf jede
-gemessene Art. Übersieht die Messung eine davon, endet sie mit Exitcode 2 —
-eine Messung, die still kaputtgeht, sähe sonst aus wie eine App ohne Befund.
-Mit Befund ist der Exitcode 1, ohne 0.
+gemessene Art — mit `--axe` auch mit einem Knopf ohne Namen und blassem Text.
+Übersieht die Messung eine davon, endet sie mit Exitcode 2 — eine Messung, die
+still kaputtgeht, sähe sonst aus wie eine App ohne Befund. Mit Befund ist der
+Exitcode 1, ohne 0.
 
-In GitHub Actions läuft der Kernsatz nach jedem Push, der die App berührt
-(`.github/workflows/laufzeit.yml`) — neben dem Deploy, nicht davor. Den vollen
-Satz startet man dort unter „Run workflow".
+In GitHub Actions läuft der Kernsatz mit axe nach jedem Push, der die App
+berührt (`.github/workflows/laufzeit.yml`) — neben dem Deploy, nicht davor. Den
+vollen Satz startet man dort unter „Run workflow".
 
 Nicht gemessen wird, was über den Rand einer Karte ragt, aber im Fenster
-bleibt, und was erst ein Tipp öffnet (Blätter, Dialoge).
+bleibt, und was erst ein Tipp öffnet (Blätter, Dialoge) — auch nicht mit axe.
+Die Bedienung mit der Tastatur und das Vorlesen an einem echten Gerät bleiben
+Handarbeit.
 
 
 ## Design-Referenz

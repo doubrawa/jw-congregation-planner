@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { Option } from '../bausteine/Option'
@@ -32,10 +32,13 @@ import { DruckKnopf } from './DruckKnopf'
  */
 export function DruckWahl({
   zeitraum,
+  sprache,
   erklaerung,
   mitText = false,
 }: {
   zeitraum?: string
+  /** In welcher Sprache der Zeitraum steht (`ProgWeek.sprache`) — er kommt aus dem Programm. */
+  sprache?: string
   erklaerung?: string
   mitText?: boolean
 }) {
@@ -78,7 +81,7 @@ export function DruckWahl({
       <DruckKnopf mitText={mitText} onClick={() => setOffen(true)} />
       {offen && (
         <DruckWahlBlatt
-          zeitraum={zeitraum}
+          zeitraum={zeitraum && <span lang={sprache}>{zeitraum}</span>}
           erklaerung={erklaerung}
           monatText={fill(t.druckMonat, { monat: monatsName(monat, state.lang) })}
           onClose={() => setOffen(false)}
@@ -107,7 +110,7 @@ function DruckWahlBlatt({
   onClose,
   onDrucken,
 }: {
-  zeitraum?: string
+  zeitraum?: ReactNode
   erklaerung?: string
   monatText: string
   onClose: () => void

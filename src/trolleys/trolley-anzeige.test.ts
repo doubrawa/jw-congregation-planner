@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { wochenSpanne } from '../components/datum-anzeige'
 import { emptyQualifications } from '../data/helpers'
 import type { Person } from '../data/types'
-import { dict } from '../i18n/ui'
 import { NBSP } from '../i18n/zahl-binden'
 import {
   anteilVon,
@@ -15,7 +14,6 @@ import {
   tagLang,
   trolleyNameVon,
   vornameVon,
-  werImTermin,
   wochenTage,
   zeitAnStelle,
 } from './trolley-anzeige'
@@ -77,14 +75,6 @@ describe('Woche und Namen', () => {
     expect(vornameVon([p], 'p1')).toBe('Jonas')
     expect(nameVon([p], null)).toBe('')
     expect(trolleyNameVon([{ id: 't', name: 'Trolley 3', ort: '', hinweis: '' }], 'weg')).toBe('')
-  })
-
-  it('wer im Termin steht, für Vorleseprogramme — zu zweit oder allein', () => {
-    const t = dict('de')
-    const p = (id: string, fn: string): Person => ({ id, fn, ln: 'Berger', role: 'verkuendiger', female: false, priv: emptyQualifications() })
-    const leute = [p('p1', 'Jonas'), p('p2', 'Lena')]
-    expect(werImTermin({ pid: 'p1', partner: 'p2' }, leute, t)).toBe('Jonas Berger und Lena Berger')
-    expect(werImTermin({ pid: 'p1', partner: null }, leute, t)).toBe('Jonas Berger sucht einen Partner')
   })
 
   it('das Formular geht mit Partner auf, 10 bis 12 Uhr — oder mit dem Zeitraum unter dem Tipp', () => {

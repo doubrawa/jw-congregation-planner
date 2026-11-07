@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { FsBereich, MeetingTab, Screen } from '../src/data/types'
 import { FONT_SCALES } from '../src/data/constants'
-import { APP_LANGS, isRTL } from '../src/i18n/langs'
+import { APP_LANGS, isRTL, JW_LANGS } from '../src/i18n/langs'
 import { BILDSCHIRME } from '../tests/testdaten/bildschirme'
 import { parseDebugHash } from '../tests/testdaten/demo-start'
 import { DEMO_PERSONS } from '../tests/testdaten/testdaten'
@@ -73,6 +73,7 @@ describe('Jeder Schalter wird verstanden', () => {
     stale: (d) => d.staleAt !== undefined,
     langsam: (d) => d.staleLangsam === true,
     uhr: (_d, _w, hash) => uhrAusHash(`#${hash}`) !== null,
+    c: (d, w) => d.congLang === w,
   }
 
   it.each(ZUSTAENDE)('%s', (zustand) => {
@@ -119,14 +120,42 @@ describe('Die Sätze', () => {
     expect(liste.filter((a) => !sprachen.has(a.sprache) || !stufen.has(a.schrift))).toEqual([])
   })
 
-  it('der Hash trägt Sprache, Darstellung und Schriftstufe — die Seite übernimmt sie', () => {
-    const a = { zustand: 's=planen&tab=mid', breite: 375, sprache: 'ar', darstellung: 'dunkel' as const, schrift: '1.45' }
-    expect(geparst(hashVon(a))).toMatchObject({ screen: 'planen', tab: 'mid', lang: 'ar', theme: 'dunkel', fontScale: 1.45 })
+  it('der Hash trägt Sprache, Versammlungssprache, Darstellung und Schriftstufe — die Seite übernimmt sie', () => {
+    const a = { zustand: 's=planen&tab=mid', breite: 375, sprache: 'ar', darstellung: 'dunkel' as const, schrift: '1.45', versammlung: 'ru' }
+    expect(geparst(hashVon(a))).toMatchObject({ screen: 'planen', tab: 'mid', lang: 'ar', congLang: 'ru', theme: 'dunkel', fontScale: 1.45 })
   })
 
   it('„--nur" filtert über den Namen, ein unbekannter Satz wird abgewiesen', () => {
     const nur = auftraege('kern', '^s=personen&p=p1 · 320 px')
     expect(nur.map(auftragsName)).toEqual(['s=personen&p=p1 · 320 px · de · dunkel · Stufe 1.45'])
+    expect(auftraege('kern', '^s=personen&p=p1 · 375 px').map(auftragsName)).toEqual(['s=personen&p=p1 · 375 px · ar · Versammlung ru · hell · Stufe 1'])
     expect(() => auftraege('gibtsnicht')).toThrow(/Unbekannter Satz/)
+  })
+})
+
+describe('Die Sprache der Inhalte wird in beide Richtungen geprüft (T173)', () => {
+  /** Die Schrift einer Sprache, wie die Messung in der Seite sie bestimmt (`Intl.Locale`). */
+  const schrift = (code: string) => new Intl.Locale(code).maximize().script
+
+  it('jede Versammlungssprache ist ein Code von jw.org', () => {
+    const codes = new Set(JW_LANGS.map((l) => l.code))
+    const versammlungen = new Set(Object.keys(SAETZE).flatMap((s) => auftraege(s).map((a) => a.versammlung)))
+    expect([...versammlungen].filter((v) => !codes.has(v))).toEqual([])
+  })
+
+  it('der Kernsatz hat Oberfläche und Programm in zwei verschiedenen, nicht lateinischen Schriften', () => {
+    // Lateinisch prüft die Messung nicht (Namen und Orte stehen darin). Nur
+    // wenn beide Seiten eine eigene Schrift haben, sieht sie Oberfläche im
+    // `lang` des Programms und Programm ohne sein `lang`.
+    const beide = auftraege('kern').filter((a) => {
+      const [app, programm] = [schrift(a.sprache), schrift(a.versammlung)]
+      return app !== 'Latn' && programm !== 'Latn' && app !== programm
+    })
+    expect(new Set(beide.map((a) => a.zustand))).toEqual(new Set(ZUSTAENDE))
+  })
+
+  it('der volle Satz hat dazu ein Programm in fremder Schrift unter lateinischer Oberfläche', () => {
+    const fremdesProgramm = auftraege('voll').filter((a) => schrift(a.sprache) === 'Latn' && schrift(a.versammlung) !== 'Latn')
+    expect(new Set(fremdesProgramm.map((a) => a.zustand))).toEqual(new Set(ZUSTAENDE))
   })
 })

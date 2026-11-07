@@ -16,17 +16,20 @@ import './components.css'
  * (`rechts` — beim Ansehen „Drucken").
  *
  * `week` ist die angezeigte Fassung (Sprachvariante), `rawWeek` die
- * kanonische: Der Anlass wird an ihr erkannt.
+ * kanonische: Der Anlass wird an ihr erkannt. `tpw` und `sprache` wie aus
+ * `useProgWeek`: Spanne und Bibellesen stehen in der Sprache des Programms.
  */
 export function WochenWahl({
   week,
   rawWeek,
   tpw,
+  sprache,
   rechts,
 }: {
   week: Week
   rawWeek: Week
   tpw: (s: string) => string
+  sprache: string
   rechts?: ReactNode
 }) {
   const { state, dispatch } = useApp()
@@ -38,7 +41,7 @@ export function WochenWahl({
         onPrev={() => dispatch({ type: 'prevWeek' })}
         onNext={() => dispatch({ type: 'nextWeek' })}
       >
-        <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} />
+        <WochenZeile week={week} rawWeek={rawWeek} istAktuell={currentWeekIndex(state.weeks) === state.week} tpw={tpw} sprache={sprache} />
       </WeekNav>
       {rechts}
     </div>
@@ -58,24 +61,32 @@ function WochenZeile({
   rawWeek,
   istAktuell,
   tpw,
+  sprache,
 }: {
   week: Week
   rawWeek: Week
   istAktuell: boolean
   tpw: (s: string) => string
+  sprache: string
 }) {
   const { t } = useT()
   const anlass = anlassName(anlassArt(rawWeek), t)
   return (
     <>
-      <span className="woche-zeitraum">{programmSpanne({ week, tpw })}</span>
+      <span className="woche-zeitraum" lang={sprache}>
+        {programmSpanne({ week, tpw })}
+      </span>
       <span className="woche-unterzeile">
         {anlass ? (
           <span className="woche-hinweis">{anlass}</span>
         ) : (
           istAktuell && <span className="woche-hinweis is-aktuell">{t.aktuelleWoche}</span>
         )}
-        {week.book && <span className="woche-buch">{tpw(week.book)}</span>}
+        {week.book && (
+          <span className="woche-buch" lang={sprache}>
+            {tpw(week.book)}
+          </span>
+        )}
       </span>
     </>
   )

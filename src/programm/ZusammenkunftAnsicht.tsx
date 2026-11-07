@@ -72,7 +72,7 @@ export function ZusammenkunftAnsicht({
 
       <Programm meeting={meeting} rawMeeting={rawMeeting} me={me} tpw={tpw} sprache={sprache} ebene="h2" />
       <Hilfsdienste helpers={meeting.helpers} me={me} ebene="h2" />
-      <ProgFooter ende={tpw(meeting.end)} />
+      <ProgFooter ende={tpw(meeting.end)} sprache={sprache} />
     </>
   )
 }
@@ -260,7 +260,11 @@ function Abschnitt({
         <Ueberschrift className="prog-abschnitt-name" lang={sprache}>
           {tpw(section.label)}
         </Ueberschrift>
-        {lieder.length > 0 && <span className="prog-lied">{lieder.join(' · ')}</span>}
+        {lieder.length > 0 && (
+          <span className="prog-lied" lang={sprache}>
+            {lieder.join(' · ')}
+          </span>
+        )}
       </div>
       {zeilen.map(({ item, title }) => (
         <ProgramRow key={item.iid} item={item} title={title} mitAux={mitAux} me={me} tpw={tpw} sprache={sprache} vorOrt={vorOrt} />
@@ -382,12 +386,13 @@ function DienstWer({ helpers, service, me }: { helpers: Meeting['helpers']; serv
 }
 
 /** Nur im Ausdruck: das Ende der Zusammenkunft und der „Stand" — der Tag, an dem das Blatt entsteht. */
-function ProgFooter({ ende }: { ende?: string }) {
+function ProgFooter({ ende, sprache }: { ende?: string; sprache?: string }) {
   const { state } = useApp()
   const { t } = useT()
   return (
     <div className="prog-footer">
-      {ende && <span>{ende}</span>}
+      {/* Das Ende aus dem Programm, in dessen Sprache; der Stand in der des Lesers. */}
+      {ende && <span lang={sprache}>{ende}</span>}
       <span>{fill(t.stand, { datum: gebundenesDatum(new Date(), state.lang, 'tagMonat') })}</span>
     </div>
   )
