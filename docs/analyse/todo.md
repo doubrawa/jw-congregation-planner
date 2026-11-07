@@ -9981,7 +9981,7 @@ Gegen die App: Ohne den Fix aus `ad7729d5` meldet der Lauf die 17 px wieder
 Nicht gemessen: was über den Rand einer Karte ragt, aber im Fenster bleibt,
 und was erst ein Tipp öffnet (Blätter, Dialoge).
 
-## Aufgenommen am 7. November 2026 — Empfehlungen aus der Bewertung (T168–T172)
+## Aufgenommen am 7. November 2026 — Empfehlungen aus der Bewertung (T168–T173)
 
 Am 7. November hat Claude Codequalität und Reife der App bewertet. Der Code
 ist weit (strenge Typen, 8075 Tests, 99 % Zeilenabdeckung, Laufzeit-Messung
@@ -9993,8 +9993,10 @@ eigenen Sitzungen.
 T169 vor dem Neuaufbau zum Echtbetrieb; T170 baut darauf auf und liefert das
 Staging-Projekt, in das T168 zur Probe zurückspielt. T171 und T172 hängen an
 nichts, berühren aber beide `src/app/` — nicht gleichzeitig im selben Checkout.
+T173 baut auf der Laufzeit-Messung (T167) auf; ihre Fixes treffen CSS und
+Markup — nicht gleichzeitig mit T172.
 
-**Für alle fünf gilt:** Das Repo ist öffentlich — keine echten Namen,
+**Für alle sechs gilt:** Das Repo ist öffentlich — keine echten Namen,
 Schlüssel und Passwörter nur als Namen. Was in die echte Datenbank schreibt,
 sperrt der Auto-Modus („Modify Shared Resources"): vorher die Freigabe des
 Betreibers holen, die Sitzung dafür auf „Default". Konten, Projekte und
@@ -10170,6 +10172,51 @@ vorher laufen lassen, dann umbauen). Dazu die Suite, die Abdeckung nicht
 niedriger, `npm run laufzeit -- --satz voll` ohne Befund, die Bündelgröße
 vorher und nachher. Nicht gleichzeitig mit T171 im selben Checkout.
 
+### T173 · Barrierefreiheit und Sprachauszeichnung mit axe prüfen 🔧 ☐ offen
+
+**Warum:** Der letzte axe-Lauf ist vom Juli (`7363736`, `3ad3874`: damals
+0 Verstöße in allen acht Farbschemata über alle Bildschirme) — vor dem neuen
+Design (T121), den Bildschirmen seither und den zwölf Sprachen samt RTL. axe
+misst im gezeichneten Zustand, was Lint und Tests nicht sehen: Kontrast,
+Namen von Knöpfen und Feldern, Rollen und Zustände (ARIA), die Folge der
+Überschriften, gültige `lang`-Werte, Trefferflächen (WCAG 2.2 `target-size`).
+Dazu die Sprache der Inhalte: Programmtexte von jw.org stehen in der
+Versammlungssprache, die App in ihrer eigenen. Ein Vorleseprogramm spricht sie
+nur richtig aus, wenn sie ihr `lang` tragen (WCAG 3.1.2). Die App setzt es an
+24 Stellen (Programm, Abschnitte, Aufgabentitel) — geprüft über alle
+Zustände wurde das nie.
+
+**Was zu tun ist:**
+1. `axe-core` als Entwicklungs-Abhängigkeit (nicht vom CDN — die CI soll an
+   keinem fremden Server hängen) und in der Laufzeit-Messung ein Schalter
+   `--axe`: nach der Messung `axe.run` im Dokument mit den Regeln für WCAG 2.2
+   A und AA, jeder Verstoß ein Befund (Regel, Wirkung, Element) in Bericht und
+   JSON. Die Gegenprobe der Messung bekommt eine Störung dazu (ein Knopf ohne
+   Namen, Text mit zu wenig Kontrast) — erkennt axe sie nicht, ist der Lauf
+   rot.
+2. Die Sprache der Inhalte: Zustände mit einer Versammlungssprache, die von der
+   App-Sprache abweicht (`c=` im Hash der Entwicklerseite), und eine Prüfung,
+   dass jeder Programmtext das `lang` der Versammlungssprache trägt und jeder
+   App-Text das der App-Sprache.
+3. Den ersten vollen Lauf fahren (`--satz voll --axe`: beide Darstellungen,
+   alle Breiten, Stufe 1,45, zwölf Sprachen), die Befunde nach Wirkung ordnen
+   (`critical`, `serious` zuerst), echte Mängel beheben. Was bewusst bleibt,
+   steht mit Begründung als Ausnahme je Regel und Stelle im Skript — kein
+   pauschales Abschalten einer Regel.
+4. Danach `--axe` in den Kernsatz der CI: Ein neuer Verstoß macht den Lauf rot.
+5. Was axe nicht sieht, bleibt Handarbeit: Blätter und Dialoge (Fokus hinein,
+   Escape, Fokus zurück; oder ein Klick-Schritt in der Messung, der sie öffnet
+   und dann misst), die Bedienung mit der Tastatur, Vorlesen mit TalkBack oder
+   VoiceOver an einem echten Gerät.
+
+**Entscheidet der Betreiber:** welche Befunde als Ausnahme bleiben; ob die
+Prüfung mit Vorleseprogramm am echten Gerät dazugehört.
+
+**Wie man prüft:** Die Gegenprobe schlägt an; nach den Fixes läuft
+`npm run laufzeit -- --satz voll --axe` ohne Befund außer den begründeten
+Ausnahmen; die Probe zur Sprache meldet für einen Programmtext ohne `lang`
+einen Befund (Gegenprobe).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -10209,12 +10256,13 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☐☐☐☐☐
+1. November ☑ · 6. November ☑☑ · 7. November ☑☐☐☐☐☐☐
 
-**167 der 172 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T168–T172**, die Empfehlungen aus
+**167 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T168–T173**, die Empfehlungen aus
 der Bewertung vom 7. November: Sicherung, Migrationen (E3), Staging und
-Ausrollen per CI, Fehlermeldungen von den Geräten, große Dateien aufteilen.
+Ausrollen per CI, Fehlermeldungen von den Geräten, große Dateien aufteilen,
+Barrierefreiheit und Sprachauszeichnung mit axe.
 Am 7. November kam außerdem **T167** dazu und ist umgesetzt (Laufzeit-Messung
 im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
@@ -10678,7 +10726,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
-T168–T172 aus der Bewertung, offen; keine PR, kein Issue, außer `main` kein Zweig, auch
+T168–T173 aus der Bewertung, offen; keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
@@ -10686,7 +10734,7 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte, den Neuaufbau oder eine der Aufgaben T168–T172.
+bleibt, braucht NWS-Exporte, den Neuaufbau oder eine der Aufgaben T168–T173.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -10697,6 +10745,7 @@ bleibt, braucht NWS-Exporte, den Neuaufbau oder eine der Aufgaben T168–T172.
 | **T170** | Staging und Ausrollen per CI | nach T169; das Staging-Projekt legt der Betreiber an |
 | **T171** | Fehlermeldungen von den Geräten | bereit; wer sie liest, entscheidet der Betreiber |
 | **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |
+| **T173** | Barrierefreiheit und Sprachauszeichnung mit axe | bereit; der letzte axe-Lauf ist vom Juli, vor dem neuen Design. Ausnahmen entscheidet der Betreiber |
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
 ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit
