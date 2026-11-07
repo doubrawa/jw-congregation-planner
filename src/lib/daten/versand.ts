@@ -116,8 +116,9 @@ export async function erinnerungSenden(weekStart: string, heute: string): Promis
  * nachschlagen.
  *
  * **Reihenfolge beim Ausrollen:** Die Function muss die Listenform kennen,
- * bevor ein Client sie schickt (`npx supabase functions deploy send-plan`).
- * Umgekehrt ist es unkritisch — die alte Einzelform nimmt sie weiter an.
+ * bevor ein Client sie schickt — die CI rollt die Functions deshalb vor dem
+ * Frontend aus (`ausrollen.yml`). Umgekehrt ist es unkritisch — die alte
+ * Einzelform nimmt sie weiter an.
  */
 export function sendPlanEntzug(entzuege: EntzogeneZuteilung[]): void {
   if (!supabase || entzuege.length === 0) return

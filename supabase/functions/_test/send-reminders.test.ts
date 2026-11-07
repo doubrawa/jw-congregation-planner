@@ -409,8 +409,8 @@ describe('send-reminders: Zugang', () => {
   })
 
   it('fehlendes CRON_SECRET → 500, nicht etwa freier Zugang', async () => {
-    // Die Function ist mit --no-verify-jwt deployt, die Plattform prüft also
-    // nichts. Eine `if (CRON_SECRET && …)`-Konstruktion liesse bei fehlender
+    // Die Function läuft mit `verify_jwt = false` (supabase/config.toml), die
+    // Plattform prüft also nichts. Eine `if (CRON_SECRET && …)`-Konstruktion liesse bei fehlender
     // Konfiguration jeden durch — und der Dry-Run gibt die Vorschau ALLER
     // Versammlungen zurück.
     const stumm = vi.spyOn(console, 'error').mockImplementation(() => {})

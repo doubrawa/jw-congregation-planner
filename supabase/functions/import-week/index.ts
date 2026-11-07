@@ -18,7 +18,8 @@
 //
 // Fairer Umgang: ein Abruf je Seite, kurzer In-Memory-Cache, klarer User-Agent.
 //
-// Deploy:  supabase functions deploy import-week
+// Ausgerollt wird über die CI, mit dem Push (.github/workflows/ausrollen.yml);
+// verify_jwt steht in supabase/config.toml.
 // =============================================================================
 
 import { CORS, dienstSchluessel, json, mitDienstSchluessel, restKlient, wert } from '../_shared/rest.ts'

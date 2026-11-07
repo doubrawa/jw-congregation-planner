@@ -45,7 +45,8 @@
 //  - APP_URL            optional; Link, den die Benachrichtigung öffnet
 // SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY stellt Supabase automatisch bereit.
 //
-// Deploy:  npx supabase functions deploy send-reminders --no-verify-jwt
+// Ausgerollt wird über die CI, mit dem Push (.github/workflows/ausrollen.yml);
+// verify_jwt = false steht in supabase/config.toml — der Cron hat kein Login.
 // =============================================================================
 
 import { json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'

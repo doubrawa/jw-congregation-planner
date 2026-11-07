@@ -196,10 +196,12 @@ docs/
   design-handoff/   Maßgebliche Design-Referenz (README, HTML-Prototypen, Screenshots)
   user-guide/       Benutzerhandbücher (Planer/Verkündiger) + Auto-Screenshots
 supabase/
-  schema.sql        DB-Schema (Tabellen + RLS + Funktionen), im SQL-Editor ausführen
-  migration-*.sql   Nachzügler-Migrationen für früher eingerichtete Datenbanken
+  schema.sql        DB-Schema als Gesamtstand (Tabellen + RLS + Funktionen)
+  migrations/       Dasselbe als Folge von Änderungen — so erreicht es die Produktion
+  functions/        Edge Functions (Deno); config.toml hält verify_jwt je Function
 .github/workflows/
-  deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
+  deploy.yml        Bauen und prüfen, ausrollen, dann auf GitHub Pages veröffentlichen
+  ausrollen.yml     Migrationen und Edge Functions in die Produktion, danach Prüfung
   laufzeit.yml      Laufzeit-Messung (Kernsatz) nach jedem Push, der die App berührt
 ```
 
@@ -369,8 +371,15 @@ Entwicklerseite. Für echtes Login mit geschützten Daten:
 
 1. Kostenloses Projekt auf [supabase.com](https://supabase.com) anlegen
    (Region z. B. Frankfurt — personenbezogene Daten in der EU).
-2. Im **SQL-Editor** den Inhalt von [`supabase/schema.sql`](supabase/schema.sql)
-   ausführen (Tabellen + Row-Level-Security).
+2. Das Schema einspielen: `npx supabase db push --remote=<ref> --yes` spielt
+   die Migrationen aus [`supabase/migrations/`](supabase/migrations) der Reihe
+   nach ein und trägt sie im Verlauf des Projekts ein. Das ergibt dieselbe
+   Datenbank wie [`supabase/schema.sql`](supabase/schema.sql) — die Probe hält
+   beide gleich (Abschnitt „Migrationen"). Wer stattdessen `schema.sql` im
+   **SQL-Editor** ausführt, trägt danach jede Migration als eingespielt ein
+   (`npx supabase migration repair --status applied <zeitstempel …>
+   --remote=<ref>`); sonst hält `db push` sie für neu und spielt sie ein
+   zweites Mal ein.
 3. Versammlung und ersten Admin mit `scripts/versammlung-anlegen.mjs` anlegen
    (siehe unten) — es gibt den Anmelde-Link des Admins aus. Konten legt niemand
    von Hand an: Sie entstehen, wenn jemand seinen Link zum ersten Mal öffnet.
@@ -383,7 +392,11 @@ Entwicklerseite. Für echtes Login mit geschützten Daten:
 6. Deployment: dieselben Werte im GitHub-Repo als **Actions-Secrets**
    `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` hinterlegen
    (Settings → Secrets and variables → Actions); `deploy.yml` reicht sie an
-   den Build durch.
+   den Build durch. Fürs Ausrollen kommt `SUPABASE_ACCESS_TOKEN` dazu
+   (Abschnitt „Ausrollen über die CI"), und in
+   [`ausrollen.yml`](.github/workflows/ausrollen.yml) steht die eigene
+   Projekt-Kennung (`PROJEKT`). Danach rollt „Run workflow" bei „Deploy to
+   GitHub Pages" die Edge Functions aus.
 7. **Authentication → URL Configuration** (wichtig für Mail-Links): **Site URL**
    auf die App-Adresse setzen (`https://versammlung.app/`) statt
    des Standardwerts `http://localhost:3000`, und unter **Redirect URLs** die

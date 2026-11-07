@@ -61,8 +61,8 @@
 // Secrets: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (wie
 //   send-reminders), APP_URL optional. SUPABASE_URL / SERVICE_ROLE_KEY automatisch.
 //
-// Deploy:  npx supabase functions deploy send-plan
-// (OHNE --no-verify-jwt — der Aufruf braucht ein gültiges Nutzer-Login.)
+// Ausgerollt wird über die CI, mit dem Push (.github/workflows/ausrollen.yml);
+// verify_jwt steht in supabase/config.toml.
 // =============================================================================
 
 import { CORS, json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
