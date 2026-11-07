@@ -3,14 +3,23 @@
 -- =============================================================================
 -- Ausführen im Supabase SQL-Editor (einmalig, idempotent formuliert).
 --
--- **Diese Datei ist die einzige Quelle des Schemas.** Neben ihr stand bis zum
--- 17. September 2026 eine Kette von 25 Migrationen, die jede für sich
--- versicherte „Neuinstallationen brauchen diese Datei nicht — schema.sql
--- enthält alles". Zwei Quellen für dieselbe Sache laufen auseinander, und das
--- taten sie auch (fs_rules, fs_weeks, reminder_log fehlten hier monatelang).
--- Die App ist noch nicht ausgerollt, also wurde die Kette gestrichen: Wer die
--- Datenbank aufsetzt, führt diese Datei aus — mehr gibt es nicht. Änderungen am
--- Schema kommen hier hinein.
+-- **Diese Datei ist der Gesamtstand des Schemas.** Änderungen kommen hier
+-- hinein — und seit dem 7. November 2026 (T169) zusätzlich als **Migration**
+-- in `supabase/migrations/`, weil im Echtbetrieb kein Neuaufbau mehr geht.
+--
+-- Neben dieser Datei stand bis zum 17. September 2026 schon einmal eine Kette
+-- von 25 Migrationen, die jede für sich versicherte „Neuinstallationen
+-- brauchen diese Datei nicht — schema.sql enthält alles". Zwei Quellen für
+-- dieselbe Sache laufen auseinander, und das taten sie auch (fs_rules,
+-- fs_weeks, reminder_log fehlten hier monatelang). Gemerkt hat es niemand,
+-- weil niemand die beiden Wege gegeneinander gehalten hat.
+--
+-- **Genau das tut jetzt `migrationen.test.ts`:** Sie spielt diese Datei und
+-- die Folge der Migrationen in je eine leere Postgres und vergleicht die
+-- Kataloge — Tabellen, Spalten, Bedingungen, Indizes, Funktionen, Trigger,
+-- Richtlinien, Rechte. Nur deshalb darf die Doppelung wieder existieren. Wer
+-- hier etwas ändert und keine Migration dazu schreibt, bekommt eine rote
+-- Probe, nicht einen stillen Unterschied.
 --
 -- **Ändert sich eine Spalte, wird neu aufgebaut**, nicht migriert: `create table
 -- if not exists` lässt eine bestehende Tabelle in Ruhe, eine geänderte
@@ -18,6 +27,12 @@
 -- Tabellen ab (ohne eigene Tabellenliste, damit sie nicht veralten kann);
 -- danach diese Datei ausführen. Die Konten in `auth.users` bleiben dabei
 -- bestehen — ihre Mitgliedschaft nicht, siehe „Erste Einrichtung" am Ende.
+--
+-- **Das endet mit dem Echtbetrieb.** Ein Neuaufbau löschte dann, was nur in
+-- der App steht und in keiner Quelle daneben; ab da erreicht eine geänderte
+-- Spalte die Datenbank nur noch über eine Migration (`supabase/migrations/`,
+-- eingespielt mit `npx supabase db push`). Wie der Umstieg läuft, steht in der
+-- README unter „Migrationen".
 --
 -- Grundidee (siehe README "Hosting"):
 --   * Mandantenfähig über `congregations` — jede Zeile jeder Tabelle gehört

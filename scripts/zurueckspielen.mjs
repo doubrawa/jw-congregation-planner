@@ -47,11 +47,10 @@
  * `--trocken`.**
  */
 
-import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { alleZeilen, alsSkript, argumente, funktionsKopf, restKlient, secretKey, zugangsdaten } from './gemeinsam.mjs'
-import { ohneKommentare, REPO, rumpfAb, tabellenAusSchema } from './sicherung.mjs'
+import { ohneKommentare, REPO, rumpfAb, schemaFingerabdruck, tabellenAusSchema } from './sicherung.mjs'
 
 /* ===================== Fremdschlüssel aus dem Schema ===================== */
 
@@ -203,7 +202,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
 
   const schema = fs.readFileSync(path.join(REPO, 'supabase', 'schema.sql'), 'utf8')
-  const sha = crypto.createHash('sha256').update(schema).digest('hex')
+  const sha = schemaFingerabdruck(schema)
   if (sicherung.schema_sha256 && sicherung.schema_sha256 !== sha) {
     console.log('! Die Sicherung stammt von einem anderen Stand von schema.sql als dem hier.')
     console.log(`  Sicherung: ${String(sicherung.schema_sha256).slice(0, 12)}…   jetzt: ${sha.slice(0, 12)}…`)

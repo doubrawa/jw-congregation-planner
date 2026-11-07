@@ -21,42 +21,18 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   npm install --no-save @electric-sql/pglite@0.2.17
  *   node scripts/rueckspielprobe.mjs <sicherung.json>
  *
- * PGlite ist **keine** Abhängigkeit des Projekts: Die App braucht es nicht,
- * und ein Paket, das nur eine Probe benutzt, gehört nicht in jede
- * Installation. Fehlt es, sagt das Skript, wie man es holt.
+ * Die leere Postgres kommt aus `pglite-postgres.mjs` (PGlite, seit T169 eine
+ * Entwicklungs-Abhängigkeit) — samt dem Vorspann für `auth` und die Rollen.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { alsSkript } from './gemeinsam.mjs'
+import { leerePostgres } from './pglite-postgres.mjs'
 import { REPO, tabellenAusSchema } from './sicherung.mjs'
 import { aufgeschobene, fremdschluessel, zeileTeilen } from './zurueckspielen.mjs'
-
-/**
- * Was Supabase mitbringt und `schema.sql` voraussetzt: die drei Rollen und ein
- * Schema `auth` mit genau so viel, wie die Fremdschlüssel und Richtlinien
- * brauchen. `service_role` umgeht RLS (`bypassrls`) wie dort; die Grenze zieht
- * in diesem Projekt RLS, nicht der Grant — deshalb bekommen alle drei Rollen
- * die Standardrechte, genau wie bei Supabase.
- */
-export const AUTH_VORSPANN = `
-create role anon;
-create role authenticated;
-create role service_role bypassrls;
-create schema if not exists auth;
-create table auth.users (id uuid primary key, email text);
-create table auth.sessions (id uuid primary key default gen_random_uuid(), updated_at timestamptz default now());
-create table auth.audit_log_entries (id uuid primary key default gen_random_uuid(), created_at timestamptz default now());
-create or replace function auth.uid() returns uuid language sql stable as
-  $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-grant usage on schema auth, public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
-alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
-`
 
 export async function main(argv = process.argv.slice(2)) {
   const datei = argv.find((a) => !a.startsWith('--'))
@@ -65,20 +41,10 @@ export async function main(argv = process.argv.slice(2)) {
     process.exit(2)
   }
 
-  let PGlite
-  try {
-    ;({ PGlite } = await import('@electric-sql/pglite'))
-  } catch {
-    console.error('PGlite fehlt. Einmal holen:\n  npm install --no-save @electric-sql/pglite@0.2.17')
-    process.exit(2)
-  }
-
   const sicherung = JSON.parse(fs.readFileSync(datei, 'utf8'))
   const schema = fs.readFileSync(path.join(REPO, 'supabase', 'schema.sql'), 'utf8')
 
-  const db = new PGlite()
-  await db.exec(AUTH_VORSPANN)
-  await db.exec(schema)
+  const db = await leerePostgres([schema])
   console.log('schema.sql in eine leere Postgres eingespielt, ohne Fehler.')
 
   // Die Konten zuerst — `members.user_id` zeigt auf `auth.users`.

@@ -216,6 +216,21 @@ export function tabellenAusSchema(roh) {
 }
 
 /**
+ * **Der Fingerabdruck des Schemas, zu dem eine Sicherung passt** — über den
+ * Text **ohne Kommentare**.
+ *
+ * `zurueckspielen.mjs` warnt, wenn eine Sicherung von einem anderen Stand
+ * stammt als die Datei daneben: „sonst fehlen Spalten". Genau das kann ein
+ * Kommentar nicht bewirken — `schema.sql` ist aber zu zwei Dritteln Prosa, und
+ * über den ganzen Text gerechnet hätte jede umformulierte Begründung alle
+ * älteren Sicherungen als „anderer Stand" gemeldet. Eine Warnung, die bei
+ * Textpflege anspringt, liest nach dem dritten Mal niemand mehr.
+ */
+export function schemaFingerabdruck(schema) {
+  return crypto.createHash('sha256').update(ohneKommentare(schema)).digest('hex')
+}
+
+/**
  * Der Rumpf einer `create table (…)` ab der öffnenden Klammer — über
  * Klammerebenen hinweg, damit ein `check (…)` in einer Spalte nicht vorzeitig
  * schließt. Erwartet Text ohne Kommentare (`ohneKommentare`).
@@ -277,8 +292,8 @@ export async function main(argv = process.argv.slice(2)) {
     projekt: refAusUrl(url),
     // Die Sicherung passt zu **diesem** Schema. Wer zurückspielt, baut die
     // leere Datenbank aus derselben Datei auf — die Prüfsumme sagt, ob es
-    // dieselbe ist.
-    schema_sha256: crypto.createHash('sha256').update(schema).digest('hex'),
+    // dieselbe ist (ohne Kommentare, siehe `schemaFingerabdruck`).
+    schema_sha256: schemaFingerabdruck(schema),
     ausgenommen: AUSGENOMMEN,
     konten: alleKonten,
     tabellen: daten,

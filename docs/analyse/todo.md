@@ -9992,7 +9992,8 @@ eigenen Sitzungen.
 **Reihenfolge:** T168 zuerst — ohne Sicherung kann jeder Fehler Daten kosten;
 umgesetzt am 7. November, offen bleibt davon nur die Probe gegen ein echtes
 Projekt.
-T169 vor dem Neuaufbau zum Echtbetrieb; T170 baut darauf auf und liefert das
+T169 vor dem Neuaufbau zum Echtbetrieb, am 7. November ebenfalls umgesetzt;
+T170 baut darauf auf und liefert das
 Staging-Projekt, in das T168 zur Probe zurückspielt. T171 und T172 hängen an
 nichts, berühren aber beide `src/app/` — nicht gleichzeitig im selben Checkout.
 T173 baut auf der Laufzeit-Messung (T167) auf; ihre Fixes treffen CSS und
@@ -10127,7 +10128,7 @@ jede Zeile hineingeht und jede wieder dasteht.
 **Nicht gewählt:** ein Tarif mit Sicherung (Supabase Pro, täglich + PITR) —
 kostet laufend, und das Zurückspielen übt man damit nicht.
 
-### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ☐ offen
+### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ✅ umgesetzt (7. November 2026) — der Umstieg kommt mit dem Neuaufbau
 
 **Warum:** E3 aus dem Gesamt-Review vom 2. November, beschlossen für den
 Neuaufbau zum Echtbetrieb. Heute ist `supabase/schema.sql` die einzige Quelle;
@@ -10161,6 +10162,71 @@ Migration geht.
 
 **Wie man prüft:** Probe grün, mit Gegenprobe rot; `npx supabase db push
 --dry-run` gegen Staging (T170) nennt genau die erwarteten Migrationen.
+
+#### Umgesetzt am 7. November 2026
+
+`supabase/migrations/20261107120000_grundstand.sql` ist der Gesamtstand vom
+7. November **ohne** die Einmal-Aufräumblöcke. Welche das sind, musste nicht
+geraten werden: Der Autor hat sie selbst markiert — „Ein zweiter Lauf findet
+nichts mehr; der Block kann fort, sobald er überall eingespielt ist." Sechs
+Absätze tragen diesen Satz, und genau sie sind heraus:
+
+| Absatz | Warum |
+| --- | --- |
+| `persons.tel` | entfernt am 25.10.2026 |
+| `persons.mail` samt `personen_mails()` | entfernt am 31.10.2026 (T160) |
+| `plaene.vorlage`, der alte Index, `plan_eintraege.mahlzeit` | Vorlage „Familien reihum", 4.10.2026 |
+| `vortraege_auswaerts` samt drei `delete from` | Redner auswärts, aus der App genommen |
+| die `oz_*`-Reste und `darf_zeugnis()` | Stand und Schicht, ersetzt durch die Trolleys |
+| `invites` und `redeem_invite()` | Einladungscodes, ersetzt durch Anmelden per Link |
+
+Geschnitten wurde **absatzweise** (schema.sql kennt keine zwei Leerzeilen
+hintereinander, gemessen), und der Rest steht wörtlich da: Der Vergleich gegen
+`schema.sql` zeigt 81 gelöschte und **0 hinzugefügte** Zeilen. Die
+`drop … if exists` **vor** einem `create` bleiben — sie machen die Datei
+wiederholbar und gehören zur Anweisung, nicht zur Geschichte.
+
+**Die Probe** ist `supabase/migrationen.test.ts`: Sie spielt `schema.sql` und
+die Folge der Migrationen in je eine leere Postgres 16 (PGlite, im Prozess) und
+vergleicht acht Katalog-Abschnitte — Tabellen (samt RLS-Schalter und
+Tabellenrechten), Spalten (Typ, `not null`, Vorgabe, Identität und
+**Spaltenrechte** aus `pg_attribute.attacl`), Bedingungen, Indizes, Funktionen
+(Parameter, Ergebnis, `security definer`, `search_path`, Rechte,
+`md5(prosrc)`), Trigger, Richtlinien und Sequenzen. Gefragt wird `pg_catalog`,
+nicht `information_schema`: Nur dort stehen die Spaltenrechte, auf denen der
+Schutz der Abwesenheitsgründe und der Link-Prüfsummen beruht.
+
+Gemessen am 7. November:
+
+| Was | Ergebnis |
+| --- | --- |
+| Beide Wege eingespielt, acht Abschnitte verglichen | gleich; 2,6 s für drei Datenbanken |
+| Gegenprobe im Test (Spalte, Richtlinie und Recht nur in `schema.sql`) | alle drei Abschnitte rot — gegen die Migrationen **und** gegen den Ausgangsstand |
+| Gegenprobe von Hand (Spalte nur in der **Migration**) | „spalten sind gleich" rot, danach zurückgenommen |
+| „Die Probe greift überhaupt" | > 25 Tabellen, > 200 Spalten, > 50 Richtlinien, > 5 Spalten mit eigenem Recht |
+| Suite / Lint / Build | 8123 Tests grün (14 neue), Build sauber |
+
+`@electric-sql/pglite` ist dafür **Entwicklungs-Abhängigkeit** geworden
+(Betreiber: „Ja, als devDependency") — 23 MB, und die Probe läuft bei jedem
+Push mit. Der Vorspann für `auth` und die drei Rollen steht jetzt einmal in
+`scripts/pglite-postgres.mjs`; die Rückspielprobe aus T168 holt ihn von dort,
+statt eine zweite Abschrift zu führen.
+
+**E4 ist nicht in der ersten Migration** (Betreiber: „Nein, später"). Grund: Die
+Probe hält `schema.sql` und die Migrationen gleich — E4 nur in der Migration
+machte sie rot, E4 in beiden hieße, jetzt 135 Dateien samt Functions und der
+laufenden Datenbank umzubenennen. E4 wird Migration 2, wann der Betreiber will.
+
+**Nicht gegen den Betrieb gefahren:** `npx supabase db push --dry-run`. Die CLI
+liest dafür die Migrations-Geschichte des Projekts und legt sie an, wenn es
+keine gibt — ein Schreibzugriff auf die Produktionsdatenbank, den niemand
+beauftragt hat. Dass das SQL gültig ist, zeigt die Probe besser: Postgres führt
+es bei jedem Lauf aus. Der `--dry-run` gehört an das Staging-Projekt (T170).
+
+**Was beim Neuaufbau zu tun bleibt** (in der README unter „Migrationen"):
+Datenbank aus `schema.sql` aufbauen, die erste Migration als eingespielt
+eintragen (`npx supabase migration repair --status applied 20261107120000
+--remote=<ref>`), die Einmal-Blöcke aus `schema.sql` nehmen.
 
 ### T170 · Staging-Projekt und Ausrollen über die CI 🏗 ☐ offen
 
@@ -10339,17 +10405,18 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☐☐☐☐☐
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☐☐☐
 
-**168 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T169–T173**, die übrigen
-Empfehlungen aus der Bewertung vom 7. November: Migrationen (E3), Staging und
-Ausrollen per CI, Fehlermeldungen von den Geräten, große Dateien aufteilen,
-Barrierefreiheit und Sprachauszeichnung mit axe. **T168** (Sicherung mit
-Rückspielprobe) ist am selben Tag umgesetzt — wöchentlich über die
-Aufgabenplanung, die Rückspielprobe lokal grün; nur das Anmelden und die
-Mitgliedsrechte-Probe nach einem Rückspielen warten auf das Staging-Projekt
-aus T170.
+**169 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen sind T170–T173**, die übrigen
+Empfehlungen aus der Bewertung vom 7. November: Staging und Ausrollen per CI,
+Fehlermeldungen von den Geräten, große Dateien aufteilen, Barrierefreiheit und
+Sprachauszeichnung mit axe. Am selben Tag umgesetzt: **T168** (Sicherung mit
+Rückspielprobe — wöchentlich über die Aufgabenplanung, die Rückspielprobe lokal
+grün; nur das Anmelden und die Mitgliedsrechte-Probe nach einem Rückspielen
+warten auf das Staging-Projekt aus T170) und **T169** (`supabase/migrations/`
+mit dem Grundstand, dazu die Probe, die ihn und `schema.sql` gleich hält; der
+Umstieg selbst kommt mit dem Neuaufbau).
 Am 7. November kam außerdem **T167** dazu und ist umgesetzt (Laufzeit-Messung
 im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
@@ -10813,9 +10880,10 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
-T168–T173 aus der Bewertung; T168 ist am Mittag umgesetzt, offen davon nur die
-Probe gegen ein echtes Projekt; keine PR, kein Issue, außer `main` kein Zweig, auch
-lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
+T168–T173 aus der Bewertung; T168 und T169 sind am Mittag umgesetzt, offen davon
+nur die Probe gegen ein echtes Projekt und der Umstieg beim Neuaufbau;
+keine PR, kein Issue, außer `main` kein Zweig, auch
+lokal nicht; `sw.js` = HEAD (`shell-e227864`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
 März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
@@ -10823,14 +10891,14 @@ die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
 bleibt, braucht NWS-Exporte, den Neuaufbau, das Staging-Projekt oder eine der
-Aufgaben T169–T173.
+Aufgaben T170–T173.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
-| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). Vorbereitet wird E3 in T169 |
+| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist vorbereitet** (T169, 7. November): `supabase/migrations/` steht mit dem Grundstand, `migrationen.test.ts` hält ihn und `schema.sql` gleich. Beim Neuaufbau bleibt: erste Migration als eingespielt eintragen, Einmal-Blöcke aus `schema.sql` nehmen, E4 als Migration 2 |
 | **T168** | Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen | der Rest von T168 (am 7. November umgesetzt: `scripts/sicherung.mjs`, wöchentlich über die Aufgabenplanung, acht Stände in `C:\DATA\Claude\jw-sicherungen`; Rückspielprobe gegen eine leere Postgres grün, alle 27 Tabellen gleich). Was fehlt, geht nur gegen ein echtes Projekt: sich nach dem Zurückspielen mit einem Testkonto anmelden und die Mitgliedsrechte-Probe fahren — dafür braucht es das Staging-Projekt aus T170 |
-| **T169** | Migrationen vorbereiten (E3) | vor dem Neuaufbau zum Echtbetrieb; der Wechsel selbst kommt mit ihm |
+| **T169** | Umstieg auf die Migrationen | vorbereitet am 7. November (`supabase/migrations/20261107120000_grundstand.sql`, dazu `migrationen.test.ts`, die ihn und `schema.sql` gegeneinander hält — beide in je eine leere Postgres, acht Katalog-Abschnitte). Zu tun bleibt es **beim Neuaufbau**: Datenbank aus `schema.sql` aufbauen, erste Migration als eingespielt eintragen (`migration repair --status applied 20261107120000`), die Einmal-Aufräumblöcke aus `schema.sql` nehmen. E4 wird dann Migration 2 (Betreiber am 7. November: nicht in die erste) |
 | **T170** | Staging und Ausrollen per CI | nach T169; das Staging-Projekt legt der Betreiber an |
 | **T171** | Fehlermeldungen von den Geräten | bereit; wer sie liest, entscheidet der Betreiber |
 | **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |

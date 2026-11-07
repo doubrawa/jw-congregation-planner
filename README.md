@@ -580,6 +580,56 @@ fest: Der Weg stand vorher nur in `rollen-nachtragen.mjs`, und die übrigen
 brachen mit „Invalid API key" ab — fünfmal hintereinander in einem einzigen
 Neuaufbau.
 
+### Migrationen (ab dem Echtbetrieb)
+
+Solange die App nicht ausgerollt ist, wird neu aufgebaut statt migriert (oben).
+Im Echtbetrieb geht das nicht mehr: Ein Neuaufbau löschte alles, was nur in der
+App steht und in keiner Quelle daneben. Deshalb liegt seit dem 7. November 2026
+neben [`supabase/schema.sql`](supabase/schema.sql) eine Folge von Migrationen in
+[`supabase/migrations/`](supabase/migrations) im Format der Supabase-CLI
+(`<zeitstempel>_<name>.sql`), eingespielt mit `npx supabase db push` — das sich
+merkt, was schon drin ist.
+
+Die erste Migration (`20261107120000_grundstand.sql`) ist der Gesamtstand vom
+7. November **ohne die Einmal-Aufräumblöcke**: sechs Absätze, die etwas aus
+einer bestehenden Datenbank entfernen (`persons.tel`, `persons.mail`,
+`plaene.vorlage` samt altem Index und `plan_eintraege.mahlzeit`,
+`vortraege_auswaerts`, die `oz_*`-Reste, die Einladungscodes) und in einer
+frischen Datenbank nichts zu tun hätten. Sie ist **eingefroren**.
+
+**Der Ablauf für jede weitere Schemaänderung:**
+
+1. Eine neue Datei in `supabase/migrations/` mit dem Zeitstempel voran — nur
+   die Änderung, nicht der Gesamtstand.
+2. Dieselbe Änderung in `supabase/schema.sql` nachziehen (der Gesamtstand
+   bleibt die Datei, die man liest, um das Schema zu verstehen).
+3. `npm test` — [`supabase/migrationen.test.ts`](supabase/migrationen.test.ts)
+   spielt **beide** Wege in je eine leere Postgres 16 (PGlite, im Prozess, kein
+   Server) und vergleicht die Kataloge: Tabellen, Spalten samt Typ, Vorgabe und
+   Spaltenrechten, Bedingungen, Indizes, Funktionen samt Rumpf-Prüfsumme,
+   Trigger, Richtlinien, Sequenzen. Fehlt die Migration oder fehlt der
+   Gesamtstand, ist die Probe rot.
+
+Genau diese Doppelung hatte das Projekt am 17. September 2026 abgeschafft — eine
+Kette von 25 Migrationen lief neben `schema.sql` her, und drei Tabellen fehlten
+dort monatelang. Der Unterschied heute ist die Probe: Damals hat niemand die
+beiden Wege gegeneinander gehalten.
+
+**Beim Umstieg auf Migrationen** (mit dem Neuaufbau zum Echtbetrieb, Termin
+offen) sind drei Schritte zu tun, in dieser Reihenfolge:
+
+1. Die Datenbank wie gewohnt aus `schema.sql` aufbauen.
+2. Die erste Migration als eingespielt eintragen, damit `db push` sie nicht
+   noch einmal fährt:
+   `npx supabase migration repair --status applied 20261107120000 --remote=<ref>`
+3. Die Einmal-Aufräumblöcke aus `schema.sql` nehmen — sie sind dann überall
+   eingespielt. Die Probe bleibt grün, weil sie Kataloge vergleicht und nicht
+   Texte.
+
+`npx supabase db push --dry-run` nennt vorher, welche Migrationen die CLI
+einspielen würde; gefahren wird das zuerst gegen das Staging-Projekt (T170 in
+`docs/analyse/todo.md`), nicht gegen den Betrieb.
+
 ### Sicherung und Rückspielprobe
 
 Supabase hält für dieses Projekt **keine abrufbare Sicherung** bereit: Der
