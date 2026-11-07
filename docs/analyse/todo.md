@@ -10413,14 +10413,16 @@ fester Version (`supabase@3.0.0`).
 | „Run workflow", alles (`1e4632e6`) | 42416505046 | grün: Datenbank auf Stand, acht Functions ausgerollt, vier von vier Prüfungen, die Functions „in diesem Lauf ausgerollt" |
 | **Absichtlich rot:** Migration 4, ein Kommentar an `persons.fn`, ohne den Gesamtstand (`411be1bc`, mit `837be4ba`) | 42416981508 | Build rot an „kommentare sind gleich", Ausrollen und Veröffentlichen übersprungen. Danach live weiter `shell-1e4632e`, im Verlauf drei Migrationen, `persons.fn` ohne Kommentar |
 | Derselbe Kommentar mit Gesamtstand (`431c2c02`) | 42417340631 | grün: Plan „Migrationen: ja · Functions: nein", `db push` spielt `20261107212000_kommentar-vorname.sql` ein, Verlauf vier von vier, Katalog gleich, acht Functions aktiv, Rauchtest. Danach live `shell-431c2c0`, `migration list` vier von vier, der Kommentar steht an `persons.fn` |
+| Nachgefahren: Push mit geänderten Functions, nur Kopfkommentare (`7220ed1a`) | 42418374566 | grün: Plan „Migrationen: nein · Functions: ja, alle 8" — der Weg über den Push, bis dahin nur per „Run workflow" gefahren —, alle acht im ersten Versuch ausgerollt, vier von vier Prüfungen, „in diesem Lauf ausgerollt". Danach live `shell-7220ed1` |
 
 Damit sind alle drei Prüfpunkte erfüllt: Die harmlose Schemaänderung ging
 über die CI in die Produktion, die rote Probe hielt Datenbank und Frontend an,
 und `functions list` zeigt die acht aktiv, mit `verify_jwt` wie `config.toml`,
 ausgerollt im Lauf zu `1e4632e6` — seitdem hat sich unter
-`supabase/functions/` und an `config.toml` nichts geändert. Hart belegt nach
-dem letzten Schritt: `functions download` aller acht, 130 Dateien, jede gleich
-dem Commit `431c2c02`.
+`supabase/functions/` und an `config.toml` nichts geändert. Hart belegt per
+`functions download` aller acht: 130 Dateien, jede gleich dem Commit — nach
+dem vierten Schritt gleich `431c2c02`, nach dem nachgefahrenen Push gleich
+`7220ed1a` samt den neuen Kopfkommentaren.
 
 **Gefunden beim ersten Lauf:** Die Supabase-CLI 3 antwortet je nach Umgebung in
 anderer Form. In Claude Code läuft sie im Agentenmodus, und `db query` liefert
