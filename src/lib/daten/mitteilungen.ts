@@ -31,15 +31,11 @@ const NOTIF_TYPES: Readonly<Record<NotificationType, true>> = {
 const asNotifType = (t: string): NotificationType => (Object.hasOwn(NOTIF_TYPES, t) ? (t as NotificationType) : 'gesendet')
 
 /*
- * Hier stand `relativeTime()` und baute aus dem Zeitstempel einen **deutschen
- * Satz** („vor 3 Std."), der als `Notification.time` mitgeführt wurde.
- * Übersetzen ließ er sich danach nur noch über eine feste Liste von
- * Zeichenketten — und die deckte, wie am 13.8.2026 nachgemessen, ausgerechnet
- * die Stundenzahl ab, die zufällig in den Testdaten stand. Jede andere blieb
- * deutsch, in allen 33 Sprachen.
- *
- * Die Zeile trägt jetzt ihren Zeitstempel (`at`), und die Form entsteht beim
+ * Die Zeile trägt ihren Zeitstempel (`at`), und die Form entsteht beim
  * Anzeigen — `relativeZeit` in i18n/zeit.ts, über `Intl.RelativeTimeFormat`.
+ * Ein hier gebauter **deutscher Satz** („vor 3 Std.") ließe sich danach nur
+ * noch über eine feste Liste von Zeichenketten übersetzen; jede Zahl, die
+ * nicht darin steht, bliebe deutsch.
  */
 
 function notificationFromRow(r: NotificationRow): Notification {
@@ -66,9 +62,8 @@ const NOTIF_LIMIT = 50
  * andere Sortierung), zeigte die Glocke nach dem Nachladen etwas anderes als
  * nach einem Neustart, und niemand fände den Grund.
  *
- * Auf die eigene `user_id` filtert die Abfrage nicht: Der Feed ist seit
- * Mitteilungen sind personalisiert, und RLS lässt ohnehin nur die eigenen Zeilen
- * durch.
+ * Auf die eigene `user_id` filtert die Abfrage nicht: Mitteilungen sind
+ * personalisiert, und RLS lässt ohnehin nur die eigenen Zeilen durch.
  */
 export function notifAbfrage(client: NonNullable<typeof supabase>, congregationId: string) {
   return client
@@ -82,7 +77,7 @@ export function notifAbfrage(client: NonNullable<typeof supabase>, congregationI
 /**
  * Rohzeilen → Glocken-Zeilen.
  *
- * Abgelaufenes fällt heraus (T77): Eine Mitteilung über einen Platz, dessen Tag
+ * Abgelaufenes fällt heraus: Eine Mitteilung über einen Platz, dessen Tag
  * vorbei ist, interessiert niemanden mehr — „Ersatz gesucht" für letzten
  * Dienstag am wenigsten. Möglich, weil die Zeile weiß, worum es geht; Zeilen
  * ohne Aufgabenbezug tragen keinen Schlüssel und bleiben stehen, sie laufen
@@ -101,10 +96,10 @@ export function notificationsAus(
 /**
  * Nur die Glocken-Zeilen nachladen — der leichte Teil eines Ladevorgangs.
  *
- * Beim Öffnen der Glocke lief bis hierher der **volle** Ladevorgang: dreizehn
- * Abfragen, darunter 52 Wochen als JSONB und das ganze Versand-Tagebuch, um
- * fünfzig Zeilen anzuzeigen. Wer die App als PWA offen liegen hat und
- * gelegentlich nachsieht, lud damit jedes Mal die ganze Versammlung neu.
+ * Der **volle** Ladevorgang holte beim Öffnen der Glocke alle Abfragen,
+ * darunter ein Jahr Wochen als JSONB und das Versand-Tagebuch, um fünfzig
+ * Zeilen anzuzeigen. Wer die App als PWA offen liegen hat und gelegentlich
+ * nachsieht, lüde damit jedes Mal die ganze Versammlung neu.
  *
  * `null` heißt „nicht gelesen" (kein Client, Fehler) — dann bleibt der
  * bisherige Stand stehen, wie bei jedem stillen Nachladen.
@@ -131,13 +126,12 @@ export async function loadNotifications(
  *
  * Die Empfänger bestimmt die Datenbank, nicht der Client. Ein Verkündiger
  * sieht in `members` nur die eigene Zeile (`members_select`) — wer die Planer
- * aus `state.members` herausfilterte, bekam für jede Verhinderung eine leere
- * Liste und schrieb still nichts (so bis zum 24.9.2026).
+ * aus `state.members` herausfilterte, bekäme für jede Verhinderung eine leere
+ * Liste und schriebe still nichts.
  *
- * `taskKey`: die Aufgabe, um die es geht (die Absage, seit dem 4.10.2026) —
- * daran findet ein Tipp in der Glocke ihre Woche. Ohne ihn bleibt der Aufruf
- * genau der alte; so verträgt er auch eine Datenbank, die den vierten
- * Parameter noch nicht kennt.
+ * `taskKey`: die Aufgabe, um die es geht (die Absage) — daran findet ein Tipp
+ * in der Glocke ihre Woche. Ohne ihn geht der Aufruf mit drei Parametern
+ * hinaus; so verträgt er auch eine Datenbank, die den vierten noch nicht kennt.
  */
 export function notifyPlanners(type: NotificationType, title: string, body: string, taskKey?: string): void {
   if (!supabase) return
@@ -176,7 +170,7 @@ export function markNotificationsRead(congregationId: string, userId: string): v
 }
 
 /**
- * „Alle löschen" (T140): die eigenen Mitteilungen in dieser Versammlung — auch
+ * „Alle löschen": die eigenen Mitteilungen in dieser Versammlung — auch
  * die, die über die geladenen hinausgehen. Mehr lässt `notifications_delete`
  * ohnehin nicht zu; `user_id` steht trotzdem da, damit die Absicht im Aufruf
  * steht und nicht erst in der Datenbankregel.

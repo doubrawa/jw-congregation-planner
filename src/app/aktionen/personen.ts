@@ -15,17 +15,12 @@ import { toastKey } from './gemeinsam'
  * Referenzen lösen (Gruppenleitung, Konto, offene Codes); Namen in bereits
  * geplanten Wochen bleiben als Text stehen.
  *
- * **Die `pid` muss dabei weg** (T38): sie ist ein Fremdschlüssel, und ohne
+ * **Die `pid` muss dabei weg**: sie ist ein Fremdschlüssel, und ohne
  * Ziel zeigt sie ins Leere. `gehoertZu` entscheidet über die Id, fände
  * niemanden mehr, und der Slot zählte nirgends — weder in der Auslastung noch
  * in den Konflikten noch in den Aufgaben. Ohne Id greift wieder der Namensweg;
  * legt der Planer dieselbe Person neu an, findet `pidsNachtragen` sie beim
  * nächsten Laden wieder.
- *
- * Hierher führt das Löschen (`removePerson`). Bis zur Phase 6b (T121) auch das
- * Verwerfen einer Person, die beim Verlassen des Details keinen Namen hatte —
- * seither nehmen „Person anlegen" und „Person bearbeiten" keinen leeren Namen
- * an.
  */
 function ohnePerson(state: AppState, id: string): AppState {
   return {
@@ -35,9 +30,9 @@ function ohnePerson(state: AppState, id: string): AppState {
     persons: state.persons.filter((p) => p.id !== id),
     // Ihre Abwesenheiten gehen mit: Eine Abwesenheit ohne Person gehört
     // niemandem (`absence.ts`), und mit toter Id stünde sie hier bis zum
-    // nächsten Laden herum (T118). Die Datenbank räumt `persist.ts`.
+    // nächsten Laden herum. Die Datenbank räumt `persist.ts`.
     absences: state.absences.filter((a) => a.personId !== id),
-    // Ebenso ihre Absagen (T126) — die Datenbank nimmt sie per Kaskade mit.
+    // Ebenso ihre Absagen — die Datenbank nimmt sie per Kaskade mit.
     absagen: state.absagen.filter((a) => a.personId !== id),
     groups: aemterBeenden(state.groups, id),
     // Ein Gruppenbesuch verliert seinen Besucher, nicht sich selbst — wie
@@ -52,19 +47,19 @@ function ohnePerson(state: AppState, id: string): AppState {
       state.planEintraege,
       state.planEintraege.map((e) => (e.pid === id ? { ...e, pid: null } : e)),
     ),
-    // Ebenso ein vorgemerkter Vortrag (T122): Es bleibt der Name, den die
+    // Ebenso ein vorgemerkter Vortrag: Es bleibt der Name, den die
     // Woche beim Anlegen erneut einer Person zuzuordnen versucht.
     vortraege: neuWennGeaendert(
       state.vortraege,
       state.vortraege.map((v) => (v.pid === id ? { ...v, pid: null } : v)),
     ),
-    // Die Anwesenden (T152) bleiben, nur wer eingetragen hat, fehlt danach —
+    // Die Anwesenden bleiben, nur wer eingetragen hat, fehlt danach —
     // wie die Datenbank (`on delete set null`).
     anwesenheit: neuWennGeaendert(
       state.anwesenheit,
       state.anwesenheit.map((a) => (a.pid === id ? { ...a, pid: null } : a)),
     ),
-    // Eine Tausch-Anfrage (T153) geht mit jeder der beiden Personen — wie in
+    // Eine Tausch-Anfrage geht mit jeder der beiden Personen — wie in
     // der Datenbank (`on delete cascade`): Sie hat dann niemanden mehr.
     tauschAnfragen: neuWennGeaendert(
       state.tauschAnfragen,
@@ -79,7 +74,7 @@ function ohnePerson(state: AppState, id: string): AppState {
         .filter((t) => t.pid !== id)
         .map((t) => (t.partner === id ? { ...t, partner: null, gemeinsam: false } : t)),
     ),
-    // Ihr Konto geht mit (21.10.2026, `kontoGehtMit`): Ohne Person sähe es
+    // Ihr Konto geht mit (`kontoGehtMit`): Ohne Person sähe es
     // weiter alles, und wer nicht mehr zur Versammlung gehört, nutzt die App
     // nicht mehr (`persist.ts` löscht die Mitgliedschaft, die Datenbank das
     // Konto). Gründlicher als der Fremdschlüssel (`on delete set null`) — nur
@@ -138,7 +133,7 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
         persons: state.persons.map((p) => (p.id === action.id ? { ...p, ...action.patch } : p)),
       }
       // Wer die Gruppe wechselt, ist in der alten weder Aufseher noch Gehilfe:
-      // Er gehört ihr nicht mehr an (`aemterBeenden`, 14.10.2026). Seine
+      // Er gehört ihr nicht mehr an (`aemterBeenden`). Seine
       // Ämter in der Gruppe, der er jetzt angehört, bleiben — bei derselben
       // Gruppe noch einmal also alle.
       if ('grp' in action.patch) next.groups = aemterBeenden(state.groups, action.id, action.patch.grp ?? null)
@@ -150,13 +145,13 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
         const newPerson = { ...oldPerson, ...action.patch }
         const newName = displayName(newPerson)
         if (oldName !== newName) {
-          // Einen doppelten Namen nimmt „Person bearbeiten" gar nicht erst an
-          // (T110), und den Rest sichert der Index `persons_name_eindeutig`:
+          // Einen doppelten Namen nimmt „Person bearbeiten" gar nicht erst an,
+          // und den Rest sichert der Index `persons_name_eindeutig`:
           // Der alte Name gehört also genau dieser Person.
           next.weeks = renameInWeeks(state.weeks, action.id, oldName, newName)
           // Treffpunkte sind die zweite Datenquelle und tragen den Leiter
-          // ebenfalls als Text — ohne dies stand dort weiter der alte Name,
-          // während die Zusammenkünfte längst den neuen zeigten.
+          // ebenfalls als Text — ohne dies stünde dort weiter der alte Name,
+          // während die Zusammenkünfte längst den neuen zeigen.
           next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
         }
       }
@@ -170,7 +165,7 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
           m.personId === action.id && m.userId !== state.userId ? { ...m, planner: on } : m,
         )
       }
-      // Ebenso das Planer-Recht (4.10.2026). Vom eigenen Konto aus nimmt es
+      // Ebenso das Planer-Recht. Vom eigenen Konto aus nimmt es
       // sich niemand: Wer es hat, sieht die Personen gar nicht — und dem Admin
       // nimmt es nichts.
       if ('zuteilerVorgemerkt' in action.patch) {

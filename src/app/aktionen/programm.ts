@@ -60,9 +60,8 @@ export function programm(state: AppState, action: ProgrammAktion): AppState {
     case 'startImport':
       return state.importing ? state : { ...state, importing: true }
     case 'addImportedWeek': {
-      // Dieselbe Woche ein zweites Mal: nichts anhängen. Gespeichert überschrieb
-      // sie die schon geplante Woche gleichen Montags mit einer leeren — so kam
-      // sie, solange `import-week` mangels neuerer Woche die letzte erneut schickte.
+      // Dieselbe Woche ein zweites Mal: nichts anhängen. Gespeichert überschriebe
+      // sie die schon geplante Woche gleichen Montags mit einer leeren.
       if (state.weeks.some((w) => w.start === action.week.start)) {
         return { ...state, importing: false, toast: toastKey(state, 'toastAlleWochen') }
       }
@@ -82,8 +81,8 @@ export function programm(state: AppState, action: ProgrammAktion): AppState {
         ...state,
         weeks: [...state.weeks, week],
         // Die Treffpunkte laufen parallel (`fsWeeks[wi]` gehört zu `weeks[wi]`).
-        // Ohne diese Zeile hatte die neue Woche bis zum Neuladen keine, und was
-        // man dort hinzufügte, fand seine Woche nicht und ging verloren.
+        // Ohne diese Zeile hätte die neue Woche bis zum Neuladen keine, und was
+        // man dort hinzufügt, fände seine Woche nicht und ginge verloren.
         fsWeeks: [...state.fsWeeks, fsWeek],
         importing: false,
         notifs: pushNotif(
@@ -100,10 +99,10 @@ export function programm(state: AppState, action: ProgrammAktion): AppState {
     }
     case 'mergeWeekAlt': {
       // Nachgeladene Sprachvarianten in die bestehende Woche mischen — in die
-      // mit diesem Montag. Bis zum 15.10.2026 stand hier der Index vom Beginn
-      // des Abrufs; lud die App inzwischen neu und hatte sich das Fenster
-      // verschoben, bekam die Nachbarwoche die Texte. Gibt es die Woche nicht
-      // mehr, ändert sich nichts.
+      // mit diesem Montag, nicht nach dem Index vom Beginn des Abrufs: Lädt die
+      // App inzwischen neu und verschiebt sich das Fenster, bekäme sonst die
+      // Nachbarwoche die Texte. Gibt es die Woche nicht mehr, ändert sich
+      // nichts.
       if (!action.start || !state.weeks.some((w) => w.start === action.start)) return state
       const befunde = action.befunde ?? []
       return {
@@ -217,7 +216,7 @@ export function programm(state: AppState, action: ProgrammAktion): AppState {
       if (!state.weeks[state.week]) return state
       return { ...state, weeks: setAnlassTermin(state.weeks, state.week, action.patch) }
     }
-    // Weitere Termine der Woche (T63). Reine Ankündigung — kein `task_key`,
+    // Weitere Termine der Woche. Reine Ankündigung — kein `task_key`,
     // keine Bestätigung, keine Mitteilung, kein Ampel-Punkt.
     case 'terminAdd': {
       if (!state.weeks[state.week]) return state

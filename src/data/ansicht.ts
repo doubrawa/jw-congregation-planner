@@ -1,10 +1,6 @@
 /**
- * **Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen.**
- *
- * Der Betreiber, 16.10.2026: *„einen schalter, der zur laufzeit es möglich
- * macht, dass man in der app umschaltet welche rechte man hat … das würde
- * natürlich später wieder ausgebaut werden. und solange es eingebaut ist,
- * sollte es natürlich nur für admins verfügbar sein"*.
+ * **Die App mit den Rechten einer anderen Stufe ansehen** — zum Testen, nur
+ * für Admins.
  *
  * Die Ansicht legt sich in `rechteVon` über die echten Rechte — eine Stelle
  * statt der rund zwanzig, die nach Rechten fragen. Sie gilt nur für ein
@@ -13,7 +9,7 @@
  * Ansicht tut, geschieht mit den Rechten des Admins, und was die RLS einem
  * Verkündiger gar nicht schickte, liegt trotzdem im Speicher.
  *
- * **Ausbau:** diese Datei mit ihrer Probe, `ansicht` im Zustand (`context.ts`,
+ * **Wo sie steckt:** diese Datei mit ihrer Probe, `ansicht` im Zustand (`context.ts`,
  * `init.ts`), die Aktion `setAnsicht` (`app/aktionen/ansicht.ts`), die Karte im Profil
  * (`AnsichtKarte`), die Leiste (`AnsichtLeiste`), je eine Zeile in
  * `rechteVon` und `rechteStufe` — und die Texte `ansicht…`.

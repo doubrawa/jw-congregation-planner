@@ -73,16 +73,10 @@ import { absageFromRow, confirmationMap, type AbsageRow, type ConfirmationRow } 
 import { notifAbfrage, notificationsAus, type NotificationRow } from './mitteilungen'
 import { ANMELDE_LINK_SPALTEN, anmeldeLinkAusZeile, type AnmeldeLinkRow, type MemberRow } from './konto'
 
-/**
- * Daten-Zugriff auf Supabase (Persistenz). Lädt die Daten einer Versammlung
- * für den eingeloggten Nutzer und schreibt Änderungen zurück. Alle Funktionen
- * setzen einen konfigurierten Client voraus (siehe supabase.ts) — ohne Client
- * steigen sie vorher aus (`if (!supabase)`).
- *
- * Persistiert: Versammlung (Stammdaten + Einstellungen), Mitgliedschaft
- * (Rolle), Personen, Dienste, Wochen (als JSONB), eigene Abwesenheiten,
- * Mitteilungen und Aufgaben-Bestätigungen. Nicht persistiert (bewusst,
- * geräteweise in localStorage): App-Sprache und Darstellung.
+/*
+ * Ohne konfigurierten Client (siehe supabase.ts) steigt das Laden vorher aus
+ * (`if (!supabase)`). Was geladen wird, sagt `CongregationData`. Nicht in der
+ * Datenbank, bewusst geräteweise in localStorage: App-Sprache und Darstellung.
  */
 
 /* ---- Laden --------------------------------------------------------------- */
@@ -91,8 +85,8 @@ import { ANMELDE_LINK_SPALTEN, anmeldeLinkAusZeile, type AnmeldeLinkRow, type Me
  * Wie viele Tagebuch-Zeilen ein Ladevorgang höchstens mitnimmt.
  *
  * Eine Woche hat gut 35 Plätze, und jedes Umteilen legt eine weitere Zeile an —
- * sechzig je Woche lassen dafür Luft, für das Jahr, das die Wochen bleiben
- * (T125). Jüngste zuerst: Was für die kommenden Wochen zählt, wurde zuletzt
+ * sechzig je Woche lassen dafür Luft, für das Jahr, das die Wochen bleiben.
+ * Jüngste zuerst: Was für die kommenden Wochen zählt, wurde zuletzt
  * gemeldet und steht vorn.
  */
 export const SENT_LOG_LIMIT = VERTEILUNG_WOCHEN * 60
@@ -124,15 +118,15 @@ interface Seite<T> {
  *
  * PostgREST liefert je Abfrage höchstens `max-rows` Zeilen, und zwar
  * **still**: kein Fehler, kein Hinweis, nur weniger Zeilen. Die Zusagen
- * wachsen mit jeder Woche um gut 35, ein Jahr lang (T125); ohne Seiten fiel
- * nach gut einem halben Jahr ein beliebiger Teil weg, und ein bestätigter
- * Platz stand wieder als offen da. Das Tagebuch sollte bis zu `SENT_LOG_LIMIT`
- * Zeilen bringen und brachte nie mehr als 1000.
+ * wachsen mit jeder Woche um gut 35, ein Jahr lang; ohne Seiten fiele nach
+ * gut einem halben Jahr ein beliebiger Teil weg, und ein bestätigter Platz
+ * stünde wieder als offen da. Das Tagebuch soll bis zu `SENT_LOG_LIMIT` Zeilen
+ * bringen und brächte nie mehr als 1000.
  *
  * Die Zählung (`count: 'exact'`) der ersten Seite sagt, wie viel es gibt. Die
- * übrigen Seiten gehen dann **gleichzeitig** hinaus, nicht nacheinander (seit
- * dem 16.10.2026, Review App #5): Jede weitere wäre sonst eine volle Netzrunde
- * mehr auf dem Weg zum ersten Bild. Wie groß eine Seite ist, sagt die erste:
+ * übrigen Seiten gehen dann **gleichzeitig** hinaus, nicht nacheinander: Jede
+ * weitere wäre sonst eine volle Netzrunde mehr auf dem Weg zum ersten Bild.
+ * Wie groß eine Seite ist, sagt die erste:
  * Liefert der Server weniger als erbeten (eine kleinere Zeilengrenze), beginnt
  * jede weitere trotzdem lückenlos dahinter.
  *
@@ -172,27 +166,27 @@ export interface CongregationData {
   weeks: Week[]
   fsRules: FsRule[]
   fsWeeks: FsInstance[][]
-  /** Besuche des Dienstaufsehers (T120), aufsteigend nach Woche — nicht an das Ladefenster gebunden. */
+  /** Besuche des Dienstaufsehers, aufsteigend nach Woche — nicht an die geladenen Wochen gebunden. */
   gruppenbesuche: Gruppenbesuch[]
   /**
-   * Vorgemerkte öffentliche Vorträge (T122), aufsteigend nach Woche. Nur für
+   * Vorgemerkte öffentliche Vorträge, aufsteigend nach Woche. Nur für
    * Admin und Planer (RLS) — die Versammlung sieht einen Vortrag in seiner Woche.
    */
   vortraege: VorgemerkterVortrag[]
-  /** Trolleys (T121, Phase 7) und ihre Termine ab dem Montag dieser Woche. */
+  /** Trolleys und ihre Termine ab dem Montag dieser Woche. */
   trolleys: Trolley[]
   trolleyTermine: TrolleyTermin[]
-  /** Weitere Pläne (T120, Phase 5), deren Zeitraum frühestens ein Vierteljahr zurück endet. */
+  /** Weitere Pläne, deren Zeitraum frühestens ein Vierteljahr zurück endet. */
   plaene: WeitererPlan[]
   planEintraege: PlanEintrag[]
   absences: Absence[]
-  /** Absagen des letzten Jahres (T126) — nur Admin und Planer bekommen Zeilen (RLS). */
+  /** Absagen des letzten Jahres — nur Admin und Planer bekommen Zeilen (RLS). */
   absagen: Absage[]
-  /** Die Anwesenden je Zusammenkunft (T152), ein Jahr wie die Wochen. */
+  /** Die Anwesenden je Zusammenkunft, ein Jahr wie die Wochen. */
   anwesenheit: Anwesenheit[]
-  /** Offene Tausch-Anfragen (T153) — nur die, um die es den Angemeldeten geht (RLS). */
+  /** Offene Tausch-Anfragen — nur die, um die es den Angemeldeten geht (RLS). */
   tauschAnfragen: TauschAnfrage[]
-  /** „Nein, danke" des Kontos auf Ersatzgesuche (1.11.2026) — nur die eigenen Zeilen (RLS). */
+  /** „Nein, danke" des Kontos auf Ersatzgesuche — nur die eigenen Zeilen (RLS). */
   abgelehnteGesuche: AbgelehnteGesuche
   notifications: Notification[]
   confirmations: ConfirmationMap
@@ -233,17 +227,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const congregationId = member.congregation_id as string
 
-  // **Ladefenster** (T125, 16.10.2026): was die App braucht, und nicht mehr —
-  // gezählt vom Montag der laufenden Woche (`aufbewahrung.ts`). Ein Jahr für
-  // die Wochen und was zu ihnen gehört (Treffpunkte, Gruppenbesuche,
-  // vorgemerkte Vorträge, Plan-Einträge, Absagen) und ebenso ein Jahr nach
-  // ihrem Ende für die Abwesenheiten (seit 17.10.2026, für die Auswertung;
-  // bis dahin acht Wochen). Was voraus liegt, kommt ganz. Älteres räumt die
-  // Datenbank (`alte_daten_loeschen`).
+  // **Ladefenster**: was die App braucht, und nicht mehr — gezählt vom Montag
+  // der laufenden Woche (`aufbewahrung.ts`). Ein Jahr für die Wochen und was
+  // zu ihnen gehört (Treffpunkte, Gruppenbesuche, vorgemerkte Vorträge,
+  // Plan-Einträge, Absagen) und ebenso ein Jahr nach ihrem Ende für die
+  // Abwesenheiten (für die Auswertung). Was voraus liegt, kommt ganz. Älteres
+  // räumt die Datenbank (`alte_daten_loeschen`).
   //
-  // Bis dahin waren es die jüngsten 52 Wochen, angelegt am Ergebnis — mit einer
-  // Frist ab heute braucht die Grenze keine Vorabfrage. Gemessen wird seit T66
-  // am Datum, nicht an einer Ordnungszahl: Eine Lücke im Bestand (T65: die Woche
+  // Mit einer Frist ab heute braucht die Grenze keine Vorabfrage, anders als
+  // „die jüngsten 52 Wochen", die erst am Ergebnis feststünden. Gemessen wird
+  // am Datum, nicht an einer Ordnungszahl: Eine Lücke im Bestand (die Woche
   // des Gedächtnismahls fehlt im Arbeitsheft) verschiebt nichts.
   //
   // Zusagen und Versand-Tagebuch tragen ihre Woche nur im Schlüssel; dort hält
@@ -273,8 +266,8 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // im persönlichen Bereich filtert selbst auf die eigene user_id.
     // Seitenweise wie die Zusagen: Eine, die hinter der Zeilengrenze läge,
     // bekäme der Planer nicht zu sehen. Ein Jahr nach ihrem Ende, wie die
-    // Wochen: Die Auswertung rechnet über das ganze Jahr damit, wer fehlte
-    // (T126, 17.10.2026). Den Grund leert die Datenbank nach acht Wochen.
+    // Wochen: Die Auswertung rechnet über das ganze Jahr damit, wer fehlte.
+    // Den Grund leert die Datenbank nach acht Wochen.
     alleSeiten<Omit<AbsenceRow, 'reason'>>((von, bis) =>
       db
         .from('absences')
@@ -290,7 +283,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     supabase.rpc('abwesenheit_gruende'),
     // Dieselbe Abfrage, die auch das Nachladen beim Öffnen der Glocke benutzt.
     notifAbfrage(supabase, congregationId),
-    // Seitenweise (`alleSeiten`): Die Zusagen wachsen ohne Grenze.
+    // Seitenweise (`alleSeiten`): Die Zusagen wachsen über die Zeilengrenze.
     alleSeiten<ConfirmationRow>((von, bis) =>
       db
         .from('confirmations')
@@ -309,16 +302,16 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     // Planen-Screen zeigt es an, und der „Plan senden"-Knopf zählt daraus, was
     // noch aussteht.
     //
-    // **Jüngste zuerst, und begrenzt.** Die Tabelle wächst und wird nie
-    // aufgeräumt: rund 35 Plätze je Woche, ein Jahr sind gegen 1800 Zeilen, und
-    // dabei bleibt es nicht. Ungebremst holte jeder Kaltstart nach ein paar
-    // Jahren den ganzen Bestand — in den Zustand, von dort in die
+    // **Jüngste zuerst, und begrenzt.** Die Tabelle wächst ein Jahr lang, bis
+    // das Aufräumen sie kürzt: rund 35 Plätze je Woche sind gegen 1800 Zeilen,
+    // und jedes Umteilen legt eine weitere an. Ungebremst holte jeder
+    // Kaltstart den ganzen Bestand — in den Zustand, von dort in die
     // Momentaufnahme im Browser-Speicher, und deren Platz ist knapp. Absteigend
     // sortiert kann die Grenze nichts Gebrauchtes abschneiden: Was für die
     // geladenen Wochen zählt, wurde zuletzt gemeldet und steht damit vorn.
     // Ohne `user_id` hat die Nachricht niemanden erreicht — die Zusagen der
     // Woche nennen diese Personen, und der Planer hakt ab (`persoenlich_at`).
-    // Seitenweise bis zur Grenze (`alleSeiten`): Eine Abfrage allein brachte
+    // Seitenweise bis zur Grenze (`alleSeiten`): Eine Abfrage allein brächte
     // nie mehr als die Zeilengrenze von PostgREST, ein Drittel davon.
     alleSeiten<SentLogRow>(
       (von, bis) =>
@@ -331,29 +324,28 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
           .range(von, bis),
       SENT_LOG_LIMIT,
     ),
-    // Gruppenbesuche des Dienstaufsehers (T120) — alles Kommende, auch in
-    // Wochen, die noch nicht importiert sind, und zurück ein Jahr wie die
-    // Zuteilungen (T125). Es sind wenige (einer je Monat).
+    // Gruppenbesuche des Dienstaufsehers — alles Kommende, auch in Wochen, die
+    // noch nicht importiert sind, und zurück ein Jahr wie die Zuteilungen. Es
+    // sind wenige (einer je Monat).
     supabase
       .from('gruppenbesuche')
       .select('id, woche, grp, person_id')
       .eq('congregation_id', congregationId)
       .gte('woche', verteilungAb)
       .order('woche'),
-    // Vorgemerkte Vorträge (T122) — ebenso alles Kommende und zurück ein Jahr
-    // wie ihre Wochen. Ein Mitglied ohne Zuteilungsrecht bekommt keine Zeile
-    // (RLS).
+    // Vorgemerkte Vorträge — ebenso alles Kommende und zurück ein Jahr wie
+    // ihre Wochen. Ein Mitglied ohne Zuteilungsrecht bekommt keine Zeile (RLS).
     supabase
       .from('vortraege')
       .select('id, woche, redner, versammlung, eigener, person_id, thema, lied')
       .eq('congregation_id', congregationId)
       .gte('woche', verteilungAb)
       .order('woche'),
-    // Trolleys (T121): alle, und ihre Termine ab dem Montag dieser Woche —
-    // was davor liegt, zeigt die App nirgends mehr. Die Termine seitenweise
-    // (`alleSeiten`): Ein Vierteljahr voraus, mehrere Trolleys, halbe Stunden —
-    // an der Zeilengrenze fehlten sonst still die spätesten, und ihr Platz
-    // stünde frei da.
+    // Trolleys: alle, und ihre Termine ab dem Montag dieser Woche — was davor
+    // liegt, zeigt die App nirgends. Die Termine seitenweise (`alleSeiten`):
+    // Ein Vierteljahr voraus, mehrere Trolleys, halbe Stunden — an der
+    // Zeilengrenze fehlten sonst still die spätesten, und ihr Platz stünde
+    // frei da.
     supabase.from('trolleys').select('id, name, ort, hinweis').eq('congregation_id', congregationId),
     alleSeiten<TrolleyTerminRow>((von, bis) =>
       db
@@ -369,9 +361,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('id')
         .range(von, bis),
     ),
-    // Weitere Pläne (T120, Phase 5): was frühestens ein Vierteljahr zurück
-    // endet — die abgeschlossenen stehen beim Planen noch eine Weile als
-    // Rückblick da. Ein Mitglied bekommt nur, was es sehen darf (RLS).
+    // Weitere Pläne: was frühestens ein Vierteljahr zurück endet — die
+    // abgeschlossenen stehen beim Planen noch eine Weile als Rückblick da. Ein
+    // Mitglied bekommt nur, was es sehen darf (RLS).
     supabase
       .from('plaene')
       .select('id, name, von, bis, entwurf, takt')
@@ -380,10 +372,10 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .order('von'),
     // Die Einträge reichen weiter zurück als die Pläne selbst: Ein laufender
     // Plan kann vor mehr als einem Vierteljahr begonnen haben. Ein Jahr wie
-    // die Zuteilungen (T125); verteilt wird ohnehin nur ab der laufenden
-    // Spanne (`gruppenVerteilen`). Was zu keinem geladenen Plan gehört, fällt
-    // unten heraus. Seitenweise (`alleSeiten`): Ein Plan mit einer Zeile je
-    // Woche wächst mit jedem Jahr um gut fünfzig.
+    // die Zuteilungen; verteilt wird ohnehin nur ab der laufenden Spanne
+    // (`gruppenVerteilen`). Was zu keinem geladenen Plan gehört, fällt unten
+    // heraus. Seitenweise (`alleSeiten`): Ein Plan mit einer Zeile je Woche
+    // wächst mit jedem Jahr um gut fünfzig.
     alleSeiten<PlanEintragRow>((von, bis) =>
       db
         .from('plan_eintraege')
@@ -394,9 +386,9 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('id')
         .range(von, bis),
     ),
-    // Absagen (T126): ein Jahr wie ihre Wochen. Ein Mitglied ohne
-    // Zuteilungsrecht bekommt keine Zeile (RLS). Seitenweise: Über ein Jahr
-    // kommen leicht ein paar Hundert zusammen.
+    // Absagen: ein Jahr wie ihre Wochen. Ein Mitglied ohne Zuteilungsrecht
+    // bekommt keine Zeile (RLS). Seitenweise: Über ein Jahr kommen leicht ein
+    // paar Hundert zusammen.
     alleSeiten<AbsageRow>((von, bis) =>
       db
         .from('absagen')
@@ -408,7 +400,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .order('person_id')
         .range(von, bis),
     ),
-    // Die Anwesenden (T152): ein Jahr wie ihre Wochen, für die Auswertung. Zwei
+    // Die Anwesenden: ein Jahr wie ihre Wochen, für die Auswertung. Zwei
     // Zeilen je Woche — im Jahr gut hundert, weit unter der Zeilengrenze.
     supabase
       .from('anwesenheit')
@@ -416,7 +408,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('woche', verteilungAb)
       .order('woche'),
-    // Offene Tausch-Anfragen (T153): von mir und an mich, sonst sieht niemand
+    // Offene Tausch-Anfragen: von mir und an mich, sonst sieht niemand
     // eine (RLS). Was vorbei ist, beantwortet niemand mehr.
     supabase
       .from('tausch_anfragen')
@@ -424,25 +416,25 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       .eq('congregation_id', congregationId)
       .gte('bis', isoDay(new Date()))
       .order('bis'),
-    // „Nein, danke" auf Ersatzgesuche (1.11.2026): nur die eigenen Zeilen
-    // (RLS). Das Aufräumen nimmt sie nach ihrer Woche; vorgelegt wird
-    // Vergangenes ohnehin nicht.
+    // „Nein, danke" auf Ersatzgesuche: nur die eigenen Zeilen (RLS). Das
+    // Aufräumen nimmt sie nach ihrer Woche; vorgelegt wird Vergangenes ohnehin
+    // nicht.
     supabase.from('abgelehnte_gesuche').select('task_key, abgesagt_von').eq('congregation_id', congregationId),
   ])
 
-  // Alle dreizehn Abfragen prüfen, nicht zehn: fehlten fs_rules/fs_weeks in der
-  // Liste, blieb ein Ladefehler dort stumm und die Treffpunkte kamen einfach
-  // leer an — genau der Fall bei einer Instanz ohne Migration 010.
+  // Geprüft werden die Abfragen, ohne die die App nicht arbeitet — auch
+  // fs_rules/fs_weeks: Fehlten sie in der Liste, bliebe ein Ladefehler dort
+  // stumm, und die Treffpunkte kämen einfach leer an.
   //
   // Das Versand-Tagebuch steht **nicht** in dieser Liste, und zwar mit Absicht:
   // Fehlt die Tabelle, bleibt die Anzeige „benachrichtigt am" leer — das ist
   // eine fehlende Auskunft, kein fehlender Datenbestand, und die App bleibt
   // benutzbar.
   //
-  // Die Gruppenbesuche ebenso wenig: Die Tabelle kam mit T120 hinzu, und eine
-  // Datenbank, in der `schema.sql` seitdem nicht neu lief, hat sie noch nicht.
-  // Die App bleibt dann benutzbar, nur ohne Besuche — gespeichert werden
-  // können sie erst nach dem Schema (dann meldet der Schreibfehler-Toast).
+  // Die Gruppenbesuche ebenso wenig: Eine Datenbank, in der das aktuelle
+  // `schema.sql` nicht lief, hat die Tabelle noch nicht. Die App bleibt dann
+  // benutzbar, nur ohne Besuche — gespeichert werden können sie erst nach dem
+  // Schema (dann meldet der Schreibfehler-Toast).
   const firstErr = [cong, persons, services, groups, weeks, absences, notifs, confs, members, fsRulesRows, fsWeeksRows]
     .find((r) => r.error)?.error
   if (firstErr) return { ok: false, reason: 'error', message: firstErr.message }
@@ -455,20 +447,20 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
   if (sentLogRows.error) console.error('[assignment_log]', sentLogRows.error.message)
   const tagebuch = sentLogRows.data
   if (besuchRows.error) console.error('[gruppenbesuche]', besuchRows.error.message)
-  // Ebenso die vorgemerkten Vorträge (T122).
+  // Ebenso die vorgemerkten Vorträge.
   if (vortragRows.error) console.error('[vortraege]', vortragRows.error.message)
-  // Ebenso die Trolleys (T121, Phase 7).
+  // Ebenso die Trolleys.
   if (trolleyRows.error) console.error('[trolleys]', trolleyRows.error.message)
   if (trolleyTerminRows.error) console.error('[trolley_termine]', trolleyTerminRows.error.message)
-  // Und die weiteren Pläne (Phase 5).
+  // Und die weiteren Pläne.
   if (planRows.error) console.error('[plaene]', planRows.error.message)
   if (planEintragRows.error) console.error('[plan_eintraege]', planEintragRows.error.message)
-  // Und die Absagen (T126): Ohne sie fehlt nur ein Abschnitt der Auswertung.
+  // Und die Absagen: Ohne sie fehlt nur ein Abschnitt der Auswertung.
   if (absageRows.error) console.error('[absagen]', absageRows.error.message)
-  // Ebenso die Anwesenden (T152) — und solange `schema.sql` nicht lief, gibt es
-  // die Tabelle noch nicht.
+  // Ebenso die Anwesenden — und solange `schema.sql` nicht lief, gibt es die
+  // Tabelle noch nicht.
   if (anwesenheitRows.error) console.error('[anwesenheit]', anwesenheitRows.error.message)
-  // Ebenso die Tausch-Anfragen (T153): Ohne sie fehlen nur die Karten dazu.
+  // Ebenso die Tausch-Anfragen: Ohne sie fehlen nur die Karten dazu.
   if (tauschRows.error) console.error('[tausch_anfragen]', tauschRows.error.message)
   // Und das „Nein, danke": Ohne es fragt das Blatt beim Öffnen nur noch einmal.
   if (abgelehntRows.error) console.error('[abgelehnte_gesuche]', abgelehntRows.error.message)
@@ -484,24 +476,19 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     rows.filter((r) => r.start >= verteilungAb).slice().reverse()
   const weekRows = imFenster(wochenAbsteigend)
   // Stände merken: jeder spätere Schreibvorgang nennt den Stand, auf dem er
-  // beruht (T39). Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
+  // beruht. Vor dem Füllen leeren — ein zweiter Ladevorgang (Neuanmeldung,
   // Konflikt-Nachladen) darf keine Stände einer anderen Versammlung erben.
   wochen.setzen(weekRows.map((r) => [r.start, r.updated_at]))
   // Die Kennung kommt aus der **Spalte**, nicht aus dem Blob: sie ist der
   // Primärschlüssel der Woche, der Blob trägt nur das Programm. Damit trägt
-  // jede geladene Woche ihr Datum, auch die älteste.
+  // jede geladene Woche ihr Datum, auch die älteste. Die Zeilen reihen sich
+  // nach Datum: eine fehlende Woche ist eine fehlende Woche und verschiebt
+  // nichts.
   //
-  // Hier wurde bis T66 ein Array der Länge `höchstePosition + 1` aufgespannt
-  // und jede Zeile an ihren Index gesetzt, mit Platzhaltern in den Lücken —
-  // weil der Index die Position war und in jedem `task_key` steckte. Jetzt
-  // reihen sich die Zeilen einfach nach Datum: eine fehlende Woche ist eine
-  // fehlende Woche und verschiebt nichts.
-  //
-  // **Der Ladevorgang liest nur.** Er trug einmal Kennungen nach, hob
-  // Alt-Formate und schrieb das Ergebnis zurück — mitten in die Arbeit des
-  // Planers hinein. Seit jeder Punkt seine Kennung beim Entstehen bekommt
-  // (`PartItem.iid`) und jede Zuteilung ihre `pid`, bleibt nur noch das
-  // Binden loser Namen an ihre Person, und das geschieht rein im Speicher.
+  // **Der Ladevorgang liest nur** — ein Zurückschreiben träfe mitten in die
+  // Arbeit des Planers. Jeder Punkt bekommt seine Kennung beim Entstehen
+  // (`PartItem.iid`) und jede Zuteilung ihre `pid`; es bleibt nur das Binden
+  // loser Namen an ihre Person, und das geschieht rein im Speicher.
   const roh = weekRows.map((r) => ({ ...r.data, start: r.start }))
   const weekList = normalizeChairKeys(pidsNachtragen(roh, personList))
   const confirmations = confirmationMap((confs.data ?? []) as ConfirmationRow[])
@@ -520,9 +507,6 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     first: c?.reminder_first ?? STANDARD_ERINNERUNGEN.first,
     last: c?.reminder_last ?? STANDARD_ERINNERUNGEN.last,
     repeat: c?.reminder_repeat ?? STANDARD_ERINNERUNGEN.repeat,
-    // `onAssign` stand hier bis T99. Der Schalter steuerte die Mitteilung
-    // „Zuteilung gesendet" an die Planer, und die gibt es nicht mehr — an ihre
-    // Stelle ist „Plan senden" getreten.
   }
 
   // Treffpunkte: Grundplan-Blob + je Woche gespeicherte Instanzen (Kennung → Daten).
@@ -585,7 +569,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
     confirmations,
     reminders,
     auxClass: c?.aux_class ?? false,
-    // **Eine Sprache ist ein Code**, in der Datenbank wie im Zustand (T105) —
+    // **Eine Sprache ist ein Code**, in der Datenbank wie im Zustand —
     // an dieser Grenze wird nichts umgesetzt.
     congLang: c?.cong_lang ?? 'de',
     progLangs: c?.prog_langs ?? [],

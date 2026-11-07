@@ -9,7 +9,7 @@ import { supabase } from '../supabase'
 import { fsRuleToRow, gruppenbesuchToRow } from '../zeilen'
 import { loeschenDannSchreiben, schreibSchlange } from './schreibweg'
 
-/** Ein Trolley (T121, Phase 7): eine Zeile. */
+/** Ein Trolley: eine Zeile. */
 export interface TrolleyRow {
   id: string
   name: string
@@ -54,25 +54,23 @@ export function trolleyTerminFromRow(r: TrolleyTerminRow): TrolleyTermin {
 /**
  * Grundplan der Treffpunkte — eine Zeile je Regel.
  *
- * Bis zum 18. September 2026 ging der ganze Grundplan als **ein JSONB-Blob** in
- * eine Zeile je Versammlung, samt einer Spalte `base`, die geschrieben und nie
- * gelesen wurde. Eine Regel ist aber eine gewöhnliche Zeile mit einem Verweis
- * auf eine Gruppe; im Blob konnte dieser Verweis kein Fremdschlüssel sein, und
- * deshalb musste die App beim Löschen einer Gruppe selbst darin aufräumen.
+ * Eine Regel ist eine gewöhnliche Zeile mit einem Verweis auf eine Gruppe. In
+ * einem JSONB-Blob je Versammlung könnte dieser Verweis kein Fremdschlüssel
+ * sein, und die App müsste beim Löschen einer Gruppe selbst darin aufräumen.
  *
  * **Gelöscht wird, was dieser Planer entfernt hat** (`entfernt`) — nicht alles,
  * was nicht in seiner Liste steht. Der Unterschied zählt, sobald zwei Planer
- * zugleich arbeiten: Hier stand `delete … where id not in (<meine Regeln>)`,
- * und damit räumte jedes Speichern die Regel weg, die der andere gerade
- * angelegt hatte — ohne Fehler, ohne Konflikt, auf beiden Bildschirmen
- * unbemerkt. Die Wochen sind gegen genau das durch Vergleiche-und-Tausche
- * geschützt (T39); der Grundplan hat keine solche Sperre, also darf er auch
- * nichts anfassen, wovon er nichts weiß.
+ * zugleich arbeiten: Mit `delete … where id not in (<meine Regeln>)` räumte
+ * jedes Speichern die Regel weg, die der andere gerade angelegt hat — ohne
+ * Fehler, ohne Konflikt, auf beiden Bildschirmen unbemerkt. Die Wochen sind
+ * gegen genau das durch Vergleiche-und-Tausche geschützt; der Grundplan hat
+ * keine solche Sperre, also darf er auch nichts anfassen, wovon er nichts
+ * weiß.
  *
  * **Geschrieben wird ebenso nur, was er angelegt oder geändert hat** — mehr
- * übergibt `persist.ts` nicht. Bis zum 3.10.2026 ging der ganze Grundplan als
- * Upsert hinaus und stellte zurück, was ein anderer Planer inzwischen geändert
- * oder gelöscht hatte; derselbe Weg gilt für die Weiteren Pläne.
+ * übergibt `persist.ts` nicht. Ginge der ganze Grundplan als Upsert hinaus,
+ * stellte er zurück, was ein anderer Planer inzwischen geändert oder gelöscht
+ * hat. Derselbe Weg gilt für die Weiteren Pläne.
  *
  * Nacheinander, nicht nebeneinander — sonst könnte das Löschen eine gerade
  * erst geschriebene Zeile treffen.
@@ -84,19 +82,19 @@ export function saveFsRules(congregationId: string, rules: FsRule[], entfernt: s
 }
 
 /*
- * **Je Tabelle eine Schlange** (`schreibSchlange`) — bis zum 16.10.2026 hatten
- * sie nur die Pläne. Grundplan, Besuche, Vorträge und Trolleys gingen jeder
- * Aufruf für sich los: Zwei schnelle Handlungen an derselben Zeile (den
- * Besucher wechseln, dann den Besuch entfernen) liefen nebeneinander, und kam
- * das Schreiben nach dem Löschen an, stand der Besuch nach dem Neuladen wieder
- * da.
+ * **Je Tabelle eine Schlange** (`schreibSchlange`) — hier für Grundplan,
+ * Besuche und Trolleys; die der Vorträge steht in `wochen.ts`, die der Pläne
+ * in `plaene.ts`. Ohne sie ginge jeder Aufruf für sich los: Zwei schnelle
+ * Handlungen an derselben Zeile (den Besucher wechseln, dann den Besuch
+ * entfernen) liefen nebeneinander, und käme das Schreiben nach dem Löschen
+ * an, stünde der Besuch nach dem Neuladen wieder da.
  */
 const regelnNacheinander = schreibSchlange()
 const besucheNacheinander = schreibSchlange()
 const trolleysNacheinander = schreibSchlange()
 
 /**
- * Gruppenbesuche des Dienstaufsehers (T120) — eine Zeile je Besuch.
+ * Gruppenbesuche des Dienstaufsehers — eine Zeile je Besuch.
  *
  * Wie beim Grundplan wird nur gelöscht, was **dieser** Planer entfernt hat
  * (`entfernt`), und nur geschrieben, was er angelegt oder geändert hat. Ein
@@ -112,7 +110,7 @@ export function saveGruppenbesuche(congregationId: string, besuche: Gruppenbesuc
 }
 
 /**
- * Trolleys (T121, Phase 7) — wie die Gruppenbesuche: geschrieben wird, was der
+ * Trolleys — wie die Gruppenbesuche: geschrieben wird, was der
  * Admin angelegt oder geändert hat.
  *
  * **Gelöscht wird hier nie.** Mit einem Trolley gehen seine Termine, und wer

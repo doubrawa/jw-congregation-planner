@@ -29,14 +29,13 @@ export function buildS89ForSlot(
   const current = slot?.name ?? ''
   if (!current) return null
   // Woran ein Schulungsplatz erkannt wird: am **Bereich**, nicht am Titel.
-  // `item.title.startsWith('Bibellesung')` stand hier allein — und traf bei
-  // einer fremdsprachigen Versammlung nie, denn der Import übernimmt den Titel
-  // wörtlich aus der Zielsprache („Lectura de la Biblia"). Die Bibellesung bekam
-  // dort **keinen S-89-Zettel**, ohne Fehler und ohne Hinweis; dieselbe Familie
-  // wie T61 (Bibelstudium am deutschen Titel gesucht). Den Bereich vergibt der
+  // `item.title.startsWith('Bibellesung')` träfe bei einer fremdsprachigen
+  // Versammlung nie, denn der Import übernimmt den Titel wörtlich aus der
+  // Zielsprache („Lectura de la Biblia"). Die Bibellesung bekäme dort **keinen
+  // S-89-Zettel**, ohne Fehler und ohne Hinweis. Den Bereich vergibt der
   // Import in jeder Sprache (`bereichsKey: 'bibellesung'`, parse.ts). Dieselbe
-  // Menge wie die Zusätzliche Klasse — seit dem 4.10.2026 samt dem Vortrag
-  // eines Schülers (`schulungVortrag`).
+  // Menge wie die Zusätzliche Klasse — samt dem Vortrag eines Schülers
+  // (`schulungVortrag`).
   const isStudent = istSchuelerBereich(sel.priv)
   if (!isStudent) return null
   // Hauptteilnehmer (schulung) und Gesprächspartner (schulungPartner) stehen als
@@ -48,9 +47,9 @@ export function buildS89ForSlot(
    * Der S-89 gehört dem Schüler; der Gesprächspartner steht nur mit darauf und
    * bekommt eine Abschrift. Ist der Schüler-Platz dieses Punkts noch offen und
    * nur der Partner zugeteilt — der Planer fängt beim Partner an, oder der
-   * Schüler wird wieder entfernt —, fiel `leadName` leer aus und der
+   * Schüler wird wieder entfernt —, fiele `leadName` leer aus, und der
    * Rückfall `|| current` setzte den **Partner** an die Stelle des Schülers:
-   * Der Zettel nannte dieselbe Person zweimal, als Schülerin und als
+   * Der Zettel führte dieselbe Person zweimal, als Schülerin und als
    * Gesprächspartnerin, und der Druckbogen legte ihn gleich zweimal aus.
    *
    * Der Rückfall bleibt, wofür er gedacht ist: Die **Bibellesung** und der
@@ -64,9 +63,9 @@ export function buildS89ForSlot(
   const metaFrags = (item.meta ?? '').split(' · ')
   // Der Rahmen („Von Haus zu Haus") — **an der Form erkannt, nicht am Wort**.
   //
-  // Hier standen die drei deutschen Wendungen als Aufzählung. In einer
+  // Eine Aufzählung der drei deutschen Wendungen träfe nicht: In einer
   // fremdsprachigen Versammlung steht im Meta „De casa en casa" oder „‏מבית
-  // לבית", und der Zettel ging ohne Rahmen hinaus — der Schüler erfuhr nicht,
+  // לבית", und der Zettel ginge ohne Rahmen hinaus — der Schüler erführe nicht,
   // in welchem Rahmen er seine Aufgabe halten soll.
   //
   // Der Import setzt die Meta-Zeile als „[Rahmen ·] Zeit [· Quelle]" zusammen
@@ -79,11 +78,11 @@ export function buildS89ForSlot(
   // Der Schulungspunkt — die **Quelle** der Meta-Zeile, also das Stück hinter
   // der Dauer.
   //
-  // Hier stand `/^(th|lmd) /`. Das Publikationskürzel ist aber keine Konstante:
+  // Nicht am Kürzel (`/^(th|lmd) /`) — das Publikationskürzel ist keine Konstante:
   // zh/ja/ko/ar/he/fa/ur übersetzen es mit („th" → 教励, „教导", „הר"), und dort
-  // ging der Schulungspunkt verloren — der Schüler bekam einen Zettel ohne den
-  // Punkt, an dem er arbeiten soll. Nebenbei fehlte `lff`, obwohl es dieselbe
-  // Rolle spielt wie `th`/`lmd`.
+  // ginge der Schulungspunkt verloren — der Schüler bekäme einen Zettel ohne den
+  // Punkt, an dem er arbeiten soll. Dazu spielt `lff` dieselbe Rolle wie
+  // `th`/`lmd`.
   //
   // Die Zerlegung nutzt dieselbe Zusicherung, auf der schon `itemMinutes`
   // ruht: Der Import setzt die Zeile als „[Rahmen ·] Zeit [· Quelle]" zusammen,
@@ -97,14 +96,13 @@ export function buildS89ForSlot(
     date: meetingDateText(week, sel.tab, zeiten),
     type: item.title + (setting ? ` · ${setting}` : ''),
     point,
-    // Der Ort stand hier frueher gar nicht im Modell — das Formular zeigte
-    // immer 'Hauptsaal'. Jetzt kommt er aus der tatsaechlichen Zuteilung.
+    // Der Ort kommt aus der tatsächlichen Zuteilung, nicht pauschal 'Hauptsaal'.
     aux: raum,
   }
 }
 
 /**
- * Alle S-89-Zettel einer Woche — für den Druckbogen (T71).
+ * Alle S-89-Zettel einer Woche — für den Druckbogen.
  *
  * Schulungsaufgaben gibt es nur unter der Woche, deshalb nur `mid`. Gelaufen
  * wird über **beide Räume**: Die Zusätzliche Klasse ist überall gleichberechtigt,
@@ -121,8 +119,8 @@ export function buildS89ForSlot(
  * Reihenfolge, in der die Teile drankommen.
  *
  * **Fällt die Zusammenkunft aus, gibt es keine Zettel** — die Zuteilungen ruhen
- * dann nur (`eachAssignedSlot`), gehalten wird keine Aufgabe. Bis zum
- * 15.10.2026 bot der Bogen in einer Kongress-Woche trotzdem ihre Zettel an.
+ * dann nur (`eachAssignedSlot`), gehalten wird keine Aufgabe. Sonst böte der
+ * Bogen in einer Kongress-Woche trotzdem ihre Zettel an.
  */
 export function alleS89DerWoche(
   weeks: Week[],

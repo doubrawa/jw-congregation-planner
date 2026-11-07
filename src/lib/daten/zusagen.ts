@@ -22,8 +22,8 @@ export interface ConfirmationRow {
  *
  * Ein Platz kann **zwei** Zeilen haben: Sagt A ab und springt B ein, steht unter
  * demselben `task_key` A mit „verhindert" und B mit „bestätigt". Die Abfrage
- * kommt ungeordnet zurück — wer zuletzt gelesen wurde, gewann. Beim Einspringen
- * hieß das: Nach dem Neuladen stand der Platz mal als besetzt, mal als abgesagt
+ * kommt ungeordnet zurück; gewänne, wer zuletzt gelesen wurde, stünde der
+ * Platz nach dem Einspringen und Neuladen mal als besetzt, mal als abgesagt
  * da, und das längst erledigte Ersatzgesuch tauchte wieder auf.
  *
  * **„Bestätigt" gewinnt.** Ein Platz hat genau einen Bearbeiter; hat einer
@@ -56,11 +56,10 @@ export function absageFromRow(r: AbsageRow): Absage {
  * Push nur mit dem privaten VAPID-Schlüssel geht. Fire-and-forget.
  */
 /*
- * **Ohne `congregationId`.** Das Feld stand hier, seit es die Function gab, und
- * war der Angriffsweg aus S10: Der Server nahm die Versammlung aus dem Rumpf,
- * statt sie zu lesen. Seit dem Ausrollen am 24.8.2026 wertet er es nicht mehr
- * aus — und ein Feld, das niemand auswertet, ist genau die offene Fläche, die
- * bei `import-week` zu S12 geführt hat. Also weg damit.
+ * **Ohne `congregationId`.** Der Server liest die Versammlung selbst; nähme er
+ * sie aus dem Rumpf, wäre das ein Angriffsweg. Und ein Feld, das niemand
+ * auswertet, bleibt eine offene Fläche — wertet es später jemand aus, ist die
+ * Lücke wieder da.
  */
 export function substituteSeek(taskKey: string): void {
   if (!supabase) return
@@ -75,13 +74,13 @@ export function substituteSeek(taskKey: string): void {
  *
  * Scheitert es — ein anderer war schneller, das Gesuch ist erledigt, die
  * Zusammenkunft fällt aus —, wird **nachgeladen** (`konfliktMelder`), wie
- * beim Füllen eines freien Platzes. Bis zum 14.10.2026 stand hier `run()`: Es
- * meldete einen Schreibfehler, und der Aufrufer stand trotzdem weiter als
- * eingesprungen da, wo längst ein anderer stand — bis zum nächsten Laden.
+ * beim Füllen eines freien Platzes. Mit `run()` käme nur ein Schreibfehler,
+ * und der Aufrufer stünde trotzdem weiter als eingesprungen da, wo längst ein
+ * anderer steht — bis zum nächsten Laden.
  *
- * Ist das Gesuch erledigt, sagt der Hinweis das (1.11.2026). Mit dem
- * allgemeinen „konnte nicht gespeichert werden" stand der Nutzer ratlos da,
- * nachdem der Absagende sein Gesuch zurückgezogen hatte.
+ * Ist das Gesuch erledigt, sagt der Hinweis das. Mit dem allgemeinen „konnte
+ * nicht gespeichert werden" stünde der Nutzer ratlos da, wenn der Absagende
+ * sein Gesuch zurückgezogen hat.
  */
 export function substituteTake(taskKey: string): void {
   if (!supabase) return
@@ -101,16 +100,16 @@ export function substituteTake(taskKey: string): void {
 }
 
 /**
- * Einen **offenen Platz selbst übernehmen** (4.10.2026) — Edge Function
+ * Einen **offenen Platz selbst übernehmen** — Edge Function
  * `substitute`, Aufruf 'fill'. Serverseitig aus demselben Grund wie das
  * Einspringen: Wochen und Bestätigungen schreibt sonst nur der Planer.
  *
  * Schlägt es fehl — jemand war schneller, der Platz wird nicht mehr angeboten
  * —, wird **nachgeladen** statt nur gemeldet (`konfliktMelder`). Mit `run()`
  * stünde man hier weiter eingetragen, wo längst ein anderer steht. War jemand
- * schneller, sagt der Hinweis das (1.11.2026).
+ * schneller, sagt der Hinweis das.
  *
- * Der Kalendertag des Geräts geht mit (5.10.2026): Der Server kennt nur UTC,
+ * Der Kalendertag des Geräts geht mit: Der Server kennt nur UTC,
  * und zwischen Mitternacht und 02:00 ließe sich dort noch ein Platz vom Vorabend
  * übernehmen — dieselbe Lage wie bei „Plan senden".
  */
@@ -150,9 +149,8 @@ export function saveConfirmation(
 ): void {
   if (!supabase) return
   // Über `zeilenRun`: Weist die Datenbank ab, weil die Aufgabe inzwischen
-  // nicht mehr meine ist (`task_gehoert_mir`, 42501), wird nachgeladen. Bis zum
-  // 16.10.2026 kam nur die Meldung, und lokal blieb „bestätigt" für einen Platz
-  // stehen, den längst ein anderer hatte.
+  // nicht mehr meine ist (`task_gehoert_mir`, 42501), wird nachgeladen — sonst
+  // bliebe lokal „bestätigt" für einen Platz stehen, den längst ein anderer hat.
   void zeilenRun(
     supabase.from('confirmations').upsert(
       { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
@@ -162,7 +160,7 @@ export function saveConfirmation(
 }
 
 /**
- * **„Nein, danke" auf ein Ersatzgesuch** am Konto vermerken (1.11.2026) — das
+ * **„Nein, danke" auf ein Ersatzgesuch** am Konto vermerken — das
  * Blatt beim Öffnen legt es danach auf keinem Gerät mehr vor.
  *
  * Steht dieselbe Antwort schon da (ein zweites Fenster hat sie vor dem Laden

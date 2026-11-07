@@ -42,10 +42,9 @@ export interface OpenSlot {
  */
 export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
   const out: OpenSlot[] = []
-  // Derselbe Durchlauf, den `countOpenSlots` zählt — vorher nannte der
-  // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistete. Ebenso
-  // ohne das leere Schlussgebet am Wochenende (`leerVorOrt`, T133; im Review
-  // vom 24.10.2026 stand es hier noch als offen).
+  // Derselbe Durchlauf, den `countOpenSlots` zählt — sonst stünde im
+  // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistet. Ebenso
+  // ohne das leere Schlussgebet am Wochenende (`leerVorOrt`).
   // Hilfsdienste werden gebündelt: ein Eintrag je Dienst mit seiner Anzahl.
   const offenJeDienst = new Map<Service, number>()
   for (const platz of allePlaetze(meeting, services)) {

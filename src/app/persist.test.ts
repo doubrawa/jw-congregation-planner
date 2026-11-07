@@ -22,10 +22,12 @@ vi.mock('../lib/supabase', () => ({ supabase: {} }))
  * Persistenz-Schicht mocken: Wir prüfen NUR, welche Schreibfunktion mit welchen
  * Argumenten je Aktion aufgerufen wird (kein echtes Supabase).
  *
- * Der echte Modulinhalt bleibt darunter liegen (`importActual`), weil dort auch
- * **reine** Helfer wohnen — `renameInWeeks` etwa, das der Reducer beim
- * Umbenennen einer Person braucht. Ohne ihn wäre der Vorher/Nachher-Stand, den
- * die Entzugs-Prüfung unten sieht, von Hand nachgebaut statt echt.
+ * Der echte Modulinhalt bleibt darunter liegen (`importActual`): Überschrieben
+ * wird nur, was schreibt, alles Übrige eines Moduls bleibt echt. Die **reinen**
+ * Helfer des Reducers — `renameInWeeks` etwa, das er beim Umbenennen einer
+ * Person braucht — liegen in `data/` (`data/namensbindung.ts`) und sind gar
+ * nicht gemockt: Der Vorher/Nachher-Stand, den die Entzugs-Prüfung unten sieht,
+ * ist echt, nicht von Hand nachgebaut.
  *
  * **Jede** Funktion, die `persist` aufruft, ist darunter überschrieben — die
  * Liste unten deckt sich mit der Importliste in persist.ts. Bliebe eine übrig,

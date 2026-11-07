@@ -155,7 +155,7 @@ export function ProfilScreen() {
         <div className="profil-spalte">
           <AbwesenheitenKarte />
 
-          {/* Befristet (T124): nur für Admins, am echten Recht gefragt. */}
+          {/* Nur für Admins, am echten Recht gefragt. */}
           <AnsichtKarte />
 
           {verwalten && (

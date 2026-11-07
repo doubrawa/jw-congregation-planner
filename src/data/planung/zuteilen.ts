@@ -34,7 +34,7 @@ import type {
 
 /**
  * Der Aufgabenbereich eines Platzes, wie ihn `assignmentDistance` je Bereich
- * führt — und die Auswertung (T126) zählt.
+ * führt — und die Auswertung zählt.
  */
 export function bereichVon(platz: Platz): string | undefined {
   if (platz.art === 'helper') return serviceQualKey(platz.svc.key)
@@ -42,12 +42,12 @@ export function bereichVon(platz: Platz): string | undefined {
 }
 
 /**
- * **Wann war jemand zuletzt in diesem Bereich dran?** (T121, Phase 5d) — je
- * Person die Wochen vor der geplanten, in der er zuletzt einen Platz dieses
- * Bereichs hatte: das „zuletzt vor 12 Wochen" im Zuteilen-Blatt.
+ * **Wann war jemand zuletzt in diesem Bereich dran?** — je Person die Wochen
+ * vor der geplanten, in der er zuletzt einen Platz dieses Bereichs hatte: das
+ * „zuletzt vor 12 Wochen" im Zuteilen-Blatt.
  *
  * Anders als `assignmentDistance` nur **davor**: Was danach schon geplant ist,
- * ist kein „zuletzt". Und nur Zusammenkünfte, die stattfanden (T30). Wer im
+ * ist kein „zuletzt". Und nur Zusammenkünfte, die stattfanden. Wer im
  * geladenen Bestand davor nie dran war, fehlt.
  */
 export function zuletztImBereich(
@@ -102,19 +102,19 @@ export function assignmentsInMeeting(
   const out: MeetingAssignment[] = []
   // Folgt der bearbeitete Platz dem Vorsitz (Anfangsgebet, Vortrag des
   // Vorsitzenden), ist der Vorsitz desselben Mannes kein Doppel, sondern der
-  // Grund (16.10.2026). Bis dahin stand der Richtige als „heute schon Vorsitz"
-  // weiter unten in der Liste.
+  // Grund — sonst stünde der Richtige als „heute schon Vorsitz" weiter unten
+  // in der Liste.
   const vorsitz = folgtAuswahlDemVorsitz(meeting, exclude) ? vorsitzPlatz(meeting) : undefined
   // Programm (beide Räume) und Ratgeber in einem Durchlauf: die Plätze der
-  // Zusätzlichen Klasse sind gleichwertige Zuteilungen. Ohne sie blieb der
+  // Zusätzlichen Klasse sind gleichwertige Zuteilungen. Ohne sie bliebe der
   // Hinweis „heute schon zugeteilt" aus, das Dashboard zeigte „frei" für
-  // jemanden, der in der Klasse eingeteilt war, und takeSubstitute übersah den
-  // Konflikt.
+  // jemanden, der in der Klasse eingeteilt ist, und takeSubstitute übersähe
+  // den Konflikt.
   for (const platz of allePlaetze(meeting)) {
     if (!gehoertZu(platz.slot, person)) continue
     if (platz.art === 'ratgeber') {
       // Der eigene Platz im Blatt „Ratgeber" ist keine Doppelbelegung — wie bei
-      // jedem anderen Platz (16.10.2026).
+      // jedem anderen Platz.
       if (exclude?.kind === 'ratgeber') continue
       out.push({ text: RATGEBER_ROLLE, lang: 'u' })
       continue
@@ -162,15 +162,15 @@ export function assignSlot(
   if (!next) return weeks
   // Zeigt die Auswahl ins Leere — die Woche ist aus dem geladenen Fenster
   // gerutscht, der Punkt wurde nebenher gelöscht —, bleibt alles, wie es war.
-  // Vorher warf der Zugriff, und das mitten im Reducer (T42).
+  // Sonst würfe der Zugriff, und das mitten im Reducer.
   const meeting = next[sel.wi]?.[sel.tab]
   if (!meeting) return weeks
   /*
-   * **Dieselbe Besetzung noch einmal: die Eingabe zurück** (16.10.2026). Wer im
-   * Blatt dieselbe Person erneut antippte, bekam eine neue, gleiche Woche — und
-   * die ging hinaus (`persist` liest an der Identität ab, was zu schreiben ist).
+   * **Dieselbe Besetzung noch einmal: die Eingabe zurück.** Sonst bekäme, wer
+   * im Blatt dieselbe Person erneut antippt, eine neue, gleiche Woche — und die
+   * ginge hinaus (`persist` liest an der Identität ab, was zu schreiben ist).
    * Jedes Schreiben hebt den Stand der Woche; die nächste Änderung eines anderen
-   * Planers an ihr galt dann als Konflikt.
+   * Planers an ihr gälte dann als Konflikt.
    */
   const gleich = (slot: SlotAssignment | undefined): boolean =>
     slot !== undefined && slot.name === name && slot.pid === (name && pid ? pid : undefined)
@@ -235,18 +235,17 @@ function gleicheBesetzung(
  * Slots wird der Bestätigungs-Status abgeräumt — sonst erbt die neu
  * eingeteilte Person ein fremdes „bestätigt“/„verhindert“.
  *
- * **Verglichen wird die Person, nicht der Name** (15. September 2026). Am Namen
- * gemessen erbte ein Namensvetter mit anderer Person-Id die Zusage seines
- * Vorgängers — und die Ampel im Planen zeigte ihn grün, obwohl er nie gefragt
- * worden war. Dieselbe Rangfolge wie bei den Treffpunkten
- * (`fsVerwaisteZusagen`) und beim Entzug (`entzogeneZuteilungen`).
+ * **Verglichen wird die Person, nicht der Name.** Am Namen gemessen erbte ein
+ * Namensvetter mit anderer Person-Id die Zusage seines Vorgängers — und die
+ * Ampel im Planen zeigte ihn grün, obwohl ihn nie jemand gefragt hat.
+ * Dieselbe Rangfolge wie bei den Treffpunkten (`fsVerwaisteZusagen`) und beim
+ * Entzug (`entzogeneZuteilungen`).
  *
  * **Der Punkt von vorher wird über seine Kennung gesucht, nicht über seine
- * Stelle in der Liste.** Hier stand `prev.sections[si]?.items[ii]` — dieselbe
- * Position, ein anderer Punkt, sobald eine Aktion umsortiert und zuteilt
- * zugleich. Der Schlüssel wurde längst über die Kennung gebildet; nur diese
- * Hälfte war noch positionsbasiert, und sie hätte die Zusage des falschen
- * Punkts abgeräumt.
+ * Stelle in der Liste** — wie der Schlüssel. Über die Position
+ * (`prev.sections[si]?.items[ii]`) träfe es einen anderen Punkt, sobald eine
+ * Aktion umsortiert und zuteilt zugleich, und räumte die Zusage des falschen
+ * Punkts ab.
  */
 export function changedSlotKeys(
   prev: Meeting,

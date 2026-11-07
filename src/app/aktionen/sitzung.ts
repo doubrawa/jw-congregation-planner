@@ -16,8 +16,8 @@ import { vorzulegen } from '../vorlegen'
  * **Gelesen bleibt gelesen.** Eine geladene Liste kann abgefragt worden sein,
  * bevor das eigene „gelesen" in der Datenbank stand: Die Abfrage läuft, man
  * tippt die Mitteilung oder „Alle gelesen" an, die Antwort kommt — und die
- * Mitteilung stand wieder unter „Neu", der Punkt an der Glocke kam zurück. Bis
- * zum 15.10.2026 beim Öffnen der Mitteilungen (`setNotifs`) wie bei jedem
+ * Mitteilung stünde sonst wieder unter „Neu", der Punkt an der Glocke käme
+ * zurück. Das gilt beim Öffnen der Mitteilungen (`setNotifs`) wie bei jedem
  * stillen Nachladen (`hydrate`).
  *
  * Die Marke kennt nur eine Richtung — „ungelesen" gibt es nicht —, also gewinnt
@@ -65,14 +65,13 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
       return { ...state, welcomePending: false }
     case 'logout':
       /*
-       * **Abmelden leert den Bestand, nicht nur die Ansicht** (16.10.2026).
+       * **Abmelden leert den Bestand, nicht nur die Ansicht.**
        *
-       * Bis dahin stand hier der alte Zustand mit zurückgesetzter Ansicht:
-       * Personen, Wochen, „Meine Aufgaben", Konto und Versammlung blieben
-       * stehen. Meldete sich am selben Gerät jemand anderes an, legte ihm
+       * Blieben Personen, Wochen, „Meine Aufgaben", Konto und Versammlung
+       * stehen und meldete sich am selben Gerät jemand anderes an, legte ihm
        * `login` das Bestätigungsblatt des Vorgängers vor — mit dessen
        * Aufgaben, Namen und Versammlung im Menü, bis die eigenen Daten geladen
-       * waren. Eine Absage daraus ging als Verhinderung des Vorgängers an die
+       * sind. Eine Absage daraus ginge als Verhinderung des Vorgängers an die
        * eigenen Planer.
        *
        * Was bleibt, gehört dem Gerät (`Vorlieben`). Alles Übrige der Ansicht —
@@ -100,17 +99,17 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
     case 'hydrate': {
       const p = action.payload
       const weeks = syncAuxSlots(p.weeks, p.auxClass, wirktAb())
-      // Auf die laufende Woche springen. Bisher stand hier die ÄLTESTE geladene
-      // Woche — nach dem Login zeigte die App damit ein bis zu ein Jahr altes
-      // Programm. Fällt heute in keine geladene Woche (frische Versammlung,
-      // Lücke im Import), bleibt es beim Anfang.
+      // Auf die laufende Woche springen — mit der ÄLTESTEN geladenen Woche
+      // zeigte die App nach dem Login sonst ein bis zu ein Jahr altes Programm.
+      // Fällt heute in keine geladene Woche (frische Versammlung, Lücke im
+      // Import), bleibt es beim Anfang.
       const aktuell = currentWeekIndex(weeks)
       /*
-       * **Eine selbst gewählte Woche übersteht das Nachladen** (T99).
+       * **Eine selbst gewählte Woche übersteht das Nachladen.**
        *
-       * Seit „Plan senden" und der Glocke lädt die App auch mitten in der
-       * Arbeit still nach. Sprang sie dabei auf die laufende Woche, verlor der
-       * Planer seinen Platz: Er gab Woche +3 frei und stand danach auf der
+       * Die App lädt auch mitten in der Arbeit still nach („Plan senden",
+       * Glocke). Spränge sie dabei auf die laufende Woche, verlöre der Planer
+       * seinen Platz: Er gäbe Woche +3 frei und stünde danach auf der
        * aktuellen, mit Zahlen einer anderen Woche vor sich.
        *
        * Wiedergefunden wird über die **Kennung**, nicht über die Ordnungszahl —
@@ -128,12 +127,13 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
        *
        * `slotSel` trägt die Woche als Ordnungszahl. Normalerweise ist das egal,
        * weil `navigate` das Blatt schließt; ein Weg führt aber daran vorbei:
-       * Schlägt ein Schreibvorgang wegen eines Konflikts fehl (T39), lädt
+       * Schlägt ein Schreibvorgang wegen eines Konflikts fehl, lädt
        * `store.tsx` **still** nach — ohne Navigation, mitten in der Arbeit,
        * also genau dann, wenn ein Zuteilungs-Blatt offen steht. Rutscht das
        * Fenster dabei (52 Wochen, vorn fällt die älteste heraus), zeigte
-       * `slotSel.wi` danach auf eine andere Woche, und der nächste Klick schrieb
-       * den Namen dorthin. Lautlos, in eine Woche, die niemand offen hatte.
+       * `slotSel.wi` danach auf eine andere Woche, und der nächste Klick
+       * schriebe den Namen dorthin. Lautlos, in eine Woche, die niemand offen
+       * hat.
        *
        * Ist die Woche gar nicht mehr dabei, wird das Blatt geschlossen: Ein
        * Platz ohne Woche ist keiner.
@@ -159,30 +159,30 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
         weeks,
         fsRules: p.fsRules,
         fsWeeks: p.fsWeeks,
-        // Aus einer Momentaufnahme von vor T120 fehlt das Feld — wie beim
+        // Einer älteren Momentaufnahme fehlt das Feld vielleicht — wie beim
         // Versand-Tagebuch darunter.
         gruppenbesuche: p.gruppenbesuche ?? [],
-        // Momentaufnahmen von vor T122 kennen die Vormerkungen nicht.
+        // Ältere Momentaufnahmen kennen die Vormerkungen nicht.
         vortraege: p.vortraege ?? [],
-        // Momentaufnahmen von vor T121 kennen die Trolleys nicht.
+        // Ältere Momentaufnahmen kennen die Trolleys nicht.
         trolleys: p.trolleys ?? [],
         trolleyTermine: p.trolleyTermine ?? [],
         plaene: p.plaene ?? [],
         planEintraege: p.planEintraege ?? [],
         absences: p.absences,
-        // Momentaufnahmen von vor dem 17.10.2026 kennen die Absagen nicht (T126).
+        // Ältere Momentaufnahmen kennen die Absagen nicht.
         absagen: p.absagen ?? [],
-        // Und von vor dem 29.10.2026 die Anwesenden (T152) und die Tausch-Anfragen (T153).
+        // Ebenso die Anwesenden und die Tausch-Anfragen.
         anwesenheit: p.anwesenheit ?? [],
         tauschAnfragen: p.tauschAnfragen ?? [],
-        // Und von vor dem 1.11.2026 das „Nein, danke" auf Ersatzgesuche.
+        // Und das „Nein, danke" auf Ersatzgesuche.
         abgelehnteGesuche: p.abgelehnteGesuche ?? [],
         notifs: gelesenBehalten(p.notifications, state.notifs),
         confirmations: p.confirmations,
         // Aus einer alten Momentaufnahme (lib/snapshot.ts) fehlt das Feld — sie
         // wurde geschrieben, bevor es das Tagebuch gab.
         sentLog: p.sentLog ?? {},
-        // Ebenso aus einer Momentaufnahme vor Phase 5g.
+        // Ebenso aus einer älteren Momentaufnahme.
         persoenlich: p.persoenlich ?? {},
         reminders: p.reminders,
         auxClass: p.auxClass,
@@ -193,7 +193,7 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
         week: gewaehlt >= 0 ? gewaehlt : aktuell >= 0 ? aktuell : 0,
         slotSel,
       }
-      // Nach dem Laden gleich auf die nächste Zusammenkunft (T82): Woche UND
+      // Nach dem Laden gleich auf die nächste Zusammenkunft: Woche UND
       // Reiter. `aktuell` allein trifft nur die Woche — am Sonntagabend steht
       // die nächste schon in der Folgewoche. Erst hier, nicht vorher: Die
       // Wochentage kommen aus `p.congregation`, das im Zustand darüber noch
@@ -211,7 +211,7 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
       // Stand der letzte Stand als „langsam" da, kommt nun nichts mehr: „Offline".
       return { ...state, staleLangsam: false, toast: toastKey(state, 'stFehler') }
     case 'neuerTag':
-      // Wird oben im `reducer` abgeleitet; hier gibt es nichts zu ändern.
+      // Wird im `reducer` (`reducer.ts`) abgeleitet; hier gibt es nichts zu ändern.
       return state
   }
 }

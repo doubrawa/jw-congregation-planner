@@ -10377,7 +10377,7 @@ neuen sind (115)–(117).
 **Im Handbuch** steht ein eigener Abschnitt („Wenn bei jemandem etwas
 klemmt"): was gemeldet wird, was nicht, wer es sehen kann.
 
-### T172 · Die größten Dateien nach Fachbereich aufteilen 🏗 ☐ offen
+### T172 · Die größten Dateien nach Fachbereich aufteilen 🏗 ✅ umgesetzt (7. November 2026)
 
 **Warum:** `src/lib/data.ts` (2235 Zeilen), `src/data/planning.ts` (2001) und
 `src/app/reducer.ts` (1920) — dort trifft fast jede Änderung zusammen. Über
@@ -10444,6 +10444,63 @@ nennen. `supabase/` bleibt unberührt.
 3. Die Ordnernamen `src/lib/daten/`, `src/data/planung/`, `src/app/aktionen/`.
 4. Alte Pfade in Kommentaren (38 Dateien) mitziehen — nur der Pfad, kein
    Aufräumen; sonst zeigen sie ins Leere.
+
+Betreiber: „ja empfehlungen so umsetzen" — alle vier wie empfohlen.
+
+#### Umgesetzt am 7. November 2026
+
+In vier Schritten, je ein eigener Commit, jeder mit derselben Abnahme:
+
+| Schritt | Commit | Ergebnis |
+| --- | --- | --- |
+| `planning.ts` (2001 Z.) → `src/data/planung/` | `71a8bc41` | 9 Module (73–448 Z.), 89 Importeure direkt umgestellt, die drei Schlüssel-Helfer in 26 Dateien direkt aus `_shared` |
+| `data.ts` (2235 Z.) → `src/lib/daten/` | `33afb677` | 11 Module (60–608 Z.), der Modulzustand je genau einmal; `vi.mock` in 15 Dateien mit derselben Bedeutung aufgeteilt |
+| `reducer.ts` (1908 Z.) → `src/app/aktionen/` | `a37d4e99` | 9 Teile (100–259 Z.) und `gemeinsam`; `reducer.ts` 410 Z. mit der einen Verteilstelle |
+| Kommentare in den verschobenen Teilen | (dieser Commit) | 178 Kommentarblöcke mit Chronik → 10 Fehltreffer des Suchnetzes; über 20 falsche Kommentare berichtigt |
+
+**Verschoben wurde per Skript** (TypeScript-Compiler-API), nicht abgetippt, und
+jeder Schritt hat Anweisung für Anweisung und Kommentar für Kommentar gegen das
+Original abgeglichen. Kein Weiterreichen: Die drei Dateien sind gelöscht
+(`reducer.ts` bleibt als Verteilstelle), es gibt keine Sammeldateien, jeder
+Importeur holt aus dem Modul, das ein Symbol definiert. Zyklenfrei, zur
+Laufzeit und mit Typ-Importen.
+
+**Neue Wächter:**
+- `tests/vi-mock-pfade.test.ts` — jeder `vi.mock`-Pfad trifft eine Datei. Den
+  prüft weder tsc noch vitest; ein Umzug nähme ihn sonst nicht mit, und der
+  Test liefe gegen das echte Modul.
+- `src/app/reducer-teile.test.ts` — jede Aktion in genau einem Teil, die
+  Verteilstelle leitet genau dorthin (eine Aktion in zwei Teilen fängt tsc
+  nicht).
+- `aktionsArten()` in `quelltext-proben.ts` — eine Stelle für die Liste der
+  Aktionen. Das Muster in `readonly.test.ts` verlangte `{ type:` auf einer
+  Zeile und übersah das mehrzeilige `navigate`: Die Probe prüfte still eine
+  Aktion weniger (Befund nebenbei, vor T172 schon so).
+- Die Proben über „alle Schreibwege der Datenschicht" und über die Fälle des
+  Reducers laufen per `import.meta.glob` über alle Module, mit Mindestzahl.
+
+**Kommentare** (Regel vom 2. November): aus der Chronik wurde die geltende
+Regel mit ihrem Grund, im Konjunktiv — „Mit `run()` käme nur ein
+Schreibfehler, und der Aufrufer stünde trotzdem weiter als eingesprungen da"
+statt „Bis zum 14.10.2026 stand hier `run()` …". Falsch waren unter anderem
+Verweise auf „oben"/„unten" in der alten Datei, das Schlüsselformat `<wi>|…`
+(längst `<montag>|…`), „`assignment_log` wird nie aufgeräumt" und vier
+JSDoc-Blöcke, die nach dem Schnitt an fremden Deklarationen hingen. Dazu
+nebenbei: „Befristet (T124)" an elf Stellen — die Ansicht ist seit dem
+6. November unbefristet. Belegt, dass sich nur Kommentare änderten: jede Datei
+ohne Kommentare gedruckt (TypeScript-Printer) und mit dem Stand davor
+verglichen, 39 von 39 gleich.
+
+**Gemessen:**
+
+| Was | Ergebnis |
+| --- | --- |
+| Abbild aller 720 Ansichten und Blätter des vollen Satzes (HTML von `#root` und den Portalen, per CDP) | vorher zweimal untereinander byte-gleich; nach jedem der drei Umzüge byte-gleich mit vorher |
+| Suite | vorher 8196, nachher 8211 grün (15 neu, zwei umbenannt, keiner verloren) |
+| Abdeckung (Anweisungen / Zweige / Funktionen / Zeilen) | vorher 98,07 / 93,51 / 98,30 / 99,21 %, nachher 98,08 / 93,58 / 98,31 / 99,21 % — nirgends niedriger |
+| Bündel | 692,38 → 695,17 kB, gzip 211,25 → 212,36 kB: Die Aktionsnamen stehen jetzt in der Verteilstelle und im Teil |
+| `npm run laufzeit -- --satz voll --axe` | 720 Läufe in 357 s, kein Befund. Ein Lauf davor brach in 3 Läufen mit `net::ERR_NETWORK_CHANGED` ab: Die Netzwerkkonfiguration des Rechners wechselte mitten im Laden, auch zum Dev-Server auf 127.0.0.1 — kein Befund der App |
+| Dateien über 600 Zeilen (TypeScript, ohne Tests und Wörterbücher) | 16 → 14: die drei großen sind fort, `AssignSheet.tsx` kam mit T173 von 575 auf 609. Die größten neuen Module: `laden.ts` 592, `automatik.ts` 449, `waehler.ts` 407, `reducer.ts` 405 |
 
 ### T173 · Barrierefreiheit und Sprachauszeichnung mit axe prüfen 🔧 ✅ umgesetzt (7. November 2026)
 
@@ -10629,13 +10686,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☐☑
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☑☑
 
-**171 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen sind T170 und T172**: Staging und
-Ausrollen per CI (wartet auf das Staging-Projekt des Betreibers; Pausieren und
-Freigabe sind entschieden) und große Dateien aufteilen. Am 7. November
-umgesetzt: **T173** (Barrierefreiheit und Sprachauszeichnung — Sprachprüfung
+**172 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. **Offen ist nur T170**: Staging und Ausrollen per
+CI (wartet auf das Staging-Projekt des Betreibers; Pausieren und Freigabe sind
+entschieden). Am 7. November umgesetzt: **T172** (die drei größten Dateien nach
+Fachbereich aufgeteilt — `src/data/planung/`, `src/lib/daten/`,
+`src/app/aktionen/`; alle Ansichten byte-gleich), **T173** (Barrierefreiheit
+und Sprachauszeichnung — Sprachprüfung
 in jeder Laufzeit-Messung, axe mit `--axe` auch in der CI; 44 Befunde behoben,
 zwei begründete Ausnahmen, vom Betreiber bestätigt), **T171**
 (Fehlermeldungen von den Geräten — `geraete_fehler`, fünf Bremsen, Lesen per
@@ -11110,7 +11169,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
 T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
 umgesetzt, offen davon nur die Probe gegen ein echtes Projekt und der Umstieg
-beim Neuaufbau; T173 am Abend, ohne Rest;
+beim Neuaufbau; T173 und T172 am Abend, ohne Rest;
 keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8258221`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
@@ -11119,8 +11178,7 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte, den Neuaufbau, das Staging-Projekt oder eine der
-Aufgaben T170 und T172.
+bleibt, braucht NWS-Exporte, den Neuaufbau oder das Staging-Projekt (T170).
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
@@ -11130,7 +11188,7 @@ Aufgaben T170 und T172.
 | **T169** | Umstieg auf die Migrationen | vorbereitet am 7. November (`supabase/migrations/20261107120000_grundstand.sql`, dazu `migrationen.test.ts`, die ihn und `schema.sql` gegeneinander hält — beide in je eine leere Postgres, acht Katalog-Abschnitte). Zu tun bleibt es **beim Neuaufbau**: Datenbank aus `schema.sql` aufbauen, erste Migration als eingespielt eintragen (`migration repair --status applied 20261107120000`), die Einmal-Aufräumblöcke aus `schema.sql` nehmen. E4 wird dann Migration 2 (Betreiber am 7. November: nicht in die erste) |
 | **T170** | Staging und Ausrollen per CI | **wartet auf das Staging-Projekt**, das der Betreiber anlegt (Region `eu-central-1` wie Produktion) — ohne es ließe sich die Strecke schreiben, aber nicht fahren. T169 ist fertig. Entschieden am 7. November: wachhalten per täglichem Zeitplan (Free-Tarif pausiert nach etwa einer Woche, Aufwecken nur im Dashboard), Produktions-Ausrollung **ohne** Freigabe, sobald die Staging-Proben grün sind |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
-| **T172** | Große Dateien aufteilen | bereit; die Schnitte vorher abstimmen, nicht neben T171 |
+| **T172** | — | **erledigt am 7. November**: `planning.ts`, `data.ts` und `reducer.ts` nach Fachbereich aufgeteilt (`src/data/planung/`, `src/lib/daten/`, `src/app/aktionen/`), alle Ansichten byte-gleich, die Kommentare in den verschobenen Teilen auf das gekürzt, was gilt. Nicht mehr offen |
 | **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166

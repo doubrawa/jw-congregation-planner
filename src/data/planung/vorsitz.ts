@@ -26,15 +26,14 @@ export function* wtLeiterPlaetze(meeting: Meeting): Generator<SlotAssignment> {
 /**
  * **Folgt dieser Platz dem Vorsitz — in dieser Zusammenkunft?** Wie
  * `folgtDemVorsitz`, nur liest der Vorsitzende nicht, wenn er das
- * Wachtturm-Studium selbst leitet (T131; von Hand so eingetragen, oder er ist
- * der feste Leiter) — niemand leitet und liest zugleich. Dann ist der Leser ein
+ * Wachtturm-Studium selbst leitet (von Hand so eingetragen, oder er ist der
+ * feste Leiter) — niemand leitet und liest zugleich. Dann ist der Leser ein
  * Platz wie jeder andere: Schritt 2 besetzt ihn, der Bedarf zählt ihn, das
  * Zuteilen-Blatt schlägt vor wie sonst.
  *
  * Die eine Stelle für alle, die die Zusammenkunft kennen — Automatik, Blatt,
- * `bedarf`, Auswertung. Im ersten Entwurf (19.10.2026) stand der Sonderfall
- * nur bei Automatik und Vorschlag; Bedarf und „heute schon dran" kannten ihn
- * nicht.
+ * `bedarf`, Auswertung. Stünde der Sonderfall nur bei Automatik und
+ * Vorschlag, kennten Bedarf und „heute schon dran" ihn nicht.
  */
 export function folgtDemVorsitzIn(meeting: Meeting, section: Section, slot: SlotAssignment | undefined): boolean {
   if (!folgtDemVorsitz(section, slot)) return false

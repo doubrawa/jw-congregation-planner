@@ -17,7 +17,7 @@ import { dropConfirmations, toastKey } from './gemeinsam'
 /**
  * Schlüssel der Slots, die sich zwischen zwei Wochenständen geändert haben —
  * und eine leere Liste, wenn es die Zusammenkunft an dieser Stelle nicht gibt.
- * Nichts zu vergleichen heißt nichts abzuräumen (T42).
+ * Nichts zu vergleichen heißt nichts abzuräumen.
  */
 function geaenderteSlots(
   vorher: Week[],
@@ -28,7 +28,7 @@ function geaenderteSlots(
 ): string[] {
   const a = vorher[wi]?.[tab]
   const b = nachher[wi]?.[tab]
-  // Die Kennung kommt aus der Woche selbst (T66) — der Index taugt dafuer nicht.
+  // Die Kennung kommt aus der Woche selbst — der Index taugt dafuer nicht.
   const woche = nachher[wi]?.start ?? ''
   return a && b ? changedSlotKeys(a, b, services, woche, tab) : []
 }
@@ -57,7 +57,7 @@ type ZuteilenAktion = Extract<
 export function zuteilen(state: AppState, action: ZuteilenAktion): AppState {
   switch (action.type) {
     case 'assign': {
-      // Zuteilen bzw. Entfernen ("") + Mitteilung (Prototyp: assignTo)
+      // Zuteilen bzw. Entfernen ("") (Prototyp: assignTo)
       const sel = state.slotSel
       if (!sel) return state
       // Treffpunkt-Leiter: eigene Datenquelle (fsWeeks). Die Zusage des
@@ -87,7 +87,7 @@ export function zuteilen(state: AppState, action: ZuteilenAktion): AppState {
         //
         // Wer hier einen Platz verliert, von dem er wusste (zugesagt oder
         // gemeldet), erfährt es sofort — persist.ts liest das aus dem
-        // Vorher/Nachher-Vergleich und ruft `send-plan` mit 'entzug' (T99).
+        // Vorher/Nachher-Vergleich und ruft `send-plan` mit 'entzug'.
         confirmations: dropConfirmations(
           state.confirmations,
           geaenderteSlots(state.weeks, weeks, sel.wi, sel.tab, state.services),

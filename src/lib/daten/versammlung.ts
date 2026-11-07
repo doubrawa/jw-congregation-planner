@@ -8,8 +8,7 @@ import { supabase } from '../supabase'
 import { run, zeileSchreiben, type Zeilenstand } from './schreibweg'
 
 /* ---- Row-Typen (Spalten aus supabase/schema.sql) ------------------------ */
-// Personen, Abwesenheiten, Grundplan-Regeln, Gruppenbesuche und vorgemerkte
-// Vorträge stehen in `zeilen.ts` — die lesen auch die Wartungsskripte, und dort
+// Zeilen, die auch die Wartungsskripte lesen, stehen in `zeilen.ts` — dort
 // hängt nichts am Client.
 
 export interface ServiceRow {
@@ -30,10 +29,6 @@ export interface GroupRow {
 }
 
 /**
- * Stammdaten und Einstellungen der Versammlung — je eine Spalte, kein
- * `settings`-Beutel und kein Anzeigetext mehr (siehe schema.sql).
- */
-/**
  * Die Spalten, die `loadCongregationData` von `congregations` holt — aus dem
  * Typ abgeleitet, damit Abfrage und Zusicherung nicht auseinanderlaufen.
  *
@@ -53,6 +48,10 @@ export const CONG_SPALTEN = [
   'cong_lang', 'prog_langs', 'aux_class',
 ] as const satisfies ReadonlyArray<keyof CongregationRow>
 
+/**
+ * Stammdaten und Einstellungen der Versammlung — je eine Spalte, kein
+ * `settings`-Beutel und kein Anzeigetext (siehe schema.sql).
+ */
 export interface CongregationRow {
   name: string
   hall: string
@@ -130,17 +129,16 @@ export function deleteServiceRow(congregationId: string, key: string): void {
 /**
  * Eine Predigtdienstgruppe speichern — **mit ihrer Position**.
  *
- * Hier stand eine feste `0`. Geladen werden die Gruppen aber `.order('position')`
- * (siehe unten), und bei lauter Nullen ist die Reihenfolge das, was die
- * Datenbank gerade zurückgibt: die Ablage im Heap. Ein `update` schreibt eine
- * neue Version der Zeile, meist ans Ende — wer den Aufseher von „Gruppe 2"
- * ändert, sah sie danach hinter „Gruppe 4" stehen.
+ * Geladen werden die Gruppen `.order('position')` (`loadCongregationData` in
+ * laden.ts). Bei einer festen `0` wäre die Reihenfolge das, was die Datenbank
+ * gerade zurückgibt: die Ablage im Heap. Ein `update` schreibt eine neue
+ * Version der Zeile, meist ans Ende — wer den Aufseher von „Gruppe 2" ändert,
+ * sähe sie danach hinter „Gruppe 4" stehen.
  *
  * Es bleibt nicht bei der Liste: Die **Reinigung rotiert über die Gruppen**
- * (`groups[weekIndex % groups.length]` in `autoAssignMeeting`). Springt eine
- * Gruppe in der Reihenfolge, rotiert die Zuteilung ab da anders herum, als der
- * Planer sie kennt — für dieselbe Woche käme beim nächsten Lauf eine andere
- * Gruppe heraus.
+ * (`waehler` in data/planung/waehler.ts). Springt eine Gruppe in der
+ * Reihenfolge, rotiert die Zuteilung ab da anders herum, als der Planer sie
+ * kennt — für dieselbe Woche käme beim nächsten Lauf eine andere Gruppe heraus.
  *
  * `position` ist der Index in `state.groups`, genau wie bei den Diensten
  * (`saveService`): Die Liste steht in Ladereihenfolge, und neue Gruppen hängen
@@ -164,12 +162,12 @@ export function deleteGroupRow(id: string): void {
 }
 
 /**
- * Stammdaten der Versammlung — **nur, was sich geändert hat** (15.10.2026).
+ * Stammdaten der Versammlung — **nur, was sich geändert hat**.
  *
- * Hier gingen Name, Saal und alle vier Zeit-Spalten bei jeder Änderung
- * hinaus. Zwei Admins, die zugleich Verschiedenes einstellten, überschrieben
- * sich dabei still: Wer den Saal umbenannte, schrieb mit seinem älteren Stand
- * die Zusammenkunftszeit zurück, die der andere eben geändert hatte. Die Zeiten
+ * Gingen Name, Saal und alle vier Zeit-Spalten bei jeder Änderung hinaus,
+ * überschrieben sich zwei Admins, die zugleich Verschiedenes einstellen, still:
+ * Wer den Saal umbenennt, schriebe mit seinem älteren Stand die
+ * Zusammenkunftszeit zurück, die der andere eben geändert hat. Die Zeiten
  * bleiben eine Einheit — sie werden zusammen eingestellt.
  */
 export function saveCongregationInfo(congregationId: string, info: Partial<Congregation>): void {
@@ -196,12 +194,11 @@ export interface EinstellungsAenderung {
 /**
  * Versammlungsweite Einstellungen (Erinnerungen, Sprachen, Zusätzliche Klasse)
  * — **nur, was sich geändert hat**, aus demselben Grund wie bei den
- * Stammdaten: Wer die Erinnerung verstellte, schrieb sonst die Zusätzliche
+ * Stammdaten: Wer die Erinnerung verstellt, schriebe sonst die Zusätzliche
  * Klasse eines zweiten Admins mit seinem älteren Stand zurück.
  *
- * Bis zum 17. September 2026 gingen sie als ein JSONB-Objekt `settings` in eine
- * einzige Spalte. Jetzt sind es Spalten mit Typ und Grenzen — die Zusagen
- * „1..21 Tage" und „0..7 Tage" standen vorher nur im Eingabefeld.
+ * Es sind Spalten mit Typ und Grenzen, kein JSONB-Objekt in einer Spalte — so
+ * stehen die Zusagen „1..21 Tage" und „0..7 Tage" nicht nur im Eingabefeld.
  */
 export function saveSettings(congregationId: string, aenderung: EinstellungsAenderung): void {
   if (!supabase) return

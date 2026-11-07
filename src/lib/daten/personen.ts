@@ -9,12 +9,11 @@ import { personToRow } from '../zeilen'
 import { run, zeileSchreiben } from './schreibweg'
 
 /**
- * Die Spalten von `persons` und `absences`, die die App lädt — ebenso
- * **ausdrücklich** (Sicherheits-Review 29.10.2026): Der Grund einer
- * Abwesenheit ist für die Versammlung gesperrt und kommt über
- * `abwesenheit_gruende`, nur zu dem, dem die App ihn zeigt. (Eine Adresse
- * speichert die App seit dem 31.10.2026 nicht mehr.)
- * `spaltenrechte.test.ts` misst beide Listen an den Mappern und am Schema.
+ * Die Spalten von `persons` und `absences`, die die App lädt — wie
+ * `CONG_SPALTEN` **ausdrücklich**: Der Grund einer Abwesenheit ist für die
+ * Versammlung gesperrt und kommt über `abwesenheit_gruende`, nur zu dem, dem
+ * die App ihn zeigt. `spaltenrechte.test.ts` misst beide Listen an den
+ * Mappern und am Schema.
  */
 export const PERSON_SPALTEN = 'id, fn, ln, planner_vorgemerkt, zuteiler_vorgemerkt, role, female, priv, grp, fam'
 export const ABWESENHEIT_SPALTEN = 'id, person_id, user_id, from_date, to_date'
@@ -52,7 +51,7 @@ export function savePersonGroup(person: Person): void {
  * Haushalt anlegen (falls neu) und die beteiligten Personen darauf setzen.
  *
  * **Nacheinander, und das ist der Grund für diese Funktion.** Der Haushalt ist
- * seit T105 eine eigene Zeile, auf die `persons.fam` per Fremdschlüssel zeigt;
+ * eine eigene Zeile, auf die `persons.fam` per Fremdschlüssel zeigt;
  * ginge die Person vor ihm hinaus, wiese die Datenbank sie ab. Alle übrigen
  * Schreibwege hier sind bewusst „abschicken und weitergehen" — dieser eine hat
  * eine Reihenfolge, also steht sie an einer Stelle.
@@ -94,11 +93,9 @@ export function deleteHouseholdRow(id: string): void {
  * Abwesenheit anlegen.
  *
  * Ersteller und betroffene Person kommen **aus dem Datensatz**, nicht von
- * außen. Sie standen bis August 2026 als eigene Parameter daneben, und der
- * einzige Aufrufer füllte sie aus dem angemeldeten Konto — was stimmte, solange
- * jeder nur seine eigenen erfassen konnte. Seit der Planer sie im Personen-
- * Detail für **andere** einträgt, wäre das falsch: Die Zeile landete auf seiner
- * Person statt auf der gemeinten, und niemand sähe es. Ein Datensatz, der beide
+ * außen: Der Planer trägt Abwesenheiten im Personen-Detail auch für **andere**
+ * ein. Aus dem angemeldeten Konto gefüllt, landete die Zeile auf seiner Person
+ * statt auf der gemeinten, und niemand sähe es. Ein Datensatz, der beide
  * Angaben schon trägt, darf sie nicht ein zweites Mal übergeben bekommen.
  */
 export function saveAbsence(congregationId: string, absence: Absence): void {

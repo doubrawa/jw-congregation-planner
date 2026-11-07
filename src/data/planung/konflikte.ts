@@ -24,12 +24,12 @@ import type { Meeting, MeetingKey, Person, Service, SlotAssignment, Week } from 
  * Abwesenheit eingeteilt oder mehrfach in derselben Zusammenkunft. Reine
  * Ableitung, keine Persistenz.
  *
- * **Die Serie ist weg, nicht vergessen** (T81). „X ist 3 Wochen in Folge
- * eingeteilt" stand hier jahrelang und war der häufigste Eintrag des Banners —
- * in einer kleinen Versammlung ist das der Normalfall, kein Missstand. Eine
- * Warnung, die fast immer steht, bringt der Planer sich ab und übersieht
- * daneben die, auf die es ankommt. Was hier bleibt, nennt nur noch Dinge, die
- * so nicht bleiben können. Die Auslastung selbst ist damit nicht aus dem Blick:
+ * **Eine Serie ist kein Konflikt.** „X ist 3 Wochen in Folge eingeteilt"
+ * wäre der häufigste Eintrag des Banners — in einer kleinen Versammlung ist
+ * das der Normalfall, kein Missstand. Eine Warnung, die fast immer steht,
+ * bringt der Planer sich ab und übersieht daneben die, auf die es ankommt.
+ * Was hier steht, nennt nur Dinge, die so nicht bleiben können. Die
+ * Auslastung selbst ist damit nicht aus dem Blick:
  * die Auto-Zuteilung rechnet sie (`partLoad`/`anyDist`), und das Personen-Sheet
  * zeigt sie in den Quadraten.
  */
@@ -66,8 +66,8 @@ export interface Conflict {
    *
    * Der Anzeigename allein reichte nicht: das Banner nennt den Konflikt, die
    * Zuteilung darunter wird danach markiert, und bei zwei Personen desselben
-   * Namens leuchtete sonst auch die falsche auf — dieselbe Verwechslung, die
-   * T57 aus der Zählung genommen hat.
+   * Namens leuchtete sonst auch die falsche auf — dieselbe Verwechslung wie
+   * beim Zählen (`Belegung`).
    */
   kennung: string
   tab?: MeetingKey // betroffene Zusammenkunft (absent/double/helperTask)
@@ -79,8 +79,7 @@ export interface Conflict {
 
 /**
  * Die belegten Plätze einer Zusammenkunft, nach Art getrennt — **ein**
- * Durchlauf über `allePlaetze` für alle Fragen der Konfliktprüfung. Vier
- * Funktionen liefen hier je für sich über dieselben Plätze.
+ * Durchlauf über `allePlaetze` für alle Fragen der Konfliktprüfung.
  *
  * Ohne Lieder, ohne externe Slots (Gastredner/Kreisaufseher) und ohne die
  * Gruppen-Rotation — die sind keine zuteilbaren Personen.
@@ -160,8 +159,7 @@ function belegungen(meeting: Meeting, services: Service[], wer: IdVon): Belegung
  * **Gesprächsführer und -partner, die nicht zueinander passen** — gleiches
  * Geschlecht oder derselbe Haushalt (`partnerGenderOk`). Die Auswahl bietet
  * ein solches Paar nicht an (`passtZumPaar`); stehen kann es trotzdem, aus
- * der Zeit, als die Regel nur eine Richtung kannte, oder nachdem sich eine
- * Person geändert hat. Je Punkt und Raum.
+ * älteren Daten oder nachdem sich eine Person geändert hat. Je Punkt und Raum.
  */
 function unpassendePaare(meeting: Meeting, persons: Person[]): Array<{ partner: ProgrammPlatz; fuehrer: SlotAssignment }> {
   const out: Array<{ partner: ProgrammPlatz; fuehrer: SlotAssignment }> = []
@@ -217,7 +215,7 @@ export function weekConflicts(
   const conflicts: Conflict[] = []
   const werIst = idAufloeser(persons)
   const nachId = new Set(persons.map((p) => p.id))
-  // Entfallene Zusammenkünfte fallen heraus (T30): wer an einem Tag nicht
+  // Entfallene Zusammenkünfte fallen heraus: wer an einem Tag nicht
   // drankommt, ist dort weder doppelt eingeteilt noch abwesend-und-eingeteilt.
   // Ein Warnbanner über eine Zusammenkunft, die gar nicht stattfindet, wäre
   // Lärm — und verdeckt die echten Konflikte daneben.
@@ -259,14 +257,13 @@ export function weekConflicts(
      * **Zwei Räume zur selben Zeit.**
      *
      * `programm` zählt Hauptsaal und Klasse zusammen — genau der Fall, den die
-     * Prüfung finden soll. Sie fand ihn nicht: Zwei Programmpunkte sind bewusst
-     * kein Konflikt (Vorsitz und Anfangsgebet), und damit fiel auch der Mensch
-     * durch, der zugleich im Hauptsaal und in der Zusätzlichen Klasse stand.
+     * Prüfung finden soll. Nach dieser Zahl allein fände sie ihn nicht: Zwei
+     * Programmpunkte sind bewusst kein Konflikt (Vorsitz und Anfangsgebet), und
+     * damit fiele auch der Mensch durch, der zugleich im Hauptsaal und in der
+     * Zusätzlichen Klasse steht.
      *
-     * Die Automatik verhindert es seit je (`autoassign.klasse.test.ts`:
-     * „Niemand steht zur selben Zeit in zwei Räumen"); von Hand blieb es
-     * möglich, und niemand sagte etwas. Erst der Ratgeber-Platz und die zweite
-     * Reihe haben den Fall überhaupt geschaffen.
+     * Die Automatik verhindert es (`autoassign.klasse.test.ts`: „Niemand steht
+     * zur selben Zeit in zwei Räumen"); von Hand bleibt es möglich.
      *
      * Gemeldet als `double`: Der Satz dazu — „{name} ist {n}× in einer
      * Zusammenkunft" — trifft es, und ein eigener Schlüssel hieße 34
@@ -280,8 +277,8 @@ export function weekConflicts(
      *  - **Ratgeber und ein Programmpunkt zur Zeit der Klasse**: Er begleitet
      *    die ganze Reihe seiner Klasse. Im Hauptsaal wäre er dann gar nicht
      *    da; in seiner eigenen Klasse wäre er sein eigener Ratgeber. Die
-     *    Automatik verhindert beides seit je (`used` kennt den Ratgeber-Platz),
-     *    von Hand blieb es möglich — und der Ratgeber steht in der Ansicht
+     *    Automatik verhindert beides (`used` kennt den Ratgeber-Platz),
+     *    von Hand bleibt es möglich — und der Ratgeber steht in der Ansicht
      *    neben dem Programm, nicht darin.
      *  - **Zweimal im selben Punkt**: Führer und Partner, Leiter und Leser
      *    zugleich ist niemand.
@@ -323,8 +320,6 @@ export function weekConflicts(
       conflicts.push({ kind: 'partner', name: b.name, kennung: b.kennung, tab: tb, zu: fuehrer.name, platz })
     }
   }
-
-  // Hier stand die Serie („3 Wochen in Folge"), siehe Kopf des Abschnitts.
 
   return conflicts
 }

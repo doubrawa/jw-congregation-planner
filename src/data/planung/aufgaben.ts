@@ -37,7 +37,7 @@ import type {
 
 /* ---- Aufgaben-Ableitung ---------------------------------------------------
  * „Meine Aufgaben" werden aus den Wochen-Zuteilungen berechnet. Der
- * Bestätigungs-Status hängt am stabilen `task_key` (Kennung des Punkts, T37):
+ * Bestätigungs-Status hängt am stabilen `task_key` (Kennung des Punkts):
  * Einfügen, Löschen und Verschieben von Programmpunkten lassen ihn in Ruhe.
  */
 
@@ -71,14 +71,13 @@ export function deriveSubstituteReqs(
     const wi = wochenIndex(weeks, parts.woche)
     if (wi < 0) continue // Woche nicht geladen — dazu ist nichts zu sagen
     const week = weeks[wi]
-    // Entfällt die Zusammenkunft, gibt es nichts zu vertreten (T30) — dieselbe
+    // Entfällt die Zusammenkunft, gibt es nichts zu vertreten — dieselbe
     // Grenze, die `eachAssignedSlot` für die eigenen Aufgaben zieht und die die
     // Edge Function `substitute` serverseitig durchsetzt ('meeting-cancelled').
-    // Sie fehlte allein hier: Sagte jemand ab und wurde die Woche danach
-    // gestrichen (Kongress, Saal belegt), stand das Gesuch weiter im
-    // Aufgaben-Blatt und legte sich beim Öffnen sogar als Modal vor
-    // (`vorzulegen`). Wer darauf zusagte, bekam vom Server ein 409 und davon
-    // nur einen Speicherfehler zu sehen.
+    // Ohne sie stünde das Gesuch einer Woche, die nach der Absage gestrichen
+    // wird (Kongress, Saal belegt), weiter im Aufgaben-Blatt und legte sich
+    // beim Öffnen sogar als Modal vor (`vorzulegen`). Wer darauf zusagte,
+    // bekäme vom Server ein 409 und davon nur einen Speicherfehler zu sehen.
     if (istAusgefallen(week, parts.tab)) continue
     const meeting = week?.[parts.tab]
     const slot = meeting?.helpers[parts.svc]?.[parts.pos]
@@ -86,9 +85,9 @@ export function deriveSubstituteReqs(
     /*
      * Dieselbe Regel wie beim Server (`uebernahmeHindernis`): Bereich, kein
      * Platz desselben Dienstes — auch nicht der eigene, über die Id, wo der
-     * Platz eine trägt —, vorbei, abwesend. Am Namen allein verschwand das
+     * Platz eine trägt —, vorbei, abwesend. Am Namen allein verschwände das
      * Gesuch des gleichnamigen Bruders: Ausgerechnet der, der ihn am ehesten
-     * vertreten könnte, bekam es nie zu sehen.
+     * vertreten könnte, bekäme es nie zu sehen.
      */
     const lage = {
       svc,
@@ -133,7 +132,7 @@ export function eachAssignedSlot(
   weeks.forEach((week, wi) => {
     for (const tab of MEETING_TABS) {
       // Entfällt die Zusammenkunft, gibt es dazu nichts zu bestätigen, zu
-      // erinnern oder zu vertreten (T30). Die Zuteilungen bleiben in den Daten
+      // erinnern oder zu vertreten. Die Zuteilungen bleiben in den Daten
       // stehen — sie sind nicht verwaist, sie ruhen nur, solange nichts
       // stattfindet.
       if (istAusgefallen(week, tab)) continue
@@ -143,7 +142,7 @@ export function eachAssignedSlot(
       // **Ein Durchlauf für alle vier Platzsorten.** Die Plätze der Zusätzlichen
       // Klasse sind gleichwertige Aufgaben (bestätigen, erinnern, S-89), nur mit
       // eigenem Schlüssel und eigenem Ort; der Ratgeber und die Hilfsdienste
-      // ebenso. Hier standen dafür drei Schleifen untereinander.
+      // ebenso.
       for (const platz of allePlaetze(meeting, services)) {
         // Nur, wer etwas zu bestätigen hat: Gastredner und Kreisaufseher kommen
         // von außen, die Reinigungs-Rotation ist eine Gruppe.
@@ -221,11 +220,11 @@ export function deriveMyTasks(
  * Ampel-Punkt am Chip des Planers lesen hier. So sieht der Planer genau das,
  * was der Verkündiger bei sich stehen hat.
  *
- * **Je Platz, nicht je Person.** Bis zum 14. September 2026 zeigte der Chip
- * eine Personen-Markierung: „…" an *jedem* Platz einer Person, solange sie
- * *irgendwo* noch etwas offen hatte — auch in einer anderen oder längst
- * vergangenen Woche. Ein bestätigter Vorsitz stand deshalb als unbestätigt
- * da, und eine Absage sah aus wie eine ausstehende Antwort.
+ * **Je Platz, nicht je Person.** Eine Personen-Markierung zeigte „…" an
+ * *jedem* Platz einer Person, solange sie *irgendwo* noch etwas offen hat —
+ * auch in einer anderen oder längst vergangenen Woche. Ein bestätigter
+ * Vorsitz stünde dann als unbestätigt da, und eine Absage sähe aus wie eine
+ * ausstehende Antwort.
  */
 export function zusageStatus(confirmations: ConfirmationMap, key: string): TaskStatus {
   return confirmations[key] ?? 'offen'

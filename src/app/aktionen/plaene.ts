@@ -1,5 +1,5 @@
 /**
- * Weitere Pläne (T120, Phase 5): Pläne anlegen, ändern und löschen, ihre
+ * Weitere Pläne: Pläne anlegen, ändern und löschen, ihre
  * Wochen reihum an die Gruppen verteilen oder einzeln belegen.
  */
 
@@ -34,7 +34,7 @@ type PlaeneAktion = Extract<
 export function plaene(state: AppState, action: PlaeneAktion): AppState {
   switch (action.type) {
     /*
-     * Weitere Pläne (T120, Phase 5) — Ankündigungen: Hier verfällt keine
+     * Weitere Pläne — Ankündigungen: Hier verfällt keine
      * Zusage und geht keine Nachricht hinaus.
      */
     case 'wpPlanAnlegen':

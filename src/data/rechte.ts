@@ -52,19 +52,19 @@ export interface Rechte {
   gruppe: string | null
 }
 
-/** Was `rechteVon` braucht: die echten Rechte des Kontos — und, befristet, die Ansicht. */
+/** Was `rechteVon` braucht: die echten Rechte des Kontos — und die Ansicht. */
 export interface RechteQuelle {
   planner: boolean
   zuteiler: boolean
   groups: readonly Group[]
   personId: string | null
-  /** Befristet (T124): Ein Admin sieht die App mit den Rechten einer anderen Stufe. */
+  /** Ein Admin sieht die App mit den Rechten einer anderen Stufe (`data/ansicht.ts`). */
   ansicht?: Ansicht | null
 }
 
 /** Die Rechte aus dem Zustand. */
 export function rechteVon(s: RechteQuelle): Rechte {
-  // Befristet (T124): die Ansicht einer anderen Stufe, nur am echten Admin-Konto.
+  // Die Ansicht einer anderen Stufe, nur am echten Admin-Konto.
   const ansicht = aktiveAnsicht(s)
   if (ansicht) return rechteDerAnsicht(ansicht)
   return {

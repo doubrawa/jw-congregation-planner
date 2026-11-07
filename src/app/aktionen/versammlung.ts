@@ -99,7 +99,7 @@ export function versammlung(state: AppState, action: VersammlungAktion): AppStat
         persons: state.persons.map((p) => (p.grp === action.id ? { ...p, grp: null } : p)),
         fsRules,
         fsWeeks,
-        // Ihre Besuche ebenso (T120) — in der Datenbank per Kaskade.
+        // Ihre Besuche ebenso — in der Datenbank per Kaskade.
         gruppenbesuche: neuWennGeaendert(
           state.gruppenbesuche,
           state.gruppenbesuche.filter((b) => b.grp !== action.id),
@@ -166,7 +166,7 @@ export function versammlung(state: AppState, action: VersammlungAktion): AppStat
       }
     case 'setCongLang': {
       // Wird eine weitere Programmsprache zur Sprache der Versammlung, ist sie
-      // keine weitere mehr — sonst stand sie zweimal da („Englisch, Englisch").
+      // keine weitere mehr — sonst stünde sie zweimal da („Englisch, Englisch").
       const progLangs = state.progLangs.filter((c) => c !== action.code)
       return {
         ...state,

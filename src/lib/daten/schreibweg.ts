@@ -13,9 +13,9 @@ import { mitverfolgen } from '../schreiben-unterwegs'
 
 /**
  * Alle `save*`/`delete*`-Funktionen sind fire-and-forget: der Reducer zeigt
- * den Erfolg, **bevor** geschrieben wurde. Schlug das Schreiben fehl —
- * RLS-Verstoß, abgelaufenes Token, kein Netz, Timeout —, stand das bislang nur
- * in der Konsole. Der Nutzer sah „Zugeteilt", die Datenbank hatte nichts.
+ * den Erfolg, **bevor** geschrieben wurde. Schlägt das Schreiben fehl —
+ * RLS-Verstoß, abgelaufenes Token, kein Netz, Timeout —, genügt die Konsole
+ * nicht: Der Nutzer sähe „Zugeteilt", und die Datenbank hätte nichts.
  *
  * Diese Schicht kennt weder Dispatch noch Sprache. Sie meldet deshalb nur,
  * *dass* etwas schiefging; wer das anzeigt, meldet sich hier an (store.tsx).
@@ -67,8 +67,7 @@ export function standVeraltet(error: Zeilenfehler): boolean {
  * Wie `run`, für die Tabellen „eine Zeile je …": Hat die Datenbank abgewiesen,
  * weil der Stand hier veraltet ist, wird **nachgeladen** (`konfliktMelder`) statt
  * nur gemeldet — sonst stünde lokal weiter da, was es dort nicht gibt: „Du bist
- * eingetragen" für einen Platz, den ein anderer schon hatte. Bis zum 3.10.2026
- * lud allein das Zeugnisgeben nach, und nur bei zwei der Fälle.
+ * eingetragen" für einen Platz, den ein anderer schon hatte.
  */
 export async function zeilenRun(promise: PromiseLike<{ error: Zeilenfehler | null }>): Promise<void> {
   const { error } = await promise
@@ -88,8 +87,7 @@ type Schreiben = () => Promise<{ error: Zeilenfehler | null }>
  * hinaus, eines nach dem anderen. Ein Netzfehler hält sie nicht an — sonst
  * ginge nach ihm gar nichts mehr hinaus.
  *
- * Bis zum 3.10.2026 stand die Schlange zweimal da (Zeugnisgeben, Weitere
- * Pläne), Zeile für Zeile gleich; jede Tabellen-Familie bekommt ihre eigene.
+ * Jede Tabellen-Familie bekommt ihre eigene.
  */
 export function schreibSchlange(): (schreiben: Schreiben) => void {
   let schlange: Promise<void> = Promise.resolve()
@@ -106,7 +104,7 @@ export function schreibSchlange(): (schreiben: Schreiben) => void {
  * angelegt oder geändert hat** — der gemeinsame Weg der Tabellen mit einer
  * Zeile je Regel, Besuch, Termin, Vortrag, Plan oder Eintrag. Gelöscht wird
  * nur über die Kennungen in `entfernt`, nie „alles, was fehlt" (warum, steht
- * bei `saveFsRules`). Stand bis zum 3.10.2026 sechsmal da.
+ * bei `saveFsRules`).
  */
 export async function loeschenDannSchreiben<T>(
   client: NonNullable<typeof supabase>,

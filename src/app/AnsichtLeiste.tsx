@@ -4,7 +4,7 @@ import { fill, useT } from '../i18n/useT'
 import { useApp } from './context'
 
 /**
- * **Die Leiste der Ansicht** (befristet, T124): Solange der Admin die App als
+ * **Die Leiste der Ansicht** (`data/ansicht.ts`): Solange der Admin die App als
  * eine andere Stufe ansieht, steht sie auf jedem Bildschirm — mit einem Tipp
  * zurück zum eigenen Recht. Sie sagt auch, dass das Tun darin echt ist: Die
  * Datenbank kennt nur das Recht des Admins.

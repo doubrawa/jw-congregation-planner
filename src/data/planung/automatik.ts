@@ -36,7 +36,7 @@ import type {
   Week,
 } from '../types'
 
-/**
+/*
  * Zuteilungslogik — Kernregeln aus dem Design-Handoff ("Interaktionen &
  * Verhalten"): nur Qualifizierte, Abwesende blockiert, Auslastung über alle
  * geladenen Wochen, Auto-Zuteilung wählt geringste Auslastung, Reinigung
@@ -47,7 +47,7 @@ import type {
  * den Reducer und später direkt testbar.
  */
 
-/**
+/*
  * Rollen, die die Auto-Zuteilung nicht besetzt (kommen von außen).
  *
  * Das Vokabular selbst steht in `helpers.ts` — dort, wo `gehoertZu` entscheidet,
@@ -68,7 +68,7 @@ export interface AutoAssignResult {
 export type AssignScope = 'all' | 'parts' | 'helpers'
 
 /**
- * Worauf „Automatisch" und „Leeren" wirken (T121, Entwurf `GAutomatisch`):
+ * Worauf „Automatisch" und „Leeren" wirken (Entwurf `GAutomatisch`):
  * auf die gezeigte Zusammenkunft (`tag`) oder auf beide der Woche (`woche`).
  */
 export type Umfang = 'tag' | 'woche'
@@ -109,8 +109,8 @@ function wtLeiterZuerst(meeting: Meeting, w: Waehler): number {
  *
  * Was dem Vorsitz folgt, bleibt aus und wird in Schritt 4 an ihn gekoppelt.
  * Den Leiter des Wachtturm-Studiums hat Schritt 1 schon versucht, mit
- * denselben Bewerbern; fand er niemanden, zählte er hier ein zweites Mal als
- * offen (bis zum 16.10.2026).
+ * denselben Bewerbern; fände er niemanden, zählte er hier sonst ein zweites
+ * Mal als offen.
  */
 function programmpunkteBesetzen(meeting: Meeting, w: Waehler, persons: Person[]): number {
   let unfilled = 0
@@ -141,7 +141,7 @@ function ratgeberBesetzen(meeting: Meeting, w: Waehler): number {
 
 /**
  * 4) Der Vorsitz betet zu Beginn (Standard, von Hand änderbar), liest am
- *    Wochenende den Wachtturm (T131) und hält, wo das Arbeitsheft es so nennt,
+ *    Wochenende den Wachtturm und hält, wo das Arbeitsheft es so nennt,
  *    den „Vortrag des Vorsitzenden" — die einzigen erlaubten Doppel-Aufgaben.
  *    Gekoppelt wird nur, was noch offen ist.
  *
@@ -150,14 +150,14 @@ function ratgeberBesetzen(meeting: Meeting, w: Waehler): number {
  * niemanden: Die gemeinsame Sperrliste setzte dort sonst einen **anderen**
  * Bruder hin, als hielte ein zweiter Vorsitzender den Vortrag (Arbeitsheft ab
  * Januar 2027, `ministryNames` im Import) — und mit nur einem, der den Vorsitz
- * kann, blieb er offen.
+ * kann, bliebe er offen.
  */
 function anVorsitzKoppeln(meeting: Meeting, w: Waehler, persons: Person[]): void {
   const vorsitzSlot = vorsitzPlatz(meeting)
   if (!vorsitzSlot?.name) return
   const vorsitz = persons.find((p) => p.id === w.werIst(vorsitzSlot))
   // Id vor Name: Trägt der Vorsitz nur einen Namen (Altbestand), bekommt der
-  // gekoppelte Platz trotzdem die Id der Person dahinter (16.10.2026).
+  // gekoppelte Platz trotzdem die Id der Person dahinter.
   const pid = vorsitzSlot.pid ?? vorsitz?.id
   for (const { slot, section } of programmPlaetze(meeting)) {
     if (slot === vorsitzSlot || slot.name || !folgtDemVorsitzIn(meeting, section, slot)) continue
@@ -207,7 +207,7 @@ function hilfsdiensteBesetzen(meeting: Meeting, services: Service[], w: Waehler)
  * Auto-Zuteilung für eine Woche+Meeting. Regeln (siehe README/Design):
  *  - Kandidaten: qualifiziert, in dieser Woche anwesend, noch nicht in diesem
  *    Meeting eingeteilt. Niemand bekommt Hilfsdienst UND Programmpunkt am
- *    selben Tag (gemeinsame Sperrliste; Ausnahme Vorsitz+Gebet).
+ *    selben Tag (gemeinsame Sperrliste; Ausnahme: was dem Vorsitz folgt).
  *  - Ausgeglichene Verteilung über zwei mitlaufende „Strichlisten“ innerhalb
  *    eines gleitenden Fensters (±LOAD_RADIUS Wochen um die geplante Woche):
  *      • Aufgaben (Programmpunkte) werden nach der reinen **Aufgaben**-Last
@@ -216,7 +216,8 @@ function hilfsdiensteBesetzen(meeting: Meeting, services: Service[], w: Waehler)
  *        weniger Hilfsdienste (aber nicht umgekehrt).
  *    Bei Gleichstand fairer, deterministischer Tie-Break.
  *  - Vorsitz betet zu Beginn: Anfangsgebet wird als Standard an die
- *    Vorsitz-Person gekoppelt (die einzige erlaubte Doppel-Aufgabe).
+ *    Vorsitz-Person gekoppelt, ebenso, was ihm sonst folgt (Schritt 4 — die
+ *    einzigen erlaubten Doppel-Aufgaben).
  *  - Fester Wachtturm-Studium-Leiter (bzw. Vertreter bei Abwesenheit) wird
  *    zuerst reserviert, damit ihn kein anderer Slot „wegnimmt“.
  *  - Nicht besetzbare Slots bleiben offen (kein Kandidat verfügbar).
@@ -236,7 +237,7 @@ export function autoAssignMeeting(
 ): AutoAssignResult {
   const next = klonWoche(weeks, weekIndex)
   if (!next) return { weeks, count: 0, newly: [], unfilled: 0 }
-  // Entfällt die Zusammenkunft, gibt es nichts zu besetzen (T30). Ohne diese
+  // Entfällt die Zusammenkunft, gibt es nichts zu besetzen. Ohne diese
   // Zeile verteilte „Automatisch zuteilen" Aufgaben für einen Abend, an dem
   // niemand zusammenkommt — und benachteiligte die Gewählten anschließend bei
   // der nächsten echten Zusammenkunft, weil sie als ausgelastet gälten.
@@ -264,8 +265,8 @@ export function autoAssignMeeting(
 
 /**
  * **In welcher Reihenfolge „Automatisch" für diesen einen Platz wählen würde**
- * (T121, Phase 5d) — die erste Person ist der „Vorschlag" im Zuteilen-Blatt,
- * die übrigen stehen in derselben Ordnung darunter. Derselbe Wähler und
+ * — die erste Person ist der „Vorschlag" im Zuteilen-Blatt, die übrigen
+ * stehen in derselben Ordnung darunter. Derselbe Wähler und
  * dieselben Regeln je Platz wie in `autoAssignMeeting` (fester Studienleiter,
  * Schülerteile, Ratgeber, Hilfsdienste nach Gesamtlast) — sonst schlüge das
  * Blatt jemand anderen vor, als der Knopf „Automatisch" nähme.
@@ -300,11 +301,11 @@ export function rangfolgeFuer(
   if (!section || !item || isSong(item)) return []
   const slot = slotsOf(item, sel.aux === true)[sel.ni]
   if (!slot || isGuestRole(slot.rolle)) return []
-  // Das Schlussgebet am Wochenende besetzt die Automatik nicht, also schlägt das Blatt niemanden vor (T133).
+  // Das Schlussgebet am Wochenende besetzt die Automatik nicht, also schlägt das Blatt niemanden vor.
   if (schlussgebetVorOrt(meeting.sections, section, slot)) return []
   if (folgtDemVorsitzIn(meeting, section, slot)) {
-    // Was dem Vorsitz folgt, schlägt die App dem Vorsitzenden vor (16.10.2026) —
-    // bis dahin schlug sie niemanden vor und listete ihn als „heute schon dran".
+    // Was dem Vorsitz folgt, schlägt die App dem Vorsitzenden vor — sonst
+    // schlüge sie niemanden vor und listete ihn als „heute schon dran".
     const vorsitz = vorsitzPlatz(meeting)
     const er = vorsitz?.name ? persons.find((p) => gehoertZu(vorsitz, p)) : undefined
     return er ? [er] : []
@@ -314,19 +315,19 @@ export function rangfolgeFuer(
 }
 
 /**
- * **Der feste Studienleiter in einer neuen Woche** (18.10.2026, Wunsch des
- * Betreibers): Den Leiter-Platz des Wachtturm-Studiums bekommt schon beim
- * Holen der feste Leiter — ist er an dem Tag abwesend oder in der
- * Zusammenkunft schon eingeteilt (hält er etwa den öffentlichen Vortrag), sein
- * Vertreter. Danach ist es eine Zuteilung wie jede andere.
+ * **Der feste Studienleiter in einer neuen Woche** (Wunsch des Betreibers):
+ * Den Leiter-Platz des Wachtturm-Studiums bekommt schon beim Holen der feste
+ * Leiter — ist er an dem Tag abwesend oder in der Zusammenkunft schon
+ * eingeteilt (hält er etwa den öffentlichen Vortrag), sein Vertreter. Danach
+ * ist es eine Zuteilung wie jede andere.
  *
  * Besetzt wird nur ein leerer Platz und nicht in einer gestrichenen
  * Zusammenkunft. Kann keiner von beiden, bleibt der Platz offen: Wer ihn dann
  * bekommt, entscheidet die Auslastung, und die gehört der Automatik.
  *
  * Eine Abwesenheit, die erst nach dem Holen hinzukommt, ändert den Plan nicht
- * von selbst (Betreiber, 18.10.2026): Die Planung zeigt den Konflikt, und der
- * Vorschlag im Zuteilen-Blatt nennt den Vertreter.
+ * von selbst: Die Planung zeigt den Konflikt, und der Vorschlag im
+ * Zuteilen-Blatt nennt den Vertreter.
  *
  * Aufgerufen über `neueWocheEinordnen` (der Knopf in der App, das Skript
  * `wochen-importieren.mjs`) und vom Wochenplan-Import aus New World Scheduler:
@@ -364,7 +365,7 @@ export function festenWtLeiterEintragen(
 }
 
 /**
- * **Was „Automatisch" vorfindet** (T121, Entwurf `GAutomatisch`): die besetzten
+ * **Was „Automatisch" vorfindet** (Entwurf `GAutomatisch`): die besetzten
  * und alle Plätze eines Bereichs, gezählt, wie die Auto-Zuteilung sie sieht —
  * ohne die Plätze externer Redner (Gastredner, Kreisaufseher), die sie nicht
  * besetzt und das Leeren stehen lässt.
@@ -393,7 +394,7 @@ export function zuteilbarePlaetze(
  *    (Gastredner/Kreisaufseher) bleiben stehen, genau wie die Auto-Zuteilung sie
  *    nicht besetzt — sie kommen von außen und werden manuell eingetragen.
  *  - 'helpers' entfernt die Namen aller Hilfsdienste (inkl. Reinigungsgruppe).
- *  - 'all'     beides (T121: im Blatt „Automatisch" sind beide Bereiche wählbar).
+ *  - 'all'     beides (im Blatt „Automatisch" sind beide Bereiche wählbar).
  * Programmstruktur, Rollen, Vortragsthemen und Lieder bleiben unverändert.
  * Pur — die Eingabe bleibt unangetastet. `count` = Anzahl geleerter Slots.
  */
@@ -425,8 +426,8 @@ export function clearAssignments(
       // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
       // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
       // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
-      // Derselbe Rückfall wie beim „Entfernen" — ohne Versammlung: Bis zum
-      // 21.10.2026 blieb die eines Gastredners davor am eigenen Redner hängen.
+      // Derselbe Rückfall wie beim „Entfernen" — ohne Versammlung: Sonst
+      // bliebe die eines Gastredners davor am eigenen Redner hängen.
       if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) {
         slot.rolle = ROLE_GUEST_SPEAKER
         delete slot.herkunft

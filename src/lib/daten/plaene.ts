@@ -1,5 +1,5 @@
 /**
- * Weitere Pläne (T120, Phase 5): Pläne und ihre Einträge — Zeilen, Umformer
+ * Weitere Pläne: Pläne und ihre Einträge — Zeilen, Umformer
  * und die eine Schlange, in der ein Plan vor seinen Einträgen hinausgeht.
  */
 
@@ -9,7 +9,7 @@ import type { WeitererPlan, PlanEintrag, PlanTakt } from '../../data/types'
 import { supabase } from '../supabase'
 import { loeschenDannSchreiben, schreibSchlange } from './schreibweg'
 
-/** Weitere Pläne (T120, Phase 5): ein Plan, eine Zeile. */
+/** Weitere Pläne: ein Plan, eine Zeile. */
 export interface PlanRow {
   id: string
   name: string
@@ -82,7 +82,7 @@ export function rueckblickAb(): string {
 }
 
 /**
- * Weitere Pläne (T120, Phase 5): Pläne und Einträge in **einer** Schlange.
+ * Weitere Pläne: Pläne und Einträge in **einer** Schlange.
  * Ein neuer Eintrag zeigt auf einen Plan, der womöglich noch im Bündel wartet
  * („Neuer Plan" und gleich „Reihum verteilen"); der Plan geht deshalb vorher
  * hinaus, und die Schlange hält die Reihenfolge.

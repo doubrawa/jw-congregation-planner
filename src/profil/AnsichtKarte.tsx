@@ -7,7 +7,7 @@ import { useT } from '../i18n/useT'
 const EIGENES_RECHT = 'admin'
 
 /**
- * **Ansicht zum Testen** (befristet, T124): Der Admin sieht die App mit den
+ * **Ansicht zum Testen**: Der Admin sieht die App mit den
  * Rechten einer anderen Stufe (`data/ansicht.ts`).
  *
  * Angeboten am **echten** Recht (`planner`), nicht an der Ansicht — sonst

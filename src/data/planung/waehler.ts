@@ -23,18 +23,13 @@ import { lastFenster, laufendeWoche, partWorkload, tieHash, wochenAbstand, workl
 import { festerWtLeiter } from './vorsitz'
 import type { Group, Meeting, MeetingKey, PartItem, Person, Service, SlotAssignment, Week } from '../types'
 
-/**
+/*
  * **Wer kommt in Frage, und wie ausgelastet ist er?**
  *
  * Die eine Hälfte der Auto-Zuteilung. Sie kennt die Kandidaten, führt die
  * Strichlisten und entscheidet die Reihenfolge — sie weiß aber nichts davon,
  * welche Plätze es gibt. Die andere Hälfte (die fünf Schritte in `automatik.ts`) weiß
  * das und fragt hier nur „wer?".
- *
- * Bis September 2026 stand beides in **einer** Funktion von 319 Zeilen, mit
- * fünf durchnummerierten Abschnitten und einer `if (doParts) {`-Klammer, deren
- * Rumpf nicht eingerückt war. Wer die Reinigungsrotation ändern wollte, las
- * vorher zweihundert Zeilen Strichlisten, Tie-Break und Schülerteil-Regeln.
  */
 
 /**
@@ -79,14 +74,14 @@ function assignmentDistance(
   const ziel = weeks[weekIndex]
   if (!ziel) return { part, any, je }
   for (const week of weeks) {
-    // In Wochen gemessen, nicht in Einträgen (T36) — sonst zählt eine fehlende
+    // In Wochen gemessen, nicht in Einträgen — sonst zählt eine fehlende
     // Woche als Nachbarwoche.
     const d = wochenAbstand(week, ziel)
     const merken = (map: Map<string, number>, id: string | undefined): void => {
       if (id && (map.get(id) ?? Infinity) > d) map.set(id, d)
     }
     for (const tab of MEETING_TABS) {
-      if (istAusgefallen(week, tab)) continue // entfällt → keine Zuteilung (T30)
+      if (istAusgefallen(week, tab)) continue // entfällt → keine Zuteilung
       const meeting = week[tab]
       const ratgeber = wer(meeting.auxRatgeber)
       merken(part, ratgeber)
@@ -155,9 +150,9 @@ export interface Waehler {
  * Gruppen in den Plätzen der Gruppen-Dienste, auch eine inzwischen aus der
  * Reinigung genommene (sie bleibt eingetragen, bis der Platz neu besetzt wird);
  * ein noch leerer Platz bekommt gleich die Gruppe der Rotation (`rotation`).
- * Bis zum 18.10.2026 galt der Malus allein der Rotation — stand eine andere
- * Gruppe im Platz, bekam deren Aufseher Hilfsdienste, und der Aufseher der
- * Rotation wurde geschont, obwohl er nicht reinigte.
+ * Gälte der Malus allein der Rotation, bekäme der Aufseher einer anderen
+ * Gruppe im Platz Hilfsdienste, und der Aufseher der Rotation würde geschont,
+ * obwohl er nicht reinigt.
  */
 function reinigendeGruppen(meeting: Meeting, services: Service[], groups: Group[], rotation: Group | null): Group[] {
   const namen = new Set<string>()
@@ -177,11 +172,11 @@ function reinigendeGruppen(meeting: Meeting, services: Service[], groups: Group[
  * nur eine dran ist.
  *
  * Über **alle vier Platzsorten**: die Plätze der Zusätzlichen Klasse sind
- * gleichwertige Zuteilungen. Gelesen wurde hier lange nur `item.names` — wer
- * von Hand in die Klasse eingeteilt war, fehlte in dieser Menge und bekam vom
- * nächsten Lauf zusätzlich einen Platz im Hauptsaal. Dieselbe Person zur
- * selben Zeit in zwei Räumen, und niemand sah es: die Klasse steht in der
- * Ansicht daneben, nicht darin. Die Hilfsdienste über **alles Gespeicherte**:
+ * gleichwertige Zuteilungen. Läse man nur `item.names`, fehlte, wer von Hand
+ * in die Klasse eingeteilt ist, in dieser Menge und bekäme vom nächsten Lauf
+ * zusätzlich einen Platz im Hauptsaal — dieselbe Person zur selben Zeit in
+ * zwei Räumen, und niemand sähe es: die Klasse steht in der Ansicht daneben,
+ * nicht darin. Die Hilfsdienste über **alles Gespeicherte**:
  * Wer hinter einer nachträglich verkleinerten Platzzahl steht, ist trotzdem
  * eingeteilt und darf nicht zusätzlich drankommen.
  *
@@ -250,18 +245,18 @@ export function waehler(
    * Zwei Live-Strichlisten (Startwert aus dem Fenster, während des Laufs
    * hochgezählt): partLoad = nur Aufgaben, totalLoad = Aufgaben + Hilfsdienste.
    *
-   * **Der Startwert wird gemerkt, nicht jedes Mal neu gezählt.** Hier stand
-   * `partLoad.get(p.id) ?? partWorkload(windowWeeks, p)` — ein Rückfall ohne
-   * Ablage: Wer noch nicht zugeteilt war, stand in keiner Liste, und seine Last
-   * wurde bei **jedem** Blick neu über fünf Wochen gezählt. Angesehen wird sie
-   * aber im Vergleicher von `sort`, also rund `n log n` Mal je Platz.
+   * **Der Startwert wird gemerkt, nicht jedes Mal neu gezählt.** Mit einem
+   * Rückfall ohne Ablage (`partLoad.get(p.id) ?? partWorkload(windowWeeks, p)`)
+   * stünde, wer noch nicht zugeteilt ist, in keiner Liste, und seine Last würde
+   * bei **jedem** Blick neu über fünf Wochen gezählt. Angesehen wird sie aber
+   * im Vergleicher von `sort`, also rund `n log n` Mal je Platz.
    *
-   * Gemessen (300 Personen, alle qualifiziert, eine Zusammenkunft): 620 ms —
-   * spürbar eingefrorene Oberfläche, und der Reducer läuft synchron im Klick.
-   * Mit der Ablage sind es 21 ms. Am Ergebnis ändert sich nichts: `windowWeeks`
-   * steht vor dem Lauf fest und wird nicht mitgeschrieben (`klonWoche` gibt
-   * eine eigene Kopie zurück), die Zahl kann sich also gar nicht ändern —
-   * fortgeschrieben wird sie ausschließlich in `vergeben`.
+   * Gemessen (300 Personen, alle qualifiziert, eine Zusammenkunft): ohne
+   * Ablage 620 ms — spürbar eingefrorene Oberfläche, und der Reducer läuft
+   * synchron im Klick —, mit 21 ms. Am Ergebnis ändert die Ablage nichts:
+   * `windowWeeks` steht vor dem Lauf fest und wird nicht mitgeschrieben
+   * (`klonWoche` gibt eine eigene Kopie zurück), die Zahl kann sich also gar
+   * nicht ändern — fortgeschrieben wird sie ausschließlich in `vergeben`.
    */
   const partLoad = new Map<string, number>()
   const totalLoad = new Map<string, number>()
@@ -361,7 +356,7 @@ export function waehler(
     mitzaehlen(person) {
       // Die Strichliste nur führen, wenn die Person auflösbar ist: bei einem
       // externen Vorsitz (kein Eintrag in `persons`) gibt es keine Auslastung
-      // zu erhöhen — vorher landete dort der blanke Name als eigener Schlüssel.
+      // zu erhöhen — sonst landete dort der blanke Name als eigener Schlüssel.
       if (person) {
         totalLoad.set(person.id, tl(person) + 1)
         partLoad.set(person.id, pl(person) + 1)
@@ -403,9 +398,9 @@ function nurBrueder(): WahlOptionen {
 
 /**
  * Der Ratgeber der Zusätzlichen Klasse trägt `male` (`ratgeberSlot`) — der Rat
- * gehört einem Ältesten. Die Automatik und die Rangfolge im Blatt fragten das
- * bis zum 16.10.2026 nicht, das Angebot freier Plätze schon: Eine Schwester mit
- * versehentlich gesetztem Bereich wurde Ratgeber.
+ * gehört einem Ältesten. Die Automatik und die Rangfolge im Blatt fragen es
+ * hier ab wie das Angebot freier Plätze — sonst würde eine Schwester mit
+ * versehentlich gesetztem Bereich Ratgeber.
  */
 export function ratgeberOpts(ratgeber: SlotAssignment): WahlOptionen {
   return ratgeber.male ? nurBrueder() : {}

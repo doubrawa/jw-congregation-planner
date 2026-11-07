@@ -12,8 +12,8 @@ import type { ConfirmationMap, MeetingKey, MeetingTimes, Week } from '../types'
 /**
  * Index der Woche mit dieser Kennung — `-1`, wenn sie nicht geladen ist.
  *
- * Das Gegenstück zum Umbau: Wer aus einem Schlüssel wieder eine Woche braucht,
- * schlägt sie hier nach, statt die Zahl als Index zu missbrauchen. Nicht
+ * Wer aus einem Schlüssel wieder eine Woche braucht, schlägt sie hier nach —
+ * der Schlüssel trägt den Montag der Woche, nicht ihre Position. Nicht
  * geladen heißt nicht ungültig — die Woche kann außerhalb des Ladefensters
  * liegen (ein Jahr zurück, `aufbewahrung.ts`), und ihr Schlüssel bleibt
  * trotzdem richtig.
@@ -37,20 +37,20 @@ export function sentKey(taskKey: string, name: string): string {
 }
 
 /**
- * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<wi>|<tab>|…`,
+ * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<montag>|<tab>|…`,
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten
  * und bei Plätzen ohne Zusammenkunft (Treffpunkt).
  */
 export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | null {
   const teile = schluesselTeile(key)
   // Gefragt wird, ob der Schlüssel eine Zusammenkunft trägt — nicht, welche
-  // Arten es sonst noch gibt. Seit T120 kamen zwei ohne dazu, und jede neue
-  // stünde hier sonst als weitere Ausnahme.
+  // Arten es sonst noch gibt: Jede neue Art ohne Zusammenkunft stünde hier
+  // sonst als weitere Ausnahme.
   return teile && 'tab' in teile ? { woche: teile.woche, tab: teile.tab } : null
 }
 
 /**
- * Ist der Termin vorbei, auf den sich dieser `task_key` bezieht? (T77)
+ * Ist der Termin vorbei, auf den sich dieser `task_key` bezieht?
  *
  * Für Mitteilungen: „Ersatz gesucht", „Erinnerung" und dergleichen beziehen
  * sich auf einen Platz an einem bestimmten Tag — ist der herum, interessieren
@@ -61,9 +61,8 @@ export function taskKeyWeek(key: string): { woche: string; tab: MeetingKey } | n
  * die Zeile stehen — lieber eine zu viel als eine, die noch gebraucht wird.
  *
  * Ein Treffpunkt (`fs|…`) ist vorbei, wenn seine Woche um ist: Seinen Tag
- * kennen nur die Treffpunkt-Wochen, die hier nicht vorliegen. Bis zum
- * 15.10.2026 blieben seine Mitteilungen ganz stehen, bis die Glocke sie nach
- * 30 Tagen abräumte.
+ * kennen nur die Treffpunkt-Wochen, die hier nicht vorliegen. Sonst blieben
+ * seine Mitteilungen stehen, bis die Glocke sie nach 30 Tagen abräumt.
  */
 export function taskKeyVorbei(
   key: string,
@@ -77,7 +76,7 @@ export function taskKeyVorbei(
     const week = weeks[wochenIndex(weeks, teile.woche)]
     if (week) return istVorbei(meetingDateMs(week, teile.tab, zeiten), heute)
   }
-  // Woche nicht geladen (der Ladebereich deckt ein Jahr um heute ab, siehe
+  // Woche nicht geladen (der Ladebereich reicht ein Jahr zurück, siehe
   // lib/daten/laden.ts), oder ein Treffpunkt. Auch dann nicht geraten, sondern
   // gerechnet: Der Schlüssel trägt den Montag, und spätestens sechs Tage
   // später ist der Termin gewesen.
@@ -97,12 +96,12 @@ export function helperKeyParts(
  * Bestätigungen eines gelöschten Programmpunkts — alle seine Plätze, beide
  * Räume.
  *
- * **Das ist alles, was Einfügen, Löschen und Verschieben an Bestätigungen noch
- * anfassen.** Hier standen drei Funktionen: Beim Einfügen und Löschen mussten
+ * **Das ist alles, was Einfügen, Löschen und Verschieben an Bestätigungen
+ * anfassen.** Der Punkt trägt seine eigene Kennung im Schlüssel, nicht seine
+ * Position: Es verschiebt sich nichts, verfallen kann nur, was wirklich
+ * verschwindet. Stünde die Position darin, müssten beim Einfügen und Löschen
  * die Schlüssel aller folgenden Punkte umbenannt, beim Verschieben zwei
- * Schlüssel getauscht werden — alles nur, weil die Position im Schlüssel stand
- * (T16). Seit der Punkt seine eigene Kennung trägt, verschiebt sich nichts
- * mehr; verfallen kann nur, was wirklich verschwindet.
+ * Schlüssel getauscht werden.
  */
 export function itemZusagenKeys(
   map: ConfirmationMap,

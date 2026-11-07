@@ -10,7 +10,7 @@ import { mitverfolgen } from '../schreiben-unterwegs'
 import { run } from './schreibweg'
 
 /**
- * **Persönlich Bescheid gegeben** (T121, Phase 5g) — oder den Haken wieder
+ * **Persönlich Bescheid gegeben** — oder den Haken wieder
  * weg. Wer kein Konto hat, ist auf keinem Weg zu erreichen; der Planer sagt es
  * ihm selbst und hakt es in den Zusagen der Woche ab. Über
  * `persoenlich_bescheid` (security definer): Das Versand-Tagebuch schreibt
@@ -50,8 +50,7 @@ export function sendPlan(weekStart: string, heute: string): Promise<PlanVersand 
 
 /**
  * Der eine Aufruf hinter den Knöpfen, die auf die Antwort von `send-plan`
- * warten — „Plan senden" (bis zum 3.10.2026 dreimal abgeschrieben) und „Jetzt
- * erinnern". `null`: Er ist gescheitert.
+ * warten — „Plan senden" und „Jetzt erinnern". `null`: Er ist gescheitert.
  */
 async function sendPlanAntwort<T>(body: {
   action: 'plan' | 'erinnern'
@@ -81,7 +80,7 @@ export interface Erinnert {
 }
 
 /**
- * **Jetzt erinnern** (Zusagen der Woche, T121, Phase 5g): Wer von seinem
+ * **Jetzt erinnern** (Zusagen der Woche): Wer von seinem
  * Platz der Woche schon weiß und noch nicht zugesagt hat, bekommt die
  * Erinnerung sofort — je Person und Tag höchstens eine, von selbst oder von
  * Hand. Nicht fire-and-forget: Der Planer hat gedrückt und soll erfahren, was
@@ -105,12 +104,12 @@ export async function erinnerungSenden(weekStart: string, heute: string): Promis
  * nächsten „Plan senden", übte jemand tagelang für einen Platz, den er nicht
  * mehr hat.
  *
- * **Ein Aufruf für alle Entzüge einer Änderung.** Hier ging je Entzug ein
- * eigener `invoke` hinaus, und die Function wiederholte für jeden davor
- * dieselben fünf REST-Runden über Mitglieder, Personen und Push-Abos. Eine
- * Auto-Zuteilung, die eine Zusammenkunft neu besetzt, löste damit ein Dutzend
- * voller Aufrufe aus — für Nachrichten, die ohnehin alle aus demselben Bestand
- * zugestellt werden. Als Liste sind es fünf Runden, einmal.
+ * **Ein Aufruf für alle Entzüge einer Änderung.** Ginge je Entzug ein eigener
+ * `invoke` hinaus, wiederholte die Function für jeden davor dieselben fünf
+ * REST-Runden über Mitglieder, Personen und Push-Abos. Eine Auto-Zuteilung,
+ * die eine Zusammenkunft neu besetzt, löste damit ein Dutzend voller Aufrufe
+ * aus — für Nachrichten, die ohnehin alle aus demselben Bestand zugestellt
+ * werden. Als Liste sind es fünf Runden, einmal.
  *
  * Bezeichnung und Termin gehen kanonisch deutsch mit — der Client hat den Platz
  * gerade in der Hand, die Function könnte ihn nach dem Überschreiben nicht mehr

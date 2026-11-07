@@ -1,6 +1,6 @@
 /**
- * Die Wochen der Zusammenkünfte und der Treffpunkte, geschrieben mit Stand
- * (T39): welche Ladung gilt, die Schreibkette je Woche und die Stände nach
+ * Die Wochen der Zusammenkünfte und der Treffpunkte, geschrieben mit Stand:
+ * welche Ladung gilt, die Schreibkette je Woche und die Stände nach
  * einem Schreiben der Functions. Dazu die vorgemerkten Vorträge und die
  * Anwesenheit, die an einer Woche hängen.
  */
@@ -14,14 +14,14 @@ import type { AnwesendFeld, Anwesenheit } from '../../data/anwesenheit'
 import { konfliktMelden, loeschenDannSchreiben, schreibfehler, schreibSchlange, standVeraltet } from './schreibweg'
 
 export interface WeekRow {
-  /** Kennung der Woche (T66): ihr Montag. Eigene Spalte, nicht aus `data`. */
+  /** Kennung der Woche: ihr Montag. Eigene Spalte, nicht aus `data`. */
   start: string
   data: Week
-  /** Stand der Zeile — Grundlage der Konfliktprüfung beim Speichern (T39). */
+  /** Stand der Zeile — Grundlage der Konfliktprüfung beim Speichern. */
   updated_at: string
 }
 
-/* ---- Schreibkonflikte zwischen Planern (T39) ----------------------------- */
+/* ---- Schreibkonflikte zwischen Planern ----------------------------------- */
 
 /**
  * **Welcher Ladevorgang gilt** — weitergezählt, sobald ein Laden die Stände
@@ -34,14 +34,11 @@ export interface WeekRow {
  *
  *  - **Wartet er noch in seiner Kette, geht er nicht mehr los.** Er nähme den
  *    frischen Stand und schriebe den alten Inhalt darüber — lautlos genau das,
- *    was der Stand verhindern soll (T39). Stattdessen meldet er einen Konflikt.
+ *    was der Stand verhindern soll. Stattdessen meldet er einen Konflikt.
  *  - **War er schon unterwegs, setzt seine Antwort den Stand nicht mehr.** Hat
  *    das Laden vor ihm gelesen, zeigt der Bildschirm den Inhalt ohne ihn; mit
  *    seinem Stand daneben nähme die nächste Änderung ihn lautlos zurück. Mit
  *    dem geladenen Stand trifft sie einen Konflikt, und die App lädt nach.
- *
- * Bis zum 15.10.2026 galt einfach der jüngste Stand, auch über ein Laden
- * hinweg.
  */
 let ladung = 0
 
@@ -55,22 +52,23 @@ function standMerken(staende: Map<string, string>, woche: string, stand: string,
 
 /**
  * **Eine Tabelle „eine Zeile je Woche", geschrieben mit Stand** — die
- * Zusammenkünfte (`weeks`, T39) und die Treffpunkte (`fs_weeks`, seit dem
- * 15.10.2026) nach derselben Regel.
+ * Zusammenkünfte (`weeks`) und die Treffpunkte (`fs_weeks`) nach derselben
+ * Regel.
  *
- * Bis T39 ging die **ganze Woche** als Upsert hinaus, ohne Sperre und ohne
- * Versionskennzeichen. Planten zwei gleichzeitig, gewann der Letzte, und seine
- * Fassung überschrieb die des anderen lautlos. Bei den Treffpunkten liegt die
- * Woche als **eine** Liste in einer Zeile; wer mit älterem Stand schrieb, nahm
- * still zurück, was ein Gruppenaufseher inzwischen eingetragen hatte.
+ * Ginge die **ganze Woche** ohne Sperre und ohne Versionskennzeichen als
+ * Upsert hinaus, gewönne von zweien, die gleichzeitig planen, der Letzte, und
+ * seine Fassung überschriebe die des anderen lautlos. Bei den Treffpunkten
+ * liegt die Woche als **eine** Liste in einer Zeile; wer mit älterem Stand
+ * schriebe, nähme still zurück, was ein Gruppenaufseher inzwischen eingetragen
+ * hat.
  *
- * Bis zum 16.10.2026 stand beides als Abschrift da, und die Fehlerbehandlung
- * war auseinandergelaufen. Die Treffpunkte luden bei jeder Abweisung nach, die
- * nur ein veralteter Stand erklärt; die Wochen nur bei einer Dublette. Eine
- * entzogene Berechtigung (42501) meldete dort einen Schreibfehler, und der
- * Bildschirm zeigte weiter, was nicht gespeichert war.
+ * Eine Stelle für beide Tabellen: Als Abschrift liefe die Fehlerbehandlung
+ * auseinander — die eine lüde bei jeder Abweisung nach, die nur ein veralteter
+ * Stand erklärt, die andere nur bei einer Dublette, und eine entzogene
+ * Berechtigung (42501) meldete dort einen Schreibfehler, während der
+ * Bildschirm weiter zeigte, was nicht gespeichert ist.
  *
- * Je Woche geführt, über ihre Kennung (`start`, seit T66 keine Ordnungszahl):
+ * Je Woche geführt, über ihre Kennung (`start`, keine Ordnungszahl):
  *
  *  - **der Stand**, wie ihn die Datenbank zuletzt bestätigt hat. Er wird nie
  *    selbst gebildet, nur zurückgereicht: Die Zeichenkette kommt aus PostgREST
@@ -160,7 +158,7 @@ function wochenTabelle(tabelle: 'weeks' | 'fs_weeks') {
     },
     /**
      * In die Kette der Woche einreihen. Ohne Kennung gibt es keine Zeile, die
-     * gemeint sein könnte — nichts schreiben (bis T66 die Platzhalter-Prüfung).
+     * gemeint sein könnte — nichts schreiben.
      *
      * Die Ladung wird jetzt festgehalten, nicht erst beim Losgehen: Bis dahin
      * kann die Kette ein Laden überdauert haben. Das `catch` steht vor dem
@@ -189,9 +187,8 @@ export const fsWochen = wochenTabelle('fs_weeks')
 
 /**
  * Eine Woche speichern. Welche Zeile gemeint ist, sagt ihre eigene Kennung —
- * kein Index von außen mehr (T66). Admin und Planer schreiben sie gleich —
- * unmittelbar in die Tabelle (`weeks_write`); bis zum 15.10.2026 ging die Woche
- * eines Planers über die Edge Function `zuteilen`.
+ * kein Index von außen. Admin und Planer schreiben sie gleich — unmittelbar in
+ * die Tabelle (`weeks_write`).
  */
 export function saveWeek(congregationId: string, week: Week, verfallen: readonly string[] = []): Promise<boolean> {
   return wochen.speichern(congregationId, week.start, week, verfallen)
@@ -201,12 +198,12 @@ export function saveWeek(congregationId: string, week: Week, verfallen: readonly
  * Materialisierte Treffpunkte einer Woche (Kennung → FsInstance[]) — mit Stand,
  * je Woche hintereinander, wie die Wochen der Zusammenkünfte (`wochenTabelle`).
  *
- * Gegen den Gruppenaufseher half bis zum 15.10.2026 zufällig der Trigger
- * (`fs_weeks_pruefen` weist eine geänderte fremde Gruppe ab); Admin und Planer
- * prüft er nicht oder nur ohne Leiter. Seine Abweisung (42501: der
- * Gruppenaufseher änderte eine fremde Gruppe, der Planer mehr als den Leiter)
- * entsteht nur auf einem veralteten Stand, die Oberfläche bietet beides nicht
- * an — also wird nachgeladen.
+ * Der Trigger ersetzt den Stand nicht: `fs_weeks_pruefen` weist beim
+ * Gruppenaufseher eine geänderte fremde Gruppe ab, Admin und Planer prüft er
+ * nicht oder nur ohne Leiter. Seine Abweisung (42501: der Gruppenaufseher
+ * änderte eine fremde Gruppe, der Planer mehr als den Leiter) entsteht nur auf
+ * einem veralteten Stand, die Oberfläche bietet beides nicht an — also wird
+ * nachgeladen.
  */
 export function saveFsWeek(congregationId: string, woche: string, insts: FsInstance[], verfallen: readonly string[] = []): Promise<boolean> {
   return fsWochen.speichern(congregationId, woche, insts, verfallen)
@@ -227,8 +224,8 @@ export async function wocheGeschrieben(woche: string): Promise<void> {
  * **Den Stand nach einem Schreiben der Function übernehmen** — Einspringen und
  * ein freier Platz (`substitute`) schreiben die Woche selbst. Ohne den neuen
  * Stand meldete die nächste eigene Änderung derselben Woche einen Konflikt, den
- * es nicht gab: Ein Admin, der einspringt und gleich weiterplant, verlor seine
- * Änderung an ein Nachladen (bis zum 15.10.2026).
+ * es nicht gibt: Ein Admin, der einspringt und gleich weiterplant, verlöre
+ * seine Änderung an ein Nachladen.
  *
  * Übernommen wird nur, was auf dem Stand aufbaut, den diese App kennt
  * (`vorher`): Dann steht dort, was auch hier steht — dieselbe Änderung hat der
@@ -244,7 +241,7 @@ export function standDerFunctionUebernehmen(antwort: unknown, geladen: number): 
 }
 
 /**
- * **Die Stände nach einem Tausch übernehmen** (T153) — wie nach dem
+ * **Die Stände nach einem Tausch übernehmen** — wie nach dem
  * Einspringen, für jede der bis zu zwei Wochen, die die Function `tauschen`
  * geschrieben hat. `geladen` ist die Ladung, aus der der Aufruf kam.
  */
@@ -255,7 +252,7 @@ export function tauschStaendeUebernehmen(staende: readonly unknown[], geladen: n
 const vortraegeNacheinander = schreibSchlange()
 
 /**
- * Vorgemerkte Vorträge (T122) — eine Zeile je Woche, derselbe Weg wie bei den
+ * Vorgemerkte Vorträge — eine Zeile je Woche, derselbe Weg wie bei den
  * Gruppenbesuchen. Übernehmen zwei Planer zugleich einen Vortragsplan, weist
  * die Datenbank die zweite Vormerkung derselben Woche ab
  * (`unique (congregation_id, woche)`), und der zweite lädt nach.
@@ -269,7 +266,7 @@ export function saveVortraege(congregationId: string, vortraege: VorgemerkterVor
 const anwesenheitNacheinander = schreibSchlange()
 
 /**
- * **Die Anwesenden einer Zusammenkunft** (T152) — eine Zeile je
+ * **Die Anwesenden einer Zusammenkunft** — eine Zeile je
  * Zusammenkunft, geschrieben über ihren natürlichen Schlüssel, und in ihr nur
  * die genannten Zahlen (`felder`). Den Saal trägt der Saalordner ein, das
  * Video der Zoom-Ordner, oft zur selben Zeit: Ginge die ganze Zeile hinaus,

@@ -45,25 +45,19 @@ export function pushNotif(
 }
 
 /*
- * Hier stand `zuteilungsNotif` — eine Mitteilung „Zuteilung gesendet" bei jedem
- * einzelnen Zuteilungsklick, adressiert an die **Planer** (T99).
+ * **Ein Zuteilungsklick schreibt keine Mitteilung an die Planer**, aus zwei
+ * Gründen. Erstens ginge sie an den Falschen: Die eingeteilte Person erführe
+ * nichts, der Planer bekäme die Meldung über seine eigene Handlung, die er als
+ * Toast gerade quittiert hat. Zweitens wäre es zu viel — eine Woche hat gut 35
+ * Plätze, von Hand geteilt also 35 Zeilen in der Glocke jedes Planers; das
+ * Ladefenster von 50 wäre nach anderthalb Wochen voll und verdrängte alles
+ * andere, die eigenen Erinnerungen eingeschlossen.
  *
- * Sie ist ersatzlos entfallen, und zwar aus zwei Gründen. Erstens ging sie an
- * den Falschen: Die eingeteilte Person erfuhr nichts, der Planer bekam die
- * Meldung über seine eigene Handlung, die er als Toast gerade quittiert hatte.
- * Zweitens war es zu viel — eine Woche hat gut 35 Plätze, von Hand geteilt also
- * 35 Zeilen in der Glocke jedes Planers; das Ladefenster von 50 war nach
- * anderthalb Wochen voll und verdrängte alles andere, die eigenen Erinnerungen
- * eingeschlossen.
- *
- * An ihre Stelle tritt „Plan senden" (`PlanSendenBlatt` → Edge Function
+ * Bescheid gibt „Plan senden" (`PlanSendenBlatt` → Edge Function
  * `send-plan`): eine Nachricht je **eingeteilter Person**, wenn der Plan steht.
  * Was der Planer über den Stand seiner Woche wissen muss, steht ohnehin im
  * Planen-Screen — Konflikte, offene Plätze, Engpässe und die Lage jedes
  * besetzten Platzes. Dafür braucht es keine Nachricht.
- *
- * Mit ihr entfiel der Schalter `reminders.onAssign`, der nichts anderes
- * steuerte.
  */
 
 /** Bestätigungs-Status der angegebenen Slots aus der Map entfernen. */
@@ -75,7 +69,7 @@ export function dropConfirmations(map: ConfirmationMap, keys: string[]): Confirm
 }
 
 /**
- * Die Kennungen der geladenen Wochen (ihre Montage, T66) — die Treffpunkt-
+ * Die Kennungen der geladenen Wochen (ihre Montage) — die Treffpunkt-
  * Wochen liegen parallel dazu und werden darüber materialisiert.
  */
 export function wochenKennungen(state: Pick<AppState, 'weeks'>): string[] {
@@ -87,15 +81,14 @@ export function wochenKennungen(state: Pick<AppState, 'weeks'>): string[] {
  * springen darf: die beiden Zusammenkünfte und ihr Bearbeiten. Alle übrigen —
  * Treffpunkte, Weitere Pläne — bleiben stehen.
  *
- * **Positiv aufgezählt.** Bis zum 3.10.2026 stand hier die Gegenliste, und jede
- * Phase von T120 musste sich selbst darin eintragen (fs, va, wp). Ein neuer
- * Reiter ist jetzt von selbst geschützt; wer ihn springen lassen will, muss es
- * hier sagen.
+ * **Positiv aufgezählt.** Ein neuer Reiter ist von selbst geschützt; wer ihn
+ * springen lassen will, muss es hier sagen. In einer Gegenliste müsste sich
+ * jeder neue Reiter selbst eintragen.
  */
 const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['mid', 'we', 'edit'])
 
 /**
- * Woche und Reiter auf die nächste Zusammenkunft setzen (T82) — es sei denn,
+ * Woche und Reiter auf die nächste Zusammenkunft setzen — es sei denn,
  * der Nutzer hat in dieser Sitzung schon selbst gewählt.
  *
  * Gibt es keine nächste (keine Wochen geladen, alle Termine vorbei), bleibt
@@ -103,11 +96,10 @@ const NACHLADEN_DARF_SPRINGEN: ReadonlySet<MeetingTab> = new Set<MeetingTab>(['m
  * die, auf der man ist.
  *
  * Die Treffpunkte bleiben unangetastet: Wer im Predigtdienst ist, meint ihn und
- * keine Zusammenkunft. Bis T120 stand das nur beim Navigieren — dorthin kam man
- * damals ohnehin nur über den Reiter, also mit eigener Wahl. Seit das Menü ohne
- * sie hinführt, warf das Nachladen (etwa nach „Plan senden") mitten in der
- * Arbeit in die Zusammenkünfte. Ebenso die Weiteren Pläne (Phase 5), zu denen
- * das Menü ohne Wahl führt.
+ * keine Zusammenkunft. Das Menü führt ohne eigene Wahl dorthin; sonst würfe
+ * das Nachladen (etwa nach „Plan senden") mitten in der Arbeit in die
+ * Zusammenkünfte. Ebenso die Weiteren Pläne, zu denen das Menü ohne Wahl
+ * führt.
  */
 export function zurNaechstenZusammenkunft(state: AppState): AppState {
   if (state.terminGewaehlt || !NACHLADEN_DARF_SPRINGEN.has(state.tab)) return state

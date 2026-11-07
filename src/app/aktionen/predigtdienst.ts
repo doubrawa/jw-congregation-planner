@@ -65,7 +65,7 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
         state.weeks.map((w) => w.start),
       )
       // Wie bei den Zusammenkünften: Blieb etwas offen, weil niemand frei war,
-      // ist das nicht „keine offenen" (16.10.2026).
+      // ist das nicht „keine offenen".
       if (count === 0) {
         return { ...state, toast: toastKey(state, unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen') }
       }
@@ -101,9 +101,9 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
      */
     case 'fsRuleAdd': {
       const rule: FsRule = {
-        // Eindeutig statt zeitgestempelt: `r${Date.now()}` vergab zwei Regeln
+        // Eindeutig statt zeitgestempelt: `r${Date.now()}` vergäbe zwei Regeln
         // derselben Millisekunde dieselbe Id — und die Id steckt in jeder
-        // Treffpunkt-Kennung (`<wi>|<ruleId>`) und darüber im Aufgaben-
+        // Treffpunkt-Kennung (`instanzId`) und darüber im Aufgaben-
         // Schlüssel. Zwei Regeln mit einer Id hießen zwei Treffpunkte mit einer
         // Bestätigung. `crypto.randomUUID` nutzt der Reducer für Mitteilungen
         // ohnehin; das Präfix hält die Kennung lesbar.
@@ -135,7 +135,7 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
       }
     }
     /*
-     * Gruppenbesuche des Dienstaufsehers (T120, Phase 2). Jede Änderung trägt
+     * Gruppenbesuche des Dienstaufsehers. Jede Änderung trägt
      * den Besucher in die geladenen Treffpunkte ein oder aus; Zusagen, die
      * dabei verfallen, räumt `ohneVerwaisteTreffpunktZusagen` ab, und wer eine
      * bestätigte verliert, erfährt es über `persist.ts` — wie bei jedem
@@ -164,7 +164,7 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
       }
     }
     case 'besuchAendern': {
-      // Woche oder Gruppe eines Besuchs ändern (4.10.2026): Der Besucher geht
+      // Woche oder Gruppe eines Besuchs ändern: Der Besucher geht
       // aus den Treffpunkten, die er bisher leitete, und tritt in die der neuen
       // Woche und Gruppe — wie beim Wechsel des Besuchers.
       const alt = state.gruppenbesuche.find((b) => b.id === action.id)
@@ -196,7 +196,7 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
       return fsWeeks === state.fsWeeks ? state : { ...state, fsWeeks, toast: toastKey(state, 'toastZugeteilt') }
     }
     /*
-     * Trolleys (T121, Phase 7). Die Trolleys pflegt der Admin; Termine ändert
+     * Trolleys. Die Trolleys pflegt der Admin; Termine ändert
      * nur die Edge Function `trolley` — hier landet, was sie zurückgibt
      * (`trolleyTermin`). Entfernt wird ein Trolley erst nach ihr
      * (`trolleyEntfernt`): Sie hat ihn samt Terminen gelöscht und den

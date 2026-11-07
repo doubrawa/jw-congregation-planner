@@ -1004,8 +1004,8 @@ export const DE = {
     awKeineAbsagen: 'Im Zeitraum hat niemand abgesagt.',
     awHinweisAbsagen: 'Viele Absagen: {bereich}', awTextAbsagen: '{anteil} der Zuteilungen abgesagt · sonst höchstens {sonst}',
     awAbsagen: 'Absagen',
-    // Befristet (T124): die App mit den Rechten einer anderen Stufe ansehen —
-    // mit `data/ansicht.ts` wieder ausbauen. {stufe} ist der Name der Stufe.
+    // Die App mit den Rechten einer anderen Stufe ansehen (`data/ansicht.ts`).
+    // {stufe} ist der Name der Stufe.
     ansichtTitel: 'Ansicht zum Testen',
     ansichtHinweis: 'Zeigt die App so, wie ein Konto dieser Stufe sie sieht. Was du dabei tust, ist echt und geschieht mit deinen Rechten. Nach dem Neuladen gilt wieder dein eigenes Recht.',
     ansichtAlsLbl: 'Ansehen als', ansichtLeiste: 'Ansicht als {stufe}',

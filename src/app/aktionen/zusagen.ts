@@ -23,7 +23,7 @@ function currentUserName(state: AppState): string {
 }
 
 /**
- * Die Nachricht beim Absagen (T121) als letztes Atom der Mitteilung — oder
+ * Die Nachricht beim Absagen als letztes Atom der Mitteilung — oder
  * nichts, wenn keine geschrieben wurde.
  *
  * **Ein eigenes Atom, als Freitext gekennzeichnet**: Der Planer liest sie so,
@@ -107,7 +107,7 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
       }
     }
     case 'confirmAll': {
-      // Alle offenen auf einmal (T121) — dieselbe Zusage wie einzeln, je Aufgabe.
+      // Alle offenen auf einmal — dieselbe Zusage wie einzeln, je Aufgabe.
       const offen = state.myTasks.filter((t) => t.status === 'offen')
       if (offen.length === 0) return state
       const confirmations = { ...state.confirmations }
@@ -117,7 +117,7 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
     case 'confirmTask':
       // Status in die ConfirmationMap — myTasks und confirmOpen folgen aus der
       // Ableitung (withDerivedTasks). Ein offenes Ersatzgesuch hält das Blatt
-      // dort ebenfalls (T69).
+      // dort ebenfalls.
       return {
         ...state,
         confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
@@ -135,12 +135,11 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
         'Verhinderung gemeldet',
         // Der Name als gekennzeichneter Freitext: Die Glocke übersetzt beim
         // Anzeigen Atom für Atom, und ein Bruder namens „Markus 2" (die
-        // Schreibweise für Namensgleiche) stand dort sonst als „Mark 2".
-        // Siehe `i18n/freitext.ts`.
+        // Schreibweise für Namensgleiche) stünde dort sonst als „Mark 2".
+        // Siehe `_shared/i18n/freitext.ts`.
         `${bezeichnung} — ${alsFreitext(currentUserName(state))}${nachrichtAtom(action.nachricht)}`,
         // Der Schlüssel der Aufgabe: Ein Tipp in der Glocke des Planers führt
-        // in ihre Woche (`mitteilungsZiel`). Bis zum 4.10.2026 ohne — dann
-        // landete er nirgends.
+        // in ihre Woche (`mitteilungsZiel`); ohne ihn landete er nirgends.
         action.id,
       )
       // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
