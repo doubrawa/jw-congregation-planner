@@ -15,9 +15,10 @@
  * eigenem Code steht, ist der Vorspann für `auth` und das Zählen.
  *
  * **Was sie nicht kann:** anmelden und die Mitgliedsrechte-Probe fahren. Dafür
- * braucht es ein echtes Supabase-Projekt — das Staging-Projekt aus T170. Bis
- * dahin deckt diese Probe das ab, was eine leere Datenbank zeigen kann: dass
- * jede Zeile hineingeht und jede wieder dasteht.
+ * bräuchte es ein zweites, echtes Supabase-Projekt neben dem Betrieb, und das
+ * gibt es nicht. Die Probe deckt ab, was eine leere Datenbank zeigen kann:
+ * dass jede Zeile hineingeht — so streng, wie PostgREST sie annähme — und
+ * jede wieder dasteht.
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
@@ -32,7 +33,7 @@ import path from 'node:path'
 import { alsSkript } from './gemeinsam.mjs'
 import { leerePostgres } from './pglite-postgres.mjs'
 import { REPO, tabellenAusSchema } from './sicherung.mjs'
-import { aufgeschobene, fremdschluessel, zeileTeilen } from './zurueckspielen.mjs'
+import { aufgeschobene, fremdschluessel, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
 
 export async function main(argv = process.argv.slice(2)) {
   const datei = argv.find((a) => !a.startsWith('--'))
@@ -54,14 +55,38 @@ export async function main(argv = process.argv.slice(2)) {
 
   const tabellen = tabellenAusSchema(schema).filter((t) => t.name in (sicherung.tabellen ?? {}))
   const warten = aufgeschobene(tabellen, fremdschluessel(schema))
+  const { weglassen, gefuellt } = spaltenAbgleich(tabellen, sicherung)
+  if (gefuellt.length) {
+    console.error(`Spalten, die schema.sql nicht kennt, tragen in der Sicherung etwas: ${gefuellt.join(', ')}.`)
+    console.error('zurueckspielen.mjs hielte hier an — die Probe auch.')
+    process.exit(1)
+  }
+  for (const [name, spalten] of Object.entries(weglassen)) {
+    console.log(`${spalten.map((s) => `${name}.${s}`).join(', ')}: kennt schema.sql nicht, in jeder Zeile leer — bleibt fort.`)
+  }
 
-  // Geschrieben wird, wie PostgREST es tut: eine Anweisung je Tabelle, die
-  // Zeilen als JSON. So prüft die Probe denselben Weg wie das echte Skript.
+  /*
+   * Geschrieben wird, wie PostgREST es tut: eine Anweisung je Tabelle, die
+   * Zeilen als JSON. **Mit derselben Strenge:** `json_populate_recordset`
+   * überginge eine Spalte, die die Tabelle nicht hat, still — PostgREST weist
+   * die ganze Zeile ab. Deshalb wird jeder Schlüssel vorher gegen den Katalog
+   * gehalten; sonst bestünde die Probe mit einer Sicherung, die das echte
+   * Skript nicht zurückspielen kann (so geschehen mit `persons.dn`).
+   */
+  const { rows: katalog } = await db.query(
+    "select table_name, column_name from information_schema.columns where table_schema = 'public'",
+  )
+  const spaltenIm = new Map()
+  for (const r of katalog) spaltenIm.set(r.table_name, (spaltenIm.get(r.table_name) ?? new Set()).add(r.column_name))
   const nachtraege = []
   for (const t of tabellen) {
     const zeilen = sicherung.tabellen[t.name]
     if (!zeilen.length) continue
-    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], t.generiert))
+    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], [...t.generiert, ...(weglassen[t.name] ?? [])]))
+    const unbekannt = [...new Set(geteilt.flatMap((g) => Object.keys(g.jetzt)))].filter((k) => !spaltenIm.get(t.name)?.has(k))
+    if (unbekannt.length) {
+      throw new Error(`${t.name}: ${unbekannt.join(', ')} gibt es im Ziel nicht — PostgREST nähme diese Zeilen nicht an.`)
+    }
     await db.query(`insert into public.${t.name} select * from json_populate_recordset(null::public.${t.name}, $1::json)`, [
       JSON.stringify(geteilt.map((g) => g.jetzt)),
     ])

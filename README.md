@@ -408,13 +408,16 @@ E-Mail-Adressen gesperrt; seitdem speichert die App keine mehr.) Eine neue Spalt
 `persons` oder `absences` gehört in die Freigabe — `tests/spaltenrechte.test.ts`
 meldet, wenn sie fehlt.
 
-### Neuaufbau: wenn sich das Schema ändert
+### Neuaufbau: alle Daten neu einspielen
 
 [`supabase/schema.sql`](supabase/schema.sql) ist mit `create table if not
 exists` formuliert und lässt eine bestehende Tabelle deshalb in Ruhe — eine
 geänderte Spaltendefinition erreicht eine laufende Datenbank also **nicht**.
-Solange die App nicht ausgerollt ist, wird neu aufgebaut statt migriert (eine
-Migrationskette daneben soll es nicht wieder geben, siehe Kopf der Datei):
+Dafür gibt es die Migrationen (unten). Ein Neuaufbau baut das Schema frisch auf
+und spielt die **Daten** neu ein, aus New World Scheduler und jw.org; was nur
+in der App steht, ist danach fort — vorher sichern (unten). Den Verlauf der
+Migrationen lässt er stehen, und weil `schema.sql` und die Migrationen dieselbe
+Datenbank ergeben, stimmt der danach weiter:
 
 1. [`supabase/neuaufbau.sql`](supabase/neuaufbau.sql) im SQL-Editor ausführen —
    **löscht alle Daten**, aber keine Konten (`auth.users` bleibt).
@@ -608,55 +611,61 @@ fest: Der Weg stand vorher nur in `rollen-nachtragen.mjs`, und die übrigen
 brachen mit „Invalid API key" ab — fünfmal hintereinander in einem einzigen
 Neuaufbau.
 
-### Migrationen (ab dem Echtbetrieb)
+### Migrationen
 
-Solange die App nicht ausgerollt ist, wird neu aufgebaut statt migriert (oben).
-Im Echtbetrieb geht das nicht mehr: Ein Neuaufbau löschte alles, was nur in der
-App steht und in keiner Quelle daneben. Deshalb liegt seit dem 7. November 2026
-neben [`supabase/schema.sql`](supabase/schema.sql) eine Folge von Migrationen in
-[`supabase/migrations/`](supabase/migrations) im Format der Supabase-CLI
-(`<zeitstempel>_<name>.sql`), eingespielt mit `npx supabase db push` — das sich
-merkt, was schon drin ist.
+Eine Schemaänderung erreicht die Produktion als **Migration** in
+[`supabase/migrations/`](supabase/migrations) (Format der Supabase-CLI,
+`<zeitstempel>_<name>.sql`), eingespielt mit `npx supabase db push` — die CLI
+merkt sich im Projekt, was schon drin ist. Daneben bleibt
+[`supabase/schema.sql`](supabase/schema.sql) der Gesamtstand: die Datei, die man
+liest, um das Schema zu verstehen, und aus der eine frische Datenbank entsteht.
 
-Die erste Migration (`20261107120000_grundstand.sql`) ist der Gesamtstand vom
-7. November **ohne die Einmal-Aufräumblöcke**: sechs Absätze, die etwas aus
-einer bestehenden Datenbank entfernen (`persons.tel`, `persons.mail`,
-`plaene.vorlage` samt altem Index und `plan_eintraege.mahlzeit`,
-`vortraege_auswaerts`, die `oz_*`-Reste, die Einladungscodes) und in einer
-frischen Datenbank nichts zu tun hätten. Sie ist **eingefroren**.
-
-**Der Ablauf für jede weitere Schemaänderung:**
+**Der Ablauf für jede Schemaänderung:**
 
 1. Eine neue Datei in `supabase/migrations/` mit dem Zeitstempel voran — nur
-   die Änderung, nicht der Gesamtstand.
-2. Dieselbe Änderung in `supabase/schema.sql` nachziehen (der Gesamtstand
-   bleibt die Datei, die man liest, um das Schema zu verstehen).
+   die Änderung, nicht der Gesamtstand. Eine eingespielte Migration wird nie
+   wieder geändert.
+2. Dieselbe Änderung in `supabase/schema.sql` nachziehen. Was nur eine
+   bestehende Datenbank betrifft (Daten aufräumen, Spalten entfernen), steht
+   allein in der Migration — `schema.test.ts` weist ein `delete from` im
+   Gesamtstand ab.
 3. `npm test` — [`supabase/migrationen.test.ts`](supabase/migrationen.test.ts)
    spielt **beide** Wege in je eine leere Postgres 16 (PGlite, im Prozess, kein
    Server) und vergleicht die Kataloge: Tabellen, Spalten samt Typ, Vorgabe und
    Spaltenrechten, Bedingungen, Indizes, Funktionen samt Rumpf-Prüfsumme,
    Trigger, Richtlinien, Sequenzen. Fehlt die Migration oder fehlt der
    Gesamtstand, ist die Probe rot.
+4. Ausrollen: `npx supabase db push --dry-run --remote=<ref>` nennt, was die
+   CLI einspielen würde, `npx supabase db push --remote=<ref> --yes` spielt es
+   ein. Ein Datenbank-Passwort braucht es nicht: Ohne `--password` meldet sich
+   die CLI über den Zugangstoken mit einer kurzlebigen Rolle an
+   („Initialising login role…").
 
 Genau diese Doppelung hatte das Projekt am 17. September 2026 abgeschafft — eine
 Kette von 25 Migrationen lief neben `schema.sql` her, und drei Tabellen fehlten
 dort monatelang. Der Unterschied heute ist die Probe: Damals hat niemand die
 beiden Wege gegeneinander gehalten.
 
-**Beim Umstieg auf Migrationen** (mit dem Neuaufbau zum Echtbetrieb, Termin
-offen) sind drei Schritte zu tun, in dieser Reihenfolge:
+**Umgestellt am 7. November 2026.** Die Produktion war aus `schema.sql`
+gewachsen. Vor dem Umstieg wurde ihr Katalog lesend
+(`npx supabase db query --remote=<ref> --read-only`) gegen die Folge der
+Migrationen gehalten, über dieselben acht Abschnitte wie in der Probe. Gleich
+waren alle bis auf zwei Reste in `persons`: die Spalte `dn` (in allen Zeilen
+leer) und zwölf Spaltenrechte, die neben dem Tabellenrecht nichts mehr
+bewirkten. Danach:
 
-1. Die Datenbank wie gewohnt aus `schema.sql` aufbauen.
-2. Die erste Migration als eingespielt eintragen, damit `db push` sie nicht
-   noch einmal fährt:
-   `npx supabase migration repair --status applied 20261107120000 --remote=<ref>`
-3. Die Einmal-Aufräumblöcke aus `schema.sql` nehmen — sie sind dann überall
-   eingespielt. Die Probe bleibt grün, weil sie Kataloge vergleicht und nicht
-   Texte.
+1. `npx supabase migration repair --status applied 20261107120000 20261107134500 --remote=<ref>`
+   — die beiden ersten Migrationen als eingespielt eingetragen;
+2. `20261107195500_persons-altlasten.sql` mit `db push` eingespielt — sie nimmt
+   beide Reste fort und tut in einer frischen Datenbank nichts;
+3. derselbe Abgleich noch einmal: in allen acht Abschnitten gleich.
 
-`npx supabase db push --dry-run` nennt vorher, welche Migrationen die CLI
-einspielen würde; gefahren wird das zuerst gegen das Staging-Projekt (T170 in
-`docs/analyse/todo.md`), nicht gegen den Betrieb.
+Die erste Migration (`20261107120000_grundstand.sql`) ist der Gesamtstand vom
+7. November ohne sechs Einmal-Aufräumblöcke (`persons.tel`, `persons.mail`,
+`plaene.vorlage` samt altem Index und `plan_eintraege.mahlzeit`,
+`vortraege_auswaerts`, die `oz_*`-Reste, die Einladungscodes). Seit der
+Umstellung stehen sie auch nicht mehr in `schema.sql`: In der Produktion ist
+keines der Objekte mehr da, die sie entfernten.
 
 ### Sicherung und Rückspielprobe
 
@@ -729,22 +738,30 @@ trägt sie danach nach; **welche das sind, leitet es aus `schema.sql` ab**, und
 ein Fremdschlüssel, der sich nicht aufschieben lässt, bricht den Lauf ab, statt
 etwas zu verlieren.
 
+**Spalten, die `schema.sql` nicht kennt:** Gesichert wird mit `select=*`, und
+PostgREST nimmt keine Zeile mit unbekannter Spalte an. Ist so eine Spalte in
+jeder Zeile leer, lässt das Skript sie fort und sagt es; trägt sie irgendwo
+etwas, hält es an, bevor es das Ziel anfasst. So tragen die Sicherungen bis zum
+7. November 2026 `persons.dn` — leer, sie gehen zurück.
+
 **Die Rückspielprobe** gehört zur Sicherung, nicht zur Kür:
 
 ```powershell
-npm install --no-save @electric-sql/pglite@0.2.17
 node scripts/rueckspielprobe.mjs C:\DATA\Claude\jw-sicherungen\sicherung-….json
 ```
 
 Sie baut `schema.sql` in einer leeren Postgres 16 auf (PGlite, im Prozess, ohne
 Server), spielt die Sicherung mit der Ordnungs-Logik des echten Skripts hinein
 und zählt Tabelle für Tabelle — mit Gegenprobe, dass die Zählung überhaupt
-misst. Gefahren am 7. November 2026 mit einem echten Stand: alle 27 Tabellen
-gleich, 141 nachgetragene Verweise, 7 Konten.
+misst. Jede Spalte hält sie vorher gegen den Katalog, so streng wie PostgREST:
+Sonst ginge eine Sicherung durch, die das echte Skript nicht zurückspielen
+kann. Gefahren am 7. November 2026 mit dem Stand nach der Umstellung und mit
+einem davor (mit `dn`): beide Male alle Tabellen gleich, 141 nachgetragene
+Verweise, 7 Konten.
 
 Was sie **nicht** kann: sich anmelden und die Mitgliedsrechte-Probe fahren.
-Dafür braucht es ein echtes Supabase-Projekt — das Staging-Projekt aus T170 in
-`docs/analyse/todo.md`. Bis dahin ist der Teil der Probe offen.
+Dafür bräuchte es ein zweites, echtes Supabase-Projekt neben dem Betrieb, und
+das gibt es nicht (entschieden am 7. November 2026).
 
 ## Arbeitsheft-Import (Edge Function)
 

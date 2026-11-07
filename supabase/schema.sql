@@ -1,38 +1,35 @@
 -- =============================================================================
 -- Versammlung.app — Datenbankschema (v1)
 -- =============================================================================
--- Ausführen im Supabase SQL-Editor (einmalig, idempotent formuliert).
+-- Ausführen im Supabase SQL-Editor für eine frische Datenbank (idempotent
+-- formuliert). Eine laufende folgt den Migrationen.
 --
--- **Diese Datei ist der Gesamtstand des Schemas.** Änderungen kommen hier
--- hinein — und seit dem 7. November 2026 (T169) zusätzlich als **Migration**
--- in `supabase/migrations/`, weil im Echtbetrieb kein Neuaufbau mehr geht.
+-- **Diese Datei ist der Gesamtstand des Schemas.** Jede Änderung kommt hier
+-- hinein **und** als Migration nach `supabase/migrations/`. Eine laufende
+-- Datenbank erreicht sie nur über die Migration (`npx supabase db push`):
+-- `create table if not exists` lässt eine bestehende Tabelle in Ruhe, eine
+-- geänderte Definition hier käme dort nie an. Was allein eine bestehende
+-- Datenbank betrifft — Daten aufräumen, Spalten entfernen —, steht deshalb nur
+-- in der Migration.
 --
--- Neben dieser Datei stand bis zum 17. September 2026 schon einmal eine Kette
--- von 25 Migrationen, die jede für sich versicherte „Neuinstallationen
--- brauchen diese Datei nicht — schema.sql enthält alles". Zwei Quellen für
--- dieselbe Sache laufen auseinander, und das taten sie auch (fs_rules,
--- fs_weeks, reminder_log fehlten hier monatelang). Gemerkt hat es niemand,
--- weil niemand die beiden Wege gegeneinander gehalten hat.
+-- Zwei Quellen für dieselbe Sache laufen auseinander: Neben dieser Datei stand
+-- bis zum 17. September 2026 schon einmal eine Kette von 25 Migrationen, und
+-- fs_rules, fs_weeks und reminder_log fehlten hier monatelang. Gemerkt hat es
+-- niemand, weil niemand die beiden Wege gegeneinander gehalten hat.
 --
--- **Genau das tut jetzt `migrationen.test.ts`:** Sie spielt diese Datei und
--- die Folge der Migrationen in je eine leere Postgres und vergleicht die
--- Kataloge — Tabellen, Spalten, Bedingungen, Indizes, Funktionen, Trigger,
--- Richtlinien, Rechte. Nur deshalb darf die Doppelung wieder existieren. Wer
--- hier etwas ändert und keine Migration dazu schreibt, bekommt eine rote
--- Probe, nicht einen stillen Unterschied.
+-- **Genau das tut `migrationen.test.ts`:** Sie spielt diese Datei und die
+-- Folge der Migrationen in je eine leere Postgres und vergleicht die Kataloge
+-- — Tabellen, Spalten, Bedingungen, Indizes, Funktionen, Trigger, Richtlinien,
+-- Rechte. Nur deshalb darf die Doppelung existieren. Wer hier etwas ändert und
+-- keine Migration dazu schreibt, bekommt eine rote Probe, nicht einen stillen
+-- Unterschied.
 --
--- **Ändert sich eine Spalte, wird neu aufgebaut**, nicht migriert: `create table
--- if not exists` lässt eine bestehende Tabelle in Ruhe, eine geänderte
--- Definition erreicht sie also nicht. `neuaufbau.sql` daneben räumt dafür alle
--- Tabellen ab (ohne eigene Tabellenliste, damit sie nicht veralten kann);
--- danach diese Datei ausführen. Die Konten in `auth.users` bleiben dabei
--- bestehen — ihre Mitgliedschaft nicht, siehe „Erste Einrichtung" am Ende.
---
--- **Das endet mit dem Echtbetrieb.** Ein Neuaufbau löschte dann, was nur in
--- der App steht und in keiner Quelle daneben; ab da erreicht eine geänderte
--- Spalte die Datenbank nur noch über eine Migration (`supabase/migrations/`,
--- eingespielt mit `npx supabase db push`). Wie der Umstieg läuft, steht in der
--- README unter „Migrationen".
+-- **Neuaufbau:** `neuaufbau.sql` daneben räumt alle Tabellen und Funktionen ab
+-- (ohne eigene Liste, damit sie nicht veralten kann), danach diese Datei
+-- ausführen. Das löscht, was nur in der App steht. Die Konten in `auth.users`
+-- und der Verlauf der Migrationen bleiben — die Mitgliedschaft der Konten
+-- nicht, siehe „Erste Einrichtung" am Ende. Mehr in der README unter
+-- „Migrationen".
 --
 -- Grundidee (siehe README "Hosting"):
 --   * Mandantenfähig über `congregations` — jede Zeile jeder Tabelle gehört
@@ -181,19 +178,6 @@ create table if not exists public.persons (
 -- Nachträglich (4.10.2026), wie `members.zuteiler`.
 alter table public.persons
   add column if not exists zuteiler_vorgemerkt boolean not null default false;
-
--- Entfernt (25.10.2026): die Telefonnummer. Angezeigt wurde sie nirgends,
--- New World Scheduler liefert keine, und gebraucht hat sie niemand. Ein
--- zweiter Lauf findet nichts mehr; die Zeile kann fort, sobald sie überall
--- eingespielt ist.
-alter table public.persons drop column if exists tel;
-
--- Entfernt (31.10.2026): die E-Mail-Adresse. Die App schickt keine E-Mails
--- mehr — den Anmelde-Link gibt der Admin per Nachricht oder auf dem Zettel
--- weiter, und der Code darauf gilt ein Jahr. Mit der Spalte gehen die Adressen
--- aus der Datenbank; vorher die Funktion, die sie las.
-drop function if exists public.personen_mails();
-alter table public.persons drop column if exists mail;
 
 create index if not exists persons_congregation_idx
   on public.persons (congregation_id);
@@ -819,29 +803,6 @@ create table if not exists public.plan_eintraege (
     references public.groups (id, congregation_id) on delete set null (grp)
 );
 
--- Entfernt: die Vorlage „Familien reihum" (vom 3. bis 4.10.2026; je Tag und
--- Mahlzeit ein Gastgeber). Ihre Pläne gehen samt Einträgen (Kaskade); danach
--- braucht niemand mehr `plaene.vorlage` und die Gastgeber-Spalten. **Vor** dem
--- Index darunter: Mit Mittag und Abend am selben Tag gäbe es je Plan und Tag
--- zwei Einträge, und der eindeutige Index ließe sich nicht anlegen. Ein
--- zweiter Lauf findet nichts mehr; der Block kann fort, sobald er überall
--- eingespielt ist.
---
--- Die Gastgeber-Spalte `person_id` ließ er bis zum 31.10.2026 ebenfalls
--- fallen — eingespielt seit dem 4.10.2026. Seitdem heißt so wieder eine
--- Spalte: die Person einer Woche (darunter).
-do $$
-begin
-  if exists (select 1 from information_schema.columns
-              where table_schema = 'public' and table_name = 'plaene' and column_name = 'vorlage') then
-    delete from public.plaene where vorlage = 'familien';
-  end if;
-end
-$$;
-alter table public.plaene drop column if exists vorlage;
-drop index if exists public.plan_eintraege_platz;
-alter table public.plan_eintraege drop column if exists mahlzeit;
-
 -- Ein Platz je Woche — zugleich der Index fürs Laden.
 create unique index if not exists plan_eintraege_woche
   on public.plan_eintraege (plan_id, datum);
@@ -1080,51 +1041,6 @@ drop trigger if exists geraete_fehler_bremsen on public.geraete_fehler;
 create trigger geraete_fehler_bremsen
   before insert on public.geraete_fehler
   for each row execute function public.geraete_fehler_bremse();
-
--- ---------------------------------------------------------------------------
--- Entfernt: Redner auswärts (T120, Phase 4 — vom 3. bis 4.10.2026)
--- ---------------------------------------------------------------------------
--- Der Plan ist wieder aus der App genommen. Mit der Tabelle gehen ihre
--- Richtlinien und ihr Index. Ihre Aufgaben-Schlüssel (`va|<montag>|<id>`)
--- gehören danach zu nichts mehr: Zusagen, Glocken-Mitteilungen und
--- Tagebucheinträge dazu gehen mit. Ein zweiter Lauf findet nichts mehr; der
--- Block kann fort, sobald er überall eingespielt ist.
-drop table if exists public.vortraege_auswaerts cascade;
-delete from public.confirmations where task_key like 'va|%';
-delete from public.notifications where task_key like 'va|%';
-delete from public.assignment_log where task_key like 'va|%';
-
--- ---------------------------------------------------------------------------
--- Entfernt: Stand und Schicht (T120, Phase 3 — vom 3. bis 14.10.2026)
--- ---------------------------------------------------------------------------
--- Statt fester Termine, deren Schichten ein Planer besetzt, verabredet man
--- sich seit T121 selbst für einen Trolley (oben). Mit den Tabellen gehen ihre
--- Trigger und Richtlinien; die Funktionen dazu fallen eigens. Ihre
--- Aufgaben-Schlüssel (`oz|<montag>|<id>`) gehören danach zu nichts mehr:
--- Zusagen, Glocken-Mitteilungen und Tagebucheinträge dazu gehen mit. Ein
--- zweiter Lauf findet nichts mehr; der Block kann fort, sobald er überall
--- eingespielt ist.
-drop table if exists public.oz_eintraege cascade;
-drop table if exists public.oz_termine cascade;
-drop function if exists public.oz_platz_pruefen();
-drop function if exists public.oz_ausfall_raeumen();
-drop function if exists public.oz_tagwechsel_raeumen();
-drop function if exists public.darf_zeugnis();
-delete from public.confirmations where task_key like 'oz|%';
-delete from public.notifications where task_key like 'oz|%';
-delete from public.assignment_log where task_key like 'oz|%';
-
--- ---------------------------------------------------------------------------
--- Entfernt: Einladungscodes (bis 15.10.2026)
--- ---------------------------------------------------------------------------
--- Seit dem Anmelden per Link (T121, Phase 8) registriert sich niemand mehr und
--- löst keinen Code ein: Den Zugang gibt der Admin als Link (`anmelde_links`),
--- das Konto entsteht bei der ersten Anmeldung (Function `anmelden`). Mit der
--- Tabelle gehen ihre Richtlinie und ihr Index; die Funktion zum Einlösen fällt
--- eigens. Ein zweiter Lauf findet nichts mehr; der Block kann fort, sobald er
--- überall eingespielt ist.
-drop function if exists public.redeem_invite(text);
-drop table if exists public.invites cascade;
 
 -- ---------------------------------------------------------------------------
 -- RLS-Hilfsfunktionen (security definer, um Rekursion über members zu vermeiden)

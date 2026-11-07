@@ -2,9 +2,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { ATTRAPPE_URL, fahre } from './schema-attrappe'
+import { ATTRAPPE_URL, type Aufruf, befunde, fahre, tabelleVon } from './schema-attrappe'
 import { AUSGENOMMEN, REPO, tabellenAusSchema } from './sicherung.mjs'
-import { aufgeschobene, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
+import { aufgeschobene, fremdeSpalten, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
 
 /**
  * **Geprüft wird, ob alles wieder dasteht — und in einer Reihenfolge, die die
@@ -124,6 +124,28 @@ describe('zeileTeilen', () => {
   })
 })
 
+describe('fremdeSpalten', () => {
+  const spalten = new Set(['id', 'fn'])
+
+  it('lässt eine fort, die das Ziel nicht kennt und die in jeder Zeile leer ist', () => {
+    expect(fremdeSpalten([{ id: 1, fn: 'a', alt: '' }, { id: 2, fn: 'b', alt: null }], spalten)).toEqual({ weglassen: ['alt'], gefuellt: [] })
+  })
+
+  it('nennt eine, die etwas trägt, mit der Zahl ihrer Zeilen — auch 0 und false sind ein Wert', () => {
+    expect(fremdeSpalten([{ id: 1, alt: 'x', n: 0 }, { id: 2, alt: '', n: false }], spalten)).toEqual({
+      weglassen: [],
+      gefuellt: [
+        { spalte: 'alt', zeilen: 1 },
+        { spalte: 'n', zeilen: 2 },
+      ],
+    })
+  })
+
+  it('meldet nichts, wenn jede Spalte bekannt ist', () => {
+    expect(fremdeSpalten([{ id: 1, fn: 'a' }], spalten)).toEqual({ weglassen: [], gefuellt: [] })
+  })
+})
+
 describe('pkFilter', () => {
   it('filtert über eine Spalte und über mehrere', () => {
     expect(pkFilter({ id: 'abc' }, ['id'])).toBe('id=eq.abc')
@@ -188,5 +210,42 @@ describe('ein ganzer Lauf', () => {
     const datei = sicherungsDatei({ ...sicherung(BESTAND, KONTEN), schema_sha256: 'a'.repeat(64) })
     const { ausgabe } = await fahre(() => main([datei, '--ziel-url', ATTRAPPE_URL, '--ziel-key', 'sb_secret_probe_000000000000']))
     expect(ausgabe.join('\n')).toMatch(/anderen Stand von schema\.sql/)
+  })
+})
+
+/**
+ * **Eine Spalte, die das Ziel nicht kennt.** Gesichert wird mit `select=*`:
+ * Hat die Quelle mehr als `schema.sql`, steht das Mehr in jeder Sicherung — so
+ * bis zum 7.11.2026 `persons.dn`, ein Rest, den nur die Produktion hatte.
+ * PostgREST nimmt eine Zeile mit unbekannter Spalte nicht an, die Attrappe
+ * meldet sie als Befund. Die Probe nennt die Spalte `veraltet`: Welche es ist,
+ * spielt keine Rolle, nur dass `schema.sql` sie nicht kennt.
+ */
+describe('Spalten, die das Ziel nicht kennt', () => {
+  const mitAltlast = (wert: string): Record<string, unknown[]> => ({
+    ...BESTAND,
+    persons: BESTAND.persons.map((p) => ({ ...p, veraltet: wert })),
+  })
+
+  it('lässt eine fort, die in jeder Zeile leer ist, und sagt es', async () => {
+    const datei = sicherungsDatei(sicherung(mitAltlast(''), KONTEN))
+    const { tabellen, aufrufe, ausgabe } = await fahre(() => main([datei, '--ziel-url', ATTRAPPE_URL, '--ziel-key', 'sb_secret_probe_000000000000']))
+    expect(befunde(aufrufe)).toEqual([])
+    expect(tabellen.persons?.[0]).not.toHaveProperty('veraltet')
+    expect(ausgabe.join('\n')).toMatch(/persons\.veraltet/)
+    expect(ausgabe.join('\n')).toMatch(/Alle Tabellen gleich/)
+  })
+
+  it('bricht ab, bevor es das Ziel anfasst, wenn so eine Spalte etwas trägt', async () => {
+    // Was darin steht, ginge verloren — das entscheidet kein Skript still.
+    const datei = sicherungsDatei(sicherung(mitAltlast('Probe'), KONTEN))
+    const gesehen: string[] = []
+    const mitschreiben = (a: Aufruf): undefined => {
+      gesehen.push(`${a.method} ${tabelleVon(a)}`)
+    }
+    await expect(
+      fahre(() => main([datei, '--ziel-url', ATTRAPPE_URL, '--ziel-key', 'sb_secret_probe_000000000000']), { stoerung: mitschreiben }),
+    ).rejects.toThrow(/process\.exit\(1\).*persons\.veraltet/)
+    expect(gesehen).toEqual([])
   })
 })

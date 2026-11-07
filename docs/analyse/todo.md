@@ -10007,7 +10007,7 @@ Zahlungen legt der Betreiber an. Nach der Umsetzung `/simplify` und
 `/code-review max` anbieten (bei reinen Skript-Änderungen nicht), vor dem Push
 die drei CI-Schritte und `npm run laufzeit`.
 
-### T168 · Sicherung der Datenbank, mit Rückspielprobe 🔧 ✅ umgesetzt (7. November 2026) — ein Rest wartet auf T170
+### T168 · Sicherung der Datenbank, mit Rückspielprobe 🔧 ✅ umgesetzt (7. November 2026) — die Probe gegen ein echtes Projekt entfällt (kein Staging)
 
 **Warum:** Supabase hält für das Projekt keine abrufbare Sicherung. Gemessen
 am 7. November: `npx supabase backups list --remote=<ref>` liefert
@@ -10128,7 +10128,40 @@ jede Zeile hineingeht und jede wieder dasteht.
 **Nicht gewählt:** ein Tarif mit Sicherung (Supabase Pro, täglich + PITR) —
 kostet laufend, und das Zurückspielen übt man damit nicht.
 
-### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ✅ umgesetzt (7. November 2026) — der Umstieg kommt mit dem Neuaufbau
+#### Nachgetragen am 7. November 2026, abends — die Probe war zu nachsichtig
+
+**Kein Staging-Projekt** (Betreiber: „dann brauchen wir kein staging"). Damit
+entfällt der Rest oben: Anmelden und Mitgliedsrechte-Probe nach einem
+Zurückspielen gingen nur gegen ein zweites, echtes Projekt.
+
+Beim Abgleich der Produktion mit den Migrationen (T169, Umstieg) kam dafür ein
+Fehler im Zurückspielen heraus, den die lokale Probe übersah:
+
+* **Jede Sicherung trug `persons.dn`** — eine Spalte, die nur die Produktion
+  noch hatte (seit T110 ungenutzt, in allen 144 Zeilen leer). `sicherung.mjs`
+  liest mit `select=*`, also kam sie mit.
+* **`zurueckspielen.mjs` wäre daran gescheitert:** Es schreibt über PostgREST
+  in eine frisch aufgebaute Datenbank, und PostgREST nimmt keine Zeile mit
+  unbekannter Spalte an — mitten im Lauf, die ersten Tabellen schon
+  geschrieben. Gezeigt mit der Attrappe: `POST persons.dn: gibt es nicht`.
+* **Die Rückspielprobe merkte es nicht:** `json_populate_recordset` übergeht
+  eine unbekannte Spalte still. Sie bestand mit einer Sicherung, die das echte
+  Skript nicht zurückspielen konnte.
+
+Umgesetzt:
+
+| Was | Wie |
+| --- | --- |
+| Zurückspielen | `fremdeSpalten`/`spaltenAbgleich`: Eine Spalte, die `schema.sql` nicht kennt, bleibt fort, wenn sie in jeder Zeile leer ist (und das Skript sagt es); trägt sie etwas, hält es an, **bevor** es das Ziel anfasst |
+| Rückspielprobe | hält jeden Schlüssel vor dem Schreiben gegen den Katalog — so streng wie PostgREST. Sabotage: ohne das Weglassen bricht sie an `persons: dn gibt es im Ziel nicht` ab |
+| `tabellenAusSchema` | kennt jetzt alle Spalten (`create table`, `add column`, `drop column`) und liest den Rumpf nach Einträgen statt nach Zeilen. Die neue Probe gegen den Katalog von Postgres fand dabei drei Fehler des alten Lesers: `references` und `and` aus mehrzeiligen Bedingungen galten als Spalten, `push_subscriptions.p256dh` fehlte (Ziffer im Namen) — beim Zurückspielen hätte jede gefüllte `p256dh` als fremd gegolten und den Lauf angehalten |
+| Proben | `zurueckspielen.test.ts` (leere fremde Spalte geht durch ohne Befund der Attrappe, gefüllte hält an ohne einen Aufruf), `sicherung.test.ts` (Spalten = Katalog). Beide Lauf-Proben waren am alten Code rot |
+
+Gefahren mit echten Ständen: die Sicherung nach der Umstellung (ohne `dn`) und
+eine davor (mit `dn`, „persons.dn … bleibt fort") — beide Male alle Tabellen
+gleich, 141 nachgetragene Verweise, 7 Konten.
+
+### T169 · Versionierte Migrationen vorbereiten (E3) 🏗 ✅ umgesetzt (7. November 2026) — umgestellt am selben Abend, ohne Neuaufbau
 
 **Warum:** E3 aus dem Gesamt-Review vom 2. November, beschlossen für den
 Neuaufbau zum Echtbetrieb. Heute ist `supabase/schema.sql` die einzige Quelle;
@@ -10228,7 +10261,49 @@ Datenbank aus `schema.sql` aufbauen, die erste Migration als eingespielt
 eintragen (`npx supabase migration repair --status applied 20261107120000
 --remote=<ref>`), die Einmal-Blöcke aus `schema.sql` nehmen.
 
-### T170 · Staging-Projekt und Ausrollen über die CI 🏗 ☐ offen
+#### Umgestellt am 7. November 2026, abends — ohne Neuaufbau
+
+Der Betreiber wollte die Produktion **jetzt** über Migrationen ausrollen, nicht
+erst beim Neuaufbau („ja ausrollen"). Statt die Datenbank neu aus
+`schema.sql` aufzubauen, wurde belegt, dass sie schon dem Stand der Migrationen
+entspricht:
+
+1. **Lesender Abgleich** (`db query --remote=… --read-only`): dieselben acht
+   Katalog-Abschnitte wie in `migrationen.test.ts`, die Produktion gegen die
+   Folge der Migrationen in PGlite. Gleich waren Tabellen (29), Bedingungen
+   (151), Indizes (68), Funktionen (29, samt Rumpf-Prüfsumme), Trigger (9),
+   Richtlinien (55) und Sequenzen. Anders nur `persons`: die Spalte `dn` (seit
+   T110 aus `schema.sql` heraus, ohne Aufräumblock, deshalb geblieben; in
+   allen 144 Zeilen leer) und zwölf Spaltenrechte aus T154, die neben dem
+   Tabellenrecht aus T160 stehen geblieben waren.
+2. **Nachgestellt, bevor es die Produktion traf:** Migrationen 1 und 2 plus
+   genau diese beiden Reste in PGlite ergaben die 13 Abweichungen der
+   Produktion; mit Migration 3 darauf null.
+3. **Mit Freigabe des Betreibers, Sitzung auf „Default":**
+   `migration repair --status applied 20261107120000 20261107134500`,
+   `db push --dry-run` (nannte genau Migration 3), `db push` mit
+   `20261107195500_persons-altlasten.sql` (`dn` fort, zwölf Spaltenrechte
+   entzogen; in einer frischen Datenbank tut sie nichts).
+4. **Danach:** derselbe Abgleich — null Abweichungen in allen acht
+   Abschnitten; `migration list` zeigt drei von drei eingespielt; eine neue
+   Sicherung ohne `dn` (T168, Nachtrag).
+
+**Kein Datenbank-Passwort nötig:** Ohne `--password` meldet sich die CLI 3
+über den Zugangstoken mit einer kurzlebigen Rolle an („Initialising login
+role…") — so liefen `repair`, `list` und `push`.
+
+**Die Einmal-Aufräumblöcke sind aus `schema.sql` heraus** (81 Zeilen, keine
+dazu — dieselbe Zahl, um die die erste Migration kürzer war): In der
+Produktion ist keines ihrer Objekte mehr da. Die Proben, die nur ihr
+Vorhandensein verlangten, prüfen jetzt das Fehlen; neu ist die Wache „beim
+Einspielen löscht `schema.sql` keine Daten — Aufräumen gehört in eine
+Migration" (mit Gegenprobe). Der Kopf von `schema.sql` und die README sagen,
+was jetzt gilt.
+
+Offen aus E3/E4 bleibt nur **E4** (`planner` → `admin`) — als Migration, wann
+der Betreiber will.
+
+### T170 · Ausrollen über die CI (ohne Staging, entschieden am 7. November) 🏗 ☐ offen
 
 **Warum:** Das Frontend geht mit jedem Push hinaus; Functions und Schema rollt
 Claude von Hand aus, in der Reihenfolge Functions, Schema, Push. Dazwischen
@@ -10283,6 +10358,30 @@ Drei Punkte sind damit schon geklärt:
 Spalte) geht über Staging nach Produktion; `functions list` beider Projekte
 zeigt den Stand des Commits; eine absichtlich rote Probe auf Staging hält
 Produktion und Frontend an.
+
+#### Entschieden am 7. November 2026, abends — kein Staging
+
+Betreiber: „dann brauchen wir kein staging" — und die CI soll die Produktion
+**jetzt** ausrollen („ja ausrollen"), nicht erst beim Neuaufbau. Damit:
+
+* **Die Produktion folgt seit dem Abend den Migrationen** (Umstieg unter T169):
+  Verlauf eingetragen, Migration 3 eingespielt, Abgleich ohne Abweichung.
+* **`ausrollen.yml` rollt direkt in die Produktion aus**, bei Änderungen unter
+  `supabase/`: vorher die PGlite-Proben (Migrationen gegen `schema.sql`,
+  Rechte), dann `db push` und `functions deploy … --use-api`, danach der
+  lesende Abgleich gegen die Migrationen und der Rauchtest der Functions. Das
+  Frontend-Deploy wartet darauf; eine rote Probe hält beides an.
+* **Ein Secret genügt:** `SUPABASE_ACCESS_TOKEN`. Datenbank-Passwörter braucht
+  die CLI 3 nicht (gemessen beim Umstieg).
+* **Entfallen:** das zweite Projekt, der tägliche Wachhalter (nur für Staging
+  gedacht) und der Rest von T168 (Anmelden und Mitgliedsrechte-Probe nach dem
+  Zurückspielen — dafür ist die Rückspielprobe jetzt so streng wie PostgREST).
+
+**Offen:** `ausrollen.yml` selbst — es wartet auf das Secret, das der Betreiber
+anlegt; geschrieben wird es, wenn es sich gleich fahren lässt. Geprüft wird
+dann: eine harmlose Schemaänderung (ein Kommentar an einer Spalte) geht über
+die CI in die Produktion, `functions list` zeigt den Stand des Commits, und
+eine absichtlich rote Probe hält Produktion und Frontend an.
 
 ### T171 · Fehlermeldungen von den Geräten 🔧 ✅ umgesetzt und ausgerollt (7. November 2026)
 
@@ -10689,9 +10788,10 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☐☑☑☑
 
 **172 der 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. **Offen ist nur T170**: Staging und Ausrollen per
-CI (wartet auf das Staging-Projekt des Betreibers; Pausieren und Freigabe sind
-entschieden). Am 7. November umgesetzt: **T172** (die drei größten Dateien nach
+„kein Mangel" zurückgewiesen. **Offen ist nur T170**: Ausrollen per CI, ohne
+Staging (Betreiber, 7. November abends) — die Produktion folgt seit dem Abend
+den Migrationen; `ausrollen.yml` wartet auf das Secret `SUPABASE_ACCESS_TOKEN`.
+Am 7. November umgesetzt: **T172** (die drei größten Dateien nach
 Fachbereich aufgeteilt — `src/data/planung/`, `src/lib/daten/`,
 `src/app/aktionen/`; alle Ansichten byte-gleich), **T173** (Barrierefreiheit
 und Sprachauszeichnung — Sprachprüfung
@@ -10699,11 +10799,13 @@ in jeder Laufzeit-Messung, axe mit `--axe` auch in der CI; 44 Befunde behoben,
 zwei begründete Ausnahmen, vom Betreiber bestätigt), **T171**
 (Fehlermeldungen von den Geräten — `geraete_fehler`, fünf Bremsen, Lesen per
 Skript, ausgerollt) und **T168** (Sicherung mit
-Rückspielprobe — wöchentlich über die Aufgabenplanung, die Rückspielprobe lokal
-grün; nur das Anmelden und die Mitgliedsrechte-Probe nach einem Rückspielen
-warten auf das Staging-Projekt aus T170) und **T169** (`supabase/migrations/`
-mit dem Grundstand, dazu die Probe, die ihn und `schema.sql` gleich hält; der
-Umstieg selbst kommt mit dem Neuaufbau).
+Rückspielprobe — wöchentlich über die Aufgabenplanung; die Rückspielprobe seit
+dem Abend so streng wie PostgREST, nachdem sie `persons.dn` übersehen hatte;
+Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen entfallen ohne
+Staging) und **T169** (`supabase/migrations/` mit dem Grundstand, dazu die
+Probe, die ihn und `schema.sql` gleich hält; am Abend umgestellt — Verlauf
+eingetragen, Migration 3 räumt zwei Reste in `persons`, die Einmal-Blöcke sind
+aus `schema.sql` heraus).
 Am 7. November kam außerdem **T167** dazu und ist umgesetzt (Laufzeit-Messung
 im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
@@ -11168,8 +11270,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
 T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
-umgesetzt, offen davon nur die Probe gegen ein echtes Projekt und der Umstieg
-beim Neuaufbau; T173 und T172 am Abend, ohne Rest;
+umgesetzt — die Probe gegen ein echtes Projekt entfiel am Abend mit dem
+Staging, der Umstieg auf die Migrationen kam am Abend ohne Neuaufbau; T173 und
+T172 am Abend, ohne Rest;
 keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8258221`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
@@ -11178,15 +11281,15 @@ März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
 die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
 passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
 Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
-bleibt, braucht NWS-Exporte, den Neuaufbau oder das Staging-Projekt (T170).
+bleibt, braucht NWS-Exporte, den Neuaufbau oder das Secret für die CI (T170).
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
-| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist vorbereitet** (T169, 7. November): `supabase/migrations/` steht mit dem Grundstand, `migrationen.test.ts` hält ihn und `schema.sql` gleich. Beim Neuaufbau bleibt: erste Migration als eingespielt eintragen, Einmal-Blöcke aus `schema.sql` nehmen, E4 als Migration 2 |
-| **T168** | Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen | der Rest von T168 (am 7. November umgesetzt: `scripts/sicherung.mjs`, wöchentlich über die Aufgabenplanung, acht Stände in `C:\DATA\Claude\jw-sicherungen`; Rückspielprobe gegen eine leere Postgres grün, alle 27 Tabellen gleich). Was fehlt, geht nur gegen ein echtes Projekt: sich nach dem Zurückspielen mit einem Testkonto anmelden und die Mitgliedsrechte-Probe fahren — dafür braucht es das Staging-Projekt aus T170 |
-| **T169** | Umstieg auf die Migrationen | vorbereitet am 7. November (`supabase/migrations/20261107120000_grundstand.sql`, dazu `migrationen.test.ts`, die ihn und `schema.sql` gegeneinander hält — beide in je eine leere Postgres, acht Katalog-Abschnitte). Zu tun bleibt es **beim Neuaufbau**: Datenbank aus `schema.sql` aufbauen, erste Migration als eingespielt eintragen (`migration repair --status applied 20261107120000`), die Einmal-Aufräumblöcke aus `schema.sql` nehmen. E4 wird dann Migration 2 (Betreiber am 7. November: nicht in die erste) |
-| **T170** | Staging und Ausrollen per CI | **wartet auf das Staging-Projekt**, das der Betreiber anlegt (Region `eu-central-1` wie Produktion) — ohne es ließe sich die Strecke schreiben, aber nicht fahren. T169 ist fertig. Entschieden am 7. November: wachhalten per täglichem Zeitplan (Free-Tarif pausiert nach etwa einer Woche, Aufwecken nur im Dashboard), Produktions-Ausrollung **ohne** Freigabe, sobald die Staging-Proben grün sind |
+| **Neuaufbau** | E4 aus dem Gesamt-Review, die Daten zum Echtbetrieb | Der Neuaufbau zum Echtbetrieb (die Daten neu aus NWS und jw.org) kommt noch (Betreiber am 6. November); danach den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
+| **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
+| **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
+| **T170** | Ausrollen per CI | **ohne Staging** (Betreiber, 7. November abends): `ausrollen.yml` rollt bei Änderungen unter `supabase/` direkt in die Produktion aus — PGlite-Proben, `db push`, `functions deploy`, lesender Abgleich und Rauchtest, das Frontend wartet. **Wartet auf das GitHub-Secret `SUPABASE_ACCESS_TOKEN`**, das der Betreiber anlegt; ein Datenbank-Passwort braucht die CLI 3 nicht. Wachhalter und zweites Projekt entfallen |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | — | **erledigt am 7. November**: `planning.ts`, `data.ts` und `reducer.ts` nach Fachbereich aufgeteilt (`src/data/planung/`, `src/lib/daten/`, `src/app/aktionen/`), alle Ansichten byte-gleich, die Kommentare in den verschobenen Teilen auf das gekürzt, was gilt. Nicht mehr offen |
 | **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |

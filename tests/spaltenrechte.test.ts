@@ -101,17 +101,13 @@ describe('Die Funktion für den Grund', () => {
 })
 
 /**
- * **Keine E-Mail-Adresse mehr** (31.10.2026): Die Spalte geht beim Einspielen,
- * vorher die Funktion, die sie las — und die Versammlung liest `persons`
- * wieder ganz, denn dort ist nichts mehr gesperrt.
+ * **Keine E-Mail-Adresse mehr** (31.10.2026): keine Spalte, keine Funktion,
+ * die sie las — und die Versammlung liest `persons` wieder ganz, denn dort ist
+ * nichts mehr gesperrt.
  */
 describe('persons ohne Adresse', () => {
-  it('die Tabelle hat keine Spalte `mail` mehr — und das Schema räumt sie ab, nach der Funktion', () => {
+  it('die Tabelle hat keine Spalte `mail` mehr, und keine Funktion liest sie', () => {
     expect([...schemaSpalten('persons').keys()]).not.toContain('mail')
-    const funktion = SCHEMA_SQL.indexOf('drop function if exists public.personen_mails();')
-    const spalte = SCHEMA_SQL.indexOf('alter table public.persons drop column if exists mail;')
-    expect(funktion).toBeGreaterThan(-1)
-    expect(spalte).toBeGreaterThan(funktion)
     expect(SCHEMA_SQL).not.toContain('create or replace function public.personen_mails')
   })
 

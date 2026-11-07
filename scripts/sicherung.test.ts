@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { leerePostgres } from './pglite-postgres.mjs'
 import { fahre } from './schema-attrappe'
 import {
   AUSGENOMMEN,
@@ -45,8 +46,9 @@ afterEach(() => {
 describe('tabellenAusSchema', () => {
   it('findet jede Tabelle mit ihrem Primärschlüssel', () => {
     const t = tabellenAusSchema(SCHEMA)
-    // So viele, wie `create table` in schema.sql steht — gezählt, nicht geglaubt.
-    expect(t.length).toBe((SCHEMA.match(/create table if not exists/g) ?? []).length)
+    // So viele, wie `create table` in schema.sql steht — gezählt, nicht
+    // geglaubt; ohne Kommentare, denn die Prosa darf die Anweisung nennen.
+    expect(t.length).toBe((ohneKommentare(SCHEMA).match(/create table if not exists/g) ?? []).length)
     expect(t[0]!.name).toBe('congregations') // die Reihenfolge der Datei, nicht alphabetisch
     expect(t.find((x) => x.name === 'members')!.pk).toEqual(['user_id'])
     expect(t.find((x) => x.name === 'absagen')!.pk).toEqual(['congregation_id', 'task_key', 'person_id'])
@@ -62,6 +64,36 @@ describe('tabellenAusSchema', () => {
     expect(persons.nichtNull.has('congregation_id')).toBe(true)
     expect(persons.nichtNull.has('id')).toBe(true) // Primärschlüssel, auch ohne das Wort
     expect(persons.nichtNull.has('grp')).toBe(false) // darf warten (siehe zurueckspielen.mjs)
+  })
+
+  it('kennt genau die Spalten, die Postgres aus schema.sql baut', async () => {
+    // Daran misst `zurueckspielen.mjs`, was eine Sicherung mehr trägt als das
+    // Ziel. Fehlte hier eine Spalte, hielte es sie für fremd und ließe sie fort.
+    const db = await leerePostgres([SCHEMA])
+    try {
+      const { rows } = await db.query<{ tabelle: string; spalte: string }>(
+        `select c.relname as tabelle, a.attname as spalte
+           from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'public' and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped`,
+      )
+      const katalog: Record<string, string[]> = {}
+      for (const r of rows) (katalog[r.tabelle] ??= []).push(r.spalte)
+      for (const spalten of Object.values(katalog)) spalten.sort()
+      const gelesen = Object.fromEntries(tabellenAusSchema(SCHEMA).map((t) => [t.name, [...t.spalten].sort()]))
+      expect(gelesen).toEqual(katalog)
+      // Später angefügt, nicht im `create table`: ohne `add column` fehlte sie.
+      expect(gelesen.persons).toContain('grp')
+    } finally {
+      await db.close()
+    }
+  })
+
+  it('liest `add column` und `drop column` in der Reihenfolge der Datei', () => {
+    const sql =
+      'create table if not exists public.x (\n  a text,\n  b text\n);\n' +
+      'alter table public.x\n  add column if not exists c int;\n' +
+      'alter table public.x drop column if exists b;\n'
+    expect([...tabellenAusSchema(sql)[0]!.spalten].sort()).toEqual(['a', 'c'])
   })
 })
 

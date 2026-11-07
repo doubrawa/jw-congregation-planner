@@ -152,9 +152,8 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     // Mit den Trolleys sagt niemand mehr zu; `oz|…` gehört zu keinem Platz.
     const fn = funktionsRuempfe(schema).get('task_gehoert_mir') ?? ''
     expect(fn).not.toContain("teile[1] = 'oz'")
-    expect(normiert(schema)).toContain('drop table if exists public.oz_eintraege cascade;')
-    expect(normiert(schema)).toContain('drop table if exists public.oz_termine cascade;')
     expect(schema).not.toMatch(/create table if not exists public\.oz_/)
+    expect(fn).not.toContain('darf_zeugnis')
   })
 
   it('Weitere Pläne: Entwürfe sehen nur Admin und Planer, Veröffentlichtes die eigene Versammlung (T120, Phase 5)', () => {
@@ -280,8 +279,6 @@ describe('die Rechteprüfungen stehen im Schema', () => {
 
     it('die Einladungscodes sind fort — samt der Funktion zum Einlösen (T121, Phase 8)', () => {
       const text = normiert(schema)
-      expect(text).toContain('drop function if exists public.redeem_invite(text);')
-      expect(text).toContain('drop table if exists public.invites cascade;')
       expect(text).not.toContain('create table if not exists public.invites')
       expect(fn('redeem_invite')).toBe('')
     })
@@ -487,8 +484,6 @@ describe('kein Altbestand mehr im Schema', () => {
   it('keine Telefonnummer an der Person (25.10.2026)', () => {
     // Angezeigt wurde sie nirgends, und gebraucht hat sie niemand.
     expect(tabelle('persons')).not.toMatch(/^\s*tel\s/m)
-    // Eine bestehende Datenbank verliert die Spalte beim nächsten Einspielen.
-    expect(normiert(schema)).toContain('alter table public.persons drop column if exists tel;')
   })
 
   it('mein_anzeigename nimmt schlicht Vor- und Nachname', () => {
@@ -504,20 +499,13 @@ describe('kein Altbestand mehr im Schema', () => {
     expect(treffer(schema, TABELLEN)).not.toContain('vortraege_auswaerts')
     expect([...richtlinien(schema).keys()].filter((r) => r.startsWith('vortraege_auswaerts'))).toEqual([])
     expect(funktionsRuempfe(schema).get('task_gehoert_mir') ?? '').not.toContain("teile[1] = 'va'")
-    // Eine bestehende Datenbank verliert die Tabelle beim nächsten Einspielen.
-    expect(normiert(schema)).toContain('drop table if exists public.vortraege_auswaerts cascade;')
   })
 
   it('„Familien reihum" ist weg — Vorlage, Gastgeber und Mahlzeit (4.10.2026)', () => {
     expect(tabelle('plaene')).not.toMatch(/^\s*vorlage\s/m)
     expect(tabelle('plan_eintraege')).not.toMatch(/^\s*mahlzeit\s/m)
-    // Eine bestehende Datenbank verliert die Spalten beim nächsten Einspielen.
-    const sql = normiert(schema)
-    expect(sql).toContain('alter table public.plaene drop column if exists vorlage;')
-    expect(sql).toContain('alter table public.plan_eintraege drop column if exists mahlzeit;')
-    // Die Gastgeber-Spalte fällt nicht mehr: Seit dem 31.10.2026 heißt so die
-    // Person einer Woche, und jedes Einspielen nähme sie sonst mit.
-    expect(sql).not.toContain('alter table public.plan_eintraege drop column if exists person_id')
+    // `person_id` heißt die Person einer Woche — kein Gastgeber, sie bleibt.
+    expect(normiert(schema)).not.toContain('alter table public.plan_eintraege drop column if exists person_id')
     expect(funktionsRuempfe(schema).get('plan_sichtbar') ?? '').not.toMatch(/vorlage|person_id|fam/)
   })
 
@@ -536,44 +524,26 @@ describe('kein Altbestand mehr im Schema', () => {
     )
   })
 
-  it('je Plan und Woche ein Eintrag — der Index entsteht erst, wenn die Familienpläne weg sind', () => {
-    // Mittag und Abend am selben Tag waren zwei Einträge je Plan und Tag; davor
-    // angelegt, bräche der eindeutige Index das Einspielen ab.
-    const index = schema.indexOf('create unique index if not exists plan_eintraege_woche')
-    const aufraeumen = schema.indexOf("delete from public.plaene where vorlage = 'familien'")
-    expect(index).toBeGreaterThan(-1)
-    expect(aufraeumen).toBeGreaterThan(-1)
-    expect(index).toBeGreaterThan(aufraeumen)
-    expect(normiert(schema)).toContain('on public.plan_eintraege (plan_id, datum);')
+  it('je Plan und Woche ein Eintrag', () => {
+    expect(normiert(schema)).toContain('create unique index if not exists plan_eintraege_woche on public.plan_eintraege (plan_id, datum);')
   })
 
-  it('das Aufräumen steht hinter den Tabellen, aus denen es löscht', () => {
-    // Auf einer frischen Datenbank liefe ein `delete from` vor seinem
-    // `create table` ins Leere — und das Einspielen bräche dort ab.
+  it('beim Einspielen löscht schema.sql keine Daten — Aufräumen gehört in eine Migration', () => {
+    // `schema.sql` ist der Gesamtstand, die Produktion folgt den Migrationen.
+    // Ein `delete from` hier erreichte keine bestehende Datenbank, nur eine
+    // frische, in der es nichts zu löschen gibt.
     //
     // Gemeint ist, was beim Einspielen läuft. Der Rumpf einer Funktion läuft
     // erst, wenn sie gerufen wird (etwa `absage_vermerken`, T126) — er wird
-    // ausgeblendet, Zeichen für Zeichen, damit die Stellen bleiben. Ein
-    // `do $$`-Block dagegen läuft beim Einspielen und bleibt drin.
-    const ohneRuempfe = schema.replace(/\bas \$\$[\s\S]*?\$\$/g, (rumpf) => rumpf.replace(/[^\n]/g, ' '))
-    const loeschen = [...ohneRuempfe.matchAll(/^\s*delete from public\.(\w+)/gm)]
-    for (const m of loeschen) {
-      const angelegt = schema.indexOf(`create table if not exists public.${m[1]} (`)
-      expect(angelegt, m[1]).toBeGreaterThan(-1)
-      expect(angelegt, m[1]).toBeLessThan(m.index)
-    }
-    // Gegenprobe: Es gibt solche Zeilen überhaupt — je drei für die Redner
-    // auswärts und für Stand und Schicht (ihre Schlüssel) und die der
-    // Familienpläne.
-    expect(loeschen.map((m) => m[1]).sort()).toEqual([
-      'assignment_log',
-      'assignment_log',
-      'confirmations',
-      'confirmations',
-      'notifications',
-      'notifications',
-      'plaene',
-    ])
+    // ausgeblendet. Ein `do $$`-Block dagegen läuft beim Einspielen und bleibt drin.
+    const loeschtBeimEinspielen = (sql: string): string[] =>
+      [...sql.replace(/\bas \$\$[\s\S]*?\$\$/g, '').matchAll(/^\s*delete from public\.(\w+)/gm)].map((m) => m[1]!)
+    expect(loeschtBeimEinspielen(schema)).toEqual([])
+    // Gegenprobe: Ein Aufräumen neben einer Funktion fällt auf, ihr Rumpf nicht.
+    const probe =
+      'create function public.f() returns void language sql as $$\n  delete from public.a\n$$;\n' +
+      "do $$ begin\n  delete from public.b where x = 'y';\nend $$;\ndelete from public.c;\n"
+    expect(loeschtBeimEinspielen(probe)).toEqual(['b', 'c'])
   })
 })
 

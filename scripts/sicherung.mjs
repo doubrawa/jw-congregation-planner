@@ -171,6 +171,35 @@ export function ohneKommentare(sql) {
 }
 
 /**
+ * Die Einträge eines Tabellenrumpfs — Spalten und Bedingungen —, getrennt an
+ * den Kommas der obersten Ebene, jeder auf eine Zeile gebracht.
+ *
+ * Zeilen taugen dafür nicht: Ein Fremdschlüssel oder eine Prüfung über zwei
+ * Zeilen beginnt in der zweiten mit `references` oder `and`, und ein
+ * zeilenweiser Leser hielte beides für eine Spalte. Kommas in Klammern
+ * (`check (x in ('a', 'b'))`) und in Zeichenketten trennen nichts.
+ */
+export function eintraege(rumpf) {
+  const out = []
+  let tiefe = 0
+  let text = false
+  let ab = 0
+  for (let i = 0; i < rumpf.length; i++) {
+    const c = rumpf[i]
+    if (c === "'") text = !text
+    else if (text) continue
+    else if (c === '(') tiefe++
+    else if (c === ')') tiefe--
+    else if (c === ',' && tiefe === 0) {
+      out.push(rumpf.slice(ab, i))
+      ab = i + 1
+    }
+  }
+  out.push(rumpf.slice(ab))
+  return out.map((e) => e.replace(/\s+/g, ' ').trim()).filter(Boolean)
+}
+
+/**
  * Tabellen aus `schema.sql` mit ihrem Primärschlüssel und den Spalten, die
  * die Datenbank selbst vergibt.
  *
@@ -184,7 +213,14 @@ export function ohneKommentare(sql) {
  * darf, lässt sich aufschieben, wenn ihr Fremdschlüssel auf eine Tabelle
  * zeigt, die erst später kommt.
  *
- * @returns {{ name: string, pk: string[], generiert: string[], nichtNull: Set<string> }[]} in der Reihenfolge von schema.sql
+ * `spalten` sind alle Spalten, die eine aus `schema.sql` gebaute Datenbank
+ * hat: die aus `create table`, dazu jedes spätere `add column`, abzüglich
+ * jedes `drop column`, in der Reihenfolge der Datei. Daran misst
+ * `zurueckspielen.mjs`, was eine Sicherung mehr trägt, als das Ziel annimmt.
+ * Dass die Menge genau dem Katalog von Postgres entspricht, hält
+ * `sicherung.test.ts` fest.
+ *
+ * @returns {{ name: string, pk: string[], generiert: string[], nichtNull: Set<string>, spalten: Set<string> }[]} in der Reihenfolge von schema.sql
  */
 export function tabellenAusSchema(roh) {
   const sql = ohneKommentare(roh)
@@ -195,22 +231,34 @@ export function tabellenAusSchema(roh) {
     const pk = []
     const generiert = []
     const nichtNull = new Set()
-    for (const zeile of rumpf.split('\n')) {
-      const z = zeile.trim()
-      const sammel = /^primary key \(([^)]+)\)/i.exec(z)
+    const spalten = new Set()
+    for (const e of eintraege(rumpf)) {
+      const sammel = /^(?:constraint [a-z_][a-z0-9_]* )?primary key \(([^)]+)\)/i.exec(e)
       if (sammel) {
         pk.push(...sammel[1].split(',').map((c) => c.trim()))
         continue
       }
-      const spalte = /^([a-z_]+)\s+(.+)$/i.exec(z)
-      if (!spalte || /^(constraint|primary|unique|check|foreign)\b/i.test(z)) continue
+      // Bedingungen der ganzen Tabelle beginnen mit einem Schlüsselwort, Spalten mit ihrem Namen.
+      if (/^(constraint|primary|unique|check|foreign|exclude)\b/i.test(e)) continue
+      const spalte = /^([a-z_][a-z0-9_]*)\s+(.+)$/i.exec(e)
+      if (!spalte) continue
+      spalten.add(spalte[1])
       if (/\bprimary key\b/i.test(spalte[2])) pk.push(spalte[1])
       if (/\bgenerated always as\b/i.test(spalte[2])) generiert.push(spalte[1])
       // Der Primärschlüssel ist immer `not null`, auch ohne das Wort dort.
       if (/\bnot null\b/i.test(spalte[2]) || /\bprimary key\b/i.test(spalte[2])) nichtNull.add(spalte[1])
     }
     for (const c of pk) nichtNull.add(c)
-    out.push({ name: m[1], pk, generiert, nichtNull })
+    out.push({ name: m[1], pk, generiert, nichtNull, spalten })
+  }
+  const nachName = new Map(out.map((t) => [t.name, t]))
+  for (const a of sql.matchAll(/alter table\s+(?:only\s+)?(?:public\.)?([a-z_]+)\s([\s\S]*?);/gi)) {
+    const t = nachName.get(a[1])
+    if (!t) continue
+    for (const c of a[2].matchAll(/\b(add|drop) column\s+(?:if (?:not )?exists\s+)?([a-z_][a-z0-9_]*)/gi)) {
+      if (c[1].toLowerCase() === 'add') t.spalten.add(c[2])
+      else t.spalten.delete(c[2])
+    }
   }
   return out
 }

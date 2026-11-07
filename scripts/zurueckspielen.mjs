@@ -124,15 +124,57 @@ export function aufgeschobene(tabellen, fks) {
 }
 
 /**
- * Eine Zeile in zwei Teile: was sofort geschrieben wird, und was nachkommt.
- * Die Spalten, die die Datenbank selbst vergibt (`generated always as
- * identity`), fallen ganz heraus — ein eigener Wert wäre dort ein Fehler.
+ * **Spalten, die das Ziel nicht kennt.** Gesichert wird mit `select=*`: Hat
+ * die Quelle mehr als `schema.sql`, trägt jede Sicherung das Mehr mit. PostgREST
+ * nimmt eine Zeile mit unbekannter Spalte nicht an — der Lauf bräche mitten
+ * im Zurückspielen ab, die ersten Tabellen schon geschrieben.
+ *
+ * Ist so eine Spalte in jeder Zeile leer (`null` oder ''), geht nichts
+ * verloren, wenn sie fortbleibt: `weglassen`. Trägt sie irgendwo etwas — auch
+ * `0` oder `false` sind ein Wert —, nennt `gefuellt` sie mit der Zahl ihrer
+ * Zeilen. Was dann geschieht, entscheidet ein Mensch, kein Skript.
+ *
+ * @returns {{ weglassen: string[], gefuellt: { spalte: string, zeilen: number }[] }}
  */
-export function zeileTeilen(zeile, warten, generiert = []) {
+export function fremdeSpalten(zeilen, spalten) {
+  const fremd = new Set()
+  for (const z of zeilen) for (const k of Object.keys(z)) if (!spalten.has(k)) fremd.add(k)
+  const weglassen = []
+  const gefuellt = []
+  for (const spalte of [...fremd].sort()) {
+    const n = zeilen.filter((z) => z[spalte] !== null && z[spalte] !== undefined && z[spalte] !== '').length
+    if (n) gefuellt.push({ spalte, zeilen: n })
+    else weglassen.push(spalte)
+  }
+  return { weglassen, gefuellt }
+}
+
+/**
+ * `fremdeSpalten` über alle Tabellen einer Sicherung: je Tabelle, was
+ * fortbleibt, und als Liste, was den Lauf anhält (`persons.dn (3 Zeilen)`).
+ */
+export function spaltenAbgleich(tabellen, sicherung) {
+  const weglassen = {}
+  const gefuellt = []
+  for (const t of tabellen) {
+    const f = fremdeSpalten(sicherung.tabellen[t.name], t.spalten)
+    if (f.weglassen.length) weglassen[t.name] = f.weglassen
+    for (const g of f.gefuellt) gefuellt.push(`${t.name}.${g.spalte} (${g.zeilen} ${g.zeilen === 1 ? 'Zeile' : 'Zeilen'})`)
+  }
+  return { weglassen, gefuellt }
+}
+
+/**
+ * Eine Zeile in zwei Teile: was sofort geschrieben wird, und was nachkommt.
+ * Ganz heraus fallen die Spalten in `auslassen`: die, die die Datenbank selbst
+ * vergibt (`generated always as identity`) — ein eigener Wert wäre dort ein
+ * Fehler —, und die leeren, die das Ziel nicht kennt (`fremdeSpalten`).
+ */
+export function zeileTeilen(zeile, warten, auslassen = []) {
   const jetzt = {}
   const nach = {}
   for (const [k, v] of Object.entries(zeile)) {
-    if (generiert.includes(k)) continue
+    if (auslassen.includes(k)) continue
     if (warten.includes(k) && v !== null && v !== undefined) {
       nach[k] = v
       jetzt[k] = null
@@ -211,6 +253,15 @@ export async function main(argv = process.argv.slice(2)) {
 
   const tabellen = tabellenAusSchema(schema).filter((t) => t.name in (sicherung.tabellen ?? {}))
   const warten = aufgeschobene(tabellen, fremdschluessel(schema))
+
+  // Vor dem ersten Aufruf: Was hier anhält, soll das Ziel nicht halb gefüllt
+  // zurücklassen.
+  const { weglassen, gefuellt } = spaltenAbgleich(tabellen, sicherung)
+  if (gefuellt.length) {
+    console.error(`Spalten, die schema.sql nicht kennt, tragen in der Sicherung etwas: ${gefuellt.join(', ')}.`)
+    console.error('PostgREST nähme sie nicht an, und fortgelassen ginge ihr Inhalt verloren. Nichts geschrieben.')
+    process.exit(1)
+  }
   const rest = restKlient(url, key)
 
   /*
@@ -238,6 +289,9 @@ export async function main(argv = process.argv.slice(2)) {
     const w = warten[t.name]?.length ? `  (${warten[t.name].join(', ')} wird nachgetragen)` : ''
     console.log(`${t.name.padEnd(24)} ${String(n).padStart(6)}${w}`)
   }
+  for (const [name, spalten] of Object.entries(weglassen)) {
+    console.log(`${spalten.map((s) => `${name}.${s}`).join(', ')}: kennt schema.sql nicht, in jeder Zeile leer — bleibt fort.`)
+  }
 
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
@@ -251,7 +305,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (const t of tabellen) {
     const zeilen = sicherung.tabellen[t.name]
     if (!zeilen.length) continue
-    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], t.generiert))
+    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], [...t.generiert, ...(weglassen[t.name] ?? [])]))
     await rest(t.name, {
       method: 'POST',
       headers: { Prefer: 'return=minimal' },
