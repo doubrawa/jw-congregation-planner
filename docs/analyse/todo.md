@@ -9923,8 +9923,8 @@ dem neuen Rumpf, die Aufräumregel zählt im Trockenlauf ohne Fehler. Dann die
 Function `anmelden` (v17; per `functions download` alle 9 Dateien gleich dem
 Arbeitsstand) — ohne Sitzung antworten `einmalcode` und `erneuern` 401, eine
 unbekannte Aktion 400, ein unvollständiger Code 404. Mit Sitzung (Einmal-Code
-holen und einlösen, `logout?scope=others`) live noch nicht gefahren — das
-braucht ein angemeldetes Gerät.
+holen und einlösen, `logout?scope=others`) braucht es ein angemeldetes Gerät —
+am 7. November vom Betreiber abgehakt: „t166 ist erledigt".
 
 **Live seit 6.11.2026 16:36** mit `76f6f273` (`sw.js` → `shell-76f6f27`). Der
 Pages-Lauf zum Push hing zehn Minuten in „updating_pages" (Zeitüberschreitung
@@ -9977,8 +9977,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 „kein Mangel" zurückgewiesen. Zuletzt am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
 Mitgliedsrechte-Probe nach „Alles Planen" lief grün; dazu **T166** (Anmeldung
-im Profil), ausgerollt. Was ohne Aufgabennummer aussteht, steht unter „Was
-offen ist und warum".
+im Profil), ausgerollt und am 7. November mit echter Sitzung abgehakt
+(Betreiber). Was ohne Aufgabennummer aussteht, steht unter „Was offen ist und
+warum".
 
 Am 30. Oktober ausgerollt: **T152** (Anwesende), **T153** (Tauschen) und
 **T154** (Adressen und Gründe) — nach `/simplify` und `/code-review max`
@@ -10030,6 +10031,13 @@ oben, ohne neuen Code — Supabase stellt nach einer Änderung der Secrets
 (`RESEND_API_KEY` entfernt) jede Function neu bereit. Im Schema neu: die
 Tabelle `anmelde_einmalcodes`, der Trigger `konto_mit_mitgliedschaft_loeschen`
 und die Aufräumfunktion mit ihrer Regel.
+
+**Nachgesehen am 7. November, morgens:** Live läuft `shell-8fec240`, der Kopf
+von `main`; der letzte Pages-Lauf ist grün. Die Functions stehen wie im
+Nachtrag: `anmelden` v17, die übrigen sieben mit dem Code vom 2. November —
+was T166 in `_shared` ergänzt hat, nutzt nur `anmelden`. Die Erinnerungen liefen
+zuletzt am 6. November, das Aufräumen am 2. November, kein Fehlschlag in zehn
+Tagen; `disable_signup` steht weiter auf `true`.
 
 **Beim Betreiber liegt außerhalb des Repos nichts mehr:** Registrieren ist
 seit dem 6. November aus (`disable_signup: true`). Resend braucht es seit T160
@@ -10426,7 +10434,28 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 6. November 2026, alles Offene an einer Stelle** (gemessen: 165 Köpfe,
+**Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
+166 Köpfe, keiner offen; keine PR, kein Issue, außer `main` kein Zweig, auch
+lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
+`disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
+geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis
+März/April 2027). Die drei Commits seit der Übersicht vom 6. November (T166,
+die Doku dazu, T162 in Firefox) tragen kein „Offen:", und ihre Abschnitte
+passen zur Tabelle. Die Sitzungen, in denen sie entstanden, liegen auf diesem
+Rechner nicht mehr vor; ihre letzten Antworten sind nicht nachgelesen. Was
+bleibt, braucht NWS-Exporte oder den Neuaufbau.
+
+| | Punkt | Warum offen |
+| --- | --- | --- |
+| **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
+| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
+
+Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
+ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit
+Sitzung live noch nicht ausprobiert: „Code anzeigen" und damit ein zweites
+Gerät anmelden, „Zugang erneuern" (meldet die übrigen Geräte ab).
+
+**Der Stand vom 6. November 2026** (gemessen: 165 Köpfe,
 keiner offen — seit dem 28. Oktober kamen T146–T165 dazu, und T121 ist
 abgeschlossen; keine PR, kein Issue, außer `main` kein Zweig, auch lokal nicht;
 `sw.js` = HEAD (`shell-60cdfb3`, vor dem Push dieses Stands); die acht
@@ -10440,14 +10469,8 @@ Abschnitt ihrer Aufgabe: die **Wochen ab dem 21. Dezember**, **E3 und E4** aus
 dem Gesamt-Review vom 2. November und die **Auswahl ohne `field-sizing`**
 (T162). Die 13 Commits seit dem 1. November, 09:32 Uhr, berührten todo.md
 nicht. Danach mit dem Betreiber Punkt für Punkt durchgegangen; was dabei
-herausfiel, steht unter der Tabelle. Was bleibt, braucht NWS-Exporte, den
-Neuaufbau oder einen Versuch mit echter Sitzung (T166).
-
-| | Punkt | Warum offen |
-| --- | --- | --- |
-| **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
-| **Neuaufbau** | E3 und E4 aus dem Gesamt-Review | beschlossen am 2. November, umgesetzt beim Neuaufbau zum Echtbetrieb — der kommt noch (Betreiber am 6. November). **E3:** danach jede Schemaänderung als versionierte Migration, `schema.sql` bleibt der Gesamtstand, die Einmal-Aufräumblöcke fallen beim letzten Neuaufbau heraus — im Echtbetrieb löschte ein Neuaufbau, was nur in der App steht. **E4:** `planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben. Nach dem Neuaufbau den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos) |
-| **Gerät** | Anmeldung im Profil (T166) | am 6. November ausgerollt; mit Sitzung live noch nicht ausprobiert: „Code anzeigen" und damit ein zweites Gerät anmelden, „Zugang erneuern" (meldet die übrigen Geräte ab) |
+herausfiel, steht darunter. Was blieb, brauchte NWS-Exporte, den Neuaufbau
+oder einen Versuch mit echter Sitzung (T166).
 
 Am 6. November herausgenommen, jeder Punkt einzeln mit dem Betreiber:
 
