@@ -39,6 +39,7 @@ import {
   axeImDokument,
   befundeAus,
   bereitImDokument,
+  blattImDokument,
   GEGENPROBE_ARTEN,
   gegenprobeLuecken,
   messenImDokument,
@@ -130,6 +131,11 @@ async function messen(tab, auftrag, basis, nr, { stoeren = false, axe } = {}) {
   const bereit = await tab.werte(`(${bereitImDokument})(${JSON.stringify({ sprache: auftrag.sprache, schrift: auftrag.schrift })})`)
   await tab.netzRuhig()
   await tab.werte(`(${ruhigImDokument})()`)
+  if (auftrag.warten) {
+    bereit.push(...(await tab.werte(`(${blattImDokument})(${JSON.stringify({ klicks: auftrag.klicks ?? [], warten: auftrag.warten })})`)))
+    await tab.netzRuhig()
+    await tab.werte(`(${ruhigImDokument})()`)
+  }
   if (stoeren) {
     await tab.werte(`(${stoerungImDokument})()`)
     await tab.netzRuhig()

@@ -3,10 +3,13 @@ import type { FsBereich, MeetingTab, Screen } from '../src/data/types'
 import { FONT_SCALES } from '../src/data/constants'
 import { APP_LANGS, isRTL, JW_LANGS } from '../src/i18n/langs'
 import { BILDSCHIRME } from '../tests/testdaten/bildschirme'
-import { parseDebugHash } from '../tests/testdaten/demo-start'
+import { BLAETTER, parseDebugHash } from '../tests/testdaten/demo-start'
 import { DEMO_PERSONS } from '../tests/testdaten/testdaten'
 import { uhrAusHash } from '../tests/testdaten/uhr'
-import { auftraege, auftragsName, hashVon, SAETZE, SPRACH_ZUSTAENDE, WEITERE_SPRACHEN, ZUSTAENDE } from './laufzeit-auftraege.mjs'
+import { auftraege, auftragsName, BLATT_ZUSTAENDE, hashVon, SAETZE, SPRACH_ZUSTAENDE, WEITERE_SPRACHEN, ZUSTAENDE } from './laufzeit-auftraege.mjs'
+
+/** Jeder Hash, den die Messung lädt — Bildschirme und Blätter. */
+const ALLE = [...new Set([...ZUSTAENDE, ...BLATT_ZUSTAENDE.map((b) => b.zustand)])]
 
 /**
  * **Die Laufzeit-Messung lädt jeden Zustand, den es gibt — und nur solche,
@@ -26,7 +29,7 @@ const geparst = (hash: string) => {
   return d
 }
 const werte = (schluessel: string) =>
-  new Set(ZUSTAENDE.map((z) => new URLSearchParams(z).get(schluessel)).filter((w): w is string => w !== null))
+  new Set(ALLE.map((z) => new URLSearchParams(z).get(schluessel)).filter((w): w is string => w !== null))
 
 describe('Jeder Zustand der App wird geladen', () => {
   it('jeder Bildschirm, auch die Anmeldung', () => {
@@ -74,9 +77,10 @@ describe('Jeder Schalter wird verstanden', () => {
     langsam: (d) => d.staleLangsam === true,
     uhr: (_d, _w, hash) => uhrAusHash(`#${hash}`) !== null,
     c: (d, w) => d.congLang === w,
+    blatt: (d, w) => d.blatt === w,
   }
 
-  it.each(ZUSTAENDE)('%s', (zustand) => {
+  it.each(ALLE)('%s', (zustand) => {
     const d = geparst(zustand)
     const unverstanden = [...new URLSearchParams(zustand)].filter(([k, w]) => !versteht[k]?.(d, w, zustand)).map(([k, w]) => `${k}=${w}`)
     expect(unverstanden).toEqual([])
@@ -96,10 +100,33 @@ describe('Jeder Schalter wird verstanden', () => {
   })
 })
 
+describe('Die Blätter (T173)', () => {
+  it('jedes Blatt, das der Hash öffnen kann, wird gemessen', () => {
+    expect(BLAETTER.filter((b) => !werte('blatt').has(b))).toEqual([])
+  })
+
+  it('jedes hat einen eigenen Namen und etwas, worauf gewartet wird', () => {
+    expect(new Set(BLATT_ZUSTAENDE.map((b) => b.name)).size).toBe(BLATT_ZUSTAENDE.length)
+    expect(BLATT_ZUSTAENDE.filter((b) => !b.warten)).toEqual([])
+  })
+
+  it('Klicks und Warten sind Selektoren, keine Wörter — sie gelten in jeder Sprache', () => {
+    // Ein ungültiger Selektor wirft in der Seite — der Lauf endet dann als Abbruch, nicht still.
+    const selektoren = BLATT_ZUSTAENDE.flatMap((b) => [...(b.klicks ?? []), b.warten])
+    expect(selektoren.filter((s) => !/^[.[]/.test(s))).toEqual([])
+  })
+
+  it('ein Blatt mit Klick ist ein anderer Auftrag als sein Bildschirm — der Name sagt es', () => {
+    const programm = auftraege('kern', ' › Programmpunkt · 320 px')
+    expect(programm.map(auftragsName)).toEqual(['s=planen&tab=mid › Programmpunkt · 320 px · de · dunkel · Stufe 1.45'])
+    expect(programm[0]).toMatchObject({ klicks: ['.meeting-tab--icon', '.einrichten-verweis', '.programm-zeile.is-bearbeitbar'] })
+  })
+})
+
 describe('Die Sätze', () => {
   it('der Kernsatz lädt jeden Zustand — schmal mit größter Schrift, breit und von rechts nach links', () => {
     const kern = auftraege('kern')
-    expect(new Set(kern.map((a) => a.zustand))).toEqual(new Set(ZUSTAENDE))
+    expect(new Set(kern.map((a) => a.zustand))).toEqual(new Set(ALLE))
     expect(Math.min(...kern.map((a) => a.breite))).toBe(320)
     expect(Math.max(...kern.map((a) => a.breite))).toBeGreaterThanOrEqual(1440)
     expect(kern.some((a) => a.breite === 320 && a.schrift === String(Math.max(...FONT_SCALES)))).toBe(true)
@@ -151,11 +178,11 @@ describe('Die Sprache der Inhalte wird in beide Richtungen geprüft (T173)', () 
       const [app, programm] = [schrift(a.sprache), schrift(a.versammlung)]
       return app !== 'Latn' && programm !== 'Latn' && app !== programm
     })
-    expect(new Set(beide.map((a) => a.zustand))).toEqual(new Set(ZUSTAENDE))
+    expect(new Set(beide.map((a) => a.zustand))).toEqual(new Set(ALLE))
   })
 
   it('der volle Satz hat dazu ein Programm in fremder Schrift unter lateinischer Oberfläche', () => {
     const fremdesProgramm = auftraege('voll').filter((a) => schrift(a.sprache) === 'Latn' && schrift(a.versammlung) !== 'Latn')
-    expect(new Set(fremdesProgramm.map((a) => a.zustand))).toEqual(new Set(ZUSTAENDE))
+    expect(new Set(fremdesProgramm.map((a) => a.zustand))).toEqual(new Set(ALLE))
   })
 })

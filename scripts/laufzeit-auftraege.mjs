@@ -62,6 +62,36 @@ export const ZUSTAENDE = [
 ]
 
 /**
+ * **Die Blätter** (T173): Was ein Tipp öffnet, sieht die Messung nur, wenn sie
+ * es öffnet — über den Hash (`blatt=`, `tests/testdaten/demo-start.ts`) oder
+ * per Klick, wo das Blatt seinen Zustand im Baustein hält (Programm, Plan
+ * senden, Drucken). `warten` muss danach dastehen, sonst ist der Lauf nicht
+ * bereit: Bliebe das Blatt zu, mäße die Messung still den Bildschirm darunter.
+ * Die Klicks sind Klassen, keine Wörter — sie gelten in jeder Sprache.
+ *
+ * @type {{ name: string, zustand: string, klicks?: string[], warten: string }[]}
+ */
+export const BLATT_ZUSTAENDE = [
+  { name: 'Aufgabe', zustand: 's=aufgaben&pl=0&me=p9&blatt=aufgabe', warten: '[role="dialog"] .aufgabe-handlungen' },
+  { name: 'Absage', zustand: 's=aufgaben&pl=0&me=p9&blatt=absage', warten: '.sheet-inhalt.absage' },
+  { name: 'Tauschen', zustand: 's=aufgaben&pl=0&me=p12&blatt=tausch', warten: '.tausch-blatt' },
+  { name: 'S-89', zustand: 's=aufgaben&pl=0&me=p9&blatt=s89', warten: '.s89-box' },
+  { name: 'Zuteilen', zustand: 's=planen&tab=mid&me=p9&blatt=zuteilen', warten: '.zuteilen-zeile' },
+  { name: 'Sprache', zustand: 's=einstellungen&blatt=sprache', warten: '.lang-list' },
+  { name: 'Woche einrichten', zustand: 's=planen&tab=mid', klicks: ['.meeting-tab--icon'], warten: '.einrichten-karte' },
+  { name: 'Programm', zustand: 's=planen&tab=mid', klicks: ['.meeting-tab--icon', '.einrichten-verweis'], warten: '.sheet-inhalt.programm' },
+  {
+    name: 'Programmpunkt',
+    zustand: 's=planen&tab=mid',
+    klicks: ['.meeting-tab--icon', '.einrichten-verweis', '.programm-zeile.is-bearbeitbar'],
+    warten: '.sheet-inhalt.programmpunkt',
+  },
+  { name: 'Automatisch', zustand: 's=planen&tab=mid', klicks: ['.aktion-neben'], warten: '.sheet-inhalt.automatisch' },
+  { name: 'Plan senden', zustand: 's=planen&tab=mid', klicks: ['.aktion-haupt'], warten: '.sheet-inhalt.senden' },
+  { name: 'Drucken', zustand: 's=programm&tab=mid&pl=0&me=p9', klicks: ['.druck-knopf'], warten: '.druck-optionen' },
+]
+
+/**
  * Je Bildschirmart ein Zustand mit viel Text — er läuft im vollen Satz in jeder
  * weiteren Sprache (Wortlängen, Schrift, Leserichtung) und wärmt vor jedem
  * Satz den Dev-Server an.
@@ -86,7 +116,7 @@ export const BREITEN = [320, 375, 768, 1024, 1180, 1440]
  * in ihr stehen die Programmtexte, ausgezeichnet mit ihrem `lang`.
  *
  * @typedef {{ breite: number, sprache: string, darstellung: 'hell' | 'dunkel', schrift: string, versammlung: string }} Fassung
- * @typedef {Fassung & { zustand: string }} Auftrag
+ * @typedef {Fassung & { zustand: string, blatt?: string, klicks?: string[], warten?: string }} Auftrag
  */
 
 /** @returns {Fassung} */
@@ -140,7 +170,9 @@ export const SAETZE = {
 export function auftraege(satz, nur) {
   const s = SAETZE[satz]
   if (!s) throw new Error(`Unbekannter Satz „${satz}" — ${Object.keys(SAETZE).join(' oder ')}.`)
+  /** @type {Auftrag[]} */
   const liste = ZUSTAENDE.flatMap((zustand) => s.fassungen.map((f) => ({ zustand, ...f })))
+  for (const { name, ...blatt } of BLATT_ZUSTAENDE) for (const f of s.fassungen) liste.push({ ...blatt, blatt: name, ...f })
   for (const sprache of s.sprachen) for (const zustand of SPRACH_ZUSTAENDE) liste.push({ zustand, ...fassung(375, sprache, 'hell', '1') })
   if (!nur) return liste
   const muster = new RegExp(nur)
@@ -152,4 +184,4 @@ export const hashVon = (/** @type {Auftrag} */ a) => `${a.zustand}&l=${a.sprache
 
 /** Wie ein Auftrag in Berichten heißt — die deutsche Versammlung ohne Zusatz. */
 export const auftragsName = (/** @type {Auftrag} */ a) =>
-  `${a.zustand} · ${a.breite} px · ${a.sprache}${a.versammlung === 'de' ? '' : ` · Versammlung ${a.versammlung}`} · ${a.darstellung} · Stufe ${a.schrift}`
+  `${a.zustand}${a.blatt ? ` › ${a.blatt}` : ''} · ${a.breite} px · ${a.sprache}${a.versammlung === 'de' ? '' : ` · Versammlung ${a.versammlung}`} · ${a.darstellung} · Stufe ${a.schrift}`

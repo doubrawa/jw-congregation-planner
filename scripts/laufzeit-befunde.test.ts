@@ -7,6 +7,7 @@ import {
   axeImDokument,
   befundeAus,
   bereitImDokument,
+  blattImDokument,
   GEGENPROBE_ARTEN,
   gegenprobeLuecken,
   messenImDokument,
@@ -81,6 +82,28 @@ describe('Die Messung in der Seite', () => {
     expect(m.sprache).toEqual([{ wo: 'p in lang="de"', wert: 'ГЕГЕНПРОБА' }])
     // Die Ausnahme steht im Zeitgeber; der Lauf hier soll sie nicht werfen.
     vi.clearAllTimers()
+  })
+})
+
+describe('Ein Blatt öffnen (T173)', () => {
+  it('läuft aus seinem Quelltext: klickt der Reihe nach und wartet, bis das Blatt dasteht', async () => {
+    document.body.innerHTML = '<div inert><button class="auf">Nachbarwoche</button></div><button class="auf">Öffnen</button>'
+    const geklickt: string[] = []
+    for (const knopf of document.querySelectorAll('button.auf')) {
+      knopf.addEventListener('click', () => {
+        geklickt.push(knopf.textContent ?? '')
+        setTimeout(() => document.body.insertAdjacentHTML('beforeend', '<div role="dialog" class="blatt">Blatt</div>'), 20)
+      })
+    }
+    expect(await ausQuelltext(blattImDokument, { klicks: ['.auf'], warten: '.blatt', ms: 1000 })).toEqual([])
+    // Die Nachbarwoche (`inert`) bekommt den Klick nicht.
+    expect(geklickt).toEqual(['Öffnen'])
+  })
+
+  it('sagt, was fehlte — den Klick oder das Blatt', async () => {
+    document.body.innerHTML = '<button class="auf">Öffnen</button>'
+    expect(await ausQuelltext(blattImDokument, { klicks: ['.gibtsnicht'], warten: '.blatt', ms: 0 })).toEqual(['Klick fehlt: .gibtsnicht'])
+    expect(await ausQuelltext(blattImDokument, { klicks: ['.auf'], warten: '.blatt', ms: 0 })).toEqual(['Blatt fehlt: .blatt'])
   })
 })
 

@@ -246,10 +246,18 @@ dieselbe Schrift hat. Lateinisch prüft die Messung nicht — Namen und Orte
 stehen darin, ohne eine Sprache zu haben. Damit sie beide Richtungen sieht,
 läuft der arabische Kernsatz mit einer russischen Versammlung (`c=ru`).
 
+Gemessen werden auch die **Blätter**, die sonst erst ein Tipp öffnet (T173):
+über den Hash der Entwicklerseite (`blatt=aufgabe|absage|tausch|s89|zuteilen|sprache`)
+oder per Klick, wo das Blatt seinen Zustand im Baustein hält (Programm,
+Programmpunkt, Woche einrichten, Automatisch, Plan senden, Drucken —
+`BLATT_ZUSTAENDE` in `scripts/laufzeit-auftraege.mjs`). Steht das Blatt danach
+nicht da, ist der Lauf nicht bereit — sonst mäße er still den Bildschirm
+darunter.
+
 | Satz | Was | Dauer mit axe (lokal) |
 | --- | --- | --- |
-| `kern` (Vorgabe) | jeder Zustand bei 320 px mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch mit russischer Versammlung | rund 1 min |
-| `voll` (`npm run laufzeit -- --satz voll`) | dazu alle Breiten von 320 bis 1440 px, Stufe 1,45 auch bei 768 und 1440 px, Arabisch mit deutscher, Deutsch mit arabischer Versammlung, die übrigen zehn Sprachen | rund 4½ min |
+| `kern` (Vorgabe) | jeder Zustand und jedes Blatt bei 320 px mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch mit russischer Versammlung | rund 1½ min |
+| `voll` (`npm run laufzeit -- --satz voll`) | dazu alle Breiten von 320 bis 1440 px, Stufe 1,45 auch bei 768 und 1440 px, Arabisch mit deutscher, Deutsch mit arabischer Versammlung, die übrigen zehn Sprachen | rund 6 min |
 
 `--axe` prüft jeden Lauf zusätzlich mit [axe](https://github.com/dequelabs/axe-core)
 (aus `node_modules`) nach WCAG 2.2 A und AA samt axes „best practice":
@@ -277,9 +285,9 @@ berührt (`.github/workflows/laufzeit.yml`) — neben dem Deploy, nicht davor. D
 vollen Satz startet man dort unter „Run workflow".
 
 Nicht gemessen wird, was über den Rand einer Karte ragt, aber im Fenster
-bleibt, und was erst ein Tipp öffnet (Blätter, Dialoge) — auch nicht mit axe.
-Die Bedienung mit der Tastatur und das Vorlesen an einem echten Gerät bleiben
-Handarbeit.
+bleibt, was nur mit anderen Daten erscheint (die Liste in „Plan senden" ab
+höchstens acht offenen Meldungen — dafür eine Probe in
+`PlanSendenBlatt.test.tsx`) und die Bedienung mit der Tastatur.
 
 
 ## Design-Referenz

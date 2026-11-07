@@ -919,12 +919,25 @@
   gap: 8px;
 }
 
+/* Passt das Zählwerk nicht neben die Beschriftung, rückt es darunter — kein
+   waagerechtes Rollen (bei 320 px und Stufe 1,45 fehlten 22 px). */
 .programmpunkt-zeile {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: 52px;
+}
+
+/* Im Blatt „Programm" steht neben den übrigen Abschnitten „aus dem
+   Arbeitsheft" statt der Lieder — länger als ein Lied. Es bricht in sich um,
+   statt das Blatt waagerecht rollen zu lassen (bei 320 px und Stufe 1,45 um
+   73 px). In den Programmen selbst bleibt das Lied, wie es ist. */
+.sheet-inhalt.programm .prog-lied {
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: end;
 }
 
 .programmpunkt-reihenfolge {

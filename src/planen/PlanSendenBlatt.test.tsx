@@ -223,6 +223,14 @@ describe('Wer noch nichts weiß', () => {
     expect(senden().querySelector('.zahl-marke')?.textContent).toBe('2')
   })
 
+  it('Termin und Punkt tragen das `lang` der Versammlung, die Rolle das des Lesers (T173)', () => {
+    // Die Laufzeit-Messung öffnet das Blatt, sieht diese Liste aber nicht: Die
+    // Demo-Woche hat keine oder über acht offene Meldungen (`LISTEN_GRENZE`).
+    zeige({ weeks: [woche(['A. Berg'])], lang: 'ar', congLang: 'ru' })
+    const teile = [...zeilen()[0]!.querySelectorAll('.klein-text [lang]')].map((el) => el.getAttribute('lang'))
+    expect(teile).toEqual(['ru', 'ru'])
+  })
+
   it('ein Treffpunkt-Leiter steht als solcher da, mit dem Ort im Termin', () => {
     const treffpunkt: FsInstance = { id: 'r1', ruleId: 'r1', grp: null, wd: 4, time: '09:30', place: 'Saal', leader: 'C. Dorn' }
     zeige({ weeks: [woche([])], fsWeeks: [[treffpunkt]] })

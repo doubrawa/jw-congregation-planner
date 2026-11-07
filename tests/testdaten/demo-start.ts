@@ -23,8 +23,10 @@ import { aufgabenAbgeleitet } from '../../src/app/reducer'
 import { asFontScale, asTheme, type FontScale } from '../../src/data/constants'
 import { fsLeiterBinden } from '../../src/data/fs'
 import { pidsNachtragen } from '../../src/data/namensbindung'
+import { platzAuswahl } from '../../src/data/offene-plaetze'
 import { offeneMeldungen } from '../../src/data/plan-versand'
 import { sentKey } from '../../src/data/planning'
+import { tauschbar } from '../../src/data/tausch'
 import type { FsBereich, Lang, MeetingTab, PersoenlichLog, Person, Screen, SentLog, Theme } from '../../src/data/types'
 import { CONG_TO_JW } from '../../src/i18n/langs'
 import { buildDemoConfirmations } from './demo-zusagen'
@@ -134,6 +136,39 @@ export interface DebugHash {
    * Versammlung dasteht — mit dem Satz, warum (`keineVersammlung`, 21.10.2026).
    */
   keineVersammlung?: boolean
+  /** `blatt=<name>`: ein Blatt, das sonst ein Tipp öffnet, gleich offen (`BLAETTER`). */
+  blatt?: Blatt
+}
+
+/**
+ * **Blätter, die der Hash öffnet** (T173) — damit die Laufzeit-Messung auch
+ * sie misst. Die Aufgabe ist die erste eigene (`me=`), beim Tauschen die erste
+ * tauschbare, beim S-89 die erste mit Zettel; `zuteilen` öffnet den Platz der
+ * ersten eigenen Aufgabe mit Programmpunkt, `sprache` die Wahl der
+ * Versammlungssprache. Blätter mit eigenem Zustand im Baustein (Programm,
+ * Plan senden, Drucken) öffnet die Messung per Klick.
+ */
+export const BLAETTER = ['aufgabe', 'absage', 'tausch', 's89', 'zuteilen', 'sprache'] as const
+export type Blatt = (typeof BLAETTER)[number]
+
+function blattOeffnen(s: AppState, blatt: Blatt): AppState {
+  const erste = s.myTasks[0]
+  switch (blatt) {
+    case 'aufgabe':
+      return { ...s, myTaskId: erste?.id ?? null }
+    case 'absage':
+      return { ...s, absageId: erste?.id ?? null }
+    case 'tausch':
+      return { ...s, tauschId: s.myTasks.find((task) => tauschbar(task, s.personId, s))?.id ?? null }
+    case 's89':
+      return { ...s, s89: s.myTasks.find((task) => task.s89)?.s89 ?? null }
+    case 'zuteilen': {
+      const mitPunkt = s.myTasks.find((task) => task.title)
+      return { ...s, slotSel: mitPunkt ? platzAuswahl(s.weeks, s.services, mitPunkt.id) : null }
+    }
+    case 'sprache':
+      return { ...s, langSheetOpen: true, langSheetFor: 'cong' }
+  }
 }
 
 export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | null {
@@ -171,6 +206,8 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   if (p.get('vorlage') === '1') out.vorlage = true
   if (p.get('konto') === '1') out.konto = true
   if (p.get('ohnevers') === '1') out.keineVersammlung = true
+  const blatt = p.get('blatt')
+  if (blatt && (BLAETTER as readonly string[]).includes(blatt)) out.blatt = blatt as Blatt
   // stale=<Stunden>: Offline-Stand simulieren (ohne Netzabbruch nachstellbar)
   const stale = Number(p.get('stale'))
   if (Number.isFinite(stale) && stale > 0) out.staleAt = jetzt - stale * 3600_000
@@ -244,7 +281,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
   if (debug?.shot) document.documentElement.dataset.shot = '1'
   const basis = demoZustand()
   const versand = demoVersand(basis)
-  return aufgabenAbgeleitet({
+  const start = aufgabenAbgeleitet({
     ...basis,
     // Gruppenbesuche (T120) nur hier, nicht in `demoZustand`: Die Tests laufen
     // mit der echten Uhr, und ein Besuch im Bestand machte jede Ansicht des
@@ -287,4 +324,6 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     terminGewaehlt: debug?.tab != null,
     ...(debug?.konto ? demoKonten(basis.persons, debug.me) : {}),
   })
+  // Erst nach der Ableitung: Die Blätter hängen an den eigenen Aufgaben.
+  return debug?.blatt ? blattOeffnen(start, debug.blatt) : start
 }

@@ -4,7 +4,7 @@ import type { AppState } from '../../src/app/context'
 import { reducer } from '../../src/app/reducer'
 import { deriveMyTasks } from '../../src/data/planning'
 import type { Person } from '../../src/data/types'
-import { demoZustand, entwicklerStart, parseDebugHash } from './demo-start'
+import { BLAETTER, demoZustand, entwicklerStart, parseDebugHash, type Blatt } from './demo-start'
 import { DEMO_PERSONS, DEMO_PLANNER } from './testdaten'
 import { ENTWICKLER_HEUTE, uhrAusHash, uhrStellen } from './uhr'
 
@@ -90,6 +90,37 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     // bereit, beim Start bleibt es aber zu.
     expect(s.myTasks.every((t) => t.status === 'offen')).toBe(true)
     expect(s.confirmOpen).toBe(false)
+  })
+
+  /** Was ein Blatt offen hält — je Wert von `blatt=` ein Feld des Zustands. */
+  const offen: Record<Blatt, (s: AppState) => unknown> = {
+    aufgabe: (s) => s.myTaskId,
+    absage: (s) => s.absageId,
+    tausch: (s) => s.tauschId,
+    s89: (s) => s.s89,
+    zuteilen: (s) => s.slotSel,
+    sprache: (s) => s.langSheetOpen,
+  }
+  /** Die Hashes, mit denen die Laufzeit-Messung die Blätter öffnet (`scripts/laufzeit-auftraege.mjs`). */
+  const HASH: Record<Blatt, string> = {
+    aufgabe: '#s=aufgaben&pl=0&me=p9',
+    absage: '#s=aufgaben&pl=0&me=p9',
+    tausch: '#s=aufgaben&pl=0&me=p12',
+    s89: '#s=aufgaben&pl=0&me=p9',
+    zuteilen: '#s=planen&tab=mid&me=p9',
+    sprache: '#s=einstellungen',
+  }
+
+  it.each(BLAETTER)('blatt=%s öffnet sein Blatt — mit dem Bestand und der Uhr der Seite (T173)', (blatt) => {
+    // Bliebe es zu, mäße die Laufzeit-Messung still den Bildschirm darunter.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(ENTWICKLER_HEUTE)
+    expect(offen[blatt](entwicklerStart(HASH[blatt]))).toBeFalsy()
+    expect(offen[blatt](entwicklerStart(`${HASH[blatt]}&blatt=${blatt}`))).toBeTruthy()
+  })
+
+  it('ein unbekanntes Blatt übergeht der Hash', () => {
+    expect(parseDebugHash('#s=start&blatt=gibtsnicht')?.blatt).toBeUndefined()
   })
 
   it('liest s/l/c/t/p aus dem Hash', () => {

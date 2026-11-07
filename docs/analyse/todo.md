@@ -10551,9 +10551,19 @@ die Fußzeile „Ende ca." und die offenen Plätze der Besetzung. Nachgeprüft
 einmalig in Chrome, mit der Sprachprüfung der Messung: zwölf Blätter und
 Ansichten, arabische App mit russischer Versammlung, bei 1440 und 375 px —
 ohne Befund; vor dem letzten Fix fand dieselbe Prüfung den Hinweissatz.
-**Nicht umgesetzt:** die Blätter dauerhaft in der Messung (ein Klick-Schritt
-oder Schalter der Entwicklerseite, die sie öffnen) — ohne sie kann ein neues
-Blatt die Fehlerart wieder einführen, ohne dass etwas rot wird.
+**Die Blätter in der Messung** (Betreiber: „ja", nach dem Review): zwölf
+Blätter in jeder Fassung — sechs öffnet der Hash der Entwicklerseite
+(`blatt=aufgabe|absage|tausch|s89|zuteilen|sprache`, `BLAETTER` in
+`tests/testdaten/demo-start.ts`), sechs ein Klick, wo das Blatt seinen Zustand
+im Baustein hält (Programm, Programmpunkt, Woche einrichten, Automatisch, Plan
+senden, Drucken). Steht das Blatt danach nicht da, ist der Lauf nicht bereit.
+Der erste Lauf fand zwei Bereiche, die bei 320 px und Stufe 1,45 waagerecht
+rollten: das Blatt „Programm" („aus dem Arbeitsheft" neben dem Abschnitt, um
+73 px) und das Zählwerk der Minuten im Programmpunkt (22 px) — beide brechen
+jetzt um. **Grenze:** Die Liste in „Plan senden" erscheint erst ab höchstens acht
+offenen Meldungen; die Demo-Woche hat keine oder über dreißig. Für ihr `lang`
+steht eine Probe in `PlanSendenBlatt.test.tsx` (gegengeprüft: die Zeile wieder
+verklebt → rot; dieselbe Sabotage sah die Messung nicht).
 
 **Zwei Ausnahmen, vom Betreiber bestätigt** („ausnahmen können so bleiben";
 `AXE_AUSNAHMEN` in `scripts/laufzeit-befunde.mjs`, je Regel und Stelle):
@@ -10568,16 +10578,17 @@ Blatt die Fehlerart wieder einführen, ohne dass etwas rot wird.
 | Was | Ergebnis |
 | --- | --- |
 | `npm run laufzeit -- --satz voll --axe` | 576 Läufe in 263 s, **kein Befund** (vorher 44 Befunde in 287 Läufen); nach den Fixes aus dem Review wieder ohne Befund (213 s) |
-| `npm run laufzeit -- --axe` (Kernsatz, wie die CI) | 129 Läufe in 64 s, kein Befund |
+| `npm run laufzeit -- --axe` (Kernsatz, wie die CI) | 129 Läufe in 64 s, kein Befund; mit den Blättern 165 Läufe in 87 s |
+| `npm run laufzeit -- --satz voll --axe` mit den Blättern | 720 Läufe in 373 s, kein Befund (nach den zwei Umbrüchen) |
 | Gegenprobe gegen die App | `lang` am Lied entfernt → der Kernsatz meldet `span.prog-lied in lang="ar"` („Песня 1") |
 | `npm run contrast` | vor dem Fix rot (4.43:1 für das neue Paar), danach grün; läuft jetzt als Probe in jeder Suite (`scripts/check-contrast.test.ts`, vorher nur von Hand) — mit dem alten Rot rot |
 | Proben | `laufzeit-befunde.test.ts` (Sprachprüfung und axe aus ihrem Quelltext in happy-dom, Ausnahmen, Gegenprobe; Chinesisch, Japanisch und Koreanisch, deren Schrift `Intl` anders nennt als Unicode), `laufzeit-auftraege.test.ts` (Versammlungssprache, beide Richtungen in jedem Zustand), dazu die Proben der umgebauten Stellen |
-| Suite / Lint / Build | 8176 Tests grün in 382 Dateien, Lint sauber (nur `Spur.tsx:112`), Build sauber |
+| Suite / Lint / Build | 8196 Tests grün in 382 Dateien, Lint sauber (nur `Spur.tsx:112`), Build sauber |
 
-**Nicht gemessen:** Blätter und Dialoge mit axe (die Sprache dort einmal von
-Hand, siehe oben) und die Bedienung mit der Tastatur. Das Vorlesen mit TalkBack
-oder VoiceOver an einem echten Gerät gehört nicht dazu (Betreiber: „echtes
-gerät als test nicht nötig").
+**Nicht gemessen:** die Bedienung mit der Tastatur und was nur mit anderen Daten
+erscheint (siehe „Plan senden"). Das Vorlesen mit TalkBack oder VoiceOver an
+einem echten Gerät gehört nicht dazu (Betreiber: „echtes gerät als test nicht
+nötig").
 
 ## Was bewusst offen bleibt
 

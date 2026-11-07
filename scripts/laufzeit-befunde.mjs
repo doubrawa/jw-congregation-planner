@@ -36,6 +36,35 @@ export async function bereitImDokument({ sprache, schrift, ms = 15_000 }) {
   return offen
 }
 
+/**
+ * **Ein Blatt öffnen** (T173): die Klicks der Reihe nach — jeder wartet, bis
+ * sein Ziel dasteht —, dann warten, bis `warten` dasteht. Gibt zurück, was
+ * fehlte — leer heißt offen. Geklickt wird das erste sichtbare Ziel außerhalb
+ * der Nachbarwochen (`inert`).
+ *
+ * @param {{ klicks: string[], warten: string, ms?: number }} blatt
+ * @returns {Promise<string[]>}
+ */
+export async function blattImDokument({ klicks, warten, ms = 5_000 }) {
+  const sichtbar = (/** @type {string} */ selektor) =>
+    [...document.querySelectorAll(selektor)].find((el) => el.getClientRects().length > 0 && !el.closest('[inert]'))
+  const bis = async (/** @type {string} */ selektor) => {
+    const ende = performance.now() + ms
+    let el = sichtbar(selektor)
+    while (!el && performance.now() < ende) {
+      await new Promise((ok) => setTimeout(ok, 50))
+      el = sichtbar(selektor)
+    }
+    return el
+  }
+  for (const selektor of klicks) {
+    const ziel = /** @type {HTMLElement | undefined} */ (await bis(selektor))
+    if (!ziel) return [`Klick fehlt: ${selektor}`]
+    ziel.click()
+  }
+  return (await bis(warten)) ? [] : [`Blatt fehlt: ${warten}`]
+}
+
 /** Schriften geladen, zwei Bilder gezeichnet — danach stehen die Maße fest. */
 export async function ruhigImDokument() {
   await document.fonts.ready
