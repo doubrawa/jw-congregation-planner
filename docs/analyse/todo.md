@@ -9932,6 +9932,55 @@ der Action), der erneut gestartete Job brach sofort ab („Deployment
 cancelled" — dieselbe Kennung wie der abgebrochene); ein frisch angestoßener
 Lauf (`gh workflow run deploy.yml --ref main`) ging durch.
 
+## Aufgenommen am 7. November 2026 (T167)
+
+### T167 · Laufzeit-Messung im Repo und in der CI 🔧 ✅ umgesetzt (7. November 2026)
+
+Der Verify-Lauf vom 7. November über die ganze App lief mit Skripten aus dem
+Scratchpad der Sitzung: jeder Zustand der Entwicklerseite in Chrome ohne
+Fenster, gemessen auf Überbreite, Konsole und Fehlerkästen. Er fand zwei
+Befunde, die 7994 grüne Tests nicht sahen (behoben in `ad7729d5`), und die
+Bewertung der App am selben Tag nannte die fehlende Laufzeitprüfung als Lücke.
+Jetzt liegt die Messung im Repo und läuft nach jedem Push:
+
+- **`npm run laufzeit`** (`scripts/laufzeit-messung.mjs`) startet den
+  Dev-Server selbst — ohne HMR und Dateiwächter, gemessen wird der Stand beim
+  Start — und Chrome ohne Fenster über das DevTools-Protokoll
+  (`scripts/chrome.mjs`, ohne neue Abhängigkeit). Je Lauf: Fenster setzen,
+  laden, warten bis Sprache, Schriftstufe und App stehen und das Netz ruht,
+  messen. Befunde: Abbruch, nicht bereit, Ausnahme, Fehlergrenze, kaum Text,
+  Konsole, Log des Browsers, Seite breiter als das Fenster, Element über den
+  Rand, von `body`/`#root` abgeschnitten, waagerechter Rollbereich,
+  `undefined`/`NaN`/`{platzhalter}` im Text (`scripts/laufzeit-befunde.mjs`).
+- **Sätze** (`scripts/laufzeit-auftraege.mjs`): 43 Zustände über alle
+  Bildschirme, Reiter, Bereiche und drei Rollen. `kern` misst jeden bei 320 px
+  mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch (129 Läufe, lokal 62 s);
+  `voll` dazu alle Breiten, Stufe 1,45 bei 768 und 1440 px und die übrigen
+  zehn Sprachen (533 Läufe, 205 s).
+- **Gegenprobe vor jedem Satz:** eine Störung je Befundart. Übersieht die
+  Messung eine, endet sie mit Exitcode 2 statt grün. Mit Befund 1.
+- **Wie im Gerät:** jeder Tab in eigenem Browser-Kontext, der Speicher der
+  Seite vor jedem Dokument geleert, Zeitzone Europe/Berlin, weniger Bewegung.
+  Ab 768 px nimmt der Rollbalken Platz wie am Schreibtisch (die Messung von
+  Hand blendete ihn aus), darunter Handy mit Pixeldichte 2 und Touch.
+- **CI:** `.github/workflows/laufzeit.yml` fährt den Kernsatz nach jedem Push
+  auf die App, neben dem Deploy statt davor — ein Befund leuchtet rot, hält
+  aber keinen dringenden Fix auf. Den vollen Satz startet „Run workflow".
+- `make-icons.mjs` findet Chrome über denselben Baustein.
+
+Proben: `laufzeit-auftraege.test.ts` prüft gegen die App selbst, dass jeder
+Bildschirm, Reiter, Bereich, jede Rolle und Sprache vorkommt und jeder
+Schalter von `parseDebugHash` verstanden wird; `laufzeit-befunde.test.ts`
+führt Messung, Bereitschaft und Störung aus ihrem Quelltext in happy-dom aus
+und prüft die Befundregeln; `chrome.test.ts` die Fundorte je System und die
+Startschalter. Gegenproben: ein vertippter Bereich, eine Konstante von außen
+in der Messung und eine übergangene Variable `CHROME` machten sechs Proben rot.
+Gegen die App: Ohne den Fix aus `ad7729d5` meldet der Lauf die 17 px wieder
+(Exitcode 1).
+
+Nicht gemessen: was über den Rand einer Karte ragt, aber im Fenster bleibt,
+und was erst ein Tipp öffnet (Blätter, Dialoge).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -9959,7 +10008,7 @@ Lauf (`gh workflow run deploy.yml --ref main`) ging durch.
 
 ## Fortschritt
 
-Stand 6. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 7. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -9971,10 +10020,11 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑
+1. November ☑ · 6. November ☑☑ · 7. November ☑
 
-**Alle 166 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Zuletzt am 6. November **T121** (Neues Design):
+**Alle 167 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Am 7. November kam **T167** dazu und ist
+umgesetzt (Laufzeit-Messung im Repo und in der CI). Am 6. November **T121** (Neues Design):
 Die Prüfung auf echten Geräten bestand (Betreiber), und die
 Mitgliedsrechte-Probe nach „Alles Planen" lief grün; dazu **T166** (Anmeldung
 im Profil), ausgerollt und am 7. November mit echter Sitzung abgehakt
@@ -10435,7 +10485,7 @@ zurückgenommen und der Testlauf wiederholt wurde.
 ### Was offen ist und warum
 
 **Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
-166 Köpfe, keiner offen; keine PR, kein Issue, außer `main` kein Zweig, auch
+166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt; keine PR, kein Issue, außer `main` kein Zweig, auch
 lokal nicht; `sw.js` = HEAD (`shell-8fec240`); die Functions, die Zeitpläne und
 `disable_signup` wie unter „Nachgesehen am 7. November" bei „Fortschritt";
 geholt sind die Wochen bis zum 11. Januar, jw.org hat Arbeitshefte bis

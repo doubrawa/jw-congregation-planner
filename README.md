@@ -186,6 +186,8 @@ src/
   index.css         Reset/Basis + Import der Tokens
   main.tsx          React-Einstieg
 scripts/
+  chrome.mjs        Chrome finden und per DevTools-Protokoll steuern (Messung, Icons)
+  laufzeit-*.mjs    Laufzeit-Messung der Entwicklerseite (npm run laufzeit)
   make-icons.mjs    Erzeugt die App-Icons aus public/logo.svg (npm run icons)
   testdaten-grenze.mjs  Entwicklerseite /demo.html + Bündelwache gegen Testdaten
 tests/
@@ -198,6 +200,7 @@ supabase/
   migration-*.sql   Nachzügler-Migrationen für früher eingerichtete Datenbanken
 .github/workflows/
   deploy.yml        Auto-Deployment auf GitHub Pages (reicht Supabase-Secrets durch)
+  laufzeit.yml      Laufzeit-Messung (Kernsatz) nach jedem Push, der die App berührt
 ```
 
 ## Entwicklerseite
@@ -225,6 +228,38 @@ oder eines ihrer Kennzeichen im Ergebnis steht — Platzhalter wie
 „Demoaufgabe" in den erfundenen Wochen.
 Bis zum 2.10.2026 lag die erfundene Personenliste trotz `import.meta.env.DEV`
 im ausgelieferten Bündel.
+
+## Laufzeit-Messung
+
+`npm run laufzeit` lädt jeden Zustand der Entwicklerseite in Chrome ohne
+Fenster — jeden Bildschirm, Reiter und Bereich, in allen drei Rollen — und
+misst, was die Unit-Tests nicht sehen: Ragt etwas über den Fensterrand, rollt
+ein Bereich waagerecht, meldet die Konsole einen Fehler, springt eine
+Fehlergrenze an, steht `undefined` oder ein Platzhalter wie `{name}` auf dem
+Bildschirm? Den Dev-Server startet das Skript selbst.
+
+| Satz | Was | Dauer (lokal) |
+| --- | --- | --- |
+| `kern` (Vorgabe) | jeder Zustand bei 320 px mit Stufe 1,45 dunkel, bei 1440 px und auf Arabisch | rund 1 min |
+| `voll` (`npm run laufzeit -- --satz voll`) | dazu alle Breiten von 320 bis 1440 px, Stufe 1,45 auch bei 768 und 1440 px, die übrigen zehn Sprachen | rund 3½ min |
+
+Weitere Schalter: `--nur <Regex>` (etwa `--nur "s=personen"`), `--url
+http://localhost:5173` (einen laufenden Dev-Server nutzen), `--parallel <n>`,
+`--trennung` (mit den Trennwörterbüchern des installierten Chrome — ohne sie
+misst die Messung den schwersten Fall, wie die CI), `--json <datei>`. Chrome
+findet das Skript selbst, sonst die Umgebungsvariable `CHROME` setzen.
+
+Vor jedem Satz läuft eine **Gegenprobe**: Sie stört eine Seite auf jede
+gemessene Art. Übersieht die Messung eine davon, endet sie mit Exitcode 2 —
+eine Messung, die still kaputtgeht, sähe sonst aus wie eine App ohne Befund.
+Mit Befund ist der Exitcode 1, ohne 0.
+
+In GitHub Actions läuft der Kernsatz nach jedem Push, der die App berührt
+(`.github/workflows/laufzeit.yml`) — neben dem Deploy, nicht davor. Den vollen
+Satz startet man dort unter „Run workflow".
+
+Nicht gemessen wird, was über den Rand einer Karte ragt, aber im Fenster
+bleibt, und was erst ein Tipp öffnet (Blätter, Dialoge).
 
 
 ## Design-Referenz

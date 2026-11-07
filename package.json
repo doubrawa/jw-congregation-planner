@@ -12,7 +12,8 @@
     "contrast": "node scripts/check-contrast.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.include=src/**/*.ts --coverage.include=src/**/*.tsx --coverage.include=supabase/functions/**/*.ts --coverage.exclude=**/*.test.ts --coverage.exclude=**/*.test.tsx --coverage.exclude=supabase/functions/_test/** --testTimeout=30000",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "laufzeit": "node scripts/laufzeit-messung.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

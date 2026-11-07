@@ -1,0 +1,53 @@
+name: Laufzeit-Messung
+
+# Lädt jeden Zustand der Entwicklerseite /demo.html in Chrome ohne Fenster und
+# misst, was die Unit-Tests nicht sehen: Überbreite, Konsolenfehler,
+# Fehlergrenzen, Text wie „undefined" (T167, scripts/laufzeit-messung.mjs).
+#
+# Eigener Workflow neben dem Deploy, nicht davor: Ein Befund soll rot leuchten
+# und eine Mail auslösen, aber ein dringender Fix soll nicht an einer Messung
+# hängen bleiben. Den vollen Satz (alle Breiten und Sprachen) startet man von
+# Hand unter „Run workflow".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/testdaten/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/chrome.mjs'
+      - 'scripts/laufzeit-*.mjs'
+      - '.github/workflows/laufzeit.yml'
+  workflow_dispatch:
+    inputs:
+      satz:
+        description: 'kern (wenige Minuten) oder voll (alle Breiten und Sprachen)'
+        type: choice
+        options: [kern, voll]
+        default: kern
+
+permissions:
+  contents: read
+
+concurrency:
+  group: laufzeit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  messen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Chrome bringt das Runner-Image mit (`google-chrome`), Trennwörterbücher
+      # nicht — gemessen wird der schwerste Fall: Lange Wörter brechen nicht.
+      - run: npm run laufzeit -- --satz ${{ inputs.satz || 'kern' }}

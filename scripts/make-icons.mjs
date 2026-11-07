@@ -28,6 +28,7 @@ import { dirname, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
+import { chromeFinden } from './chrome.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLIC = join(ROOT, 'public')
@@ -93,25 +94,6 @@ const TARGETS = [
   { file: 'badge-96.png', size: 96, share: 1.17, hintergrund: 'maske' },
 ]
 
-function findChrome() {
-  const candidates = [
-    process.env.CHROME,
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-    '/usr/bin/google-chrome',
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  ].filter(Boolean)
-  for (const c of candidates) {
-    try {
-      execFileSync(c, ['--version'], { stdio: 'ignore' })
-      return c
-    } catch {
-      /* nächster Kandidat */
-    }
-  }
-  throw new Error('Chrome nicht gefunden — Pfad über die Umgebungsvariable CHROME setzen.')
-}
-
 /**
  * Prüft, dass wirklich ein Icon herauskam: Größe, Ecke (je nach Hintergrund),
  * Motiv in der Mitte. Beim Badge (`maske`) liegt die Bildmitte zwischen zwei
@@ -144,7 +126,7 @@ function verify(file, size, hintergrund) {
   if (isWhite) throw new Error(`${file}: Bildmitte ist leer — SVG wurde nicht gerendert`)
 }
 
-const chrome = findChrome()
+const chrome = chromeFinden()
 const svg = readFileSync(join(PUBLIC, 'logo.svg'), 'utf8')
 const KACHEL = kachelfarbe(svg)
 const MASKE = maske(readFileSync(join(PUBLIC, 'logo-klein.svg'), 'utf8'))
