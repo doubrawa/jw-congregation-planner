@@ -25,8 +25,15 @@ function schritte(yaml: string): string[] {
 
 describe('deploy.yml', () => {
   it('veröffentlicht erst nach dem Ausrollen', () => {
-    expect(DEPLOY).toMatch(/\n {2}ausrollen:\n {4}needs: build\n {4}uses: \.\/\.github\/workflows\/ausrollen\.yml\n/)
+    expect(DEPLOY).toMatch(/\n {2}ausrollen:\n {4}needs: build\n(?: {4}if: .*\n)? {4}uses: \.\/\.github\/workflows\/ausrollen\.yml\n/)
     expect(DEPLOY).toMatch(/\n {2}deploy:\n {4}needs: \[build, ausrollen\]\n/)
+  })
+
+  it('rollt nur von main aus — „Run workflow" auf einem anderen Zweig erreicht die Produktion nicht', () => {
+    expect(DEPLOY).toMatch(/\n {2}ausrollen:\n {4}needs: build\n {4}if: github\.ref == 'refs\/heads\/main'\n/)
+    // Ohne Ausrollen auch kein Veröffentlichen: `deploy` darf das Überspringen nicht übergehen.
+    const deployJob = DEPLOY.slice(DEPLOY.indexOf('\n  deploy:\n'))
+    expect(deployJob).not.toMatch(/if: (?:always|!cancelled)\(\)/)
   })
 
   it('sperrt nicht über den ganzen Lauf — ein neuer Push bräche sonst das Ausrollen ab', () => {

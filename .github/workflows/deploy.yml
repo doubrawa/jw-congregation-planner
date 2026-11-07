@@ -49,8 +49,12 @@ jobs:
         with:
           path: dist
 
+  # Nur von main: „Run workflow" lässt sich auf jedem Zweig starten, und dessen
+  # Stand ginge sonst ungeprüft in die Produktion. Ohne Ausrollen kein
+  # Veröffentlichen — `deploy` wartet darauf.
   ausrollen:
     needs: build
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ausrollen.yml
     secrets: inherit
     permissions:
