@@ -15,7 +15,7 @@ import { DEMO_NOTIFICATIONS } from '../../tests/testdaten/testdaten'
  *
  * Die Titel entstehen an mehreren Stellen, die meisten außerhalb der App:
  *
- *  - `src/app/reducer.ts` — Import und Verhinderung,
+ *  - `src/app/aktionen/programm.ts` und `zusagen.ts` — Import und Verhinderung,
  *  - die `texte.ts` jeder Edge Function, die in die Glocke schreibt
  *    (`TITEL_…`) — Erinnerung, Ersatz, „Plan senden" und Entzug, Trolleys,
  *    Tausch, neue Anmeldung; gefunden, nicht aufgezählt (`FUNCTION_TEXTE`),
@@ -43,6 +43,11 @@ const quelle = (endet: string): string => {
   return treffer[1]
 }
 
+/** Der Reducer: `app/reducer.ts` und seine Teile unter `app/aktionen/`. */
+const REDUCER = Object.entries(SRC)
+  .filter(([p]) => /\/app\/(reducer|aktionen\/\w+)\.ts$/.test(p))
+  .map(([, text]) => text)
+
 /**
  * Titel, die der Reducer schreibt.
  *
@@ -55,10 +60,11 @@ const quelle = (endet: string): string => {
  * die eingeteilte Person — und zwar aus `send-plan`.
  */
 function titelAusReducer(): string[] {
-  const text = quelle('app/reducer.ts')
   const gefunden = new Set<string>()
-  for (const m of text.matchAll(/makeNotif\(\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
-  for (const m of text.matchAll(/pushNotif\(\s*[^,]+,\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
+  for (const text of REDUCER) {
+    for (const m of text.matchAll(/makeNotif\(\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
+    for (const m of text.matchAll(/pushNotif\(\s*[^,]+,\s*'[^']*',\s*'([^']+)'/g)) gefunden.add(m[1] ?? '')
+  }
   return [...gefunden]
 }
 
@@ -130,7 +136,8 @@ describe('Jeder erzeugte Mitteilungs-Titel steht in der Zuordnung', () => {
       Funktionsaufrufe über mehrere Zeilen; ein Umbau der Formatierung reicht,
       damit ein Muster ins Leere greift.
     */
-    expect(titelAusReducer().length, 'reducer.ts').toBeGreaterThan(1)
+    expect(REDUCER.length, 'reducer.ts und app/aktionen/').toBeGreaterThan(2)
+    expect(titelAusReducer().length, 'app/aktionen/').toBeGreaterThan(1)
     // Die Suche findet die Functions, die es gibt — mindestens diese.
     expect(FUNCTION_TEXTE).toEqual(
       expect.arrayContaining(['anmelden/texte.ts', 'send-plan/texte.ts', 'send-reminders/texte.ts', 'substitute/texte.ts']),

@@ -300,6 +300,30 @@ describe('setAnsicht (T124)', () => {
     expect(reducer(makeState({ planner: true, screen: 'planen', tab: 'edit' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('planen')
   })
 
+  it('fällt der Bildschirm weg, steht derselbe Zustand da wie nach navigate zum Start über den ganzen Reducer', () => {
+    // Der navigate-Fall läuft dabei direkt im Teil (`aktionen/ansicht.ts`), ohne
+    // die Nachschritte des Reducers (Ableitung, Entzug, verwaiste
+    // Treffpunkt-Zusagen). Die ändern bei navigate nichts: Wochen, Treffpunkte,
+    // Zusagen und die übrigen Rechengrundlagen bleiben dieselben. Geprüft mit
+    // abgeleiteten Aufgaben und allem, was navigate abräumt.
+    const s = aufgabenAbgeleitet(
+      makeState({
+        planner: true,
+        screen: 'personen',
+        personId: DEMO_PERSONS[0]!.id,
+        slotSel: firstPartSlot(buildDemoWeeks()[0]!, 'mid'),
+        selectedPersonId: DEMO_PERSONS[1]!.id,
+        langSheetOpen: true,
+        sprungZiel: 'einspringen',
+        planenVon: 'wochen',
+      }),
+    )
+    const nachher = reducer(s, { type: 'setAnsicht', ansicht: PLANER })
+    expect(nachher.screen).toBe('start')
+    expect(nachher.slotSel).toBeNull()
+    expect(nachher).toEqual(reducer({ ...s, ansicht: PLANER }, { type: 'navigate', screen: 'start' }))
+  })
+
   it('der Gruppenaufseher behält Planen nur bei den Treffpunkten', () => {
     const aufseher = { stufe: 'gruppenaufseher', gruppe: 'g1' } as const
     const groups = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]

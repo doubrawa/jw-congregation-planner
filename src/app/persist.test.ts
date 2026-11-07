@@ -2318,7 +2318,8 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
 describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
   const roh = (glob: Record<string, unknown>): string =>
     String(Object.values(glob)[0] ?? '').split('\r\n').join('\n')
-  const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
+  /** Die Teile des Reducers — dort stehen die Fälle, `reducer.ts` verteilt nur. */
+  const AKTIONEN = import.meta.glob(['./aktionen/*.ts', '!./aktionen/*.test.ts'], { query: '?raw', import: 'default', eager: true })
   const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
   const CONTEXT = import.meta.glob('./context.ts', { query: '?raw', import: 'default', eager: true })
 
@@ -2392,7 +2393,8 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
    */
   const AUS_DER_DATENBANK = new Set(['hydrate', 'setNotifs', 'trolleyTermin', 'linksAusgestellt', 'tauschAngefragt', 'tauschWeg', 'getauscht'])
 
-  const faelle = (): Array<[string, string]> => reducerFaelle(roh(REDUCER))
+  const faelle = (): Array<[string, string]> =>
+    reducerFaelle(Object.values(AKTIONEN).map((quelle) => String(quelle).split('\r\n').join('\n')))
 
   it('kein Fall ändert etwas Dauerhaftes ohne Schreibweg', () => {
     const persistQuelle = roh(PERSIST)

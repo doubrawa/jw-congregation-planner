@@ -15,6 +15,22 @@
 
 const WORTZEICHEN = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.'
 
+/** So viele Aktionen hat die Union mindestens — fänden sich weniger, hätte sich die Schreibweise geändert. */
+const MINDEST_AKTIONEN = 100
+
+/**
+ * **Jede Aktionsart der Union `AppAction`** aus dem Quelltext von `context.ts`
+ * — auch die über mehrere Zeilen (`| {` und darunter `type: 'navigate'`). Ein
+ * Muster, das `{ type: '…'` auf einer Zeile verlangt, übersieht sie, und jede
+ * Probe darüber prüft still eine Aktion weniger.
+ */
+export function aktionsArten(kontext: string): string[] {
+  const union = /\nexport type AppAction =\n([\s\S]*?)\n\n/.exec(kontext.split('\r\n').join('\n'))?.[1] ?? ''
+  const arten = [...new Set([...union.matchAll(/\|\s*\{\s*type: '(\w+)'/g)].map((m) => m[1]!))]
+  if (arten.length < MINDEST_AKTIONEN) throw new Error(`Aktionsliste nicht gefunden (${arten.length}) — Muster nachziehen`)
+  return arten
+}
+
 /**
  * Setzt dieser Fall das Feld — als **eigene** Eigenschaft des zurückgegebenen
  * Zustands?
@@ -56,21 +72,51 @@ export function setztFeld(text: string, feld: string): boolean {
 }
 
 /**
- * Die `case`-Zweige von `baseReducer` als Paare `[Aktionsart, Rumpf]` —
- * Durchreichen aufgelöst: `case 'a': case 'b': <Rumpf>` gibt beiden denselben
- * Rumpf.
+ * Der Kopf einer Teilfunktion des Reducers (`app/aktionen/*`):
+ * `export function <teil>(state: AppState, action: <Teil>Aktion): AppState {`.
  */
-export function reducerFaelle(quelle: string): Array<[string, string]> {
-  const ab = quelle.indexOf('function baseReducer(')
-  if (ab < 0) throw new Error('baseReducer nicht gefunden')
-  const teile = quelle.slice(ab).split('\n    case ')
+const TEIL_KOPF = /^export function \w+\(state: AppState, action: \w+Aktion\): AppState \{$/gm
+
+/**
+ * Die `case`-Zweige der Teile des Reducers als Paare `[Aktionsart, Rumpf]` —
+ * je Quelle aus `app/aktionen/` der `switch` ihrer Teilfunktion. Durchreichen
+ * aufgelöst: `case 'a': case 'b': <Rumpf>` gibt beiden denselben Rumpf.
+ *
+ * Nicht die Verteilstelle `baseReducer` in `reducer.ts`: Ihr Rumpf
+ * `return personen(state, action)` setzt kein Feld, und die Proben sähen
+ * nichts. Eine Quelle ohne Teilfunktion (`gemeinsam.ts`) trägt nichts bei; die
+ * Untergrenze gilt über alle Quellen zusammen.
+ */
+export function reducerFaelle(quellen: readonly string[]): Array<[string, string]> {
+  const faelle: Array<[string, string]> = []
+  let teile = 0
+  for (const quelle of quellen) {
+    const koepfe = [...quelle.matchAll(TEIL_KOPF)]
+    // Ein `switch` über die Aktion ohne erkannten Kopf: Seine Fälle fielen still heraus.
+    if (koepfe.length === 0 && quelle.includes('switch (action.type)')) {
+      throw new Error('Teilfunktion nicht erkannt — Muster nachziehen')
+    }
+    for (const kopf of koepfe) {
+      teile++
+      // Bis zur schließenden Klammer in Spalte 0: Was danach in der Datei steht,
+      // gehört nicht zum letzten Fall.
+      const ende = quelle.indexOf('\n}', kopf.index)
+      faelle.push(...durchgereicht(quelle.slice(kopf.index, ende < 0 ? undefined : ende)))
+    }
+  }
+  if (teile === 0) throw new Error('keine Teilfunktion gefunden')
+  if (faelle.length < 60) throw new Error(`Fälle nicht gefunden (${faelle.length})`)
+  return faelle
+}
+
+/** Die Fälle eines `switch` — der leere Zweig erbt den nächsten Rumpf. */
+function durchgereicht(teilfunktion: string): Array<[string, string]> {
   const rohe: Array<[string, string]> = []
-  for (const teil of teile.slice(1)) {
+  for (const teil of teilfunktion.split('\n    case ').slice(1)) {
     const ende = teil.indexOf("':")
     if (ende < 0 || teil[0] !== "'") continue
     rohe.push([teil.slice(1, ende), teil.slice(ende + 2)])
   }
-  if (rohe.length < 60) throw new Error(`Fälle nicht gefunden (${rohe.length})`)
   return rohe.map(([name], i) => {
     let j = i
     while (rohe[j]![1].trim() === '' && j + 1 < rohe.length) j++

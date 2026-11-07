@@ -28,7 +28,8 @@ import { quelldateien, WURZEL } from './quelldateien'
 const ERLAUBT = new Set([
   'src/data/rechte.ts',
   'src/data/ansicht.ts',
-  'src/app/reducer.ts',
+  'src/app/aktionen/ansicht.ts',
+  'src/app/aktionen/sitzung.ts',
   'src/lib/daten/konto.ts',
   'src/lib/daten/laden.ts',
   'src/profil/AnsichtKarte.tsx',

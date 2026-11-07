@@ -17,7 +17,7 @@ import { mitverfolgen } from '../lib/schreiben-unterwegs'
  * **Das App-Gerüst — die Hälfte der Rechteprüfung, die niemand gesehen hat.**
  *
  * Wer welchen Bereich betreten darf, steht an **zwei** Stellen: der Wächter in
- * `reducer.ts` (`case 'navigate'`) weist eine gesperrte Ansicht ab — und die
+ * `aktionen/ansicht.ts` (`case 'navigate'`) weist eine gesperrte Ansicht ab — und die
  * Navigationsliste hier entscheidet, welcher Eintrag überhaupt dasteht.
  * `reducer.test.ts` prüft den Wächter. Bliebe die Liste ungeprüft, sähe ein
  * Verkündiger den Punkt „Personen" und liefe beim Antippen ins Programm

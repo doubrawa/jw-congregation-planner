@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { isViewAction } from './readonly'
 import type { AppAction } from './context'
-import { reducerFaelle, setztFeld } from './quelltext-proben'
+import { aktionsArten, reducerFaelle, setztFeld } from './quelltext-proben'
 
 describe('isViewAction', () => {
   const views: AppAction['type'][] = [
@@ -114,14 +114,11 @@ describe('Was nichts schreibt, darf offline laufen', () => {
   const roh = (glob: Record<string, unknown>): string => String(Object.values(glob)[0] ?? '')
   const CONTEXT = import.meta.glob('./context.ts', { query: '?raw', import: 'default', eager: true })
   const PERSIST = import.meta.glob('./persist.ts', { query: '?raw', import: 'default', eager: true })
-  const REDUCER = import.meta.glob('./reducer.ts', { query: '?raw', import: 'default', eager: true })
+  /** Die Teile des Reducers — dort stehen die Fälle, `reducer.ts` verteilt nur. */
+  const AKTIONEN = import.meta.glob(['./aktionen/*.ts', '!./aktionen/*.test.ts'], { query: '?raw', import: 'default', eager: true })
 
-  /** Jede Aktionsart aus der Union in `context.ts`. */
-  const alleArten = (): string[] => {
-    const arten = [...roh(CONTEXT).matchAll(/\{ type: '([a-zA-Z0-9]+)'/g)].map((m) => m[1]!)
-    if (arten.length < 40) throw new Error(`Aktionsliste nicht gefunden (${arten.length}) — Muster nachziehen`)
-    return [...new Set(arten)]
-  }
+  /** Jede Aktionsart aus der Union in `context.ts` — auch die mehrzeiligen. */
+  const alleArten = (): string[] => aktionsArten(roh(CONTEXT))
 
   /**
    * Aktionen, deren Reducer-Fall eine Woche oder eine Treffpunkt-Woche setzt.
@@ -133,7 +130,7 @@ describe('Was nichts schreibt, darf offline laufen', () => {
    */
   const wochenSchreiber = (): Set<string> =>
     new Set(
-      reducerFaelle(roh(REDUCER))
+      reducerFaelle(Object.values(AKTIONEN).map(String))
         .filter(([, rumpf]) => setztFeld(rumpf, 'weeks') || setztFeld(rumpf, 'fsWeeks'))
         .map(([name]) => name),
     )

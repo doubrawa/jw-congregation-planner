@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { vorzulegendeGesuche } from '../app/reducer'
+import { vorzulegendeGesuche } from '../app/vorlegen'
 import { Sheet } from '../components/Sheet'
 import { aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'

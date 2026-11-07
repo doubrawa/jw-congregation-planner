@@ -14,7 +14,7 @@
  * Verkündiger gar nicht schickte, liegt trotzdem im Speicher.
  *
  * **Ausbau:** diese Datei mit ihrer Probe, `ansicht` im Zustand (`context.ts`,
- * `init.ts`), die Aktion `setAnsicht` (`reducer.ts`), die Karte im Profil
+ * `init.ts`), die Aktion `setAnsicht` (`app/aktionen/ansicht.ts`), die Karte im Profil
  * (`AnsichtKarte`), die Leiste (`AnsichtLeiste`), je eine Zeile in
  * `rechteVon` und `rechteStufe` — und die Texte `ansicht…`.
  */
