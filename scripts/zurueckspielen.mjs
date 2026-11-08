@@ -124,6 +124,39 @@ export function aufgeschobene(tabellen, fks) {
 }
 
 /**
+ * **Spalten, die umbenannt wurden** — je Tabelle alter → heutiger Name. Eine
+ * Sicherung von vorher trägt den alten Namen; `fremdeSpalten` hielte ihn für
+ * fremd und gefüllt, und das Zurückspielen bräche ab. Mit ihm ginge das Recht
+ * verloren.
+ *
+ * E4 (8.11.2026): Das Admin-Recht hieß `planner`. Sicherungen aus dem
+ * Übergang tragen beide Namen mit demselben Wert (ein Trigger hielt sie gleich)
+ * — dann gilt der heutige.
+ */
+export const UMBENANNT = {
+  members: { planner: 'admin' },
+  persons: { planner_vorgemerkt: 'admin_vorgemerkt' },
+}
+
+/** Die Sicherung mit den heutigen Spaltennamen (`UMBENANNT`); die Datei bleibt, wie sie ist. */
+export function alteNamenUebernehmen(sicherung, umbenannt = UMBENANNT) {
+  const tabellen = { ...sicherung.tabellen }
+  for (const [t, namen] of Object.entries(umbenannt)) {
+    if (!tabellen[t]) continue
+    tabellen[t] = tabellen[t].map((zeile) => {
+      const neu = { ...zeile }
+      for (const [alt, heute] of Object.entries(namen)) {
+        if (!(alt in neu)) continue
+        if (!(heute in neu)) neu[heute] = neu[alt]
+        delete neu[alt]
+      }
+      return neu
+    })
+  }
+  return { ...sicherung, tabellen }
+}
+
+/**
  * **Spalten, die das Ziel nicht kennt.** Gesichert wird mit `select=*`: Hat
  * die Quelle mehr als `schema.sql`, trägt jede Sicherung das Mehr mit. PostgREST
  * nimmt eine Zeile mit unbekannter Spalte nicht an — der Lauf bräche mitten
@@ -229,7 +262,7 @@ export async function main(argv = process.argv.slice(2)) {
     console.error('Aufruf: node scripts/zurueckspielen.mjs <sicherung.json> (--ziel-url <url> | --hierher) [--trocken]')
     process.exit(2)
   }
-  const sicherung = JSON.parse(fs.readFileSync(datei, 'utf8'))
+  const sicherung = alteNamenUebernehmen(JSON.parse(fs.readFileSync(datei, 'utf8')))
 
   /*
    * **Das Ziel muss gesagt werden.** Ein Lauf ohne Ziel nähme das Projekt aus

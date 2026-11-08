@@ -162,9 +162,6 @@ create table if not exists public.persons (
   -- mit, also stand sie bei allen auf `false` — und der Personen-Bildschirm
   -- zeigte dem Betreiber „Admin: aus", während er Admin war.
   admin_vorgemerkt boolean not null default false,
-  -- Der frühere Name (bis E4, 8.11.2026). Steht im Übergang daneben, bis
-  -- Schritt 2 ihn entfernt — siehe „Übergang" nach `members`.
-  planner_vorgemerkt boolean not null default false,
   -- Dasselbe für das Planer-Recht (4.10.2026): bei der ersten Anmeldung in
   -- `members.zuteiler`.
   zuteiler_vorgemerkt boolean not null default false,
@@ -279,9 +276,9 @@ create table if not exists public.members (
   -- null})` beim Löschen einer Person). Wer eine Person per Skript löschte,
   -- hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
   person_id       uuid,
-  admin           boolean not null default false,   -- „Admin": darf alles (`ist_admin()`)
-  -- Der frühere Name (bis E4, 8.11.2026), im Übergang daneben — siehe unten.
-  planner         boolean not null default false,
+  -- „Admin": darf alles (`ist_admin()`). Hieß bis E4 (8.11.2026) `planner` —
+  -- und der Planer heißt `zuteiler`: Wer `planner` las, dachte an den Planer.
+  admin           boolean not null default false,
   -- „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin —
   -- Personen und Einstellungen nicht. Ein Admin hat das Recht ohnehin;
   -- gefragt wird es über `darf_zuteilen()`.
@@ -299,59 +296,6 @@ alter table public.members
 
 create index if not exists members_congregation_idx
   on public.members (congregation_id);
-
--- **Übergang (E4, 8.11.2026): Das Admin-Recht hieß `planner`** — und der Planer
--- heißt `zuteiler`. Wer `planner` las, dachte an den Planer; bei jeder
--- Änderung an den Rechten war das eine Falle. Jetzt heißen Recht und
--- Vormerkung `admin` und `admin_vorgemerkt`.
---
--- Umbenannt wird in zwei Schritten, weil ältere App-Stände auf den Geräten und
--- die Functions bis zu ihrem Ausrollen die alten Spalten lesen und schreiben.
--- Schritt 1 legt die neuen daneben, und diese Trigger halten beide gleich: Wer
--- eine Spalte ändert, ändert die andere mit; beim Anlegen zählt, was eine von
--- beiden setzt. Schritt 2 entfernt die alten Spalten und die Trigger, sobald
--- jedes Gerät die neue Fassung geladen hat.
-create or replace function public.admin_recht_angleichen()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  if tg_op = 'INSERT' then
-    new.admin := new.admin or new.planner;
-  elsif new.admin is not distinct from old.admin then
-    new.admin := new.planner;
-  end if;
-  new.planner := new.admin;
-  return new;
-end;
-$$;
-
-drop trigger if exists members_admin_angleichen on public.members;
-create trigger members_admin_angleichen
-  before insert or update on public.members
-  for each row execute function public.admin_recht_angleichen();
-
-create or replace function public.admin_vormerkung_angleichen()
-returns trigger
-language plpgsql
-set search_path = public
-as $$
-begin
-  if tg_op = 'INSERT' then
-    new.admin_vorgemerkt := new.admin_vorgemerkt or new.planner_vorgemerkt;
-  elsif new.admin_vorgemerkt is not distinct from old.admin_vorgemerkt then
-    new.admin_vorgemerkt := new.planner_vorgemerkt;
-  end if;
-  new.planner_vorgemerkt := new.admin_vorgemerkt;
-  return new;
-end;
-$$;
-
-drop trigger if exists persons_admin_angleichen on public.persons;
-create trigger persons_admin_angleichen
-  before insert or update on public.persons
-  for each row execute function public.admin_vormerkung_angleichen();
 
 -- **Ohne Versammlung kein Konto** (21.10.2026): Geht die Mitgliedschaft, geht
 -- das Konto mit. Ohne Versammlung ist die App nicht zu nutzen (Betreiber), und

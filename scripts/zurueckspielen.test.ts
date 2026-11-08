@@ -4,7 +4,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ATTRAPPE_URL, type Aufruf, befunde, fahre, tabelleVon } from './schema-attrappe'
 import { AUSGENOMMEN, REPO, tabellenAusSchema } from './sicherung.mjs'
-import { aufgeschobene, fremdeSpalten, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
+import { alteNamenUebernehmen, aufgeschobene, fremdeSpalten, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
 
 /**
  * **Geprüft wird, ob alles wieder dasteht — und in einer Reihenfolge, die die
@@ -146,6 +146,26 @@ describe('fremdeSpalten', () => {
   })
 })
 
+describe('alteNamenUebernehmen — umbenannte Spalten (E4: planner → admin)', () => {
+  const mit = (members: unknown[], persons: unknown[] = []) => ({ erstellt: '', tabellen: { members, persons, weeks: [{ id: 'w' }] } })
+
+  it('eine Sicherung von vor E4: Das Recht steht danach unter seinem heutigen Namen', () => {
+    const s = alteNamenUebernehmen(mit([{ user_id: U1, planner: true }], [{ id: P1, planner_vorgemerkt: true }]))
+    expect(s.tabellen.members).toEqual([{ user_id: U1, admin: true }])
+    expect(s.tabellen.persons).toEqual([{ id: P1, admin_vorgemerkt: true }])
+  })
+
+  it('eine aus dem Übergang trägt beide: Es gilt der heutige, der alte fällt weg', () => {
+    const s = alteNamenUebernehmen(mit([{ user_id: U1, admin: true, planner: true }]))
+    expect(s.tabellen.members).toEqual([{ user_id: U1, admin: true }])
+  })
+
+  it('eine von heute bleibt, wie sie ist — andere Tabellen ebenso', () => {
+    const heute = mit([{ user_id: U1, admin: false }], [{ id: P1, admin_vorgemerkt: false }])
+    expect(alteNamenUebernehmen(heute)).toEqual(heute)
+  })
+})
+
 describe('pkFilter', () => {
   it('filtert über eine Spalte und über mehrere', () => {
     expect(pkFilter({ id: 'abc' }, ['id'])).toBe('id=eq.abc')
@@ -204,6 +224,22 @@ describe('ein ganzer Lauf', () => {
     // hinein, wenn jemand es ausdrücklich so meint (`--hierher`).
     const datei = sicherungsDatei(sicherung(BESTAND, KONTEN))
     await expect(fahre(() => main([datei]))).rejects.toThrow(/process\.exit\(2\)/)
+  })
+
+  it('eine Sicherung von vor E4 geht zurück — das Recht unter seinem heutigen Namen', async () => {
+    // Bis zum 8.11.2026 hieß das Admin-Recht `planner`. Ohne Übernahme hielte
+    // der Lauf die Spalte für fremd und gefüllt und bräche ab.
+    const vorE4 = {
+      ...BESTAND,
+      members: BESTAND.members.map(({ admin, ...m }) => ({ ...m, planner: admin })),
+      persons: BESTAND.persons.map((p) => ({ ...p, planner_vorgemerkt: true })),
+    }
+    const datei = sicherungsDatei(sicherung(vorE4, KONTEN))
+    const { tabellen, aufrufe, ausgabe } = await fahre(() => main([datei, '--ziel-url', ATTRAPPE_URL, '--ziel-key', 'sb_secret_probe_000000000000']))
+    expect(befunde(aufrufe)).toEqual([])
+    expect(tabellen.members?.[0]).toMatchObject({ user_id: U1, admin: true })
+    expect(tabellen.persons?.[0]).toMatchObject({ id: P1, admin_vorgemerkt: true })
+    expect(ausgabe.join('\n')).toMatch(/Alle Tabellen gleich/)
   })
 
   it('warnt, wenn die Sicherung von einem anderen Schema stammt', async () => {

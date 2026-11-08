@@ -72,7 +72,7 @@ beforeAll(async () => {
   ])
   await db.query(`insert into public.congregations (id, name) values ($1, 'A'), ($2, 'B')`, [A, B])
   await db.query(
-    `insert into public.members (user_id, congregation_id, planner, zuteiler)
+    `insert into public.members (user_id, congregation_id, admin, zuteiler)
      values ($1, $2, true, true), ($3, $2, false, false), ($4, $5, true, true)`,
     [ADMIN_A, A, VERKUENDIGER_A, ADMIN_B, B],
   )

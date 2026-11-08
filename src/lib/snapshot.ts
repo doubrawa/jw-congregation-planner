@@ -41,7 +41,7 @@
  */
 
 import type { HydratePayload } from '../app/context'
-import type { Absence, Member, Person } from '../data/types'
+import type { Absence } from '../data/types'
 
 const KEY = 'snapshot'
 /**
@@ -55,11 +55,7 @@ const KEY = 'snapshot'
  * deutsche Arbeitsheft geholt.
  *
  * 3 (November 2026, E4): Das Admin-Recht heißt `admin` statt `planner` — in der
- * Nutzlast, an jedem Konto und als Vormerkung an jeder Person. Eine Aufnahme
- * der Fassung 2 wird übernommen statt verworfen (`ausFassung2`): Sonst hätte ein
- * Gerät, das die neue Fassung zum ersten Mal ohne Netz startet, nichts zu
- * zeigen. Nach vierzehn Tagen gibt es keine gültige Fassung 2 mehr; mit
- * Schritt 2 von E4 fällt die Übernahme weg.
+ * Nutzlast, an jedem Konto und als Vormerkung an jeder Person.
  */
 const VERSION = 3
 
@@ -143,7 +139,7 @@ export function readSnapshot(userId: string): { at: number; payload: HydratePayl
   const env = gelesen(raw)
   const gueltig =
     env !== null &&
-    (env.v === VERSION || env.v === 2) &&
+    env.v === VERSION &&
     env.userId === userId &&
     Boolean(env.payload) &&
     Date.now() - env.at <= HOECHSTALTER_TAGE * 864e5
@@ -151,27 +147,7 @@ export function readSnapshot(userId: string): { at: number; payload: HydratePayl
     clearSnapshot()
     return null
   }
-  return { at: env.at, payload: env.v === 2 ? ausFassung2(env.payload) : env.payload }
-}
-
-/** Die Nutzlast der Fassung 2: das Admin-Recht unter `planner` (siehe `VERSION`). */
-type NutzlastFassung2 = Omit<HydratePayload, 'admin' | 'members' | 'persons'> & {
-  planner?: boolean
-  members: (Omit<Member, 'admin'> & { planner?: boolean })[]
-  persons: (Omit<Person, 'adminVorgemerkt'> & { plannerVorgemerkt?: boolean })[]
-}
-
-/** Eine Nutzlast der Fassung 2 in der heutigen Form: `planner` → `admin`, `plannerVorgemerkt` → `adminVorgemerkt`. */
-function ausFassung2(alt: HydratePayload): HydratePayload {
-  const { planner, members, persons, ...rest } = alt as unknown as NutzlastFassung2
-  return {
-    ...rest,
-    admin: Boolean(planner),
-    members: members.map(({ planner: recht, ...m }) => ({ ...m, admin: Boolean(recht) })),
-    persons: persons.map(({ plannerVorgemerkt, ...person }) =>
-      plannerVorgemerkt === undefined ? person : { ...person, adminVorgemerkt: plannerVorgemerkt },
-    ),
-  }
+  return { at: env.at, payload: env.payload }
 }
 
 /** Beschädigtes bleibt `null` — die Aufnahme wird dann verworfen. */

@@ -733,9 +733,11 @@ genau das, was die zwei Pushes vermeiden sollen.
 **Umbenennen ist beides.** Der erste Push legt die neue Spalte neben die alte,
 übernimmt die Werte und hält beide per Trigger gleich; Functions und App
 nutzen ab da den neuen Namen. Der zweite entfernt die alte Spalte samt
-Trigger. So läuft es beim Admin-Recht (`planner` → `admin`, E4): Schritt 1 ist
-`supabase/migrations/20261108150000_admin-recht.sql`, Schritt 2 steht noch aus
-(T174 in der Aufgabenliste).
+Trigger. So lief es beim Admin-Recht (`planner` → `admin`, E4):
+`supabase/migrations/20261108150000_admin-recht.sql` und
+`…160000_admin-recht-alte-spalten.sql`. Eine Sicherung, die noch die alten
+Namen trägt, spielt `scripts/zurueckspielen.mjs` unter den neuen zurück
+(`UMBENANNT`).
 
 **Das Secret** `SUPABASE_ACCESS_TOKEN` ist ein persönlicher Zugangstoken
 (supabase.com/dashboard/account/tokens), angelegt am 7. November 2026 ohne
