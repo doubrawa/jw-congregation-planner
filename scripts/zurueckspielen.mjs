@@ -55,7 +55,9 @@ import { ohneKommentare, REPO, rumpfAb, schemaFingerabdruck, tabellenAusSchema }
 /* ===================== Fremdschlüssel aus dem Schema ===================== */
 
 /**
- * Alle Fremdschlüssel aus `schema.sql`: Tabelle, Spalten, Zieltabelle.
+ * Alle Fremdschlüssel aus `schema.sql`: Tabelle, Spalten, Zieltabelle, die
+ * Spalten im Ziel und was beim Löschen des Ziels geschieht (`on delete …`,
+ * ohne Angabe `no action`).
  *
  * Drei Schreibweisen kommen vor — an der Spalte (`references public.x (id)`),
  * als Bedingung im Tabellenrumpf (`constraint … foreign key (a, b) references
@@ -63,29 +65,55 @@ import { ohneKommentare, REPO, rumpfAb, schemaFingerabdruck, tabellenAusSchema }
  * …`). Alle drei werden gelesen; eine, die durchfiele, ließe eine Abhängigkeit
  * unbemerkt.
  *
- * @returns {{ tabelle: string, spalten: string[], ziel: string, schema: string }[]}
+ * @returns {{ tabelle: string, spalten: string[], ziel: string, schema: string, zielSpalten: string[], beimLoeschen: string }[]}
  */
 export function fremdschluessel(roh) {
   const sql = ohneKommentare(roh)
   const out = []
   const bedingung = /constraint\s+[a-z_]+\s+foreign key\s*\(([^)]+)\)\s*references\s+(public|auth)\.([a-z_]+)\s*\(/gi
   const inZeile = /(?:^|,)\s*([a-z_]+)\s+[a-z]+[^,]*?\breferences\s+(public|auth)\.([a-z_]+)\s*\(/gi
+  const spaltenVon = (liste) => liste.split(',').map((c) => c.trim())
 
   const kopf = /create table if not exists (?:public\.)?([a-z_]+) \(/gi
   for (let m = kopf.exec(sql); m; m = kopf.exec(sql)) {
     const rumpf = rumpfAb(sql, kopf.lastIndex - 1)
-    for (const f of rumpf.matchAll(inZeile)) out.push({ tabelle: m[1], spalten: [f[1]], ziel: f[3], schema: f[2] })
+    for (const f of rumpf.matchAll(inZeile)) {
+      out.push({ tabelle: m[1], spalten: [f[1]], ziel: f[3], schema: f[2], ...verweisRest(rumpf, f.index + f[0].length) })
+    }
     for (const f of rumpf.matchAll(bedingung)) {
-      out.push({ tabelle: m[1], spalten: f[1].split(',').map((c) => c.trim()), ziel: f[3], schema: f[2] })
+      out.push({ tabelle: m[1], spalten: spaltenVon(f[1]), ziel: f[3], schema: f[2], ...verweisRest(rumpf, f.index + f[0].length) })
     }
   }
   // Nachgereicht: `alter table public.persons add constraint … foreign key …;`
   for (const a of sql.matchAll(/alter table\s+(?:only\s+)?(?:public\.)?([a-z_]+)([\s\S]*?);/gi)) {
     for (const f of a[2].matchAll(bedingung)) {
-      out.push({ tabelle: a[1], spalten: f[1].split(',').map((c) => c.trim()), ziel: f[3], schema: f[2] })
+      out.push({ tabelle: a[1], spalten: spaltenVon(f[1]), ziel: f[3], schema: f[2], ...verweisRest(a[2], f.index + f[0].length) })
     }
   }
   return out
+}
+
+/**
+ * Was hinter `references x (` steht: die Spalten des Ziels bis zur Klammer, dann
+ * die Regel beim Löschen — gesucht nur bis zum nächsten Komma der obersten
+ * Ebene, denn dort beginnt der nächste Eintrag mit seiner eigenen Regel.
+ */
+function verweisRest(text, ab) {
+  const zu = text.indexOf(')', ab)
+  const zielSpalten = text.slice(ab, zu).split(',').map((c) => c.trim())
+  let ende = text.length
+  for (let i = zu + 1, tiefe = 0; i < text.length; i++) {
+    const c = text[i]
+    const schliesst = (c === ')' || c === ',') && tiefe === 0
+    if (schliesst) {
+      ende = i
+      break
+    }
+    if (c === '(') tiefe++
+    else if (c === ')') tiefe--
+  }
+  const regel = /\bon delete (cascade|set null|set default|restrict|no action)\b/i.exec(text.slice(zu + 1, ende))
+  return { zielSpalten, beimLoeschen: regel ? regel[1].toLowerCase() : 'no action' }
 }
 
 /**

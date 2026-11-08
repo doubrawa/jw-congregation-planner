@@ -12,6 +12,7 @@ import {
   type FunktionsKontext,
   MAX_ZEILEN,
   REDET_MIT_DB,
+  SCHEMA_SQL,
   schemaFehler,
   schemaFunktion,
   schemaSpalten,
@@ -21,6 +22,7 @@ import {
   type Zeile,
 } from './schema-attrappe'
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
+import { AUSGENOMMEN, tabellenAusSchema } from './sicherung.mjs'
 import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, uebernahmeAnlage, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 import { abschnitt, tabelle, wochenKopf, wochenuebersichtDocx } from './wochenuebersicht-attrappe'
@@ -99,6 +101,13 @@ function probeUebersicht({ kopf = ['August 24-30'], vorsitz = 'Probe Eins' }: { 
 /** Eine Eingabedatei auf die Platte — Text und Buffer wörtlich, alles andere als JSON. */
 function eingabeSchreiben(ordner: string, name: string, inhalt: unknown) {
   fs.writeFileSync(path.join(ordner, name), typeof inhalt === 'string' || Buffer.isBuffer(inhalt) ? inhalt : JSON.stringify(inhalt))
+}
+
+/** Eine Sicherung über jede Tabelle aus schema.sql, wie `sicherung.mjs` sie schreibt; gefüllt ist nur, was der Lauf braucht. */
+function volleSicherung(gefuellt: Record<string, Zeile[]>, konten: { id: string; email: string }[]) {
+  const tabellen: Record<string, Zeile[]> = {}
+  for (const t of tabellenAusSchema(SCHEMA_SQL) as { name: string }[]) if (!(t.name in AUSGENOMMEN)) tabellen[t.name] = gefuellt[t.name] ?? []
+  return { erstellt: '2026-11-08T20:00:00.000Z', projekt: 'probe', konten, tabellen }
 }
 
 /** Ein Tag später oder früher, als ISO-Datum. */
@@ -672,6 +681,56 @@ const LAEUFE: Record<string, Lauf[]> = {
       // `PATCH persons` ist der nachgetragene Ring (`persons.grp` → `groups`):
       // Ohne ihn stünde die Person ohne ihre Gruppe da.
       erwartet: ['POST congregations', 'POST groups', 'POST persons', 'POST members', 'PATCH persons'],
+    },
+  ],
+
+  'versammlung-auf-sicherung.mjs': [
+    {
+      titel: 'eine Versammlung zurück auf die Sicherung — die Konten bleiben',
+      fahren: (m, dateien) => m.main!([path.join(dateien, 'sicherung.json'), '--cong', C]),
+      dateien: {
+        'sicherung.json': volleSicherung(
+          {
+            congregations: [{ id: C, name: 'Probeversammlung' }, { id: CB, name: 'Probe B' }],
+            groups: [{ id: G1, congregation_id: C, name: 'Gruppe 1', position: 0 }],
+            persons: [
+              { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', grp: G1 },
+              { id: P_ALT, congregation_id: C, fn: 'Probe', ln: 'Alt', grp: G1 },
+            ],
+            absagen: [{ congregation_id: C, person_id: P1, task_key: '2026-09-07|mid|gebet', woche: '2026-09-07' }],
+            members: [{ user_id: U1, congregation_id: C, admin: true, person_id: P1 }],
+          },
+          [{ id: U1, email: `${P1}@konten.invalid` }],
+        ),
+      },
+      umgebung: {
+        konten: [
+          { id: U1, email: `${P1}@konten.invalid` },
+          { id: U2, email: `${P2}@konten.invalid` },
+        ],
+        bestand: {
+          congregations: [{ id: C, name: 'Probe neu' }, { id: CB, name: 'Probe B' }],
+          groups: [{ id: G1, congregation_id: C, name: 'Gruppe 1', position: 0 }],
+          persons: [
+            { id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', grp: null },
+            // Mit Konto (U2) — die Sicherung kennt sie nicht, sie bleibt trotzdem.
+            { id: P2, congregation_id: C, fn: 'Probe', ln: 'Tester' },
+            { id: P3, congregation_id: C, fn: 'Probe', ln: 'Neu' },
+          ],
+          // Ein Primärschlüssel aus drei Spalten — gelöscht wird Zeile für Zeile.
+          absagen: [{ congregation_id: C, person_id: P1, task_key: '2026-09-14|mid|gebet', woche: '2026-09-14' }],
+          members: [
+            { user_id: U1, congregation_id: C, admin: true, person_id: P1 },
+            { user_id: U2, congregation_id: C, admin: false, person_id: P2 },
+          ],
+        },
+      },
+      // `PATCH persons` ist der nachgetragene Ring; `GET members` und `GET anmelde_links` lesen,
+      // wen ein Konto oder Link schützt — geschrieben wird dort nichts.
+      erwartet: [
+        'GET congregations', 'GET members', 'GET anmelde_links', 'GET persons', 'DELETE persons', 'POST persons',
+        'PATCH persons', 'PATCH congregations', 'DELETE absagen', 'POST absagen',
+      ],
     },
   ],
 

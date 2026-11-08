@@ -60,6 +60,27 @@ describe('fremdschluessel', () => {
     expect(hat('members', ['user_id'], 'users')).toBe(true) // nach auth.users
   })
 
+  it('liest je Schreibweise die Spalten im Ziel und die Regel beim Löschen', () => {
+    // `versammlung-auf-sicherung.mjs` baut darauf: Was eine Person mit Konto
+    // schützt und wie eine Zeile ohne Konto zurückkommt, steht in genau diesen
+    // beiden Angaben.
+    const von = (tabelle: string, spalten: string[]) =>
+      fks.find((f: { tabelle: string; spalten: string[] }) => f.tabelle === tabelle && f.spalten.join() === spalten.join())
+    expect(von('persons', ['congregation_id'])).toMatchObject({ zielSpalten: ['id'], beimLoeschen: 'cascade' }) // an der Spalte
+    expect(von('persons', ['fam', 'congregation_id'])).toMatchObject({ zielSpalten: ['id', 'congregation_id'], beimLoeschen: 'set null' }) // Bedingung
+    expect(von('persons', ['grp', 'congregation_id'])).toMatchObject({ zielSpalten: ['id', 'congregation_id'], beimLoeschen: 'set null' }) // alter table
+    expect(von('absagen', ['person_id', 'congregation_id'])).toMatchObject({ beimLoeschen: 'cascade' })
+    expect(von('absences', ['user_id'])).toMatchObject({ zielSpalten: ['id'], beimLoeschen: 'set null' })
+    // Ohne Angabe gilt, was Postgres annimmt — und die Regel des nächsten Eintrags zählt nicht mit.
+    const sql = [
+      'create table if not exists public.x (',
+      '  a uuid references public.y (id),',
+      '  b uuid references public.y (id) on delete cascade',
+      ');',
+    ].join('\n')
+    expect(fremdschluessel(sql).map((f: { beimLoeschen: string }) => f.beimLoeschen)).toEqual(['no action', 'cascade'])
+  })
+
   it('erfindet keine — jedes Ziel ist eine Tabelle', () => {
     const tabellen = new Set(tabellenAusSchema(SCHEMA).map((t) => t.name))
     const unbekannt = fks.filter((f) => f.schema === 'public' && !tabellen.has(f.ziel))
@@ -81,7 +102,9 @@ describe('fremdschluessel', () => {
       '  user_id uuid references auth.users (id) on delete set null',
       ');',
     ].join('\n')
-    expect(fremdschluessel(sql)).toEqual([{ tabelle: 'x', spalten: ['user_id'], ziel: 'users', schema: 'auth' }])
+    expect(fremdschluessel(sql)).toEqual([
+      { tabelle: 'x', spalten: ['user_id'], ziel: 'users', schema: 'auth', zielSpalten: ['id'], beimLoeschen: 'set null' },
+    ])
   })
 })
 
