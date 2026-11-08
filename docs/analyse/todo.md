@@ -11453,8 +11453,15 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
-**Stand 7. November 2026, alles Offene an einer Stelle** (gemessen am Morgen:
-166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
+**Stand 8. November 2026, alles Offene an einer Stelle** (gemessen am Abend:
+174 Köpfe, keiner offen — dazu kamen am Tag der Neuaufbau zum Echtbetrieb, die
+Abwesenheiten aus NWS und T174 (E4), umgesetzt und ausgerollt; keine PR, kein
+Issue, außer `main` kein Zweig; keine weitere Sitzung zu diesem Repo; seit dem
+7. November ein „Offen:" in den Commit-Nachrichten — das Secret für T170, längst
+angelegt). Neu in der Tabelle: was bisher nur im Memory stand — die
+Vorbereitung der Beta und der Livegang (Bewertung der Reife vom selben Tag).
+
+Am 7. November (gemessen am Morgen: 166 Köpfe, keiner offen — am Vormittag kam T167 dazu, umgesetzt, danach
 T168–T173 aus der Bewertung; T168, T169 und T171 sind am Mittag und Nachmittag
 umgesetzt — die Probe gegen ein echtes Projekt entfiel am Abend mit dem
 Staging, der Umstieg auf die Migrationen kam am Abend ohne Neuaufbau; T173 und
@@ -11471,6 +11478,8 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
+| **Beta** | vor den Links der vier Tester | Die **Mitgliedsrechte-Probe** fahren (Betreiber, `node scripts/mitgliedsrechte-probe.mjs`) — die letzte lief am 6. November, vor den Migrationen 3, 5 und 6; mit den Testern melden sich zum ersten Mal andere an. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
+| **Livegang** | in ein bis zwei Monaten | Ein **letzter NWS-Import** (Betreiber 8.11.: „dann wird NWS abgeschaltet"): Personenliste, Wochenübersicht und Leben-und-Dienst je Monat, „Person Abwesenheiten" mit `--nws-gilt`; danach `nur-in-der-app.mjs` (Reste, die der Import über bestehenden Wochen stehen lässt) und die Prüfung „abwesend und eingeteilt" (`abwesend-eingeteilt.mjs`), beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
 | **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): beide Schritte am 8. November umgesetzt (Schritt 1 ausgerollt als `f8b4e0bd`). Offen danach nur die Mitgliedsrechte-Probe, die der Betreiber fährt |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
