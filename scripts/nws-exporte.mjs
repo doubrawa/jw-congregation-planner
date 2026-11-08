@@ -642,3 +642,46 @@ export function tageAusLebenUndDienst(xml) {
   if (!tage.length) throw new Error('Leben und Dienst: keine Woche gefunden — unbekanntes Format.')
   return tage
 }
+
+/* ===================== Person Abwesenheiten ================================ */
+
+/** Ein ISO-Datum, das es gibt — „2026.02.30" nicht. */
+function echtesDatum(j, m, t) {
+  const iso = `${j}-${m}-${t}`
+  const d = new Date(`${iso}T12:00:00Z`)
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso ? iso : null
+}
+
+/**
+ * Die Abwesenheiten aus dem Export „Person Abwesenheiten" (`<Monat> <Jahr>
+ * Person Abwesenheiten Alle Gruppen - Alle.docx`): `personen` — jeder Name,
+ * den der Export führt, auch ohne Abwesenheit —, und `zeitraeume`,
+ * `{ name, von, bis }` mit ISO-Daten.
+ *
+ * Eine Tabelle „Name | Abwesend | Konflikte", je Person eine Zeile; in
+ * „Abwesend" ein Absatz je Zeitraum, „JJJJ.MM.TT – JJJJ.MM.TT", bei Personen
+ * ohne Abwesenheit leer (abgelesen am Export vom 8.11.2026). Der Export nennt
+ * keine vergangenen Zeiträume: Der früheste endete im Monat aus dem Dateinamen
+ * (`monatAusDateiname`) — was davor endete, steht nicht darin. Was sich nicht
+ * lesen lässt, bricht ab, statt eine Abwesenheit still zu verlieren.
+ */
+export function abwesenheitenAusExport(xml) {
+  const KOPF = 'Name|Abwesend|Konflikte'
+  const tabelle = tabellenVon(xml).find((t) => t[0]?.map((z) => z.text).join('|') === KOPF)
+  if (!tabelle) throw new Error(`Abwesenheiten: keine Tabelle „${KOPF.replaceAll('|', ' | ')}" — unbekanntes Format.`)
+  const personen = []
+  const zeitraeume = []
+  tabelle.slice(1).forEach((z, i) => {
+    const name = namensForm(z[0]?.text)
+    if (!name) throw new Error(`Abwesenheiten: Zeile ${i + 2} ohne Namen.`)
+    personen.push(name)
+    for (const absatz of z[1]?.absaetze ?? []) {
+      const m = /^(\d{4})\.(\d{2})\.(\d{2})\s*[–-]\s*(\d{4})\.(\d{2})\.(\d{2})$/.exec(namensForm(absatz))
+      const von = m && echtesDatum(m[1], m[2], m[3])
+      const bis = m && echtesDatum(m[4], m[5], m[6])
+      if (!von || !bis) throw new Error(`Abwesenheiten: Zeile ${i + 2}: „${absatz}" ist kein Zeitraum.`)
+      zeitraeume.push({ name, von, bis })
+    }
+  })
+  return { personen, zeitraeume }
+}

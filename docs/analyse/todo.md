@@ -11471,7 +11471,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
+| **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
 | **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): beide Schritte am 8. November umgesetzt (Schritt 1 ausgerollt als `f8b4e0bd`). Offen danach nur die Mitgliedsrechte-Probe, die der Betreiber fährt |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
@@ -11530,6 +11530,19 @@ läse für die Abwesenheiten die alten entschlüsselten Daten):
 Gegenprobe am Ende: derselbe Trockenlauf meldet 20 von 20 Wochen und alle
 Treffpunkte auf dem Stand von NWS. Bestand: 112 Personen, 6 Gruppen, 63 Wochen
 (3. November 2025 bis 11. Januar 2027), 177 Abwesenheiten, ein Konto.
+
+**Nachtrag, am selben Abend: Abwesenheiten aus NWS.** NWS exportiert sie doch —
+als Bericht „Person Abwesenheiten" (`November 2026 Person Abwesenheiten Alle
+Gruppen - Alle.docx`; je Person ihre Zeiträume, alle, die ab dem Monat des
+Berichts enden). `abwesenheiten-importieren.mjs` liest ihn jetzt
+(`--abwesenheiten … --personen …`); mit `--nws-gilt` löscht es, was in diesem
+Fenster nur in der App steht. 64 Zeiträume, je Person zusammengefasst 55, alle
+zugeordnet: 31 standen schon da, 21 kamen dazu (seit dem 18. Oktober in NWS
+geplant), eine ältere Fassung eines geänderten Zeitraums ging. Danach: 52
+Abwesenheiten ab heute, gleich NWS. Mit den Funktionen der App geprüft: Ab dem
+2. November ist niemand eingeteilt, der abwesend ist — auch kein fester
+WT-Leiter und kein Treffpunkt-Leiter (Gegenprobe: eine künstlich eingeteilte
+Abwesende fällt auf).
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
 ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit

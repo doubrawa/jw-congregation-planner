@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  abwesenheitenAusExport,
   csvLesen,
   docxDokument,
   exportNamensAufloeser,
@@ -563,6 +564,32 @@ describe('treffpunkteAusUebersicht — die Treffpunkte aus der Tabelle „Predig
     expect(() => treffpunkte([kopf, abschnitt('Predigtdienst', [['Montag', 'Probetag'], ['·', '·']])])).toThrow('unbekannte Spalte „Probetag"')
     expect(() => treffpunkte([kopf, predigtdienst(['Probe-Ort', '9:30'])])).toThrow('Text vor der ersten Uhrzeit')
     expect(() => treffpunkte([predigtdienst(['9:30'])])).toThrow('vor dem ersten Wochenkopf')
+  })
+})
+
+describe('abwesenheitenAusExport — „Person Abwesenheiten"', () => {
+  // So steht er im Export vom 8.11.2026: ein Kopf, dann eine Tabelle, je Person
+  // eine Zeile, ein Absatz je Zeitraum.
+  const kopf = tabelle([['Person Abwesenheiten', 'Probeversammlung']])
+  const liste = (...zeilen: Zelle[][]) => dokument([kopf, tabelle([['Name', 'Abwesend', 'Konflikte'], ...zeilen])])
+
+  it('je Person ihre Zeiträume — auch mehrere, und wer keine hat, steht trotzdem in der Liste', () => {
+    const { personen, zeitraeume } = abwesenheitenAusExport(
+      liste(['Probe Eins', ['2026.11.02 – 2026.11.08', '2027.03.01 – 2027.03.05'], ''], [`Probe${NBSP}Zwei 2 `, '', ''], ['Probe Drei', '2026.10.22 – 2026.11.01', '']),
+    )
+    expect(personen).toEqual(['Probe Eins', 'Probe Zwei 2', 'Probe Drei'])
+    expect(zeitraeume).toEqual([
+      { name: 'Probe Eins', von: '2026-11-02', bis: '2026-11-08' },
+      { name: 'Probe Eins', von: '2027-03-01', bis: '2027-03-05' },
+      { name: 'Probe Drei', von: '2026-10-22', bis: '2026-11-01' },
+    ])
+  })
+
+  it('Unbekanntes bricht ab, statt eine Abwesenheit still zu verlieren', () => {
+    expect(() => abwesenheitenAusExport(dokument([kopf, tabelle([['Name', 'Abwesend'], ['Probe Eins', '2026.11.02 – 2026.11.08']])]))).toThrow('keine Tabelle „Name | Abwesend | Konflikte"')
+    expect(() => abwesenheitenAusExport(liste(['Probe Eins', 'ab 2026.11.02', '']))).toThrow('„ab 2026.11.02" ist kein Zeitraum')
+    expect(() => abwesenheitenAusExport(liste(['Probe Eins', '2026.02.30 – 2026.03.01', '']))).toThrow('ist kein Zeitraum')
+    expect(() => abwesenheitenAusExport(liste(['', '2026.11.02 – 2026.11.08', '']))).toThrow('Zeile 2 ohne Namen')
   })
 })
 

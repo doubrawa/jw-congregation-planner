@@ -9,7 +9,14 @@
  * verreist ist, soll gar nicht erst eingeteilt werden. Ohne diesen Import
  * plant die App also gegen einen leeren Kalender.
  *
- * **Quelle.** `AwayPeriods` — NWS' „Abwesend"-Zeiträume (Person, von, bis).
+ * **Zwei Quellen.** Der Export „Person Abwesenheiten" (docx, seit 8.11.2026 —
+ * NWS lässt sich seit dem 20.10. nicht mehr entschlüsseln) mit der
+ * Personenliste (CSV), über die jeder Name an seine NWS-Id kommt. Er nennt jede
+ * Abwesenheit, die ab seinem Monat endet; mit `--nws-gilt` wird deshalb auch
+ * gelöscht, was in diesem Fenster nur in der App steht (`nurInDerApp`). Oder
+ * die entschlüsselten Tabellen (`--daten`):
+ *
+ * `AwayPeriods` — NWS' „Abwesend"-Zeiträume (Person, von, bis).
  * Daneben führt NWS `UnavailablePeriods` („nicht verfügbar"): fachlich etwas
  * anderes (jemand ist da, kann aber keine Aufgabe übernehmen), für die Planung
  * jedoch dieselbe Folge. Die App kennt nur einen Begriff, deshalb sind sie mit
@@ -43,8 +50,15 @@
  * ---------------------------------------------------------------- Aufruf ----
  *
  *   node scripts/abwesenheiten-importieren.mjs \
+ *     --abwesenheiten "<…> November 2026 Person Abwesenheiten Alle Gruppen - Alle.docx" \
+ *     --personen "<…> NWS Desktop Personen (N).csv" \
+ *     [--cong <congregation-id>] [--ab 2026-11-08] [--nws-gilt] [--trocken]
+ *
+ *   node scripts/abwesenheiten-importieren.mjs \
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--ab 2026-08-22] [--auch-unverfuegbar] [--trocken]
+ *
+ * `--nws-gilt` löscht, was der Export nicht führt (nur mit `--abwesenheiten`).
  *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
  * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
@@ -62,6 +76,8 @@
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   alsSkript,
   appCodeBereit,
@@ -72,7 +88,9 @@ import {
   versammlungHolen,
   zugangsdaten,
 } from './gemeinsam.mjs'
+import { abwesenheitenAusExport, csvLesen, docxDokument, exportNamensAufloeser, monatAusDateiname } from './nws-exporte.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
+import { uuid5 } from './wochenplanung-importieren.mjs'
 
 /* ===================== NWS lesen ========================================== */
 
@@ -185,18 +203,40 @@ export function planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab) {
 
   const neu = []
   const gesehen = new Set(vorhanden)
+  // Jeder Zeitraum, den NWS ab `ab` führt — neu oder schon gespeichert. Was in
+  // der App außerhalb davon steht, kennt NWS nicht (`nurInDerApp`).
+  const nws = new Set()
   for (const liste of jePerson.values()) {
     for (const z of verschmelzeZeitraeume(liste)) {
       zaehler.verschmolzen += z.verschmolzen ?? 0
       if (z.bis < ab) { zaehler.vergangen++; continue }
       const key = abwSchluessel(z.personId, z.von, z.bis)
+      nws.add(key)
       if (gesehen.has(key)) { zaehler.doppelt++; continue }
       gesehen.add(key)
       neu.push({ ref: z.ref, personId: z.personId, von: z.von, bis: z.bis, herkunft: z.herkunft })
     }
   }
   neu.sort((a, b) => a.von.localeCompare(b.von))
-  return { neu, ...zaehler, fehlende: [...fehlende] }
+  return { neu, ...zaehler, fehlende: [...fehlende], nws }
+}
+
+/**
+ * **Was nur in der App steht** — gespeicherte Abwesenheiten, die NWS so nicht
+ * (mehr) führt: eine ältere Fassung eines Zeitraums, den NWS seither geändert
+ * hat, oder einer, den NWS gelöscht hat (Betreiber 8.11.2026: „die nws exporte
+ * zählen, wenn es abweichungen gibt").
+ *
+ * Nur mit dem Export: Er nennt **jede** Abwesenheit ab seinem Monat — die
+ * entschlüsselten Tabellen nicht, NWS räumt dort Beendetes ab. Und nur, was in
+ * sein Fenster fällt (endet ab `fensterAb`), bei Personen, die er führt
+ * (`gelistet`): Was davor endete oder wen er nicht kennt, darüber sagt er
+ * nichts. Reine Funktion.
+ */
+export function nurInDerApp(vorhandenRows, nws, gelistet, fensterAb) {
+  return vorhandenRows.filter(
+    (r) => r.person_id && gelistet.has(r.person_id) && r.to_date >= fensterAb && !nws.has(abwSchluessel(r.person_id, r.from_date, r.to_date)),
+  )
 }
 
 /* ============================= Ausführung ================================= */
@@ -216,9 +256,43 @@ export function heuteISO(jetzt = new Date()) {
   return `${j}-${m}-${t}`
 }
 
+/**
+ * Die Zeiträume aus dem Export „Person Abwesenheiten" — dieselbe Form wie
+ * `sammleZeitraeume`, die Referenz ist die NWS-`PersonID` aus der Personenliste
+ * (ein Name, den sie nicht trifft, bleibt als `?Name` stehen und wird gemeldet).
+ * Dazu `gelistet`: jede App-Person, die der Export führt, auch ohne
+ * Abwesenheit, und `beginn`: der erste Tag seines Monats — was davor endete,
+ * nennt er nicht.
+ */
+export function ausExport({ name, xml }, personenZeilen) {
+  const datum = monatAusDateiname(name)
+  if (!datum) throw new Error(`${name}: Monat und Jahr fehlen im Dateinamen („November 2026 Person Abwesenheiten …docx").`)
+  const { personen, zeitraeume } = abwesenheitenAusExport(xml)
+  const { idZu } = exportNamensAufloeser(personenZeilen)
+  const ref = (n) => idZu(n) ?? `?${n}`
+  const namen = new Map()
+  for (const n of personen) namen.set(ref(n), n)
+  return {
+    zeitraeume: zeitraeume.map((z) => ({ ref: ref(z.name), von: z.von, bis: z.bis, herkunft: 'abwesend' })),
+    personIdOf: (r) => (r.startsWith('?') ? null : uuid5(`person:${r}`)),
+    nameOf: (r) => namen.get(r) ?? null,
+    gelistet: new Set(personen.map(idZu).filter(Boolean).map((id) => uuid5(`person:${id}`))),
+    beginn: `${datum.jahr}-${String(datum.monat).padStart(2, '0')}-01`,
+  }
+}
+
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
+  const exportDatei = typeof arg.abwesenheiten === 'string' ? arg.abwesenheiten : null
+  if (arg.abwesenheiten !== undefined && (!exportDatei || typeof arg.personen !== 'string')) {
+    console.error('Zum Export gehören die Datei und die Personenliste: --abwesenheiten "<…Person Abwesenheiten….docx>" --personen "<Personen.csv>"')
+    process.exit(2)
+  }
+  if (arg['nws-gilt'] && !exportDatei) {
+    console.error('--nws-gilt gehört zum Export (--abwesenheiten): Nur er nennt jede Abwesenheit ab seinem Monat.')
+    process.exit(2)
+  }
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   appCodeBereit()
@@ -226,17 +300,41 @@ export async function main(argv = process.argv.slice(2)) {
   const ab = nichtVorDerFrist(typeof arg.ab === 'string' ? arg.ab : heuteISO(), aufbewahrtAb(VERTEILUNG_WOCHEN))
   const rest = restKlient(url, key)
 
-  const tabellen = ladeTabellen(datenDir, TABELLEN)
+  // Aus den entschlüsselten NWS-Tabellen nur ohne Export — beides zu mischen
+  // hieße, zwei Stände derselben Zeiträume nebeneinander zu legen.
+  let zeitraeume, verdreht, personIdOf, nameOf, quellen
+  let export_ = null
+  if (exportDatei) {
+    export_ = ausExport(
+      { name: path.basename(exportDatei), xml: docxDokument(exportDatei) },
+      csvLesen(fs.readFileSync(arg.personen, 'utf8')),
+    )
+    ;({ zeitraeume, personIdOf, nameOf } = export_)
+    verdreht = zeitraeume.filter((z) => z.bis < z.von)
+    zeitraeume = zeitraeume.filter((z) => z.bis >= z.von)
+    quellen = 1
+  } else {
+    const tabellen = ladeTabellen(datenDir, TABELLEN)
+    const gelesen = [sammleZeitraeume(tabellen.awayPeriods, 'abwesend')]
+    if (arg['auch-unverfuegbar']) {
+      gelesen.push(sammleZeitraeume(tabellen.unavailablePeriods, 'nicht verfügbar'))
+    }
+    zeitraeume = gelesen.flatMap((q) => q.zeitraeume)
+    verdreht = gelesen.flatMap((q) => q.verdreht)
+    personIdOf = personIdAufloeser(tabellen.persons)
+    nameOf = nameAufloeser(tabellen.persons)
+    quellen = gelesen.length
+  }
   const cong = (await versammlungHolen(rest, arg)).id
 
-  const personen = await rest(`persons?select=id&congregation_id=eq.${cong}`)
+  const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
   const appIds = new Set(personen.map((p) => p.id))
   // Nur, was einem neuen Eintrag gleichen kann: Jeder endet frühestens `ab`.
   // Bis zum 16.10.2026 kamen alle Abwesenheiten der Versammlung, auch die
   // vergangenen — und ab 1000 Zeilen schneidet PostgREST still ab (Supabase
   // „Max rows"). Was dahinter lag, sah der Abgleich nicht, und es kam doppelt.
   const vorhandenRows = await rest(
-    `absences?select=person_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,
+    `absences?select=id,person_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,
   )
   const vorhanden = new Set(
     vorhandenRows
@@ -244,18 +342,11 @@ export async function main(argv = process.argv.slice(2)) {
       .map((r) => abwSchluessel(r.person_id, r.from_date, r.to_date)),
   )
 
-  const quellen = [sammleZeitraeume(tabellen.awayPeriods, 'abwesend')]
-  if (arg['auch-unverfuegbar']) {
-    quellen.push(sammleZeitraeume(tabellen.unavailablePeriods, 'nicht verfügbar'))
-  }
-  const zeitraeume = quellen.flatMap((q) => q.zeitraeume)
-  const verdreht = quellen.flatMap((q) => q.verdreht)
-
-  const personIdOf = personIdAufloeser(tabellen.persons)
-  const nameOf = nameAufloeser(tabellen.persons)
   const plan = planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab)
+  // Das Fenster des Exports: ab seinem Monat, nie vor `ab`.
+  const entfernen = export_ ? nurInDerApp(vorhandenRows, plan.nws, export_.gelistet, ab > export_.beginn ? ab : export_.beginn) : []
 
-  console.log(`NWS: ${zeitraeume.length} Zeiträume (Quellen: ${quellen.length}).`)
+  console.log(`NWS: ${zeitraeume.length} Zeiträume (${export_ ? 'Export' : `Quellen: ${quellen}`}).`)
   console.log(`App: ${personen.length} Personen, ${vorhanden.size} Abwesenheiten bis ${ab} oder später bereits gespeichert.`)
   console.log(
     `\nEinzufügen: ${plan.neu.length}` +
@@ -278,12 +369,26 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (plan.neu.length > 10) console.log(`  … und ${plan.neu.length - 10} weitere`)
 
+  if (export_) {
+    const appName = new Map(personen.map((p) => [p.id, `${p.fn} ${p.ln}`.trim()]))
+    console.log(
+      `\nNur in der App (endet ab ${ab > export_.beginn ? ab : export_.beginn}, NWS führt die Person): ${entfernen.length}` +
+        (entfernen.length ? (arg['nws-gilt'] ? ' — werden gelöscht (--nws-gilt)' : ' — bleiben; mit --nws-gilt gelöscht') : ''),
+    )
+    for (const r of entfernen) console.log(`  − ${appName.get(r.person_id) ?? r.person_id}: ${r.from_date} → ${r.to_date}`)
+  }
+
+  const loeschen = arg['nws-gilt'] ? entfernen : []
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
     return
   }
+  if (plan.neu.length === 0 && loeschen.length === 0) {
+    console.log('\nNichts zu tun.')
+    return
+  }
   if (plan.neu.length === 0) {
-    console.log('\nNichts einzufügen.')
+    await abwesenheitenLoeschen(rest, cong, loeschen)
     return
   }
 
@@ -316,6 +421,18 @@ export async function main(argv = process.argv.slice(2)) {
     throw err
   }
   console.log(`\nGeschrieben: ${plan.neu.length} Abwesenheiten eingefügt.`)
+  // Erst nach dem Einfügen: Schlägt es fehl, ist auch nichts gelöscht.
+  await abwesenheitenLoeschen(rest, cong, loeschen)
+}
+
+/** Die Abwesenheiten, die NWS nicht (mehr) führt, nach ihrer Kennung löschen. */
+async function abwesenheitenLoeschen(rest, cong, zeilen) {
+  if (!zeilen.length) return
+  await rest(`absences?congregation_id=eq.${cong}&id=in.(${zeilen.map((r) => r.id).join(',')})`, {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' },
+  })
+  console.log(`Gelöscht: ${zeilen.length} Abwesenheiten, die NWS nicht (mehr) führt.`)
 }
 
 alsSkript(import.meta.url, main)

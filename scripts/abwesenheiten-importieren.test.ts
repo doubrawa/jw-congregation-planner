@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   abwSchluessel,
+  ausExport,
   heuteISO,
+  nurInDerApp,
   planeImport,
   sammleZeitraeume,
   verschmelzeZeitraeume,
 } from './abwesenheiten-importieren.mjs'
+import { dokument, tabelle } from './wochenuebersicht-attrappe'
 import { nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -268,6 +271,57 @@ describe('planeImport', () => {
     const plan = planeImport([z(430648141, '2026-09-06', '2026-09-11')], new Set(), nurAnna, personIdOf, '2026-08-22')
     expect(plan.neu).toEqual([])
     expect(plan.ohnePerson).toBe(1)
+  })
+})
+
+describe('Aus dem Export „Person Abwesenheiten" (8.11.2026)', () => {
+  /*
+    Seit NWS sich nicht mehr entschlüsseln lässt, kommen die Abwesenheiten aus
+    seinem Export. Er nennt jede, die ab seinem Monat endet — wer in der App
+    außerhalb davon etwas stehen hat, hat es dort ausprobiert oder NWS hat es
+    seither geändert (Betreiber: „die nws exporte zählen, wenn es abweichungen
+    gibt").
+  */
+  const LISTE = [
+    { PersonID: '430418939', FirstName: 'Anna', LastName: 'Beispiel', DisplayName: 'Anna Beispiel' },
+    { PersonID: '430648141', FirstName: 'Bernd', LastName: 'Beispiel', DisplayName: 'Bernd Beispiel' },
+  ]
+  const ANNA_APP = uuid5('person:430418939')
+  const BERND_APP = uuid5('person:430648141')
+  const xml = dokument([
+    tabelle([['Person Abwesenheiten', 'Probe']]),
+    tabelle([['Name', 'Abwesend', 'Konflikte'], ['Anna Beispiel', '2026.12.01 – 2026.12.10', ''], ['Bernd Beispiel', '', ''], ['Probe Fremd', '2026.12.01 – 2026.12.02', '']]),
+  ])
+  const ex = ausExport({ name: 'November 2026 Person Abwesenheiten Alle Gruppen - Alle.docx', xml }, LISTE)
+
+  it('die Person über die Personenliste an die App-Person, der Monat aus dem Dateinamen', () => {
+    expect(ex.beginn).toBe('2026-11-01')
+    expect(ex.zeitraeume).toEqual([
+      { ref: '430418939', von: '2026-12-01', bis: '2026-12-10', herkunft: 'abwesend' },
+      { ref: '?Probe Fremd', von: '2026-12-01', bis: '2026-12-02', herkunft: 'abwesend' },
+    ])
+    expect(ex.personIdOf('430418939')).toBe(ANNA_APP)
+    expect(ex.personIdOf('?Probe Fremd')).toBeNull()
+    expect(ex.nameOf('?Probe Fremd')).toBe('Probe Fremd')
+    // Auch wer keine Abwesenheit hat, steht im Export — über ihn sagt er „keine".
+    expect([...ex.gelistet]).toEqual([ANNA_APP, BERND_APP])
+  })
+
+  it('ohne Monat im Dateinamen bricht es ab — wo das Fenster beginnt, wird nicht geraten', () => {
+    expect(() => ausExport({ name: 'Abwesenheiten.docx', xml }, LISTE)).toThrow('Monat und Jahr fehlen')
+  })
+
+  it('nur in der App: geändert oder gelöscht in NWS — nicht was vorher endete, nicht wen NWS nicht führt', () => {
+    const plan = planeImport(ex.zeitraeume, new Set(), new Set([ANNA_APP, BERND_APP]), ex.personIdOf, '2026-11-08')
+    const zeile = (id: string, person_id: string, from_date: string, to_date: string) => ({ id, person_id, from_date, to_date })
+    const app = [
+      zeile('gleich', ANNA_APP, '2026-12-01', '2026-12-10'),
+      zeile('alte-fassung', ANNA_APP, '2026-12-01', '2026-12-08'),
+      zeile('in-nws-geloescht', BERND_APP, '2027-01-04', '2027-01-08'),
+      zeile('endete-vorher', BERND_APP, '2026-10-01', '2026-10-31'),
+      zeile('nicht-gelistet', uuid5('person:999'), '2026-12-01', '2026-12-02'),
+    ]
+    expect(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08').map((r) => r.id)).toEqual(['alte-fassung', 'in-nws-geloescht'])
   })
 })
 

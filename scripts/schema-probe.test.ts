@@ -443,6 +443,33 @@ const LAEUFE: Record<string, Lauf[]> = {
       },
       erwartet: ['GET persons', 'GET absences', 'POST absences'],
     },
+    {
+      // Seit NWS sich nicht mehr entschlüsseln lässt: der Export „Person
+      // Abwesenheiten". Mit `--nws-gilt` geht, was er nicht (mehr) führt.
+      titel: 'Abwesenheiten aus dem NWS-Export, NWS gilt',
+      dateien: {
+        'Probe November 2026 Person Abwesenheiten Alle Gruppen - Alle.docx': wochenuebersichtDocx([
+          tabelle([['Person Abwesenheiten', 'Probe']]),
+          tabelle([['Name', 'Abwesend', 'Konflikte'], ['Probe Eins', '2099.01.01 – 2099.01.10', '']]),
+        ]),
+        'Personen.csv': PROBE_PERSONENLISTE,
+      },
+      fahren: (m, d) =>
+        m.main!([
+          '--abwesenheiten', path.join(d, 'Probe November 2026 Person Abwesenheiten Alle Gruppen - Alle.docx'),
+          '--personen', path.join(d, 'Personen.csv'),
+          '--ab', '2026-11-08',
+          '--nws-gilt',
+        ]),
+      umgebung: {
+        bestand: {
+          congregations: [{ id: C }],
+          persons: [{ id: NWS_PERSON, congregation_id: C, fn: 'Probe', ln: 'Eins' }],
+          absences: [{ id: k(71), congregation_id: C, person_id: NWS_PERSON, from_date: '2099-01-01', to_date: '2099-01-05', reason: '' }],
+        },
+      },
+      erwartet: ['GET persons', 'GET absences', 'POST absences', 'DELETE absences'],
+    },
   ],
 
   'treffpunkte-importieren.mjs': [
