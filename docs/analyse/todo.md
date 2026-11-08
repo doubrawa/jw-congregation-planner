@@ -11386,14 +11386,65 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **Daten** | Zuteilungen ab dem 4. Januar | Geholt hat der Betreiber am 6. November die Wochen bis zum 11. Januar. Die NWS-Zuteilungen für den 21. und 28. Dezember sind am selben Tag eingespielt (aus den Exporten vom 2. November: 36 Plätze und die beiden Vortragsthemen; vorher gesichert, `live-sicherung-2026-11-06.json`; Gegenprobe 9 von 9 Wochen auf dem Stand von NWS). Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann derselbe Aufruf (`wochenplanung-importieren.mjs`, schreibt nur geänderte Wochen) |
-| **Neuaufbau** | E4 aus dem Gesamt-Review, die Daten zum Echtbetrieb | Der Neuaufbau zum Echtbetrieb (die Daten neu aus NWS und jw.org) kommt noch (Betreiber am 6. November); danach den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
+| **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
+| **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
 | **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` hat kein Ablaufdatum. Nicht mehr offen |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | — | **erledigt am 7. November**: `planning.ts`, `data.ts` und `reducer.ts` nach Fachbereich aufgeteilt (`src/data/planung/`, `src/lib/daten/`, `src/app/aktionen/`), alle Ansichten byte-gleich, die Kommentare in den verschobenen Teilen auf das gekürzt, was gilt. Nicht mehr offen |
 | **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |
+
+**Neuaufbau zum Echtbetrieb, 8. November 2026** (Betreiber: „mach den
+neuaufbau"). NWS lässt sich seit dem 20. Oktober nicht mehr entschlüsseln;
+Quellen waren deshalb die NWS-Exporte vom 8. November (Wochenübersicht August
+bis Dezember, Programm der Leben-und-Dienst-Zusammenkunft November und
+Dezember, Personenliste vom 2. November) und für alles bis Oktober der Bestand
+der App. Weichen beide voneinander ab, gilt NWS — in der App hatte der
+Betreiber ausprobiert. Der Ablauf in Einzelschritten (`neuaufbau-fahren.mjs`
+läse für die Abwesenheiten die alten entschlüsselten Daten):
+
+1. Sicherung aller Versammlungen samt Konten (`scripts/sicherung.mjs`).
+2. Personen-SQL aus der Personenliste (`build-personen-sql.mjs --personen-csv
+   … --mit-schuelern`, byte-gleich mit dem vom 2. November), Zurücksetzen der
+   echten Versammlung (`versammlung-zuruecksetzen.mjs`, erst `--trocken`); die
+   Testversammlung blieb unberührt.
+3. Aus der Sicherung zurück (`bis-oktober-zurueck.mjs` in
+   `nws-export/neuaufbau-werkzeug`): 52 Wochen und 52 Treffpunkt-Wochen vor dem
+   2. November und alle 177 Abwesenheiten — NWS exportiert keine. Gegen den
+   entschlüsselten NWS-Stand vom 18. Oktober geprüft: alle Wochen und
+   Treffpunkte schon auf seinem Stand.
+4. Die Wochen 2. November bis 11. Januar von jw.org (`wochen-importieren.mjs`).
+5. Die Zuteilungen August bis Dezember aus den Exporten: 19 Wochen geschrieben
+   — bis Oktober vor allem Vortragsthemen und der Ablauf von „Unser Leben als
+   Christ", ab November alles. Ausgelassen: die beiden Wochen, für die NWS kein
+   Programm führt (Kongress 3. August, Kreiskongress 12. Oktober). Dazu die
+   Treffpunkt-Leiter (10, alle im November). Drei Stellen im Format der neuen
+   Exporte hat der Leser dafür gelernt (`34283d1b`). Danach Platz für Platz
+   gegen eine nur aus NWS gefüllte Fassung derselben Wochen verglichen
+   (`nur-in-der-app.mjs` in `nws-export/neuaufbau-werkzeug`): Der Import
+   überschreibt nur, wo NWS einen Namen führt — über die zurückgespielten
+   Wochen blieben so vier Plätze falsch stehen. Am 10. August stand dieselbe
+   Person auf zwei Mikrofonen (der Export nennt die Mikrofone ohne Position),
+   dazu ein Partner ohne Schüler; am 19. Oktober war ein Schüler zugleich sein
+   eigener Partner, und am Wochenende stand eine Reinigung. Alle vier geleert.
+   Seitdem steht in keiner der 59 Wochen mit NWS-Daten etwas, das NWS nicht
+   führt — außer dem festen Leiter des Wachtturm-Studiums, den die App setzt.
+   Offen bleibt das am Import selbst: Er übernimmt einen Schülerteil und eine
+   Dienstliste nicht als Ganzes. Über frisch geholte Wochen (Januar) tritt es
+   nicht auf.
+6. Die beiden Testpersonen vom 1. November samt Konten gelöscht (Betreiber:
+   „Löschen samt Konten"). Gruppenbesuche, der Plan „Winterdienst",
+   Trolley-Termine, Push-Abos und Mitteilungen kamen nicht zurück (Betreiber:
+   „ich brauche nichts davon").
+7. Startstand bis 30. November (`startstand-setzen.mjs`): 1838 Plätze
+   gesendet, 76 Zusagen, sonst „weiß Bescheid"; Gegenprobe mit den Funktionen
+   der App 0 wartend, 0 Problem, 0 ungesendet. Der Dezember wartet auf „Plan
+   senden".
+
+Gegenprobe am Ende: derselbe Trockenlauf meldet 20 von 20 Wochen und alle
+Treffpunkte auf dem Stand von NWS. Bestand: 112 Personen, 6 Gruppen, 63 Wochen
+(3. November 2025 bis 11. Januar 2027), 177 Abwesenheiten, ein Konto.
 
 Am 7. November herausgenommen: **T166 mit echter Sitzung** — Betreiber: „t166
 ist erledigt". Bis dahin stand in der Tabelle: am 6. November ausgerollt; mit
