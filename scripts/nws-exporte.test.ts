@@ -339,6 +339,7 @@ describe('wochenAusUebersicht — jeder Name an seinen Platz', () => {
     expect([...wochen.keys()]).toEqual(['2026-08-24'])
     expect(wochen.get('2026-08-24')).toEqual({
       besonderheit: null,
+      ohneProgramm: false,
       mid: {
         chairman: 'Probe Eins',
         openingPrayer: 'Probe Zwei (2)',
@@ -429,6 +430,40 @@ describe('wochenAusUebersicht — jeder Name an seinen Platz', () => {
     expect(lesen([wochenKopf('August 24-30'), mitten]).wochen.get('2026-08-24')?.we.speaker?.theme).toBe('Probe | Thema')
   })
 
+  it('führt NWS für eine Woche kein Programm (der Kongress), bricht das Lesen nicht ab — die Woche sagt es, eingeteilt ist niemand', () => {
+    // So steht sie im Export vom 8.11.2026: das Gerüst der Zusammenkunft, ohne
+    // Titel und mit 0 Minuten. Bis dahin brach daran der ganze Import ab.
+    const geruest = tabelle([
+      VORSITZ_OFFEN,
+      ['', '', 'Schlussgebet', ''],
+      ['Schätze aus Gottes Wort'],
+      ['(0 Min.)', ''],
+      ['2. Geistige Schätze:  (0 Min.)', ''],
+      ['', '', 'Hauptsaal'],
+      ['3. Bibellesung (4 Min.)', '', ''],
+      ['Uns im Dienst verbessern'],
+      ['', '', ''],
+      ['Unser Leben als Christ'],
+      ['', ''],
+      ['0. Versammlungsbibelstudium (0 Min.)', ['Leiter', 'Leser'], ''],
+    ])
+    const w = lesen([wochenKopf('August 03-09'), geruest]).wochen.get('2026-08-03')!
+    expect(w.ohneProgramm).toBe(true)
+    expect(w.mid).toMatchObject({ chairman: null, closingPrayer: null, treasuresTalk: null, spiritualGems: null, bibleReading: null, cbs: null, cbsReader: null })
+  })
+
+  it('das Anfangslied, das NWS ans Thema hängt, kommt an den Anfang der Zusammenkunft — nicht ins Thema', () => {
+    // Exporte vom 8.11.2026, Wochen bis Oktober: „Thema (Anfangslied 39)".
+    const wochenendeMit = (thema: string) =>
+      lesen([wochenKopf('August 24-30'), abschnitt('Zusammenkunft am Wochenende', [['Öffentlicher Vortrag', thema], ['Vortragsredner', 'Probe Gast']])])
+        .wochen.get('2026-08-24')!.we
+    const mitLied = wochenendeMit('Probe-Thema (Anfangslied 39)')
+    expect([mitLied.speaker?.theme, mitLied.openingSong]).toEqual(['Probe-Thema', 39])
+    // Gegenprobe: Ohne Lied bleibt es offen, und andere Klammern gehören zum Thema.
+    const ohneLied = wochenendeMit('Probe-Thema (Teil 2)')
+    expect([ohneLied.speaker?.theme, ohneLied.openingSong]).toEqual(['Probe-Thema (Teil 2)', null])
+  })
+
   it('mehrere Wochen in einer Datei, jede an ihrem Montag', () => {
     const { wochen } = lesen([...woche(['November 23-29']), ...woche(['November 30-Dezember 06'])], 2026, 11)
     expect([...wochen.keys()]).toEqual(['2026-11-23', '2026-11-30'])
@@ -514,11 +549,19 @@ describe('treffpunkteAusUebersicht — die Treffpunkte aus der Tabelle „Predig
     expect(tp.map((t) => `${t.montag} ${t.datum}`)).toEqual(['2026-08-24 2026-08-24', '2026-08-31 2026-09-01'])
   })
 
+  it('eine weitere Zeile ist ein Zusatz wie der in Klammern — auch unter dem Leiter', () => {
+    // Export vom 8.11.2026: „Großer Treffpunkt" unter dem Leiter. Bis dahin brach
+    // das Lesen daran ab.
+    const tp = treffpunkte([wochenKopf('August 24-30'), predigtdienst(['9:30 (PDG-1)', 'Probe-Ort', 'Leiter: Probe Eins', 'Probe-Zusatz'])])
+    expect(tp).toEqual([
+      { montag: '2026-08-24', datum: '2026-08-24', wd: 1, zeitRoh: '9:30', etikett: 'PDG-1 · Probe-Zusatz', ort: 'Probe-Ort', leiter: 'Probe Eins' },
+    ])
+  })
+
   it('Unbekanntes bricht ab, statt einen Termin still zu verlieren', () => {
     const kopf = wochenKopf('August 24-30')
     expect(() => treffpunkte([kopf, abschnitt('Predigtdienst', [['Montag', 'Probetag'], ['·', '·']])])).toThrow('unbekannte Spalte „Probetag"')
     expect(() => treffpunkte([kopf, predigtdienst(['Probe-Ort', '9:30'])])).toThrow('Text vor der ersten Uhrzeit')
-    expect(() => treffpunkte([kopf, predigtdienst(['9:30', 'Probe-Ort', 'Probe-Zusatz'])])).toThrow('unbekannte Zeile im Termin um 9:30')
     expect(() => treffpunkte([predigtdienst(['9:30'])])).toThrow('vor dem ersten Wochenkopf')
   })
 })
@@ -577,6 +620,8 @@ describe('wochenAusUebersicht — Unbekanntes bricht ab, statt still wegzufallen
 
   it('ein unbekannter Programmpunkt unter den Schätzen und ein unbekannter Teil der Zusammenkunft', () => {
     expect(() => lesen([kopf, tabelle([VORSITZ_OFFEN, ['Schätze aus Gottes Wort'], ['4. Probe-Punkt', 'Probe Eins']])])).toThrow('unbekannter Programmpunkt')
+    // Ohne Nummer und Titel geht nur das Gerüst durch, das NWS bei fehlendem Programm schreibt: 0 Minuten.
+    expect(() => lesen([kopf, tabelle([VORSITZ_OFFEN, ['Schätze aus Gottes Wort'], ['(10 Min.)', 'Probe Eins']])])).toThrow('unbekannter Programmpunkt „(10 Min.)"')
     expect(() => lesen([kopf, tabelle([['Vorsitzender', 'Probe Eins'], ['Probe-Teil']])])).toThrow('unbekannter Abschnitt „Probe-Teil"')
   })
 

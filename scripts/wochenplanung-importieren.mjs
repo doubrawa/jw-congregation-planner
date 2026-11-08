@@ -102,7 +102,9 @@
  * Übersprungen wird, was der Planer selbst entschieden hat: Wochen mit
  * Gedächtnismahl oder Kongress und einzeln gestrichene Zusammenkünfte. NWS
  * kennt beides nicht und teilte sonst ins Leere. Die Woche des Kreisaufsehers
- * nur, wenn App und NWS sie nicht übereinstimmend als solche führen.
+ * nur, wenn App und NWS sie nicht übereinstimmend als solche führen. Ebenso
+ * eine Woche, für die NWS kein Programm führt (im Export ein leeres Gerüst,
+ * etwa beim Kongress): Eingeteilt ist dort niemand.
  *
  * Der **Service-Role-Key** umgeht RLS und darf niemals in die App oder ins
  * Repository. Personenbezogene Daten — Ausgaben nicht einchecken.
@@ -1012,6 +1014,7 @@ export async function main(argv = process.argv.slice(2)) {
   let wtLeiter = 0, wtVertreter = 0
   const geschrieben = []
   const ohneAnlass = []
+  const ohneProgramm = []
   const passtNicht = []
   const nurInDerApp = []
   for (const [montag, roh] of [...nwsWochen].sort((a, b) => a[0].localeCompare(b[0]))) {
@@ -1031,6 +1034,9 @@ export async function main(argv = process.argv.slice(2)) {
     const kreisaufseher = roh.besonderheit === 'Kreisaufseher'
     if (art && !(art === 'co' && kreisaufseher)) { sonder++; continue }
     if (roh.besonderheit && !kreisaufseher) { ohneAnlass.push(`${montag} „${roh.besonderheit}"`); continue }
+    // Ohne Programm (der Kongress) teilt NWS nichts zu — und am leeren Gerüst
+    // ließe sich der Ablauf nicht angleichen. Keine Aussage über diese Woche.
+    if (roh.ohneProgramm) { ohneProgramm.push(montag); continue }
     // Der Stand davor sagt, wer einen Platz verliert und was sich am Ablauf
     // ändert. Mit dem Montag, den `festenWtLeiterEintragen` unten dazugibt:
     // Sonst zählte ein Blob ohne `start` bei jedem Lauf als geändert.
@@ -1088,6 +1094,9 @@ export async function main(argv = process.argv.slice(2)) {
   console.log(`\nGetroffene Wochen: ${getroffen} (davon schon auf dem Stand von NWS: ${unveraendert}) · ohne jw.org-Import: ${ohneWoche} · Sonderwochen übersprungen: ${sonder}`)
   if (ohneAnlass.length) {
     console.log(`  ! Laut NWS besonders, ohne Gegenstück in der App — nicht übernommen: ${ohneAnlass.join(' · ')}. Diese Wochen plant der Planer.`)
+  }
+  if (ohneProgramm.length) {
+    console.log(`  Ohne Programm in NWS (etwa ein Kongress) — nicht übernommen: ${ohneProgramm.join(', ')}`)
   }
   if (passtNicht.length) {
     console.log(`  ! Ablauf von „Unser Leben als Christ" passt nicht zu NWS — Woche nicht übernommen:`)

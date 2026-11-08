@@ -2012,6 +2012,19 @@ describe('wochenplanung-importieren aus den NWS-Exporten (2.11.2026)', () => {
     expect(ausgabe.join('\n')).toContain('nicht übernommen: 2026-08-24 „Probe-Besonderheit". Diese Wochen plant der Planer.')
   })
 
+  it('eine Woche, für die NWS kein Programm führt (der Kongress), bleibt unberührt — und der Bericht nennt sie', async () => {
+    // Export vom 8.11.2026: Statt des ersten Punkts steht nur „(0 Min.)". Was
+    // in einem solchen Gerüst sonst stünde, übernimmt der Import nicht — hier
+    // der Vorsitz, damit ein Lauf ohne die Ausnahme die Woche schriebe.
+    const geruest = wochenuebersichtDocx([
+      wochenKopf('August 24-30'),
+      tabelle([['Vorsitzender', 'Probe Eins', 'Anfangsgebet', '·'], ['Schätze aus Gottes Wort'], ['(0 Min.)', '·']]),
+    ])
+    const { aufrufe, ausgabe } = await exportLauf({ dateien: { [UEBERSICHT_DATEI]: geruest } })
+    expect(geschrieben(aufrufe)).toBe(0)
+    expect(ausgabe.join('\n')).toContain('Ohne Programm in NWS (etwa ein Kongress) — nicht übernommen: 2026-08-24')
+  })
+
   it('der Tag aus dem Programm der Leben-und-Dienst-Zusammenkunft verlegt die Zusammenkunft — und der Rhythmus nimmt es zurück', async () => {
     // Freitag die Regel; in der Woche des Kreisaufsehers hält NWS sie am Dienstag (8.12.2026).
     const lud = (tag: string) => wochenuebersichtDocx([tabelle([[tag, 'PROBE 1-2'], ['7:00', 'Lied 1', 'Probe Eins']])])

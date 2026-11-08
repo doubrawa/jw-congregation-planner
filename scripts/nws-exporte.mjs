@@ -338,9 +338,22 @@ export function programmPunkt(text) {
   return { nr: m?.[1] ? Number(m[1]) : null, titel: m?.[2] ?? '', min: m?.[3] ? Number(m[3]) : null }
 }
 
+/**
+ * Führt NWS für eine Woche kein Programm, steht unter „Schätze aus Gottes Wort"
+ * statt des ersten Punkts nur „(0 Min.)" — ohne Nummer, ohne Titel —, und
+ * eingeteilt ist niemand. So in den Exporten vom 8.11.2026: die Woche des
+ * Kongresses im August und die des Kreiskongresses im Oktober.
+ */
+function programmFehlt(text) {
+  const p = programmPunkt(text)
+  return p.nr === null && !p.titel && p.min === 0
+}
+
+/** Füllt `w` mit der Zusammenkunft unter der Woche; gibt zurück, ob NWS für die Woche kein Programm führt. */
 function mitte(w, zeilen, name) {
   let abschnitt = ''
   let haupt = -1
+  let ohneProgramm = false
   for (const z of zeilen) {
     const t0 = z[0]?.text ?? ''
     if (t0 === 'Vorsitzender') {
@@ -370,6 +383,7 @@ function mitte(w, zeilen, name) {
       if (/^1\./.test(t0)) w.treasuresTalk = leer(z[1]) ? null : name(z[1].text)
       else if (/^2\./.test(t0)) w.spiritualGems = leer(z[1]) ? null : name(z[1].text)
       else if (/Bibellesung/.test(t0)) w.bibleReading = leer(imHauptsaal) ? null : name(imHauptsaal.text)
+      else if (programmFehlt(t0)) ohneProgramm = true
       else throw new Error(`Wochenübersicht: unbekannter Programmpunkt „${t0}" unter „Schätze aus Gottes Wort".`)
       continue
     }
@@ -408,6 +422,7 @@ function mitte(w, zeilen, name) {
     }
     throw new Error(`Wochenübersicht: Zeile „${t0}" außerhalb eines Abschnitts.`)
   }
+  return ohneProgramm
 }
 
 function helfer(zeilen, name, uebersprungen) {
@@ -435,8 +450,15 @@ function wochenende(we, zeilen, name, person) {
     const t0 = z[0]?.text ?? ''
     // Das Thema des Kreisaufsehers endet in NWS auf „ |" (Export vom 2.11.2026),
     // als stünde dahinter noch etwas — ein leerer Rest, kein Teil des Themas.
-    if (t0 === 'Öffentlicher Vortrag') thema = leer(z[1]) ? null : z[1].text.replace(/\s*\|\s*$/, '') || null
-    else if (t0 === 'Vortragsredner') {
+    // Das Anfangslied hängt NWS ans Thema („… (Anfangslied 39)", in den Exporten
+    // vom 8.11.2026 bei Wochen bis Oktober); es gehört an den Anfang der
+    // Zusammenkunft, wie beim Import aus den NWS-Tabellen.
+    if (t0 === 'Öffentlicher Vortrag') {
+      const text = leer(z[1]) ? '' : z[1].text.replace(/\s*\|\s*$/, '')
+      const lied = /\s*\(Anfangslied (\d+)\)$/.exec(text)
+      if (lied) we.openingSong = Number(lied[1])
+      thema = (lied ? text.slice(0, lied.index) : text) || null
+    } else if (t0 === 'Vortragsredner') {
       const [roh = '', herkunft = ''] = z[1]?.absaetze ?? []
       const text = namensForm(roh)
       if (!text || text === '·') continue
@@ -476,7 +498,8 @@ function reinigung(zeilen) {
  * `null`; dann bleibt der Text aus dem Export stehen (der Import meldet ihn).
  * Beim Redner entscheidet es, ob er ein Gast ist.
  *
- * Dazu je Woche `besonderheit` — die zweite Kopfzeile, etwa „Kreisaufseher" —
+ * Dazu je Woche `besonderheit` — die zweite Kopfzeile, etwa „Kreisaufseher" —,
+ * `ohneProgramm`, wenn NWS für die Woche kein Programm führt (`programmFehlt`),
  * und gezählt, was der Import nicht übernimmt. Unter der Woche steht der Ablauf
  * von „Unser Leben als Christ" in `ablauf` (`programmPunkt` je Zeile, mit `art`
  * „teil", „vbs" oder „ka"); `living` trägt die Namen der Zeilen „teil" in
@@ -491,7 +514,7 @@ export function wochenAusUebersicht(xml, { jahr, monat, person }) {
     if (zeilen[0]?.[0]?.text === 'Wochenübersicht') {
       const kopf = zeilen[0][1]?.absaetze ?? []
       const montag = montagAusKopf(kopf[0] ?? '', jahr, monat)
-      woche = { ...neueWoche(), besonderheit: kopf.slice(1).join(' ') || null }
+      woche = { ...neueWoche(), besonderheit: kopf.slice(1).join(' ') || null, ohneProgramm: false }
       wochen.set(montag, woche)
       continue
     }
@@ -501,7 +524,7 @@ export function wochenAusUebersicht(xml, { jahr, monat, person }) {
     const titel = hatTitel ? zeilen[0][0].text : 'Zusammenkunft unter der Woche'
     if (!ABSCHNITTE.has(titel)) throw new Error(`Wochenübersicht: unbekannter Abschnitt „${titel}".`)
     const rest = hatTitel ? zeilen.slice(1) : zeilen
-    if (titel === 'Zusammenkunft unter der Woche') mitte(woche.mid, rest, name)
+    if (titel === 'Zusammenkunft unter der Woche') woche.ohneProgramm = mitte(woche.mid, rest, name)
     else if (titel === 'Dienste unter der Woche') woche.mid.helpers = helfer(rest, name, uebersprungen)
     else if (titel === 'Zusammenkunft am Wochenende') wochenende(woche.we, rest, name, person)
     else if (titel === 'Dienste am Wochenende') woche.we.helpers = helfer(rest, name, uebersprungen)
@@ -529,7 +552,9 @@ function tagNach(iso, tage) {
  *
  * Je Woche eine Zeile unter den Spalten Montag … Sonntag; in einer Zelle je
  * Termin die Absätze „Zeit[ (Zusatz)]", der Ort und „Leiter: Name" (abgelesen am
- * Export vom 2.11.2026 — der Zusatz nennt dort eine Gruppe, „PDG-3 …").
+ * Export vom 2.11.2026 — der Zusatz nennt dort eine Gruppe, „PDG-3 …"). Eine
+ * weitere Zeile ist ebenfalls ein Zusatz (Export vom 8.11.2026: „Großer
+ * Treffpunkt" unter dem Leiter).
  *
  * **Die Uhrzeit steht ohne Vor- oder Nachmittag:** „2:30" ist 14:30. Sie bleibt
  * hier, wie sie dasteht (`zeitRoh`); welche es ist, entscheidet
@@ -561,7 +586,8 @@ export function treffpunkteAusUebersicht(xml, { jahr, monat }) {
           } else if (!termin) throw new Error(`Predigtdienst ${montag}, ${tage[i]}: Text vor der ersten Uhrzeit.`)
           else if (absatz.startsWith('Leiter:')) termin.leiter = namensForm(absatz.slice('Leiter:'.length)) || null
           else if (!termin.ort) termin.ort = absatz
-          else throw new Error(`Predigtdienst ${montag}, ${tage[i]}: unbekannte Zeile im Termin um ${termin.zeitRoh}.`)
+          // Jede weitere Zeile ist ein Zusatz wie der in Klammern hinter der Uhrzeit.
+          else termin.etikett = [termin.etikett, absatz].filter(Boolean).join(' · ')
         }
       })
     }
