@@ -232,7 +232,7 @@ function dateien(ordner: string, endungen: string[]): Array<[string, string]> {
  */
 // `s89-druck`: die S-89-Leiste im Planen — gestaltet über `panel`; ihre einzige
 // eigene Regel war das Ausblenden im alten S-89-Druck (bis Phase 9).
-const MARKEN = ['co-begriff', 'kopfzeile-glocke', 's89-druck']
+const MARKEN = ['kopfzeile-glocke', 's89-druck']
 
 const WORT = /[A-Za-z][\w-]*/g
 

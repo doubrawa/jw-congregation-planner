@@ -10,9 +10,11 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { fsVisible } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
 import type { FsInstance, Group, Person } from '../data/types'
+import { dict } from '../i18n/ui'
 import { FsProgram } from './FsProgram'
 
 /**
@@ -134,6 +136,19 @@ describe('FsProgram — der Aufrufer', () => {
   it('zeigt dem Planer alle', () => {
     zeige('p-g1', true)
     expect(screen.queryByText('Marktplatz Zwei')).toBeTruthy()
+  })
+
+  it('zur selben Zeit die Gruppen nach ihrem Namen — gespeichert ist die Woche nach der Id', () => {
+    const woche = [VERS, ...IDS_GESPEICHERT.map((grp) => inst(`r-${grp}`, grp, `Ort ${grp}`))]
+    render(
+      <Buehne
+        state={{ ...demoZustand(), admin: true, personId: 'p-g1', persons: PERSONEN, groups: GRUPPEN_DURCHEINANDER, week: 0, fsWeeks: [woche] }}
+      >
+        <FsProgram />
+      </Buehne>,
+    )
+    const titel = [...document.querySelectorAll('.treff-titel')].map((e) => e.textContent)
+    expect(titel).toEqual([dict('de').fsVers, ...NAMEN_GEZEIGT])
   })
 
   it('meldet „keine Treffpunkte", wenn nach dem Filtern nichts übrig bleibt', () => {

@@ -59,7 +59,7 @@ export function FsProgram({ druck }: { druck?: ReactNode }) {
   return (
     <>
       {druckZeile}
-      {nachWochentag(insts).map((tag) => {
+      {nachWochentag(insts, state.groups).map((tag) => {
         // Wer nur die eigene Gruppe sieht, liest „Deine Gruppe" am Tag, wie im
         // Entwurf. Wer alle sieht (wer zuteilt), am Treffpunkt selbst — am Tag
         // stünde es über vier Gruppen und meinte eine.

@@ -10,6 +10,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { dict } from '../i18n/ui'
 import type { FsRule, Group } from '../data/types'
 import { FsRulesPanel } from './FsRulesPanel'
@@ -119,6 +120,14 @@ describe('Der Grundplan: je Wochentag eine Karte (T121, `GGrundplan`)', () => {
     const erste = zeilen(container)[0]!
     expect(erste.querySelector('.treff-zeit-pille')?.textContent).toBe('09:15')
     expect(erste.querySelector('.treff-ort')?.textContent).toBe('Nebenraum')
+  })
+
+  it('zur selben Zeit die Gruppen nach ihrem Namen, nicht nach der Id — „Gruppe 2" vor „Gruppe 10"', () => {
+    const { container } = zeige('rules', {
+      groups: GRUPPEN_DURCHEINANDER,
+      fsRules: [...IDS_GESPEICHERT.map((grp) => regel({ id: `r-${grp}`, grp })), regel({ id: 'rv', grp: null })],
+    })
+    expect(titel(container)).toEqual([t.fsVers, ...NAMEN_GEZEIGT])
   })
 
   it('wie oft, steht nur da, wo es nicht jede Woche ist', () => {

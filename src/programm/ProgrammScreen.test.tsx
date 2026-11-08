@@ -906,9 +906,15 @@ describe('Die Treffpunkte der Woche (T121)', () => {
     })
     const [samstag] = tage(container)
     expect(samstag!.querySelector('.prog-abschnitt-kopf .treff-deine')).toBeNull()
-    expect([...samstag!.querySelectorAll('.treff-punkt')].map((p) => p.querySelector('.treff-deine') !== null)).toEqual([
-      false,
-      true,
+    // Gezeigt nach dem Namen der Gruppe, nicht in der Reihenfolge der Woche.
+    expect(
+      [...samstag!.querySelectorAll('.treff-punkt')].map((p) => [
+        p.querySelector('.treff-titel')?.textContent,
+        p.querySelector('.treff-deine') !== null,
+      ]),
+    ).toEqual([
+      ['Gruppe 1', true],
+      ['Gruppe 2', false],
     ])
   })
 

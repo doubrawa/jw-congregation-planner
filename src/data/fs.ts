@@ -81,14 +81,43 @@ export function fsTerminText(tag: Date | null, inst: { time: string; place: stri
 /** Was `fsSort` vergleicht — ein Treffpunkt oder eine Regel des Grundplans. */
 type FsReihung = Pick<FsInstance, 'wd' | 'time' | 'grp'>
 
-/** Sortierung: Wochentag (Mo→So), dann Uhrzeit, dann Gruppe. */
+/**
+ * Sortierung beim Schreiben: Wochentag (Mo→So), dann Uhrzeit, dann Gruppen-Id.
+ * Die Id ändert sich nie, die gespeicherte Reihenfolge also auch nicht. Gezeigt
+ * wird nach dem Namen der Gruppe (`fsAnzeigeSort`).
+ */
 export function fsSort(a: FsReihung, b: FsReihung): number {
-  // Ohne Gruppe (Versammlungstreffpunkt) zuerst — `null` sortiert vor jedem Namen.
+  // Ohne Gruppe (Versammlungstreffpunkt) zuerst — `null` sortiert vor jeder Id.
   return (
     versatzAbMontag(a.wd) - versatzAbMontag(b.wd) ||
     a.time.localeCompare(b.time) ||
     (a.grp ?? '').localeCompare(b.grp ?? '')
   )
+}
+
+/**
+ * **Die Reihenfolge am Bildschirm und auf Papier**: Wochentag (Mo→So),
+ * Uhrzeit, der Versammlungstreffpunkt vor den Gruppen, die Gruppen nach ihrem
+ * Namen — „Gruppe 2" vor „Gruppe 10".
+ *
+ * Nach der Id (`fsSort`) stünden sie durcheinander: Die Datenbank vergibt
+ * zufällige Kennungen, daraus wurde „Gruppe 3, 4, 2, 1, 6, 5". Den Namen kennt
+ * nur, wer die Gruppen hat, und er kann sich ändern — deshalb ordnet die
+ * Anzeige selbst.
+ *
+ * Der Versammlungstreffpunkt hat keinen Namen und steht damit vorn; bei
+ * gleichem Namen entscheidet `fsSort`, dort kommt er auch zuerst. Ebenso
+ * namenlos ist eine Gruppe, die es nicht mehr gibt (Titel nur „Gruppe",
+ * `treffpunktTitel`) — sie folgt ihm.
+ */
+export function fsAnzeigeSort(groups: readonly Pick<Group, 'id' | 'name'>[]): (a: FsReihung, b: FsReihung) => number {
+  const namen = new Map(groups.map((g) => [g.id, g.name]))
+  const name = (grp: string | null): string => (grp == null ? '' : (namen.get(grp) ?? ''))
+  return (a, b) =>
+    versatzAbMontag(a.wd) - versatzAbMontag(b.wd) ||
+    a.time.localeCompare(b.time) ||
+    name(a.grp).localeCompare(name(b.grp), undefined, { numeric: true }) ||
+    fsSort(a, b)
 }
 
 /**
@@ -370,14 +399,16 @@ export function fsInGruppe(inst: FsInstance, onlyGroup: string | null): boolean 
 }
 
 /**
- * Die Treffpunkte einer Woche nach Wochentag gruppiert — in der Reihenfolge,
- * in der sie kommen (`fsSort` hat sie schon Mo→So, Zeit, Gruppe sortiert).
- * Programm und Planen bauen daraus je Tag eine Karte, der Grundplan ebenso aus
- * seinen Regeln.
+ * Die Treffpunkte einer Woche nach Wochentag gruppiert, in der Reihenfolge der
+ * Anzeige (`fsAnzeigeSort`). Programm und Planen bauen daraus je Tag eine
+ * Karte, der Grundplan ebenso aus seinen Regeln.
  */
-export function nachWochentag<T extends Pick<FsInstance, 'wd'>>(items: readonly T[]): { wd: number; items: T[] }[] {
+export function nachWochentag<T extends FsReihung>(
+  items: readonly T[],
+  groups: readonly Pick<Group, 'id' | 'name'>[],
+): { wd: number; items: T[] }[] {
   const tage: { wd: number; items: T[] }[] = []
-  for (const item of items) {
+  for (const item of [...items].sort(fsAnzeigeSort(groups))) {
     let tag = tage.find((d) => d.wd === item.wd)
     if (!tag) {
       tag = { wd: item.wd, items: [] }

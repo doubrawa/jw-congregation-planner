@@ -6,6 +6,7 @@ import {
   fsClear,
   fsLeaderValue,
   fsRemoveInst,
+  fsAnzeigeSort,
   fsSetLeader,
   fsSort,
   fsTag,
@@ -20,7 +21,9 @@ import {
   fsRegelAussetzen,
   fsTagVorbei,
   fsWeekConflicts,
+  nachWochentag,
 } from './fs'
+import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { emptyQualifications } from './helpers'
 import { montagNach } from './meeting-dates'
 import type { Conflict } from './planung/konflikte'
@@ -220,6 +223,37 @@ describe('fsSort', () => {
     expect([inst(6, '10:00'), inst(6, '09:00')].sort(fsSort).map((i) => i.time)).toEqual(['09:00', '10:00'])
     // gleicher Tag + Zeit → nach Gruppe
     expect([inst(6, '09:00', 'g2'), inst(6, '09:00', 'g1')].sort(fsSort).map((i) => i.grp)).toEqual(['g1', 'g2'])
+  })
+})
+
+describe('fsAnzeigeSort — gezeigt wird nach dem Namen der Gruppe, nicht nach ihrer Id', () => {
+  const inst = (grp: string | null, over: Partial<FsInstance> = {}): FsInstance => ({
+    id: `i-${grp}`, ruleId: null, grp, wd: 6, time: '09:30', place: '', leader: '', ...over,
+  })
+  const name = (i: FsInstance) => (i.grp == null ? 'Versammlung' : GRUPPEN_DURCHEINANDER.find((g) => g.id === i.grp)?.name)
+  const woche = (): FsInstance[] => [...IDS_GESPEICHERT.map((id) => inst(id)), inst(null)]
+
+  it('die Versammlung zuerst, dann „Gruppe 1", „Gruppe 2", „Gruppe 10" — gespeichert bleibt es nach der Id', () => {
+    expect(woche().sort(fsSort).map((i) => i.grp)).toEqual([null, ...IDS_GESPEICHERT])
+    expect(woche().sort(fsAnzeigeSort(GRUPPEN_DURCHEINANDER)).map(name)).toEqual(['Versammlung', ...NAMEN_GEZEIGT])
+  })
+
+  it('Tag und Uhrzeit gehen dem Namen vor', () => {
+    const liste = [inst('c3', { time: '10:00' }), inst('a1', { wd: 3 }), inst('b2')]
+    expect(liste.sort(fsAnzeigeSort(GRUPPEN_DURCHEINANDER)).map(name)).toEqual(['Gruppe 10', 'Gruppe 2', 'Gruppe 1'])
+  })
+
+  it('eine Gruppe, die es nicht mehr gibt, steht nach der Versammlung vor den benannten', () => {
+    const liste = [...woche(), inst('weg')]
+    expect(liste.sort(fsAnzeigeSort(GRUPPEN_DURCHEINANDER)).map((i) => i.grp)).toEqual([null, 'weg', 'c3', 'b2', 'a1'])
+  })
+
+  it('nachWochentag ordnet je Tag ebenso — gleich, in welcher Reihenfolge die Woche kommt', () => {
+    const tage = nachWochentag([inst('a1'), inst(null, { wd: 3 }), inst('b2'), inst('c3')], GRUPPEN_DURCHEINANDER)
+    expect(tage.map((tag) => [tag.wd, tag.items.map(name)])).toEqual([
+      [3, ['Versammlung']],
+      [6, NAMEN_GEZEIGT],
+    ])
   })
 })
 

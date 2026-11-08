@@ -168,6 +168,13 @@
   overflow-wrap: anywhere;
 }
 
+/* Der feste Begriff vor dem Themenfeld („Dienstvortrag [Thema]"). Der Abstand
+   sitzt am Begriff, nicht am Feld: Bricht das Feld in die nächste Zeile um,
+   steht es bündig unter dem Begriff statt eingerückt. */
+.co-begriff {
+  margin-inline-end: 8px;
+}
+
 /* ---- „Unser Leben als Christ“ bearbeiten (`ProgrammBlatt`) --------------- */
 
 /* Nach oben, nach unten — nebeneinander, gleich breit. Am Rand gesperrt. */

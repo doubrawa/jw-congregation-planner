@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { setAnlass } from '../data/anlass'
 import { syncAuxSlots } from '../data/aux-class'
 import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
@@ -385,6 +386,19 @@ describe('Der Bogen der Treffpunkte', () => {
     const gruppen = [...tabelle(container, t.druckGruppentreffpunkte)]
     expect(gruppen.map((z) => z.children[2]?.textContent)).toEqual(['Gruppe 1', 'Gruppe 2', 'Gruppe 1'])
     expect(gruppen.every((z) => z.querySelector('.druck-offen') !== null)).toBe(true)
+  })
+
+  it('zur selben Zeit die Gruppen nach ihrem Namen, nicht nach der Id — auch was anders ist als sonst', () => {
+    const regeln: FsRule[] = IDS_GESPEICHERT.map((grp) => ({
+      id: `r-${grp}`, grp, wd: 6, time: '09:30', place: 'Saal', monthly: 0, skipCong: false,
+    }))
+    // In der ersten Woche entfallen alle drei, die zweite hat sie wie gespeichert (`genFsWeek`: nach der Id).
+    const { container } = zeigeBogen({
+      admin: true, groups: GRUPPEN_DURCHEINANDER, fsRules: regeln, gruppenbesuche: [],
+      fsWeeks: [[], genFsWeek(STARTS[1]!, regeln)],
+    })
+    expect(tabelle(container, t.druckGruppentreffpunkte).map((z) => z.children[2]?.textContent)).toEqual(NAMEN_GEZEIGT)
+    expect(texte(container, '.druck-anders-zeile').map((z) => /Gruppe \d+/.exec(z)?.[0])).toEqual(NAMEN_GEZEIGT)
   })
 
   it('„Anders als sonst": was entfällt, und der Besuch des Dienstaufsehers', () => {

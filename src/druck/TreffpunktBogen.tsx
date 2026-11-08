@@ -4,7 +4,7 @@ import { datumsFormat, wochenSpanne } from '../components/datum-anzeige'
 import { besuchsGruppe, besuchsTreffpunktText } from '../components/gruppenbesuch-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { useBesuchsLage } from '../components/useBesuchsLage'
-import { eigeneGruppen, fsAbweichungen, fsTag, fsVisible } from '../data/fs'
+import { eigeneGruppen, fsAbweichungen, fsAnzeigeSort, fsTag, fsVisible } from '../data/fs'
 import { besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
@@ -50,9 +50,13 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
   const sonst = (kennung: string, inst: FsInstance, regel: FsRule) =>
     [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place).trim()].filter(Boolean).join(' · ')
 
+  // Je Woche in der Reihenfolge des Bildschirms: die Gruppen nach ihrem Namen.
+  const reihe = fsAnzeigeSort(state.groups)
   const termine = wochen.flatMap((wi) => {
     const kennung = state.weeks[wi]?.start ?? ''
-    return sichtbar(state.fsWeeks[wi] ?? []).map((inst) => ({ kennung, inst }))
+    return sichtbar(state.fsWeeks[wi] ?? [])
+      .sort(reihe)
+      .map((inst) => ({ kennung, inst }))
   })
   const versammlung: DruckZeile[] = termine
     .filter(({ inst }) => inst.grp == null)
@@ -75,6 +79,7 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
       if (!kennung || !ist) return []
       return fsAbweichungen(kennung, state.fsRules, ist)
         .filter(({ inst }) => sichtbar([inst]).length > 0)
+        .sort((a, b) => reihe(a.inst, b.inst))
         .map(({ art, inst, regel }) => ({
           key: `${kennung}|${art}|${inst.id}`,
           zellen: [

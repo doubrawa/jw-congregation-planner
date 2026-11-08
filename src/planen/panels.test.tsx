@@ -10,6 +10,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsTaskKey } from '../data/fs'
 import { emptyQualifications } from '../data/helpers'
@@ -231,7 +232,7 @@ describe('Der Leiter steht als Platz unter seinem Treffpunkt', () => {
       fsWeeks: [[antons({ id: 'f2', wd: 3 }), antons()]],
       confirmations: { [fsTaskKey('2026-09-07', 'f1')]: 'bestätigt', [fsTaskKey('2026-09-07', 'f2')]: 'verhindert' },
     })
-    // Sortiert wie aus `fsSort`: Mittwoch (f2) vor Samstag (f1).
+    // Mittwoch (f2) vor Samstag (f1).
     const [mittwoch, samstag] = plaetze(container)
     expect(samstag!.className).toContain('is-voll')
     expect(mittwoch!.className).toContain('is-problem')
@@ -262,6 +263,12 @@ describe('Der Leiter steht als Platz unter seinem Treffpunkt', () => {
       slotSel: { kind: 'fs', wi: 0, instId: 'f2', label: '', priv: 'treffpunkt', groups: false },
     })
     expect(plaetze(container).map((p) => p.getAttribute('aria-current'))).toEqual([null, 'true'])
+  })
+
+  it('zur selben Zeit die Gruppen nach ihrem Namen — gespeichert ist die Woche nach der Id', () => {
+    const woche = [inst({ id: 'fv' }), ...IDS_GESPEICHERT.map((grp) => inst({ id: `f-${grp}`, grp }))]
+    const { container } = buehne('fs', { groups: GRUPPEN_DURCHEINANDER, fsWeeks: [woche] })
+    expect(titel(container)).toEqual([t.fsVers, ...NAMEN_GEZEIGT])
   })
 })
 

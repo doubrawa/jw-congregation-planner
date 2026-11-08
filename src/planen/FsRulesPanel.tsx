@@ -5,7 +5,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { treffpunktHaeufigkeit, treffpunktTitel } from '../components/treffpunkt-beschriftung'
-import { fsSort, nachWochentag, neueRegel } from '../data/fs'
+import { nachWochentag, neueRegel } from '../data/fs'
 import type { FsRule } from '../data/types'
 import { useT } from '../i18n/useT'
 import {
@@ -47,13 +47,13 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
   const [offen, setOffen] = useState<Offen>(null)
   const schliessen = (): void => setOffen(null)
 
-  const regeln = state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup).sort(fsSort)
+  const regeln = state.fsRules.filter((r) => onlyGroup === null || r.grp === onlyGroup)
 
   return (
     <>
       <p className="klein-text">{t.fsGrundDesc}</p>
 
-      {nachWochentag(regeln).map((tag) => (
+      {nachWochentag(regeln, state.groups).map((tag) => (
         <section key={tag.wd} className="prog-abschnitt treff-tag">
           <div className="prog-abschnitt-kopf">
             <h2 className="treff-tag-name">{wochentagNameAusWd(tag.wd, state.lang)}</h2>

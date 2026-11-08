@@ -72,7 +72,7 @@ export function FsPlan() {
         </section>
       )}
 
-      {nachWochentag(insts).map((tag) => (
+      {nachWochentag(insts, state.groups).map((tag) => (
         <section key={tag.wd} className="prog-abschnitt treff-tag">
           <div className="prog-abschnitt-kopf">
             <h2 className="treff-tag-name">{treffpunktTagLabel(kennung, tag.wd, state.lang)}</h2>
