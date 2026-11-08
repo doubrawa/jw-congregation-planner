@@ -10847,7 +10847,7 @@ nötig").
 
 ## Aufgenommen am 8. November 2026 (T174)
 
-### T174 · Das Admin-Recht heißt `admin` (E4) 🏗 Schritt 1 umgesetzt (8. November 2026) — Schritt 2 offen
+### T174 · Das Admin-Recht heißt `admin` (E4) 🏗 Schritt 1 umgesetzt und ausgerollt (8. November 2026) — Schritt 2 offen
 
 **Warum:** In der Datenbank hieß das Admin-Recht `planner`, der Planer dagegen
 `zuteiler`. Wer `planner` las, dachte an den Planer — bei jeder Änderung an den
@@ -10887,6 +10887,13 @@ statt mit ihrem Standardwert, und jede Sicherung von vor E4 scheiterte
 schreibt jetzt nur die Spalten der Sicherung, wie PostgREST beim echten
 Zurückspielen; die neue Probe `scripts/rueckspielprobe.test.ts` fährt das
 Skript mit einer Sicherung von vor E4.
+
+**Ausgerollt am 8. November** mit `f8b4e0bd` (Betreiber: „Ja, pushen"): CI
+grün — Migration eingespielt, Verlauf mit allen fünf Migrationen, Katalog
+gleich der Kette, acht Functions, Rauchtest; App `shell-f8b4e0b`, Laufzeit-Messung
+in der CI grün. Vorher `/simplify` (vier alte Bezeichner, ein Kommentar) und
+`/code-review max` (sechs Befunde, alle behoben — darunter die Rückspielprobe
+unten und die Übernahme der Momentaufnahme).
 
 **Die Migrationsprobe vergleicht nach Namen** (`katalogVergleich`, wie gegen
 die Produktion): Bis hierher legte keine Migration eine Spalte an, und der
@@ -11452,7 +11459,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
-| **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): Schritt 1 am 8. November umgesetzt; Schritt 2 entfernt die alten Spalten, sobald Schritt 1 ausgerollt ist und die Geräte neu geladen haben |
+| **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): Schritt 1 am 8. November ausgerollt (`f8b4e0bd`); Schritt 2 entfernt die alten Spalten, sobald die Geräte neu geladen haben — am besten, bevor die Tester ihre Links bekommen |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
 | **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` hat kein Ablaufdatum. Nicht mehr offen |
