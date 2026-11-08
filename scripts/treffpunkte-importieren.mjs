@@ -57,6 +57,18 @@
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--nur-leere] [--trocken]
  *
+ *   node scripts/treffpunkte-importieren.mjs \
+ *     --wochenuebersicht "<…> November 2026 Wochenübersicht.docx,<…> Dezember 2026 Wochenübersicht.docx" \
+ *     --personen "<…> NWS Desktop Personen (N).csv" \
+ *     [--cong <congregation-id>] [--nur-leere] [--trocken]
+ *
+ * **Aus den Exporten** (seit NWS sich nicht mehr entschlüsseln lässt, 20.10.2026):
+ * die Tabelle „Predigtdienst" der Wochenübersicht (`treffpunkteAusUebersicht`),
+ * der Leiter über die Personenliste an seine NWS-Id und von dort an die
+ * App-Person. Der Export schreibt die Uhrzeit ohne Vor- oder Nachmittag;
+ * welche gemeint ist, sagt der Grundplan (`uhrzeitAufloesen`). Eine NWS-Kennung
+ * führt er nicht — an ihre Stelle tritt der Termin selbst, Tag und Uhrzeit.
+ *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
  * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
  * keiner in der Umgebung steht — verdeckt, mit dem Link aufs Dashboard daneben.
@@ -83,6 +95,9 @@ import {
   wocheSchreiben,
   zugangsdaten,
 } from './gemeinsam.mjs'
+import fs from 'node:fs'
+import path from 'node:path'
+import { csvLesen, docxDokument, exportNamensAufloeser, monatAusDateiname, treffpunkteAusUebersicht, uhrzeitAufloesen } from './nws-exporte.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { mondayOf, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -129,6 +144,52 @@ export function sammleTreffpunkte(meetings, locations) {
     })
   }
   return out.sort((a, b) => `${a.datum}${a.zeit}`.localeCompare(`${b.datum}${b.zeit}`))
+}
+
+/**
+ * Die Treffpunkte aus den Exporten (Wochenübersicht) in der Form von
+ * `sammleTreffpunkte`. Die Uhrzeit entscheidet der Grundplan
+ * (`uhrzeitAufloesen`); `nachTageszeit` zählt die Termine, bei denen er es
+ * nicht konnte. Der Leiter bleibt Text (`leiterRef`) — gebunden wird er über die
+ * Personenliste.
+ *
+ * Statt der NWS-Kennung, die der Export nicht führt, steht der Termin selbst in
+ * `nwsId`: Tag und Uhrzeit. Ein zweiter Lauf trifft so denselben Treffpunkt
+ * wieder, statt ihn neu anzulegen. Steht eine Woche in zwei Dateien, gilt die
+ * spätere.
+ */
+export function treffpunkteAusExporten(dateien, regeln) {
+  const jeWoche = new Map()
+  for (const { name, xml } of dateien) {
+    const datum = monatAusDateiname(name)
+    if (!datum) throw new Error(`${name}: Monat und Jahr fehlen im Dateinamen („… November 2026 Wochenübersicht.docx").`)
+    const neu = new Map()
+    for (const t of treffpunkteAusUebersicht(xml, datum)) neu.set(t.montag, [...(neu.get(t.montag) ?? []), t])
+    for (const [montag, termine] of neu) jeWoche.set(montag, termine)
+  }
+  let nachTageszeit = 0
+  const vergeben = new Map()
+  const treffpunkte = []
+  for (const t of [...jeWoche.values()].flat()) {
+    const { zeit, quelle } = uhrzeitAufloesen(t.zeitRoh, t.wd, regeln)
+    if (quelle === 'tageszeit') nachTageszeit++
+    // Zwei Termine zur selben Zeit am selben Tag: der zweite mit eigener Kennung.
+    const termin = `export:${t.datum}T${zeit}`
+    const n = (vergeben.get(termin) ?? 0) + 1
+    vergeben.set(termin, n)
+    treffpunkte.push({
+      nwsId: n > 1 ? `${termin}#${n}` : termin,
+      datum: t.datum,
+      zeit,
+      montag: t.montag,
+      wd: t.wd,
+      ort: t.ort,
+      etikett: t.etikett,
+      leiterRef: t.leiter,
+    })
+  }
+  treffpunkte.sort((a, b) => `${a.datum}${a.zeit}`.localeCompare(`${b.datum}${b.zeit}`))
+  return { treffpunkte, nachTageszeit }
 }
 
 /** Termine je Programmwoche (Montag → Termine, nach Datum/Zeit sortiert). */
@@ -330,12 +391,19 @@ export const TABELLEN = {
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
+  const liste = (wert) => (typeof wert === 'string' ? wert.split(',').map((s) => s.trim()).filter(Boolean) : null)
+  const exporte = liste(arg.wochenuebersicht)
+  if (arg.wochenuebersicht && (!exporte?.length || typeof arg.personen !== 'string')) {
+    console.error('Zur Wochenübersicht gehören die Dateien und die Personenliste: --wochenuebersicht "<a.docx>,<b.docx>" --personen "<Personen.csv>"')
+    process.exit(2)
+  }
   const { url, key } = await zugangsdaten()
-  const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   const nurLeere = Boolean(arg['nur-leere'])
   const rest = restKlient(url, key)
 
-  const tabellen = ladeTabellen(datenDir, TABELLEN)
+  // Aus dem entschlüsselten NWS-Bestand nur ohne Exporte — beides zu mischen
+  // hieße, zwei Stände derselben Termine nebeneinander zu legen.
+  const tabellen = exporte ? null : ladeTabellen(arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted', TABELLEN)
   const congRow = await versammlungHolen(rest, arg, 'id,hall')
   const cong = congRow.id
   // Ort eines selbst angelegten Treffpunkts, wenn NWS keinen führt — wie in der
@@ -345,23 +413,41 @@ export async function main(argv = process.argv.slice(2)) {
   // Personen: Anzeigename wie in der App, gefunden über die stabile Id.
   const personen = await rest(`persons?select=id,fn,ln&congregation_id=eq.${cong}`)
   const appById = new Map(personen.map((p) => [p.id, personDisplayName(p.fn, p.ln)]))
-  const personIdOf = personIdAufloeser(tabellen.persons)
-  const nwsNameOf = nameAufloeser(tabellen.persons)
   const fehlendePersonen = new Set()
-  const bind = (ref) => {
-    if (ref == null) return { name: '' }
-    const id = personIdOf(ref)
-    const name = id ? appById.get(id) : undefined
-    if (name) return { name, pid: id }
-    // Kein App-Treffer: Der Leiter steht in NWS, aber (noch) nicht in der App.
-    // Dann nur der Name — die App bindet ihn beim Laden an eine eindeutig
-    // passende Person (`fsLeiterBinden`), sobald es sie gibt.
-    const roh = nwsNameOf(ref)
+  // Kein App-Treffer: Der Leiter steht in NWS, aber (noch) nicht in der App.
+  // Dann nur der Name — die App bindet ihn beim Laden an eine eindeutig
+  // passende Person (`fsLeiterBinden`), sobald es sie gibt.
+  const nurName = (roh) => {
     if (roh) fehlendePersonen.add(roh)
     return { name: roh ?? '' }
   }
 
-  const treffpunkte = sammleTreffpunkte(tabellen.meetings, tabellen.locations)
+  let treffpunkte
+  let bind
+  if (exporte) {
+    const regeln = await rest(`fs_rules?select=wd,time&congregation_id=eq.${cong}`)
+    const { idZu } = exportNamensAufloeser(csvLesen(fs.readFileSync(arg.personen, 'utf8')))
+    const aus = treffpunkteAusExporten(exporte.map((pfad) => ({ name: path.basename(pfad), xml: docxDokument(pfad) })), regeln)
+    treffpunkte = aus.treffpunkte
+    if (aus.nachTageszeit) console.log(`Uhrzeit nach der Tageszeit, nicht am Grundplan entschieden: ${aus.nachTageszeit} Termine.`)
+    bind = (text) => {
+      if (!text) return { name: '' }
+      const nwsId = idZu(text)
+      const id = nwsId ? uuid5(`person:${nwsId}`) : null
+      const name = id ? appById.get(id) : undefined
+      return name ? { name, pid: id } : nurName(text)
+    }
+  } else {
+    const personIdOf = personIdAufloeser(tabellen.persons)
+    const nwsNameOf = nameAufloeser(tabellen.persons)
+    treffpunkte = sammleTreffpunkte(tabellen.meetings, tabellen.locations)
+    bind = (ref) => {
+      if (ref == null) return { name: '' }
+      const id = personIdOf(ref)
+      const name = id ? appById.get(id) : undefined
+      return name ? { name, pid: id } : nurName(nwsNameOf(ref))
+    }
+  }
   const jeWoche = nachWoche(treffpunkte)
   console.log(`NWS: ${treffpunkte.length} Treffpunkte in ${jeWoche.size} Wochen.`)
 

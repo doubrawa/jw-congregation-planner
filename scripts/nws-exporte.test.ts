@@ -13,6 +13,8 @@ import {
   personenAlsNws,
   programmPunkt,
   tageAusLebenUndDienst,
+  treffpunkteAusUebersicht,
+  uhrzeitAufloesen,
   wochenAusUebersicht,
   zipEintrag,
 } from './nws-exporte.mjs'
@@ -478,6 +480,82 @@ describe('tageAusLebenUndDienst — der Tag der Zusammenkunft unter der Woche', 
   it('ohne Woche oder mit einem Tag, den es nicht gibt, bricht es ab', () => {
     expect(() => tageAusLebenUndDienst(dokument([tabelle([['Probe', 'Probe']])]))).toThrow('keine Woche gefunden')
     expect(() => tageAusLebenUndDienst(programm('2026.02.30'))).toThrow('kein Datum „2026.02.30"')
+  })
+})
+
+describe('treffpunkteAusUebersicht — die Treffpunkte aus der Tabelle „Predigtdienst"', () => {
+  const treffpunkte = (tabellen: string[]) => treffpunkteAusUebersicht(dokument(tabellen), { jahr: 2026, monat: 8 })
+  const predigtdienst = (...zellen: Zelle[]) =>
+    abschnitt('Predigtdienst', [['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'].slice(0, zellen.length), zellen])
+
+  it('je Termin Tag, Uhrzeit wie im Export, Ort, Zusatz und Leiter — die Woche aus ihrem Kopf', () => {
+    expect(treffpunkte(woche())).toEqual([
+      { montag: '2026-08-24', datum: '2026-08-24', wd: 1, zeitRoh: '9:30', etikett: 'PDG-1', ort: 'Probe-Ort', leiter: 'Probe Eins' },
+    ])
+  })
+
+  it('zwei Termine in einer Zelle, der Sonntag am Ende der Woche, ein Termin ohne Ort und Leiter', () => {
+    const sonntag = ['', '', '', '', '', '', ['10:00', 'Leiter: Probe  Drei ']]
+    expect(
+      treffpunkte([wochenKopf('August 24-30'), predigtdienst(['2:30', 'Probe-Ort', 'Leiter: Probe Zwei', '9:30 (Pioniertag)'], ...sonntag.slice(1))]),
+    ).toEqual([
+      { montag: '2026-08-24', datum: '2026-08-24', wd: 1, zeitRoh: '2:30', etikett: '', ort: 'Probe-Ort', leiter: 'Probe Zwei' },
+      { montag: '2026-08-24', datum: '2026-08-24', wd: 1, zeitRoh: '9:30', etikett: 'Pioniertag', ort: '', leiter: null },
+      // Der Name ist geglättet wie jeder andere aus dem Export (`namensForm`).
+      { montag: '2026-08-24', datum: '2026-08-30', wd: 0, zeitRoh: '10:00', etikett: '', ort: '', leiter: 'Probe Drei' },
+    ])
+  })
+
+  it('jede Woche mit ihrem Montag — auch über den Monatswechsel', () => {
+    const tp = treffpunkte([
+      wochenKopf('August 24-30'), predigtdienst(['9:30', 'Probe-Ort']),
+      wochenKopf('August 31-September 06'), predigtdienst('·', ['9:30', 'Probe-Ort']),
+    ])
+    expect(tp.map((t) => `${t.montag} ${t.datum}`)).toEqual(['2026-08-24 2026-08-24', '2026-08-31 2026-09-01'])
+  })
+
+  it('Unbekanntes bricht ab, statt einen Termin still zu verlieren', () => {
+    const kopf = wochenKopf('August 24-30')
+    expect(() => treffpunkte([kopf, abschnitt('Predigtdienst', [['Montag', 'Probetag'], ['·', '·']])])).toThrow('unbekannte Spalte „Probetag"')
+    expect(() => treffpunkte([kopf, predigtdienst(['Probe-Ort', '9:30'])])).toThrow('Text vor der ersten Uhrzeit')
+    expect(() => treffpunkte([kopf, predigtdienst(['9:30', 'Probe-Ort', 'Probe-Zusatz'])])).toThrow('unbekannte Zeile im Termin um 9:30')
+    expect(() => treffpunkte([predigtdienst(['9:30'])])).toThrow('vor dem ersten Wochenkopf')
+  })
+})
+
+describe('uhrzeitAufloesen — die Uhrzeit ohne Vor- und Nachmittag', () => {
+  /*
+    Der Export schreibt „2:30" für 14:30. Welche Uhrzeit gemeint ist, sagt der
+    Grundplan: Führt er an dem Tag eine der beiden, gilt sie. Erst wenn er
+    schweigt, entscheidet die Tageszeit — vor 7 Uhr trifft sich niemand.
+  */
+  const regeln = [
+    { wd: 1, time: '14:30:00' },
+    { wd: 3, time: '09:30:00' },
+    { wd: 4, time: '19:00:00' },
+    { wd: 6, time: '07:30:00' },
+  ]
+
+  it('am Grundplan entschieden — auch gegen die Tageszeit', () => {
+    expect(uhrzeitAufloesen('2:30', 1, regeln)).toEqual({ zeit: '14:30', quelle: 'grundplan' })
+    expect(uhrzeitAufloesen('9:30', 3, regeln)).toEqual({ zeit: '09:30', quelle: 'grundplan' })
+    // Am Donnerstagabend: Nach der Tageszeit allein wäre „7:00" der Morgen.
+    expect(uhrzeitAufloesen('7:00', 4, regeln)).toEqual({ zeit: '19:00', quelle: 'grundplan' })
+    expect(uhrzeitAufloesen('7:30', 6, regeln)).toEqual({ zeit: '07:30', quelle: 'grundplan' })
+  })
+
+  it('ohne passende Regel nach der Tageszeit — der Wochentag zählt', () => {
+    // Montag 9:30 steht nicht im Grundplan (dort ist es Mittwoch).
+    expect(uhrzeitAufloesen('9:30', 1, regeln)).toEqual({ zeit: '09:30', quelle: 'tageszeit' })
+    expect(uhrzeitAufloesen('3:00', 3, regeln)).toEqual({ zeit: '15:00', quelle: 'tageszeit' })
+    expect(uhrzeitAufloesen('3:00', 3, [])).toEqual({ zeit: '15:00', quelle: 'tageszeit' })
+  })
+
+  it('ab 12 Uhr eindeutig; was keine Uhrzeit ist, bricht ab', () => {
+    expect(uhrzeitAufloesen('12:15', 1, regeln)).toEqual({ zeit: '12:15', quelle: 'eindeutig' })
+    expect(uhrzeitAufloesen('14:30', 1, [])).toEqual({ zeit: '14:30', quelle: 'eindeutig' })
+    expect(() => uhrzeitAufloesen('25:00', 1, regeln)).toThrow('keine Uhrzeit')
+    expect(() => uhrzeitAufloesen('halb drei', 1, regeln)).toThrow('keine Uhrzeit')
   })
 })
 

@@ -511,6 +511,86 @@ export function wochenAusUebersicht(xml, { jahr, monat, person }) {
   return { wochen, uebersprungen }
 }
 
+/* ===================== Predigtdienst (Treffpunkte) ========================= */
+
+/** Spalte der Tabelle „Predigtdienst" → Wochentag in der Zählung der App (0 = So … 6 = Sa). */
+const WOCHENTAGE = { Montag: 1, Dienstag: 2, Mittwoch: 3, Donnerstag: 4, Freitag: 5, Samstag: 6, Sonntag: 0 }
+
+/** Ein ISO-Datum, um `tage` verschoben — über UTC-Mittag, damit keine Zeitzone einen Tag verschiebt. */
+function tagNach(iso, tage) {
+  const d = new Date(`${iso}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + tage)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Die Treffpunkte einer Wochenübersicht (Tabelle „Predigtdienst"): je Termin der
+ * Tag, die Uhrzeit, wie der Export sie schreibt, Ort, Zusatz und Leiter.
+ *
+ * Je Woche eine Zeile unter den Spalten Montag … Sonntag; in einer Zelle je
+ * Termin die Absätze „Zeit[ (Zusatz)]", der Ort und „Leiter: Name" (abgelesen am
+ * Export vom 2.11.2026 — der Zusatz nennt dort eine Gruppe, „PDG-3 …").
+ *
+ * **Die Uhrzeit steht ohne Vor- oder Nachmittag:** „2:30" ist 14:30. Sie bleibt
+ * hier, wie sie dasteht (`zeitRoh`); welche es ist, entscheidet
+ * `uhrzeitAufloesen`. Was sich nicht einordnen lässt, bricht ab, statt still
+ * einen Termin zu verlieren.
+ */
+export function treffpunkteAusUebersicht(xml, { jahr, monat }) {
+  const out = []
+  let montag = null
+  for (const zeilen of tabellenVon(xml)) {
+    if (zeilen[0]?.[0]?.text === 'Wochenübersicht') {
+      montag = montagAusKopf(zeilen[0][1]?.absaetze?.[0] ?? '', jahr, monat)
+      continue
+    }
+    if (zeilen[0]?.length !== 1 || zeilen[0][0].text !== 'Predigtdienst') continue
+    if (!montag) throw new Error('Wochenübersicht: Predigtdienst vor dem ersten Wochenkopf.')
+    const tage = (zeilen[1] ?? []).map((z) => z.text)
+    for (const t of tage) if (!(t in WOCHENTAGE)) throw new Error(`Predigtdienst ${montag}: unbekannte Spalte „${t}".`)
+    for (const z of zeilen.slice(2)) {
+      z.forEach((inhalt, i) => {
+        if (leer(inhalt)) return
+        const wd = WOCHENTAGE[tage[i]]
+        let termin = null
+        for (const absatz of inhalt.absaetze) {
+          const zeit = /^(\d{1,2}:\d{2})(?:\s*\(([^)]*)\))?$/.exec(absatz)
+          if (zeit) {
+            termin = { montag, datum: tagNach(montag, (wd + 6) % 7), wd, zeitRoh: zeit[1], etikett: (zeit[2] ?? '').trim(), ort: '', leiter: null }
+            out.push(termin)
+          } else if (!termin) throw new Error(`Predigtdienst ${montag}, ${tage[i]}: Text vor der ersten Uhrzeit.`)
+          else if (absatz.startsWith('Leiter:')) termin.leiter = namensForm(absatz.slice('Leiter:'.length)) || null
+          else if (!termin.ort) termin.ort = absatz
+          else throw new Error(`Predigtdienst ${montag}, ${tage[i]}: unbekannte Zeile im Termin um ${termin.zeitRoh}.`)
+        }
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * Die Uhrzeit eines Termins aus dem Export („2:30") in der Form der App
+ * („14:30"). Der Export lässt Vor- und Nachmittag weg, entschieden wird deshalb
+ * am **Grundplan**: Führt er an diesem Wochentag genau eine der beiden
+ * Uhrzeiten, gilt sie (`quelle: 'grundplan'`). Sonst nach der Tageszeit, zu der
+ * Treffpunkte stattfinden — vor 7 Uhr keiner, „2:30" ist dann 14:30; ab 7 bleibt
+ * es der Vormittag (`quelle: 'tageszeit'`, der Import zählt diese Fälle). Ab 12
+ * Uhr ist die Angabe eindeutig.
+ *
+ * @param {{ wd: number, time: string }[]} regeln  der Grundplan (`fs_rules`, `time` als „HH:MM[:SS]")
+ */
+export function uhrzeitAufloesen(zeitRoh, wd, regeln) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(zeitRoh))
+  if (!m || Number(m[1]) > 23) throw new Error(`Predigtdienst: keine Uhrzeit „${zeitRoh}".`)
+  const h = Number(m[1])
+  const als = (stunde) => `${String(stunde).padStart(2, '0')}:${m[2]}`
+  if (h >= 12) return { zeit: als(h), quelle: 'eindeutig' }
+  const imPlan = [als(h), als(h + 12)].filter((z) => regeln.some((r) => r.wd === wd && String(r.time).slice(0, 5) === z))
+  if (imPlan.length === 1) return { zeit: imPlan[0], quelle: 'grundplan' }
+  return { zeit: als(h < 7 ? h + 12 : h), quelle: 'tageszeit' }
+}
+
 /* ===================== Programm der Leben-und-Dienst-Zusammenkunft ========= */
 
 /**

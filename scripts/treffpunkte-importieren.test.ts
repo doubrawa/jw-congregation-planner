@@ -6,9 +6,11 @@ import {
   nachWoche,
   passenderPlatz,
   sammleTreffpunkte,
+  treffpunkteAusExporten,
   verteileFsWoche,
   wochentag,
 } from './treffpunkte-importieren.mjs'
+import { abschnitt, dokument, wochenKopf, type Zelle } from './wochenuebersicht-attrappe'
 import { mondayOf } from './wochenplanung-importieren.mjs'
 import { treffpunktTitel } from '../src/components/treffpunkt-beschriftung'
 import { fsVisible } from '../src/data/fs'
@@ -116,6 +118,65 @@ describe('sammleTreffpunkte', () => {
     expect(wochenende.map((t) => t.montag)).toEqual(['2026-08-17', '2026-08-17'])
     expect(wochenende.map((t) => t.wd)).toEqual([6, 0])
     expect(mondayOf('2026-08-23')).toBe('2026-08-17')
+  })
+})
+
+describe('treffpunkteAusExporten — die Termine aus der Wochenübersicht', () => {
+  /** Eine Wochenübersicht mit nur der Tabelle „Predigtdienst" je Woche. */
+  const datei = (name: string, wochen: [string, Zelle[]][]) => ({
+    name,
+    xml: dokument(
+      wochen.flatMap(([kopf, zellen]) => [
+        wochenKopf(kopf),
+        abschnitt('Predigtdienst', [['Montag', 'Dienstag', 'Mittwoch'].slice(0, zellen.length), zellen]),
+      ]),
+    ),
+  })
+  const GRUNDPLAN = [{ wd: 1, time: '14:30:00' }]
+
+  it('in der Form von sammleTreffpunkte — Uhrzeit am Grundplan, Kennung aus Tag und Uhrzeit', () => {
+    const { treffpunkte, nachTageszeit } = treffpunkteAusExporten(
+      [datei('Probe August 2026 Wochenübersicht.docx', [['August 24-30', [['2:30', 'Probe-Ort', 'Leiter: Probe Eins']]]])],
+      GRUNDPLAN,
+    )
+    expect(treffpunkte).toEqual([
+      { nwsId: 'export:2026-08-24T14:30', datum: '2026-08-24', zeit: '14:30', montag: '2026-08-24', wd: 1, ort: 'Probe-Ort', etikett: '', leiterRef: 'Probe Eins' },
+    ])
+    expect(nachTageszeit).toBe(0)
+  })
+
+  it('steht eine Woche in zwei Dateien, gilt die spätere — kein Termin doppelt', () => {
+    const { treffpunkte } = treffpunkteAusExporten(
+      [
+        datei('Probe August 2026 Wochenübersicht.docx', [['August 24-30', [['2:30', 'Probe-Ort']]]]),
+        datei('Probe August 2026 Wochenübersicht (2).docx', [['August 24-30', ['·', ['9:30', 'Probe-Saal']]]]),
+      ],
+      GRUNDPLAN,
+    )
+    expect(treffpunkte.map((t) => `${t.datum} ${t.zeit} ${t.ort}`)).toEqual(['2026-08-25 09:30 Probe-Saal'])
+  })
+
+  it('zählt, was die Tageszeit entschied, und trennt zwei Termine zur selben Zeit', () => {
+    const { treffpunkte, nachTageszeit } = treffpunkteAusExporten(
+      [datei('Probe August 2026 Wochenübersicht.docx', [['August 24-30', ['·', ['3:00', 'Probe-Ort', '3:00', 'Probe-Saal']]]])],
+      GRUNDPLAN,
+    )
+    expect(treffpunkte.map((t) => t.nwsId)).toEqual(['export:2026-08-25T15:00', 'export:2026-08-25T15:00#2'])
+    expect(nachTageszeit).toBe(2)
+  })
+
+  it('ein zweiter Lauf trifft dieselben Treffpunkte wieder, statt sie neu anzulegen', () => {
+    // Nach dem Zurücksetzen gibt es die Woche noch nicht: Der erste Lauf legt an.
+    const { treffpunkte } = treffpunkteAusExporten(
+      [datei('Probe August 2026 Wochenübersicht.docx', [['August 24-30', [['2:30', 'Probe-Ort', 'Leiter: Probe Eins']]]])],
+      GRUNDPLAN,
+    )
+    const bind = (text: string | null) => ({ name: text ?? '' })
+    const erst = verteileFsWoche([], treffpunkte, bind)
+    expect(erst.angelegt).toBe(1)
+    const zweit = verteileFsWoche(erst.insts, treffpunkte, bind)
+    expect(zweit.geaendert).toBe(false)
+    expect(zweit.insts).toEqual(erst.insts)
   })
 })
 

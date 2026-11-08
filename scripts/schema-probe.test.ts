@@ -467,6 +467,28 @@ const LAEUFE: Record<string, Lauf[]> = {
       },
       erwartet: ['POST rpc/treffpunkte_speichern'],
     },
+    {
+      // Seit NWS sich nicht mehr entschlüsseln lässt: die Tabelle „Predigtdienst"
+      // der Wochenübersicht. Die Uhrzeit („2:30") entscheidet der Grundplan.
+      titel: 'Treffpunkte aus den NWS-Exporten',
+      dateien: {
+        [UEBERSICHT_DATEI]: wochenuebersichtDocx([
+          wochenKopf('August 24-30'),
+          abschnitt('Predigtdienst', [['Montag', 'Dienstag'], ['·', ['2:30', 'Probe-Ort', 'Leiter: Probe Eins']]]),
+        ]),
+        'Personen.csv': PROBE_PERSONENLISTE,
+      },
+      fahren: (m, d) => m.main!(['--wochenuebersicht', path.join(d, UEBERSICHT_DATEI), '--personen', path.join(d, 'Personen.csv')]),
+      umgebung: {
+        bestand: {
+          congregations: [{ id: C, hall: 'Probe-Saal' }],
+          persons: [{ id: NWS_PERSON, congregation_id: C, fn: 'Probe', ln: 'Eins' }],
+          weeks: [{ congregation_id: C, start: '2026-08-24' }],
+          fs_rules: [{ id: 'r-di', congregation_id: C, grp: null, wd: 2, time: '14:30:00', place: 'Probe-Ort' }],
+        },
+      },
+      erwartet: ['GET fs_rules', 'POST rpc/treffpunkte_speichern'],
+    },
   ],
 
   'wochenplanung-importieren.mjs': [
