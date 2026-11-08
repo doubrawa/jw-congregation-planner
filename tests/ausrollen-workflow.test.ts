@@ -39,6 +39,14 @@ describe('deploy.yml', () => {
   it('sperrt nicht über den ganzen Lauf — ein neuer Push bräche sonst das Ausrollen ab', () => {
     expect(DEPLOY).not.toMatch(/^concurrency:/m)
   })
+
+  it('ein neuer Push bricht ein älteres Bauen ab — kein älterer Stand überholt einen neueren', () => {
+    // Ohne das bauen zwei Läufe nebeneinander, und wer später fertig wird,
+    // rollt aus und veröffentlicht — auch der ältere über den neueren. Bis T170
+    // verhinderte das die Sperre über den ganzen Lauf.
+    const bauen = DEPLOY.slice(DEPLOY.indexOf('\n  build:\n'), DEPLOY.indexOf('\n  ausrollen:\n'))
+    expect(bauen).toMatch(/\n {4}concurrency:\n {6}group: \S*\$\{\{ github\.ref \}\}\S*\n {6}cancel-in-progress: true\n/)
+  })
 })
 
 describe('ausrollen.yml', () => {

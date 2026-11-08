@@ -16,7 +16,7 @@ name: Ausrollen (Supabase)
 # es alles aus.
 #
 # Secret: SUPABASE_ACCESS_TOKEN (persönlicher Zugangstoken, angelegt am
-# 7.11.2026 mit einem Jahr Laufzeit). Ein Datenbank-Passwort braucht die CLI
+# 7.11.2026 ohne Ablaufdatum). Ein Datenbank-Passwort braucht die CLI
 # nicht: Ohne --password meldet sie sich über den Token mit einer kurzlebigen
 # Rolle an. Der Token steht nur an den Schritten, die die CLI rufen — nicht an
 # `npm ci`, dessen Installationsskripte die Umgebung sehen.
@@ -71,12 +71,8 @@ jobs:
             exit 1
           fi
 
-      - name: Migrationen — was fehlt
-        if: steps.plan.outputs.migrationen == 'true'
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx --yes "$SUPABASE_CLI" db push --dry-run --remote="$PROJEKT"
-
+      # Ohne Trockenlauf davor: `db push` nennt selbst jede Migration, bevor
+      # es sie einspielt („Applying migration …“).
       - name: Migrationen einspielen
         if: steps.plan.outputs.migrationen == 'true'
         env:

@@ -537,13 +537,14 @@ describe('kein Altbestand mehr im Schema', () => {
     // erst, wenn sie gerufen wird (etwa `absage_vermerken`, T126) — er wird
     // ausgeblendet. Ein `do $$`-Block dagegen läuft beim Einspielen und bleibt drin.
     const loeschtBeimEinspielen = (sql: string): string[] =>
-      [...sql.replace(/\bas \$\$[\s\S]*?\$\$/g, '').matchAll(/^\s*delete from public\.(\w+)/gm)].map((m) => m[1]!)
+      [...sql.replace(/\bas \$\$[\s\S]*?\$\$/g, '').matchAll(/^\s*delete\s+from\s+(?:public\.)?(\w+)/gim)].map((m) => m[1]!)
     expect(loeschtBeimEinspielen(schema)).toEqual([])
-    // Gegenprobe: Ein Aufräumen neben einer Funktion fällt auf, ihr Rumpf nicht.
+    // Gegenprobe: Ein Aufräumen neben einer Funktion fällt auf, ihr Rumpf nicht —
+    // auch ohne `public.` davor.
     const probe =
       'create function public.f() returns void language sql as $$\n  delete from public.a\n$$;\n' +
-      "do $$ begin\n  delete from public.b where x = 'y';\nend $$;\ndelete from public.c;\n"
-    expect(loeschtBeimEinspielen(probe)).toEqual(['b', 'c'])
+      "do $$ begin\n  delete from public.b where x = 'y';\nend $$;\ndelete from public.c;\nDELETE FROM d;\n"
+    expect(loeschtBeimEinspielen(probe)).toEqual(['b', 'c', 'd'])
   })
 })
 

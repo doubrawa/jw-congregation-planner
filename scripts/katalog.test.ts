@@ -1,5 +1,9 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { ABFRAGEN, ABSCHNITTE, aclAngeglichen, katalogAbfrage, katalogVergleich } from './katalog.mjs'
+import { ABFRAGEN, ABSCHNITTE, aclAngeglichen, katalog, katalogAbfrage, katalogVergleich } from './katalog.mjs'
+import { leerePostgres } from './pglite-postgres.mjs'
+import { REPO } from './sicherung.mjs'
 
 /**
  * **Der Vergleich zweier Kataloge** — die Produktion (Postgres 17) gegen die
@@ -76,5 +80,23 @@ describe('katalogAbfrage', () => {
     const sql = katalogAbfrage()
     for (const a of ABSCHNITTE) expect(sql).toContain(`'${a}', (select coalesce(json_agg(x), '[]'::json) from (${ABFRAGEN[a as keyof typeof ABFRAGEN].trim()}) x)`)
     expect(sql.trim().split(';').filter((s) => s.trim())).toHaveLength(1)
+  })
+
+  it('ergibt in Postgres denselben Katalog wie die Abfragen einzeln — jeder Abschnitt mit Zeilen', async () => {
+    // In der Produktion läuft nur dieser Weg (über `db query`), in den übrigen
+    // Proben nur `katalog()`. Ohne diese Probe fiele ein Abschnitt, der als JSON
+    // anders aussieht oder keinen Schlüssel für den Vergleich hat, erst beim
+    // Ausrollen auf — wenn Migrationen und Functions schon draußen sind.
+    const db = await leerePostgres([fs.readFileSync(path.join(REPO, 'supabase', 'schema.sql'), 'utf8')])
+    try {
+      const einzeln = (await katalog(db)) as Katalog
+      const { rows } = await db.query<{ katalog: string }>(katalogAbfrage())
+      const alsJson = JSON.parse(rows[0]!.katalog) as Katalog
+      // Ein leerer Abschnitt riefe seinen Schlüssel nie auf.
+      expect(ABSCHNITTE.filter((a) => !einzeln[a]?.length)).toEqual([])
+      expect(katalogVergleich(alsJson, einzeln)).toEqual([])
+    } finally {
+      await db.close()
+    }
   })
 })

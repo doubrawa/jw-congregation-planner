@@ -14,12 +14,19 @@ permissions:
   contents: read
 
 # Keine Sperre über den ganzen Lauf: Ein neuer Push bräche sonst ein laufendes
-# Ausrollen mittendrin ab. Gesperrt wird je Job — das Ausrollen ohne Abbruch
-# (in ausrollen.yml), das Veröffentlichen mit.
+# Ausrollen mittendrin ab. Gesperrt wird je Job — das Bauen mit Abbruch, das
+# Ausrollen ohne (in ausrollen.yml), das Veröffentlichen mit.
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Ein neuer Push bricht ein älteres Bauen ab. Sonst bauten zwei Läufe
+    # nebeneinander, und wer später fertig würde, rollte aus und
+    # veröffentlichte — auch ein älterer Stand über einen neueren. Was schon
+    # ausrollt, läuft zu Ende; der neuere wartet in ausrollen.yml darauf.
+    concurrency:
+      group: bauen-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

@@ -709,8 +709,13 @@ node scripts/ausrollen-pruefen.mjs
 ```
 
 **Wird es rot**, wartet das Frontend. Was die CLI bis dahin eingespielt hat,
-bleibt; der nächste Lauf — ein neuer Push oder „Re-run failed jobs" — misst
-wieder am letzten grünen Deploy und holt nach, was fehlt.
+bleibt; der nächste Lauf — ein neuer Push oder „Re-run failed jobs" am
+neuesten Lauf — misst wieder am letzten grünen Deploy und holt nach, was
+fehlt. Ein älterer Lauf, neu gestartet, brächte seinen alten Stand hinaus.
+
+**Ein neuer Push bricht ein älteres Bauen ab**, nie ein laufendes Ausrollen:
+Der neuere Lauf wartet, bis es fertig ist. So veröffentlicht nie ein älterer
+Stand über einen neueren, und zwei schnelle Pushes gehen als einer hinaus.
 
 **Hinzu vor dem Code, fort nach ihm.** Ein Lauf spielt die Datenbank vor
 Functions und Frontend ein — eine neue Spalte steht also da, bevor ein Gerät
@@ -718,12 +723,17 @@ sie abfragt. Ein `drop` dagegen trifft alles, was noch damit arbeitet: Käme er
 im selben Push wie der Code, der eine Spalte nicht mehr schreibt, fiele sie
 Minuten vor dem neuen Frontend, und so lange scheiterte jedes Speichern
 (PostgREST weist den unbekannten Schlüssel mit `PGRST204` ab). Darum zwei
-Pushes: erst der Code ohne die Spalte, dann die Migration, die sie entfernt.
+Pushes: erst der Code ohne die Spalte, dann die Migration, die sie entfernt —
+diese erst, wenn der erste Lauf veröffentlicht hat und die Geräte die neue
+Fassung geladen haben. Ein Gerät holt sie, wenn es zur App zurückkehrt
+(`src/lib/version.ts`); bis dahin schriebe es die Spalte weiter. Kommt der
+zweite Push, solange der erste noch baut, gehen beide in einem Lauf hinaus —
+genau das, was die zwei Pushes vermeiden sollen.
 
 **Das Secret** `SUPABASE_ACCESS_TOKEN` ist ein persönlicher Zugangstoken
-(supabase.com/dashboard/account/tokens), angelegt am 7. November 2026 mit
-einem Jahr Laufzeit — er läuft um den 7. November 2027 ab. Danach scheitert
-der nächste Lauf mit Änderungen unter `supabase/` mit einem Anmeldefehler;
+(supabase.com/dashboard/account/tokens), angelegt am 7. November 2026 ohne
+Ablaufdatum: Er gilt, bis er dort widerrufen wird. Danach scheitert der
+nächste Lauf mit Änderungen unter `supabase/` mit einem Anmeldefehler;
 erneuern heißt: neuen Token anlegen, das Secret überschreiben. Er steht nur an
 den Schritten, die die CLI rufen, nicht an `npm ci` (dessen
 Installationsskripte die Umgebung sehen) — `tests/ausrollen-workflow.test.ts`

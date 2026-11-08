@@ -55,15 +55,13 @@ export async function main(argv = process.argv.slice(2)) {
 
   const tabellen = tabellenAusSchema(schema).filter((t) => t.name in (sicherung.tabellen ?? {}))
   const warten = aufgeschobene(tabellen, fremdschluessel(schema))
-  const { weglassen, gefuellt } = spaltenAbgleich(tabellen, sicherung)
+  const { auslassen, hinweise, gefuellt } = spaltenAbgleich(tabellen, sicherung)
   if (gefuellt.length) {
     console.error(`Spalten, die schema.sql nicht kennt, tragen in der Sicherung etwas: ${gefuellt.join(', ')}.`)
     console.error('zurueckspielen.mjs hielte hier an — die Probe auch.')
     process.exit(1)
   }
-  for (const [name, spalten] of Object.entries(weglassen)) {
-    console.log(`${spalten.map((s) => `${name}.${s}`).join(', ')}: kennt schema.sql nicht, in jeder Zeile leer — bleibt fort.`)
-  }
+  for (const h of hinweise) console.log(h)
 
   /*
    * Geschrieben wird, wie PostgREST es tut: eine Anweisung je Tabelle, die
@@ -82,7 +80,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (const t of tabellen) {
     const zeilen = sicherung.tabellen[t.name]
     if (!zeilen.length) continue
-    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], [...t.generiert, ...(weglassen[t.name] ?? [])]))
+    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], auslassen[t.name]))
     const unbekannt = [...new Set(geteilt.flatMap((g) => Object.keys(g.jetzt)))].filter((k) => !spaltenIm.get(t.name)?.has(k))
     if (unbekannt.length) {
       throw new Error(`${t.name}: ${unbekannt.join(', ')} gibt es im Ziel nicht — PostgREST nähme diese Zeilen nicht an.`)

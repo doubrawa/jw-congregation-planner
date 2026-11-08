@@ -10378,7 +10378,7 @@ Betreiber: „dann brauchen wir kein staging" — und die CI soll die Produktion
   Zurückspielen — dafür ist die Rückspielprobe jetzt so streng wie PostgREST).
 
 Das Secret hat der Betreiber am selben Abend angelegt (persönlicher
-Zugangstoken, ein Jahr Laufzeit); gebaut und gefahren wurde die Strecke gleich
+Zugangstoken ohne Ablaufdatum); gebaut und gefahren wurde die Strecke gleich
 danach.
 
 #### Umgesetzt am 7. November 2026, abends
@@ -10391,7 +10391,7 @@ wenn das grün ist.
 | Schritt | Was |
 | --- | --- |
 | Plan | `scripts/ausrollen-plan.mjs` misst am Commit des **letzten grünen** Deploys (GitHub-API), nicht am vorigen Push — eine Migration aus einem roten Lauf bleibt so nicht liegen. „Run workflow" rollt alles aus |
-| Migrationen | `db push --dry-run`, dann `db push --yes` — wenn sich unter `supabase/migrations/` etwas geändert hat |
+| Migrationen | `db push --yes`, das jede Migration nennt, bevor es sie einspielt — wenn sich unter `supabase/migrations/` etwas geändert hat |
 | Functions | alle acht aus `config.toml`, `--use-api`, bei einem Fehlschlag ein zweiter Versuch — wenn sich Code unter `supabase/functions/` (ohne Proben) oder `config.toml` geändert hat |
 | Prüfen | `scripts/ausrollen-pruefen.mjs`, lesend und auch lokal fahrbar: jede Migration im Verlauf; der Katalog der Produktion gleich der Folge der Migrationen in PGlite (dieselben Abschnitte wie `migrationen.test.ts`, aus `scripts/katalog.mjs`); jede Function aktiv, `verify_jwt` wie `config.toml` und, wenn ausgerollt, frischer als der Start des Laufs; der Rauchtest (`OPTIONS` vom Handler, POST mit dem öffentlichen Schlüssel → die Abweisung des Handlers) |
 
@@ -10447,9 +10447,40 @@ Code** — im selben Lauf fiele sie Minuten vor dem neuen Frontend, und jedes
 Speichern scheiterte so lange. Beides steht in der README unter „Ausrollen
 über die CI", ebenso die Handgriffe von früher, die jetzt auf die CI zeigen.
 
-**Das Secret** `SUPABASE_ACCESS_TOKEN` läuft um den 7. November 2027 ab; dann
-scheitert der nächste Lauf mit Änderungen unter `supabase/` an der Anmeldung.
-Erneuern: neuen Token anlegen, das Secret überschreiben.
+**Das Secret** `SUPABASE_ACCESS_TOKEN` hat kein Ablaufdatum; es gilt, bis der
+Token im Supabase-Dashboard widerrufen wird. Danach scheitert der nächste Lauf
+mit Änderungen unter `supabase/` an der Anmeldung. Erneuern: neuen Token
+anlegen, das Secret überschreiben.
+
+**Review** (`/simplify`, `/code-review max`, 8. November) über den Umstieg auf
+Migrationen und T170 (`d55eb897`…`71aa0627`):
+
+- **Ein älterer Lauf konnte einen neueren überholen.** Mit der Sperre über den
+  ganzen Lauf war auch der Abbruch älterer Läufe fort: Zwei Läufe bauten
+  nebeneinander, und wer später fertig wurde, rollte aus und veröffentlichte —
+  auch der ältere über den neueren, samt Functions aus seinem alten Stand.
+  Jetzt bricht ein neuer Push ein älteres Bauen ab (`deploy.yml`), ein
+  laufendes Ausrollen weiterhin nicht.
+- Die Abfrage, die die Produktion liest (`katalogAbfrage`, eine Anweisung mit
+  JSON), lief in keiner Probe, und fünf der neun Schlüssel des Vergleichs
+  riefen die Proben nie auf. Jetzt hält `katalog.test.ts` sie in PGlite gegen
+  die Einzelabfragen, jeden Abschnitt mit Zeilen.
+- `--functions-seit` ohne lesbaren Wert prüfte die Frische still nicht; jetzt
+  bricht die Prüfung ab. Lokal nimmt sie die CLI-Version aus `ausrollen.yml`
+  statt der neuesten von npm. `schema.test.ts` findet ein `delete from` auch
+  ohne `public.`.
+- Fort: der Trockenlauf vor `db push` (das nennt jede Migration selbst), die
+  Ausgabe `basis`, die kein Schritt las, und die Ausnahme für Kommentare in
+  `migrationen.test.ts` (seit dem Kommentar am Vornamen falsch). Probe und
+  Skript beim Zurückspielen teilen sich die Auswertung (`spaltenAbgleich`).
+- README: Der zweite Push einer Spalten-Entfernung kommt erst, wenn der erste
+  veröffentlicht hat und die Geräte neu geladen haben; „Re-run failed jobs"
+  nur am neuesten Lauf.
+
+Geprüft und verworfen: Die Abhängigkeiten der CLI sind unter `npx` nicht
+gesperrt (`jose`, `eciesjs`), laufen aber nie — der Starter der CLI 3 lädt nur
+Node-Module und startet das fest gepinnte Programm, und keines der Pakete hat
+Installationsskripte.
 
 ### T171 · Fehlermeldungen von den Geräten 🔧 ✅ umgesetzt und ausgerollt (7. November 2026)
 
@@ -11359,7 +11390,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | **Neuaufbau** | E4 aus dem Gesamt-Review, die Daten zum Echtbetrieb | Der Neuaufbau zum Echtbetrieb (die Daten neu aus NWS und jw.org) kommt noch (Betreiber am 6. November); danach den Startstand wieder setzen (`startstand-setzen.mjs` in `nws-export/neuaufbau-werkzeug`, außerhalb des Repos). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
-| **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` läuft um den 7. November 2027 ab. Nicht mehr offen |
+| **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` hat kein Ablaufdatum. Nicht mehr offen |
 | **T171** | — | **erledigt am 7. November** und ausgerollt: `geraete_fehler` mit fünf Bremsen, gelesen per `scripts/geraete-fehler.mjs` (keine Oberfläche in der App). Nicht mehr offen |
 | **T172** | — | **erledigt am 7. November**: `planning.ts`, `data.ts` und `reducer.ts` nach Fachbereich aufgeteilt (`src/data/planung/`, `src/lib/daten/`, `src/app/aktionen/`), alle Ansichten byte-gleich, die Kommentare in den verschobenen Teilen auf das gekürzt, was gilt. Nicht mehr offen |
 | **T173** | — | **erledigt am 7. November**: Sprachprüfung in jeder Laufzeit-Messung, axe mit `--axe` auch im Kernsatz der CI, 44 Befunde behoben, der volle Satz ohne Befund. Die zwei Ausnahmen bleiben, ein Test am echten Gerät ist nicht nötig (Betreiber). Nicht mehr offen |

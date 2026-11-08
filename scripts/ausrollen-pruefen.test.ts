@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cliPaket,
   ersterJsonWert,
   functionsBefunde,
   katalogBefunde,
@@ -7,6 +8,7 @@ import {
   rauchtestBefunde,
   RAUCHTEST_RUMPF,
   verlaufBefunde,
+  zeitpunkt,
 } from './ausrollen-pruefen.mjs'
 
 /**
@@ -33,6 +35,27 @@ describe('ersterJsonWert', () => {
 
   it('sagt es, wenn kein JSON kommt', () => {
     expect(() => ersterJsonWert('Error: not logged in')).toThrow(/keine JSON-Ausgabe/)
+  })
+})
+
+describe('cliPaket', () => {
+  it('nimmt lokal eine feste Version, nicht die neueste von npm', () => {
+    expect(cliPaket({})).toMatch(/^supabase@\d+\.\d+\.\d+$/)
+    expect(cliPaket({ SUPABASE_CLI: 'supabase@9.9.9' })).toBe('supabase@9.9.9')
+  })
+})
+
+describe('zeitpunkt (--functions-seit)', () => {
+  it('liest Millisekunden und ein ISO-Datum; ohne Angabe null', () => {
+    expect(zeitpunkt(undefined)).toBeNull()
+    expect(zeitpunkt('1762551999000')).toBe(1762551999000)
+    expect(zeitpunkt('2026-11-07T21:47:00Z')).toBe(Date.parse('2026-11-07T21:47:00Z'))
+  })
+
+  it('bricht ab, statt die Frische still nicht zu prüfen', () => {
+    // Mit NaN verglichen wäre jede Function „frisch" — grün, ohne geprüft zu haben.
+    expect(() => zeitpunkt(true)).toThrow(/--functions-seit/) // der Schalter ohne Wert
+    expect(() => zeitpunkt('7.11.2026')).toThrow(/--functions-seit/)
   })
 })
 

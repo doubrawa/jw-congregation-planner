@@ -150,18 +150,27 @@ export function fremdeSpalten(zeilen, spalten) {
 }
 
 /**
- * `fremdeSpalten` über alle Tabellen einer Sicherung: je Tabelle, was
- * fortbleibt, und als Liste, was den Lauf anhält (`persons.dn (3 Zeilen)`).
+ * `fremdeSpalten` über alle Tabellen einer Sicherung — für dieses Skript und
+ * die Rückspielprobe dieselbe Entscheidung:
+ *  - `gefuellt`: was den Lauf anhält (`persons.dn (3 Zeilen)`);
+ *  - `auslassen`: je Tabelle, was aus jeder Zeile ganz herausfällt
+ *    (`zeileTeilen`) — die Spalten, die die Datenbank selbst vergibt, und die
+ *    leeren, die das Ziel nicht kennt;
+ *  - `hinweise`: die Zeilen, mit denen das Protokoll Letztere nennt.
  */
 export function spaltenAbgleich(tabellen, sicherung) {
-  const weglassen = {}
+  const auslassen = {}
+  const hinweise = []
   const gefuellt = []
   for (const t of tabellen) {
     const f = fremdeSpalten(sicherung.tabellen[t.name], t.spalten)
-    if (f.weglassen.length) weglassen[t.name] = f.weglassen
+    auslassen[t.name] = [...t.generiert, ...f.weglassen]
+    if (f.weglassen.length) {
+      hinweise.push(`${f.weglassen.map((s) => `${t.name}.${s}`).join(', ')}: kennt schema.sql nicht, in jeder Zeile leer — bleibt fort.`)
+    }
     for (const g of f.gefuellt) gefuellt.push(`${t.name}.${g.spalte} (${g.zeilen} ${g.zeilen === 1 ? 'Zeile' : 'Zeilen'})`)
   }
-  return { weglassen, gefuellt }
+  return { auslassen, hinweise, gefuellt }
 }
 
 /**
@@ -256,7 +265,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   // Vor dem ersten Aufruf: Was hier anhält, soll das Ziel nicht halb gefüllt
   // zurücklassen.
-  const { weglassen, gefuellt } = spaltenAbgleich(tabellen, sicherung)
+  const { auslassen, hinweise, gefuellt } = spaltenAbgleich(tabellen, sicherung)
   if (gefuellt.length) {
     console.error(`Spalten, die schema.sql nicht kennt, tragen in der Sicherung etwas: ${gefuellt.join(', ')}.`)
     console.error('PostgREST nähme sie nicht an, und fortgelassen ginge ihr Inhalt verloren. Nichts geschrieben.')
@@ -289,9 +298,7 @@ export async function main(argv = process.argv.slice(2)) {
     const w = warten[t.name]?.length ? `  (${warten[t.name].join(', ')} wird nachgetragen)` : ''
     console.log(`${t.name.padEnd(24)} ${String(n).padStart(6)}${w}`)
   }
-  for (const [name, spalten] of Object.entries(weglassen)) {
-    console.log(`${spalten.map((s) => `${name}.${s}`).join(', ')}: kennt schema.sql nicht, in jeder Zeile leer — bleibt fort.`)
-  }
+  for (const h of hinweise) console.log(h)
 
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
@@ -305,7 +312,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (const t of tabellen) {
     const zeilen = sicherung.tabellen[t.name]
     if (!zeilen.length) continue
-    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], [...t.generiert, ...(weglassen[t.name] ?? [])]))
+    const geteilt = zeilen.map((z) => zeileTeilen(z, warten[t.name] ?? [], auslassen[t.name]))
     await rest(t.name, {
       method: 'POST',
       headers: { Prefer: 'return=minimal' },

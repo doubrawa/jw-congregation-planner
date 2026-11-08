@@ -23,7 +23,7 @@
  * (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — in der CI die Secrets des
  * Frontends), sonst aus `.env.local`. Die CLI nimmt den Zugangstoken aus
  * `SUPABASE_ACCESS_TOKEN` oder vom `supabase login`; welche CLI, sagt
- * `SUPABASE_CLI` (in der CI eine feste Version).
+ * `SUPABASE_CLI` — sonst dieselbe feste Version wie in `ausrollen.yml`.
  */
 
 import { execFileSync, execSync } from 'node:child_process'
@@ -31,7 +31,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { functionsAusConfig } from './ausrollen-plan.mjs'
+import { functionsDesRepos } from './ausrollen-plan.mjs'
 import { alsSkript, argumente, refAusUrl, wertAusEnvDatei } from './gemeinsam.mjs'
 import { katalog, katalogAbfrage, katalogVergleich } from './katalog.mjs'
 
@@ -68,6 +68,19 @@ export function ersterJsonWert(text) {
 }
 
 /**
+ * Welche CLI: `SUPABASE_CLI` aus der Umgebung (in der CI gesetzt), sonst
+ * dieselbe feste Version, die `ausrollen.yml` nennt — lokal liefe `npx
+ * supabase` sonst mit der neuesten, die npm gerade hat.
+ */
+export function cliPaket(env = process.env) {
+  if (env.SUPABASE_CLI) return env.SUPABASE_CLI
+  const yml = fs.readFileSync(path.join(REPO, '.github', 'workflows', 'ausrollen.yml'), 'utf8')
+  const fest = /^\s*SUPABASE_CLI:\s*(\S+)\s*$/m.exec(yml)?.[1]
+  if (!fest) throw new Error('ausrollen.yml nennt kein SUPABASE_CLI.')
+  return fest
+}
+
+/**
  * Die Supabase-CLI rufen und ihre JSON-Ausgabe lesen.
  *
  * **Immer mit `--agent no`:** Erkennt die CLI einen Agenten (etwa Claude Code),
@@ -81,7 +94,7 @@ export function ersterJsonWert(text) {
  * `shell: true` setzt Node bloß zusammen (DEP0190).
  */
 function cli(args) {
-  const teile = ['npx', '--yes', process.env.SUPABASE_CLI || 'supabase', ...args, '--output-format', 'json', '--agent', 'no']
+  const teile = ['npx', '--yes', cliPaket(), ...args, '--output-format', 'json', '--agent', 'no']
   const optionen = { cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }
   const aus =
     process.platform === 'win32'
@@ -247,15 +260,29 @@ export async function rauchtest(url, key, functions, holen = fetch) {
 
 /* ===================== Ablauf ============================================ */
 
+/**
+ * `--functions-seit` als Millisekunden — oder `null` ohne Angabe. Was sich
+ * nicht lesen lässt, bricht ab: Mit `NaN` verglichen wäre jede Function
+ * „frisch", und die Prüfung meldete grün, ohne geprüft zu haben.
+ */
+export function zeitpunkt(roh) {
+  if (roh === undefined) return null
+  const text = String(roh)
+  const ms = /^\d+$/.test(text) ? Number(text) : /^\d{4}-\d{2}-\d{2}/.test(text) ? Date.parse(text) : NaN
+  if (Number.isNaN(ms)) {
+    throw new Error(`--functions-seit erwartet Millisekunden oder ein ISO-Datum (2026-11-07T21:47:00Z), nicht ${JSON.stringify(roh)}.`)
+  }
+  return ms
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const arg = argumente(argv)
   const url = process.env.VITE_SUPABASE_URL || wertAusEnvDatei('VITE_SUPABASE_URL')
   const key = process.env.VITE_SUPABASE_ANON_KEY || wertAusEnvDatei('VITE_SUPABASE_ANON_KEY')
   if (!url || !key) throw new Error('VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY fehlen (Umgebung oder .env.local).')
   const ref = process.env.PROJEKT || refAusUrl(url)
-  const seitRoh = arg['functions-seit']
-  const seit = seitRoh ? (/^\d+$/.test(String(seitRoh)) ? Number(seitRoh) : new Date(String(seitRoh)).getTime()) : null
-  const soll = functionsAusConfig(fs.readFileSync(path.join(REPO, 'supabase', 'config.toml'), 'utf8'))
+  const seit = zeitpunkt(arg['functions-seit'])
+  const soll = functionsDesRepos()
   const versionen = migrationenImRepo().map((f) => f.slice(0, 14))
 
   const pruefungen = [

@@ -63,6 +63,11 @@ export function functionsAusConfig(text) {
   return out
 }
 
+/** Die Functions aus `supabase/config.toml` dieses Repos. */
+export function functionsDesRepos() {
+  return functionsAusConfig(fs.readFileSync(path.join(REPO, 'supabase', 'config.toml'), 'utf8'))
+}
+
 /** Der Commit des letzten grünen Laufs von `deploy.yml` auf `main` — oder `null`. */
 export async function letzterGruenerStand({ repo, token, holen = fetch }) {
   const res = await holen(
@@ -85,20 +90,20 @@ function geaendertSeit(basis) {
 /** Plan und Begründung, aus der Umgebung von GitHub Actions. */
 async function planen(env) {
   const alles = { migrationen: true, functions: true }
-  if (env.GITHUB_EVENT_NAME === 'workflow_dispatch') return { plan: alles, basis: '', grund: 'von Hand gestartet: alles' }
+  if (env.GITHUB_EVENT_NAME === 'workflow_dispatch') return { plan: alles, grund: 'von Hand gestartet: alles' }
   const basis = await letzterGruenerStand({ repo: env.GITHUB_REPOSITORY, token: env.GH_TOKEN })
-  if (!basis) return { plan: alles, basis: '', grund: 'noch kein grüner Deploy: alles' }
+  if (!basis) return { plan: alles, grund: 'noch kein grüner Deploy: alles' }
   try {
     const dateien = geaendertSeit(basis)
-    return { plan: wasAusrollen(dateien), basis, grund: `seit ${basis.slice(0, 8)} (letzter grüner Deploy) ${dateien.length} Dateien geändert` }
+    return { plan: wasAusrollen(dateien), grund: `seit ${basis.slice(0, 8)} (letzter grüner Deploy) ${dateien.length} Dateien geändert` }
   } catch (err) {
-    return { plan: alles, basis, grund: `${basis.slice(0, 8)} ist nicht mehr erreichbar (${err instanceof Error ? err.message : err}): alles` }
+    return { plan: alles, grund: `${basis.slice(0, 8)} ist nicht mehr erreichbar (${err instanceof Error ? err.message : err}): alles` }
   }
 }
 
 export async function main(env = process.env) {
-  const functions = functionsAusConfig(fs.readFileSync(path.join(REPO, 'supabase', 'config.toml'), 'utf8'))
-  const { plan, basis, grund } = await planen(env)
+  const functions = functionsDesRepos()
+  const { plan, grund } = await planen(env)
   console.error(`Ausrollen — ${grund}.`)
   console.error(`  Migrationen: ${plan.migrationen ? 'ja' : 'nein'} · Functions: ${plan.functions ? `ja, alle ${functions.length}` : 'nein'}`)
   const ausgabe = {
@@ -106,7 +111,6 @@ export async function main(env = process.env) {
     functions: plan.functions,
     etwas: plan.migrationen || plan.functions,
     namen: functions.map((f) => f.name).join(' '),
-    basis,
     // Millisekunden wie `updated_at` in `functions list`: Was danach dort
     // steht, ist in diesem Lauf ausgerollt.
     start: Date.now(),

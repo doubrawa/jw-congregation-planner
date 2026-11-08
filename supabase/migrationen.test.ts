@@ -19,13 +19,14 @@ import { leerePostgres } from '../scripts/pglite-postgres.mjs'
  * Diese Probe tut das: Sie spielt **beide** in je eine leere Postgres 16
  * (PGlite, im Prozess) und vergleicht die Kataloge — Tabellen, Spalten samt
  * Typ und Vorgabe, Bedingungen, Indizes, Funktionen samt Rumpf, Trigger,
- * Richtlinien und Rechte. Nur deshalb darf die Doppelung wieder existieren.
+ * Richtlinien, Sequenzen, Rechte und Kommentare (`scripts/katalog.mjs`). Nur
+ * deshalb darf die Doppelung wieder existieren.
  *
- * **Verglichen werden Kataloge, nicht Texte.** Die erste Migration ist der
- * Gesamtstand *ohne* die Einmal-Aufräumblöcke (Spalten, die aus einer
- * bestehenden Datenbank weichen sollten und in einer frischen nichts zu tun
- * haben) — die beiden Dateien sind also absichtlich nicht gleich. Gleich sein
- * muss, was am Ende in der Datenbank steht.
+ * **Verglichen werden Kataloge, nicht Texte.** `schema.sql` nimmt jede
+ * spätere Migration in sich auf, die erste bleibt der Stand ihres Tages, und
+ * eine Migration darf aufräumen, was eine frische Datenbank nie hatte
+ * (`20261107195500_persons-altlasten.sql`). Gleich sein muss, was am Ende in
+ * der Datenbank steht.
  */
 
 const hier = import.meta.dirname
@@ -119,9 +120,7 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
     // Und keine Abfrage läuft ins Leere: Eine, die nichts findet (vertippter
     // Schemaname, falscher `relkind`), wäre beidseitig leer und damit still
     // grün — die Zahlen darüber fangen nur die, die hier genannt sind.
-    // Kommentare darf es keine geben; dass ihre Abfrage greift, zeigt die
-    // Gegenprobe darunter.
-    expect(ABSCHNITTE.filter((a) => a !== 'kommentare' && ausSchema[a]!.length === 0)).toEqual([])
+    expect(ABSCHNITTE.filter((a) => ausSchema[a]!.length === 0)).toEqual([])
   })
 
   it.each(ABSCHNITTE)('%s sind gleich', (abschnitt) => {
