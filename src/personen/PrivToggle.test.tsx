@@ -136,19 +136,19 @@ describe('PrivToggle — Hinweis auf Brüder-Bereiche (F4)', () => {
  * Die Rechte-Schalter zeigen das **wirksame** Recht — Planer und Admin
  * (4.10.2026).
  *
- * Es steht an zwei Stellen: `persons.planner_vorgemerkt` bzw.
- * `zuteiler_vorgemerkt` ist die Vormerkung für die Einladung, `members.planner`
+ * Es steht an zwei Stellen: `persons.admin_vorgemerkt` bzw.
+ * `zuteiler_vorgemerkt` ist die Vormerkung für die Einladung, `members.admin`
  * bzw. `zuteiler` das, wonach App und Datenbank entscheiden. Wer die
  * Vormerkung anzeigt, zeigt bei jedem, dessen Person aus dem NWS-Import
  * stammt, „aus" — auch beim Betreiber selbst, der sehr wohl Admin ist.
  */
 describe('RechteKarte — welches der beiden Rechte gilt', () => {
   const t = dict('de')
-  const konto = (userId: string, personId: string | null, rechte: { planner?: boolean; zuteiler?: boolean }): Member => ({
+  const konto = (userId: string, personId: string | null, rechte: { admin?: boolean; zuteiler?: boolean }): Member => ({
     userId,
     email: `${userId}@example.org`,
     personId,
-    planner: rechte.planner ?? false,
+    admin: rechte.admin ?? false,
     zuteiler: rechte.zuteiler ?? false,
   })
 
@@ -162,16 +162,16 @@ describe('RechteKarte — welches der beiden Rechte gilt', () => {
     r.getByRole('switch', { name: recht === 'Admin' ? t.planerLbl : t.rechtPlanen }) as HTMLButtonElement
 
   it('nimmt das Konto, nicht die Vormerkung an der Person', () => {
-    // Genau der gemeldete Fall: `persons.planner` false (der Personen-Import
-    // schreibt die Spalte nicht), das Konto hat das Recht trotzdem.
-    const r = zeige({ members: [konto('u-fremd', 'p', { planner: true })] })
+    // Genau der gemeldete Fall: die Vormerkung false (der Personen-Import
+    // schreibt sie nicht), das Konto hat das Recht trotzdem.
+    const r = zeige({ members: [konto('u-fremd', 'p', { admin: true })] })
     expect(schalter(r, 'Admin').getAttribute('aria-checked')).toBe('true')
   })
 
   it('ohne Konto trägt die Vormerkung an der Person — für beide Rechte', () => {
     // Für Eingeladene, die sich noch nicht angemeldet haben — sie sollen das
     // Recht ab der ersten Anmeldung haben.
-    const admin = zeige({ members: [] }, { ...person(), plannerVorgemerkt: true })
+    const admin = zeige({ members: [] }, { ...person(), adminVorgemerkt: true })
     expect(schalter(admin, 'Admin').getAttribute('aria-checked')).toBe('true')
     cleanup()
     const planer = zeige({ members: [] }, { ...person(), zuteilerVorgemerkt: true })
@@ -191,7 +191,7 @@ describe('RechteKarte — welches der beiden Rechte gilt', () => {
   it('ein Admin hat das Planer-Recht ohnehin: an und gesperrt', () => {
     // Ein Schalter „Planer: aus" bei einem Admin behauptete, er dürfe nicht
     // zuteilen — und ihn auszuschalten nähme ihm nichts.
-    const r = zeige({ members: [konto('u-fremd', 'p', { planner: true })] })
+    const r = zeige({ members: [konto('u-fremd', 'p', { admin: true })] })
     expect(schalter(r, 'Planer').getAttribute('aria-checked')).toBe('true')
     expect(schalter(r, 'Planer').disabled).toBe(true)
   })
@@ -200,7 +200,7 @@ describe('RechteKarte — welches der beiden Rechte gilt', () => {
     // Sonst nimmt sich jemand mit einem Fingertipp den Zugang zu Planen,
     // Personen und Einstellungen — zurückgeben könnte ihn nur ein zweiter
     // Admin. Die Datenbank zieht dieselbe Grenze (`user_id <> auth.uid()`).
-    const r = zeige({ members: [konto('u-ich', 'p', { planner: true })] })
+    const r = zeige({ members: [konto('u-ich', 'p', { admin: true })] })
     expect(schalter(r, 'Admin').disabled).toBe(true)
     expect(schalter(r, 'Planer').disabled).toBe(true)
   })

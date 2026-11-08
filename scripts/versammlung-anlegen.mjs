@@ -176,7 +176,7 @@ export async function main(argv = process.argv.slice(2)) {
     fn: arg.vorname,
     ln: arg.nachname,
     role: 'aeltester',
-    planner_vorgemerkt: true,
+    admin_vorgemerkt: true,
     priv: planerBereiche(),
   })
   await rest(

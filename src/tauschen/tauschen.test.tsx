@@ -47,7 +47,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
     lang: 'de',
-    planner: false,
+    admin: false,
     zuteiler: false,
     personId: 'p-simon',
     persons: [person('p-simon', 'Simon', 'Krüger'), person('p-jonas', 'Jonas', 'Berger')],
@@ -120,7 +120,7 @@ describe('„Tauschen" an der eigenen Aufgabe', () => {
 
 describe('Das Tausch-Blatt', () => {
   it('nennt, was man abgibt, und wen man fragen kann — „Anfragen" legt die Anfrage an', async () => {
-    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', planner: false, zuteiler: false }
+    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', admin: false, zuteiler: false }
     const { dispatch } = zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [konto] }))
     expect(screen.getByText(t.tauschGibstAb)).toBeTruthy()
     expect(await screen.findByText('Jonas Berger')).toBeTruthy()
@@ -165,7 +165,7 @@ describe('Das Tausch-Blatt', () => {
   })
 
   it('wer ein Konto hat, wird angefragt — ohne den Hinweis', async () => {
-    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', planner: false, zuteiler: false }
+    const konto = { userId: 'u-jonas', email: '', personId: 'p-jonas', admin: false, zuteiler: false }
     zeige(<TauschenBlatt task={AUFGABE} />, zustand({ members: [konto] }))
     expect(await screen.findByText('Jonas Berger')).toBeTruthy()
     expect(knopf(t.tauschAnfragen)).toBeTruthy()

@@ -38,7 +38,7 @@ const U_ORIG = 'user-orig' // steht im Slot und sagt ab
 const U_UNQUAL = 'user-unqual' // Mitglied, aber nicht für den Dienst qualifiziert
 const U_NOPERSON = 'user-noperson' // Konto ohne verknüpfte Person
 const U_ABSENT = 'user-absent' // qualifiziert, aber in dieser Woche abwesend
-const U_PLANNER = 'user-planner'
+const U_ADMIN = 'user-admin' // Admin: sucht den Ersatz
 /** Planer (4.10.2026): teilt zu, ist nicht Admin — und sucht wie der Admin den Ersatz. */
 const U_ZUTEILER = 'user-zuteiler'
 const U_FOREIGN = 'user-foreign' // Mitglied einer ANDEREN Versammlung
@@ -47,14 +47,14 @@ const U_ORIG_ZWILL = 'user-orig-zwill' // heißt wie der Absagende und kann dens
 const QUAL = { [`svc:${SVC}`]: true }
 
 const MEMBERS = [
-  { user_id: U_ME, person_id: 'p-me', planner: false, congregation_id: CONG },
-  { user_id: U_ORIG, person_id: 'p-orig', planner: false, congregation_id: CONG },
-  { user_id: U_UNQUAL, person_id: 'p-unqual', planner: false, congregation_id: CONG },
-  { user_id: U_NOPERSON, person_id: null, planner: false, congregation_id: CONG },
-  { user_id: U_ABSENT, person_id: 'p-absent', planner: false, congregation_id: CONG },
-  { user_id: U_PLANNER, person_id: 'p-planner', planner: true, congregation_id: CONG },
-  { user_id: U_ZUTEILER, person_id: null, planner: false, zuteiler: true, congregation_id: CONG },
-  { user_id: U_ORIG_ZWILL, person_id: 'p-orig-zwill', planner: false, congregation_id: CONG },
+  { user_id: U_ME, person_id: 'p-me', admin: false, congregation_id: CONG },
+  { user_id: U_ORIG, person_id: 'p-orig', admin: false, congregation_id: CONG },
+  { user_id: U_UNQUAL, person_id: 'p-unqual', admin: false, congregation_id: CONG },
+  { user_id: U_NOPERSON, person_id: null, admin: false, congregation_id: CONG },
+  { user_id: U_ABSENT, person_id: 'p-absent', admin: false, congregation_id: CONG },
+  { user_id: U_ADMIN, person_id: 'p-admin', admin: true, congregation_id: CONG },
+  { user_id: U_ZUTEILER, person_id: null, admin: false, zuteiler: true, congregation_id: CONG },
+  { user_id: U_ORIG_ZWILL, person_id: 'p-orig-zwill', admin: false, congregation_id: CONG },
 ]
 
 const PERSONS = [
@@ -73,7 +73,7 @@ const PERSONS = [
   { id: 'p-orig', fn: 'Otto', ln: 'Riginal', priv: QUAL },
   { id: 'p-unqual', fn: 'Uwe', ln: 'Nqual', priv: {} },
   { id: 'p-absent', fn: 'Anna', ln: 'Bwesend', priv: QUAL },
-  { id: 'p-planner', fn: 'Paul', ln: 'Aner', priv: {} },
+  { id: 'p-admin', fn: 'Paul', ln: 'Aner', priv: {} },
   // qualifiziert, hat aber gar kein Konto → kann nicht benachrichtigt werden
   { id: 'p-noacct', fn: 'Karl', ln: 'Onto', priv: QUAL },
 ]
@@ -565,7 +565,7 @@ describe('substitute: Einspringen nur mit Qualifikation', () => {
 
   it('Planer ohne Qualifikation darf ebenfalls nicht einspringen', async () => {
     // Planer-Rechte gelten fürs Zuteilen, nicht fürs Selbst-Eintragen.
-    const res = await call(take(), { auth: U_PLANNER })
+    const res = await call(take(), { auth: U_ADMIN })
     expect(res.status).toBe(403)
     expect(writes).toEqual([])
   })
@@ -592,7 +592,7 @@ describe('substitute: seek benachrichtigt nur die richtigen Personen', () => {
     expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ME, U_ORIG_ZWILL]))
     // Gegenprobe: niemand aus den ausgeschlossenen Gruppen ist dabei.
     const got = new Set(rows.map((r) => r.user_id))
-    for (const u of [U_ORIG, U_UNQUAL, U_ABSENT, U_PLANNER]) expect(got.has(u)).toBe(false)
+    for (const u of [U_ORIG, U_UNQUAL, U_ABSENT, U_ADMIN]) expect(got.has(u)).toBe(false)
   })
 
   /*
@@ -663,7 +663,7 @@ describe('substitute: seek darf nur auslösen, wen es angeht', () => {
   })
 
   it('auch ein Planer nicht — Zuteilen ist etwas anderes als Absagen', async () => {
-    const res = await call(seek, { auth: U_PLANNER })
+    const res = await call(seek, { auth: U_ADMIN })
     expect(res.status).toBe(403)
     expect(writes).toEqual([])
   })
@@ -827,7 +827,7 @@ describe('substitute: Positivfall als Gegenprobe', () => {
     // Ursprungsperson, Admin und Planer werden informiert — wer zuteilt, sucht
     // auch den Ersatz (4.10.2026).
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
-    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER, U_ZUTEILER]))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_ADMIN, U_ZUTEILER]))
   })
 })
 
@@ -900,7 +900,7 @@ describe('substitute: die Id entscheidet, wer verdrängt wurde', () => {
   it('„Ersatz gefunden" erreicht den Eingeteilten, nicht den Namensvetter', async () => {
     await call(take())
     const rows = writesTo('notifications')[1]?.body as { user_id: string }[]
-    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_PLANNER, U_ZUTEILER]))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([U_ORIG, U_ADMIN, U_ZUTEILER]))
   })
 })
 
@@ -1157,7 +1157,7 @@ describe('substitute: „Ersatz gefunden" ohne brauchbare Id im Platz', () => {
     absagen = [{ user_id: U_ABSENT, task_key: KEY }]
     const res = await call(take())
     expect(res.status).toBe(200)
-    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_ABSENT, U_PLANNER, U_ZUTEILER]))
+    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_ABSENT, U_ADMIN, U_ZUTEILER]))
   })
 
   it('Id einer gelöschten Person: nur die Planer erfahren es — nicht der Namensvetter', async () => {
@@ -1169,7 +1169,7 @@ describe('substitute: „Ersatz gefunden" ohne brauchbare Id im Platz', () => {
     const res = await call(take())
     expect(res.status).toBe(200)
     expect(savedSlotName()).toBe('Ich Selbst')
-    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_PLANNER, U_ZUTEILER]))
+    expect(new Set(rows().map((r) => r.user_id))).toEqual(new Set([U_ADMIN, U_ZUTEILER]))
   })
 })
 

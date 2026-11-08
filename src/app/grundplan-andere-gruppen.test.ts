@@ -28,7 +28,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   const basis = demoZustand()
   return {
     ...basis,
-    planner: true,
+    admin: true,
     fsWeeks: buildFsWeeks(basis.weeks.map((w) => w.start), DEMO_FS_RULES),
     confirmations: {},
     terminGewaehlt: true,

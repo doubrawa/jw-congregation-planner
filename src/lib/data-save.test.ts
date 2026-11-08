@@ -342,7 +342,7 @@ describe('Update-Schreiber', () => {
     })
 
     it('saveMemberRow → nur das geänderte Recht', () => {
-      const konto = { userId: 'u1', email: '', personId: 'p1', planner: false, zuteiler: false }
+      const konto = { userId: 'u1', email: '', personId: 'p1', admin: false, zuteiler: false }
       saveMemberRow({ ...konto, zuteiler: true }, konto)
       expect(chain.update).toHaveBeenCalledWith({ zuteiler: true })
       expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
@@ -351,7 +351,7 @@ describe('Update-Schreiber', () => {
     it('unverändert schreibt weder Dienst noch Gruppe noch Konto', () => {
       saveService('c1', service, 1, { eintrag: service, position: 1 })
       saveGroupRow('c1', group, 2, { eintrag: { ...group }, position: 2 })
-      const konto = { userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }
+      const konto = { userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false }
       saveMemberRow(konto, { ...konto })
       expect(chain.from).not.toHaveBeenCalled()
     })
@@ -427,9 +427,9 @@ describe('Update-Schreiber', () => {
   })
 
   it('saveMemberRow — beide Rechte in derselben Zeile', () => {
-    saveMemberRow({ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false })
+    saveMemberRow({ userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('members')
-    expect(chain.update).toHaveBeenCalledWith({ person_id: 'p1', planner: true, zuteiler: false })
+    expect(chain.update).toHaveBeenCalledWith({ person_id: 'p1', admin: true, zuteiler: false })
     expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
   })
 })

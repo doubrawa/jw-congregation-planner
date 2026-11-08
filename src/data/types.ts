@@ -426,22 +426,22 @@ export interface Person {
    */
   fam?: string | null
   /**
-   * **Vormerkung** des Planer-Rechts, nicht das Recht selbst.
+   * **Vormerkung** des Admin-Rechts, nicht das Recht selbst.
    *
    * Bei der ersten Anmeldung übernimmt sie die Function `anmelden` in das
-   * Konto (`Member.planner`), damit jemand das Recht gleich hat. Wirksam ist
-   * allein `Member.planner` — daran hängt
-   * `is_planner()` in der Datenbank und `state.planner` in der App; der
+   * Konto (`Member.admin`), damit jemand das Recht gleich hat. Wirksam ist
+   * allein `Member.admin` — daran hängt
+   * `ist_admin()` in der Datenbank und `state.admin` in der App; der
    * Schalter im Personen-Detail zeigt deshalb das Konto an, sobald es eines
-   * gibt (PlannerToggle).
+   * gibt (`PrivToggle`).
    *
-   * Das Feld hieß bis zum 17. September 2026 ebenfalls `planner`. Ein Name für
-   * zwei verschiedene Tatsachen — und genau daran ist es einmal verwechselt
-   * worden: Der Personen-Neuaufbau aus New World Scheduler schreibt die
-   * Vormerkung nicht mit, also stand sie bei allen auf `false`, und der
-   * Bildschirm zeigte dem Betreiber „Admin: aus", während er Admin war.
+   * Vormerkung und Recht hießen bis zum 17. September 2026 gleich. Ein Name
+   * für zwei verschiedene Tatsachen — und genau daran ist es einmal
+   * verwechselt worden: Der Personen-Neuaufbau aus New World Scheduler
+   * schreibt die Vormerkung nicht mit, also stand sie bei allen auf `false`,
+   * und der Bildschirm zeigte dem Betreiber „Admin: aus", während er Admin war.
    */
-  plannerVorgemerkt?: boolean
+  adminVorgemerkt?: boolean
   /**
    * Vormerkung des **Planer**-Rechts (4.10.2026) — derselbe Weg wie beim
    * Admin: bei der ersten Anmeldung ins Konto (`Member.zuteiler`).
@@ -963,17 +963,15 @@ export interface Absage {
  * Ein Konto der Versammlung (Konto ↔ Person); die Liste aller sieht nur der
  * Admin (`members_select`).
  *
- * **Drei Rechte-Stufen** (4.10.2026): `planner` heißt in der App „Admin" und
- * darf alles; `zuteiler` heißt „Planer" — er teilt zu und sendet, ändert aber
- * die Pläne nicht. Der Admin hat das Planer-Recht ohnehin (`darfZuteilen`).
- * Die Spalte heißt aus der Zeit vor den Stufen `planner`; umbenannt hätte sie
- * Datenbank, Edge Functions und Skripte auf einmal getroffen.
+ * **Zwei Rechte:** `admin` — der Admin, er darf alles; `zuteiler` — der
+ * Planer, er plant alles wie der Admin, nur Personen und Einstellungen nicht.
+ * Der Admin hat das Planer-Recht ohnehin (`rechteVon(…).zuteilen`).
  */
 export interface Member {
   userId: string
   email: string
   personId: string | null
-  planner: boolean
+  admin: boolean
   zuteiler: boolean
 }
 

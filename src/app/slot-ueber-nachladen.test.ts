@@ -45,7 +45,7 @@ function ladung(weeks: Week[]): HydratePayload {
     userId: 'u1',
     empty: false,
     congregation: { ...CONGREGATION },
-    planner: true,
+    admin: true,
     personId: DEMO_PERSONS[0]!.id,
     persons: [...DEMO_PERSONS],
     services: [...DEMO_SERVICES],

@@ -52,7 +52,7 @@ function zeige(
   const state: AppState = {
     ...demoZustand(),
     screen: 'einstellungen', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', planner: true,
+    congregationId: 'c1', userId: 'u1', admin: true,
     groups: GRUPPEN, persons: [], services: [], weeks: [], fsWeeks: [],
     fsRules: [regel()],
     congLang: 'de', progLangs: [], langSearch: '',

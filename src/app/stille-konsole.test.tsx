@@ -73,7 +73,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     personId: DEMO_PERSONS[0]!.id,
-    planner: true,
+    admin: true,
     congregation: { ...CONGREGATION },
     persons: [...DEMO_PERSONS],
     groups: [...DEMO_GROUPS],
@@ -84,7 +84,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     absences: [...DEMO_ABSENCES],
     notifs: [...DEMO_NOTIFICATIONS],
     myTasks: [...DEMO_MY_TASKS],
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, admin: true, zuteiler: false, email: 'a@b.c' }],
     anmeldeLinks: [],
     week: 0,
     tab: 'mid',
@@ -143,7 +143,7 @@ const LAGEN: Array<[string, Partial<AppState>]> = [
   ['Zusätzliche Klasse', { screen: 'planen', weeks: syncAuxSlots(buildDemoWeeks(), true), auxClass: true }],
   // Zustände ohne Daten und ohne Rechte — beide zeichnen andere Zweige.
   ['Ohne Wochen', { screen: 'programm', weeks: [], fsWeeks: [] }],
-  ['Kein Planer', { screen: 'aufgaben', planner: false }],
+  ['Kein Planer', { screen: 'aufgaben', admin: false }],
   ['Offline-Stand', { screen: 'start', staleAt: Date.now() - 7200_000 }],
 ]
 

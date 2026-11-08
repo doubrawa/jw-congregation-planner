@@ -57,7 +57,7 @@ function ladung(): HydratePayload {
     userId: 'u1',
     empty: false,
     congregation: { ...CONGREGATION },
-    planner: true,
+    admin: true,
     personId: DEMO_PERSONS[0]!.id,
     persons: DEMO_PERSONS.map((p) => ({ ...p })),
     services: DEMO_SERVICES.map((s) => ({ ...s })),
@@ -79,7 +79,7 @@ function ladung(): HydratePayload {
     congLang: 'de',
     progLangs: [],
     auxClass: true,
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, admin: true, zuteiler: false, email: 'a@b.c' }],
     anmeldeLinks: [],
   }
 }
@@ -186,7 +186,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'setLang', lang: 'en' },
     { type: 'setLang', lang: 'de' },
     // Konten
-    { type: 'updateMember', userId: 'u1', patch: { planner: true } },
+    { type: 'updateMember', userId: 'u1', patch: { admin: true } },
     { type: 'linksAusgestellt', links: [{ personId: 'p-probe', gueltigBis: '2026-10-07T09:00:00.000Z', erstelltAt: '2026-09-07T09:00:00.000Z', gesendetAt: null, benutztAt: null }] },
     // Import
     { type: 'addImportedWeek', week: buildImportWeek() },

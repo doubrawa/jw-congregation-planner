@@ -133,7 +133,7 @@ function zeige(sel: SlotSelection, over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', planner: true,
+    congregationId: 'c1', userId: 'u1', admin: true,
     persons: PERSONEN,
     services: DIENSTE,
     groups: [],
@@ -624,7 +624,7 @@ describe('Ein Gruppen-Slot ohne angelegte Gruppen bleibt nicht wortlos', () => {
 
   it('der Planer liest den Hinweis, bekommt aber keinen Knopf — die Einstellungen sieht nur der Admin', () => {
     for (const groups of [[], HERAUSGENOMMEN]) {
-      const { container } = zeige(SEL_GRUPPE, { groups, planner: false, zuteiler: true })
+      const { container } = zeige(SEL_GRUPPE, { groups, admin: false, zuteiler: true })
       expect(container.querySelector('.sheet-empty-label')).not.toBeNull()
       expect(container.querySelector('.sheet-empty-action')).toBeNull()
       cleanup()
@@ -740,7 +740,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     zweimalSamstag[0]![0] = { ...zweimalSamstag[0]![0]!, wd: 6, grp: 'g1' }
     const { container } = mitTreffpunkt({
       fsWeeks: zweimalSamstag,
-      planner: false,
+      admin: false,
       zuteiler: false,
       personId: 'p-ov',
       groups: [

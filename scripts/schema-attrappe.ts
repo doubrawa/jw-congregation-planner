@@ -372,7 +372,7 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
     const meineZeile = wer ? (tabellen.members ?? []).find((m) => m.user_id === wer.id) : undefined
     const siehtMitglied = (z: Zeile): boolean =>
-      !wer || z.user_id === wer.id || (Boolean(meineZeile?.planner) && z.congregation_id === meineZeile?.congregation_id)
+      !wer || z.user_id === wer.id || (Boolean(meineZeile?.admin) && z.congregation_id === meineZeile?.congregation_id)
     const trifft = (z: Zeile): boolean =>
       filter.every(([k, v]) => passtFilter(z[k], v)) && (tabelle !== 'members' || siehtMitglied(z))
     const vorgabe = kopf.get('Prefer') ?? ''
@@ -387,7 +387,7 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
         const { kind, subject, message, task } = rumpf as { kind: string; subject: string; message: string; task?: string }
         const mitglieder = tabellen.members ?? []
         const cong = mitglieder.find((m) => m.user_id === wer.id)?.congregation_id
-        for (const m of mitglieder.filter((x) => (x.planner || x.zuteiler) && x.congregation_id === cong)) {
+        for (const m of mitglieder.filter((x) => (x.admin || x.zuteiler) && x.congregation_id === cong)) {
           ;(tabellen.notifications ??= []).push({
             id: randomUUID(), congregation_id: cong, user_id: m.user_id, type: kind, title: subject, body: message,
             task_key: task || null,

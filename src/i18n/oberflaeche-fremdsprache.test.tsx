@@ -82,9 +82,9 @@ window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as ty
  * zugleich ein deutsches Wort und ließe die Prüfung unten Fehlalarm schlagen.
  * Der Demo-Bestand ist aus genau diesem Grund hier nicht brauchbar.
  */
-const person = (id: string, fn: string, ln: string, planner = false): Person => ({
+const person = (id: string, fn: string, ln: string, admin = false): Person => ({
   id, fn, ln, role: 'aeltester', female: false, 
-  priv: emptyQualifications(), ...(planner ? { planner: true } : {}),
+  priv: emptyQualifications(), ...(admin ? { admin: true } : {}),
 })
 
 const ICH = person('p-1', 'Xavo', 'Quintus', true)
@@ -194,7 +194,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     personId: ICH.id,
-    planner: true,
+    admin: true,
     congregation: { name: 'Vestavo', hall: 'Kalvo 12', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     persons: [ICH, ANDER],
     groups: GRUPPEN,
@@ -479,7 +479,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
       })()],
     }],
     ['nur lesend (Momentaufnahme)', { screen: 'start', staleAt: Date.now() - 3600_000 }],
-    ['Versammlung noch leer', { screen: 'start', dataEmpty: true, planner: false }],
+    ['Versammlung noch leer', { screen: 'start', dataEmpty: true, admin: false }],
     ['keine Wochen geladen', { screen: 'programm', weeks: [], fsWeeks: [] }],
     ['abgemeldet ohne Versammlung', { screen: 'login', congregationId: null, userId: null, keineVersammlung: true }, '.login-abgemeldet'],
     ['Ladefehler', { screen: 'start', dataStatus: 'error' }],
@@ -488,7 +488,7 @@ describe('Kein deutscher Oberflächentext in einer fremden Sprache', () => {
     // Bis dahin stand hier „Import läuft" in den Einstellungen; den Import
     // führen sie nicht mehr.
     ['Wochen beim Planen', { screen: 'planung', weeks: [{ ...woche(), start: montagVon(isoDay(new Date())) }], fsWeeks: [[]] }],
-    ['Verkündiger ohne Planungsrecht', { screen: 'start', planner: false }],
+    ['Verkündiger ohne Planungsrecht', { screen: 'start', admin: false }],
     ['Anmeldung', { screen: 'login', congregationId: null, userId: null }, '.login'],
   ]
 

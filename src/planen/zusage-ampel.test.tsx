@@ -87,7 +87,7 @@ function stand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: null, planner: true,
+    congregationId: 'c1', userId: 'u1', personId: null, admin: true,
     persons: [ANNA, BERND], groups: [], services: DIENSTE, absences: [],
     weeks: WOCHEN, fsWeeks: TREFFPUNKTE, fsRules: [], week: 1,
     auxClass: true, confirmations: {},

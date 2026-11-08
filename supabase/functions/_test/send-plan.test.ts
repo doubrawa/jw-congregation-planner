@@ -53,18 +53,18 @@ const U_TIM_B = 'user-tim-b'
 const U_OHNE_PERSON = 'user-ohne-person'
 
 const MEMBERS = [
-  { user_id: U_PLANER, person_id: 'p-planer', planner: true, congregation_id: CONG },
-  { user_id: U_ANNA, person_id: 'p-anna', planner: false, congregation_id: CONG },
-  { user_id: U_BERND, person_id: 'p-bernd', planner: false, congregation_id: CONG },
-  { user_id: U_MITGLIED, person_id: 'p-mit', planner: false, congregation_id: CONG },
-  { user_id: U_AUFSEHER, person_id: 'p-aufseher', planner: false, congregation_id: CONG },
-  { user_id: U_ZUTEILER, person_id: 'p-zut', planner: false, zuteiler: true, congregation_id: CONG },
-  { user_id: U_FREMD, person_id: 'p-fremd', planner: true, congregation_id: 'cong-2' },
-  { user_id: U_TIM_A, person_id: 'p-tim-a', planner: false, congregation_id: CONG },
+  { user_id: U_PLANER, person_id: 'p-planer', admin: true, congregation_id: CONG },
+  { user_id: U_ANNA, person_id: 'p-anna', admin: false, congregation_id: CONG },
+  { user_id: U_BERND, person_id: 'p-bernd', admin: false, congregation_id: CONG },
+  { user_id: U_MITGLIED, person_id: 'p-mit', admin: false, congregation_id: CONG },
+  { user_id: U_AUFSEHER, person_id: 'p-aufseher', admin: false, congregation_id: CONG },
+  { user_id: U_ZUTEILER, person_id: 'p-zut', admin: false, zuteiler: true, congregation_id: CONG },
+  { user_id: U_FREMD, person_id: 'p-fremd', admin: true, congregation_id: 'cong-2' },
+  { user_id: U_TIM_A, person_id: 'p-tim-a', admin: false, congregation_id: CONG },
   // ZULETZT: Über den Namen gewinnt der letzte Eintrag. Am Namen allein landete
   // die Nachricht für Tim A also immer hier bei Tim B.
-  { user_id: U_TIM_B, person_id: 'p-tim-b', planner: false, congregation_id: CONG },
-  { user_id: U_OHNE_PERSON, person_id: null, planner: false, congregation_id: CONG },
+  { user_id: U_TIM_B, person_id: 'p-tim-b', admin: false, congregation_id: CONG },
+  { user_id: U_OHNE_PERSON, person_id: null, admin: false, congregation_id: CONG },
 ]
 
 const PERSONS = [

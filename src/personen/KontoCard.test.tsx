@@ -53,7 +53,7 @@ const person = (over: Partial<Person> = {}): Person => ({
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
   priv: emptyQualifications(), ...over,
 })
-const konto = (over: Partial<Member> = {}): Member => ({ userId: 'u-a', email: 'anton@example.org', personId: 'p-a', planner: false, zuteiler: false, ...over })
+const konto = (over: Partial<Member> = {}): Member => ({ userId: 'u-a', email: 'anton@example.org', personId: 'p-a', admin: false, zuteiler: false, ...over })
 /** Ein Link, der noch `tage` Tage gilt (negativ: abgelaufen) — gerechnet von heute, wie die Karte. */
 const link = (tage = 10, over: Partial<AnmeldeLink> = {}): AnmeldeLink => ({
   personId: 'p-a',
@@ -76,7 +76,7 @@ function zeige(p: Person, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: [p], members: [], anmeldeLinks: [],
     ...over,
   }

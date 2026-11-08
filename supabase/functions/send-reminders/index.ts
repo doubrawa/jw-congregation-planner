@@ -346,8 +346,8 @@ Deno.serve(async (req: Request) => {
           console.error(`fs_weeks nicht lesbar: ${(err as Error).message}`)
           return [] as { start: string; data: FsInstance[] }[]
         }),
-        klient.get<{ user_id: string; person_id: string | null; planner: boolean; zuteiler?: boolean }[]>(
-          `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong.id)}`,
+        klient.get<{ user_id: string; person_id: string | null; admin: boolean; zuteiler?: boolean }[]>(
+          `members?select=user_id,person_id,admin,zuteiler&congregation_id=eq.${wert(cong.id)}`,
         ),
         klient.get<{ id: string; fn: string; ln: string }[]>(
           `persons?select=id,fn,ln&congregation_id=eq.${wert(cong.id)}`,
@@ -623,7 +623,8 @@ Deno.serve(async (req: Request) => {
         }
         for (const m of members) {
           // Admins und Planer: Wer zuteilt, spricht den Unerreichbaren an (4.10.2026).
-          if (!m.planner && !m.zuteiler) continue
+          // Die Art im Tagebuch heißt weiter `planner` — die Meldung an die Planer.
+          if (!m.admin && !m.zuteiler) continue
           if (sentToday.has(`${m.user_id}|planner`)) {
             skipped++
             continue

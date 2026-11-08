@@ -10,7 +10,7 @@ import { run, zeileSchreiben } from './schreibweg'
 export interface MemberRow {
   user_id: string
   person_id: string | null
-  planner: boolean
+  admin: boolean
   zuteiler: boolean
   email: string
 }
@@ -40,7 +40,7 @@ export function anmeldeLinkAusZeile(r: AnmeldeLinkRow): AnmeldeLink {
 export function saveMemberRow(member: Member, vorher?: Member): void {
   const db = supabase
   if (!db) return
-  const zeile = (m: Member) => ({ person_id: m.personId, planner: m.planner, zuteiler: m.zuteiler })
+  const zeile = (m: Member) => ({ person_id: m.personId, admin: m.admin, zuteiler: m.zuteiler })
   const aendern = (spalten: Partial<ReturnType<typeof zeile>>) => db.from('members').update(spalten).eq('user_id', member.userId)
   zeileSchreiben(zeile(member), vorher && zeile(vorher), { ganz: aendern, spalten: aendern })
 }

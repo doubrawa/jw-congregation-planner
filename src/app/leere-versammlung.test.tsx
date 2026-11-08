@@ -50,7 +50,7 @@ function leereVersammlung(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     personId: 'p-planer',
-    planner: true,
+    admin: true,
     weeks: [],
     fsWeeks: [],
     persons: [

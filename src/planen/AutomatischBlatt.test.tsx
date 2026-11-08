@@ -58,7 +58,7 @@ function zeige(over: Partial<AppState> = {}) {
   const onClose = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    screen: 'planen', tab: 'mid', dataStatus: 'ready', planner: true,
+    screen: 'planen', tab: 'mid', dataStatus: 'ready', admin: true,
     services: DIENSTE, weeks: [woche()], week: 0,
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,

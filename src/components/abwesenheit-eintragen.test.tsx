@@ -47,7 +47,7 @@ function zeige(personId: string | null, over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: false,
     persons: [ICH], absences: [], weeks: [], fsWeeks: [],
     ...over,
   }
@@ -146,7 +146,7 @@ describe('Abwesenheit eintragen', () => {
   })
 
   it('der Planer trägt für eine ANDERE Person ein — sie ist die Betroffene, er der Ersteller', () => {
-    const { dispatch } = zeige('p-b', { planner: true })
+    const { dispatch } = zeige('p-b', { admin: true })
     oeffne()
     tippe('Montag, 19. Oktober')
     fireEvent.click(knopf(blatt(), t.abwEintragen)!)
@@ -164,7 +164,7 @@ describe('Abwesenheit eintragen', () => {
   })
 
   it('für eine ANDERE Person nennt das Blatt sie — unter der Überschrift und im Hinweis, nicht „du"', () => {
-    zeige('p-b', { planner: true, persons: [ICH, BERTA] })
+    zeige('p-b', { admin: true, persons: [ICH, BERTA] })
     oeffne()
     expect(blatt()?.querySelector('.sheet-sub')?.textContent).toBe('Berta Bein')
     expect(blatt()?.querySelector('.abw-fuss .klein-text')?.textContent).toBe(
@@ -173,7 +173,7 @@ describe('Abwesenheit eintragen', () => {
   })
 
   it('ein Admin ohne eigene Person trägt für andere ein — auch dann mit ihrem Namen', () => {
-    zeige('p-b', { planner: true, personId: null, persons: [ICH, BERTA] })
+    zeige('p-b', { admin: true, personId: null, persons: [ICH, BERTA] })
     oeffne()
     expect(blatt()?.querySelector('.sheet-sub')?.textContent).toBe('Berta Bein')
   })
@@ -201,7 +201,7 @@ describe('Wer eintragen darf', () => {
   })
 
   it('ein Admin bei jeder Person', () => {
-    expect(knopf(zeige('p-b', { planner: true }).container, t.abwEintragen)).toBeDefined()
+    expect(knopf(zeige('p-b', { admin: true }).container, t.abwEintragen)).toBeDefined()
   })
 
   it('sonst niemand — kein Knopf, der ins Leere schriebe', () => {

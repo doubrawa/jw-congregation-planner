@@ -185,7 +185,7 @@ export function ansicht(state: AppState, action: AnsichtAktion): AppState {
     case 'setAnsicht': {
       // Nur ein echtes Admin-Konto — geprüft am echten Recht:
       // Fragte die Wache die Ansicht, gäbe es aus „Verkündiger" kein Zurück.
-      if (!state.planner) return state
+      if (!state.admin) return state
       const nachher = { ...state, ansicht: action.ansicht }
       // Fällt der Bildschirm unter der Ansicht weg, geht es zum Start — dieselbe
       // Wache wie `navigate`, mit demselben Aufräumen.

@@ -37,12 +37,12 @@ const U_PLANER = 'user-planer'
 // „Otto Ohnekonto" hat gar kein Konto → ebenfalls nicht erreichbar
 
 /** Je Fall frisch aus `MEMBERS` — ein Fall darf ein Konto dazunehmen. */
-let members: Array<{ user_id: string; person_id: string; planner: boolean; zuteiler?: boolean }>
+let members: Array<{ user_id: string; person_id: string; admin: boolean; zuteiler?: boolean }>
 
 const MEMBERS = [
-  { user_id: U_MAX, person_id: 'p-max', planner: false },
-  { user_id: U_NINA, person_id: 'p-nina', planner: false },
-  { user_id: U_PLANER, person_id: 'p-planer', planner: true },
+  { user_id: U_MAX, person_id: 'p-max', admin: false },
+  { user_id: U_NINA, person_id: 'p-nina', admin: false },
+  { user_id: U_PLANER, person_id: 'p-planer', admin: true },
 ]
 
 const PERSONS = [
@@ -700,7 +700,7 @@ describe('send-reminders: Planer-Meldung nur für nicht Erreichbare', () => {
   })
 
   it('auch ein Planer bekommt sie — wer zuteilt, spricht die Unerreichbaren an (4.10.2026)', async () => {
-    members = [...MEMBERS, { user_id: 'user-zuteiler', person_id: 'p-zut', planner: false, zuteiler: true }]
+    members = [...MEMBERS, { user_id: 'user-zuteiler', person_id: 'p-zut', admin: false, zuteiler: true }]
     subs = [...SUBS, { id: 's9', user_id: 'user-zuteiler', endpoint: 'https://push.test/zut', p256dh: 'k', auth: 'a' }]
     const r = await run()
     expect(previewFor(r, 'user-zuteiler')?.title).toBe('Unbestätigte Zuteilungen (nicht erreichbar)')

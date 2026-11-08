@@ -65,8 +65,8 @@ const EINGANG = serviceQualKey('eingang')
  * Vorbelegung, die es nicht gibt.
  */
 
-/** Demo-Rechte: Prototyp zeigt Simon als Koordinator (volle Navigation). */
-export const DEMO_PLANNER = true
+/** Demo-Rechte: Der Bestand zeigt Simon als Admin (volle Navigation). */
+export const DEMO_ADMIN = true
 
 export const CONGREGATION: Congregation = {
   name: 'Musterstadt',

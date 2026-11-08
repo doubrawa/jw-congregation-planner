@@ -262,13 +262,13 @@ async function anmelden(url, anon, mail, pass) {
   /** PostgREST **als dieser Nutzer** — RLS greift. */
   const rest = pruefKlient(url, anon, token)
 
-  const { status, daten: mitglied } = await rest('members?select=congregation_id,planner')
+  const { status, daten: mitglied } = await rest('members?select=congregation_id,admin')
   // Ein Fehler hier hieße sonst „in keiner Versammlung" — die falsche Spur.
   if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   const eigene = mitglied?.[0]?.congregation_id
   if (!eigene) throw new Error(`${mail} ist in keiner Versammlung (members leer).`)
   const { daten: cong } = await rest(`congregations?select=name&id=eq.${eigene}`)
-  return { mail, rest, eigene, planer: Boolean(mitglied[0].planner), name: cong?.[0]?.name ?? '?' }
+  return { mail, rest, eigene, planer: Boolean(mitglied[0].admin), name: cong?.[0]?.name ?? '?' }
 }
 
 /* ===================== Ausführung ========================================= */

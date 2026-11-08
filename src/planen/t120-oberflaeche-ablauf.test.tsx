@@ -75,7 +75,7 @@ afterEach(() => {
 
 describe('Weitere Pläne', () => {
   it('neuer Plan: ohne Wahl gleich offen, Namen tippen, veröffentlichen → unter „Aktuell"', () => {
-    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', planner: true, plaene: [], planEintraege: [] })
+    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', admin: true, plaene: [], planEintraege: [] })
     klick(container, t.wpNeu)
 
     // Gleich offen — der Plan selbst, nicht die Liste und keine Wahl dazwischen.
@@ -104,7 +104,7 @@ describe('Weitere Pläne', () => {
   })
 
   it('anlegen und mit einer Gruppe beginnen → jede der dreizehn Wochen hat ihre Gruppe', () => {
-    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', planner: true, plaene: [], planEintraege: [] })
+    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'wp', admin: true, plaene: [], planEintraege: [] })
     klick(container, t.wpNeu)
     const beginnen = container.querySelector(`[role="group"][aria-label="${t.wpAbGruppe}"]`)!
     fireEvent.click(beginnen.querySelector('button')!)
@@ -183,7 +183,7 @@ describe('Gruppenbesuche', () => {
   const gruppen = (c: Element) => zeilen(c).map((z) => z.querySelector('.gb-gruppe-pille')?.textContent)
 
   it('Besuch hinzufügen → er steht da; der nächste ist vorbelegt; Entfernen (zweimal getippt) räumt ihn ab', () => {
-    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche', planner: true, gruppenbesuche: [] })
+    const { container } = zeige(PlanenScreen, { screen: 'planen', tab: 'fs', fsBereich: 'gruppenbesuche', admin: true, gruppenbesuche: [] })
     fireEvent.click(container.querySelector('.gb-neu')!)
     // Ohne Besuch noch kein Besucher — ohne ihn ist „Hinzufügen" gesperrt.
     expect(knopf(blatt(), t.hinzufuegenKnopf)?.disabled).toBe(true)
@@ -212,7 +212,7 @@ describe('Gruppenbesuche', () => {
       screen: 'planen',
       tab: 'fs',
       fsBereich: 'gruppenbesuche',
-      planner: true,
+      admin: true,
       gruppenbesuche: [{ id: 'b1', woche: '2026-09-14', grp: g1!.id, pid: 'p1' }],
     })
     fireEvent.click(zeilen(container)[0]!)

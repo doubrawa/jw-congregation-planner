@@ -132,7 +132,8 @@ export function aclAngeglichen(text, ohneMaintain = false) {
  * Was zwischen der Produktion und PGlite verschieden aussieht, ohne verschieden
  * zu sein: die Reihenfolge der Rechte, MAINTAIN, und die Stelle einer Spalte
  * (`attnum`) — Postgres hängt eine später angefügte Spalte hinten an, eine
- * frische Datenbank hat sie, wo `create table` sie nennt.
+ * frische Datenbank hat sie, wo `create table` sie nennt. Dasselbe gilt
+ * zwischen `schema.sql` und der Folge der Migrationen.
  */
 function angeglichen(abschnitt, zeile) {
   const z = { ...zeile }

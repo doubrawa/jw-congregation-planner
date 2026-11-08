@@ -15,7 +15,7 @@ import { run, zeileSchreiben } from './schreibweg'
  * die App ihn zeigt. `spaltenrechte.test.ts` misst beide Listen an den
  * Mappern und am Schema.
  */
-export const PERSON_SPALTEN = 'id, fn, ln, planner_vorgemerkt, zuteiler_vorgemerkt, role, female, priv, grp, fam'
+export const PERSON_SPALTEN = 'id, fn, ln, admin_vorgemerkt, zuteiler_vorgemerkt, role, female, priv, grp, fam'
 export const ABWESENHEIT_SPALTEN = 'id, person_id, user_id, from_date, to_date'
 
 /**

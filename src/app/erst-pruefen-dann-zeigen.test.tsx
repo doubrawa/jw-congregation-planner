@@ -87,7 +87,7 @@ function momentaufnahme(userId: string): HydratePayload {
     userId,
     empty: false,
     congregation: { name: 'Kalvo', hall: '', times: STANDARD_ZEITEN },
-    planner: false,
+    admin: false,
     personId: null,
     persons: [],
     services: [],

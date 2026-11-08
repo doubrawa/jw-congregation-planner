@@ -10845,6 +10845,71 @@ erscheint (siehe „Plan senden"). Das Vorlesen mit TalkBack oder VoiceOver an
 einem echten Gerät gehört nicht dazu (Betreiber: „echtes gerät als test nicht
 nötig").
 
+## Aufgenommen am 8. November 2026 (T174)
+
+### T174 · Das Admin-Recht heißt `admin` (E4) 🏗 Schritt 1 umgesetzt (8. November 2026) — Schritt 2 offen
+
+**Warum:** In der Datenbank hieß das Admin-Recht `planner`, der Planer dagegen
+`zuteiler`. Wer `planner` las, dachte an den Planer — bei jeder Änderung an den
+Rechten eine Falle, und zum Livegang werden mehrere Admins und Planer
+eingestellt. Entschieden im Gesamt-Review vom 2. November (E4), beauftragt am
+8. November (Betreiber: „e4 machen").
+
+| vorher | danach |
+| --- | --- |
+| `members.planner` | `members.admin` |
+| `persons.planner_vorgemerkt` | `persons.admin_vorgemerkt` |
+| `is_planner()` | `ist_admin()` |
+| App: `planner`, `plannerVorgemerkt` | `admin`, `adminVorgemerkt` |
+
+`zuteiler` und `darf_zuteilen()` bleiben, ebenso, was sachlich stimmt:
+`reminder_log.kind = 'planner'` (die Meldung an die Planer), `notify_planners`
+und `confirmations_delete_planner` (Admins und Planer), der Repo-Name.
+`fsVisible` nahm ein `planner`, gemeint war „darf zuteilen": heißt jetzt
+`zuteilen`.
+
+**Schritt 1** (`supabase/migrations/20261108150000_admin-recht.sql`): die neuen
+Spalten neben den alten, Werte übernommen, zwei Trigger halten beide gleich —
+ältere App-Stände auf den Geräten und die Functions bis zu ihrem Ausrollen
+schreiben die alten. Die 14 Richtlinien, die den Admin fragen, fragen
+`ist_admin()`; `darf_zuteilen()` und `notify_planners` lesen `admin`;
+`is_planner()` ist fort — gefragt haben sie nur die Richtlinien und
+`abwesenheit_gruende()`, die jetzt `ist_admin()` fragt. Functions, App, Skripte
+und Proben nutzen die neuen Namen (rund 140 Dateien). Die Momentaufnahme hat
+Fassung 3; eine der Fassung 2 wird übernommen und umbenannt, nicht verworfen —
+sonst hätte ein Gerät, das die neue Fassung zum ersten Mal ohne Netz startet,
+nichts zu zeigen.
+
+**Die Rückspielprobe** (`scripts/rueckspielprobe.mjs`) schrieb jede Tabelle
+mit `select *`: Eine Spalte, die eine Migration angelegt hat, kam als NULL an
+statt mit ihrem Standardwert, und jede Sicherung von vor E4 scheiterte
+(`persons.admin_vorgemerkt`, gemessen an der Sicherung vom 8. November). Sie
+schreibt jetzt nur die Spalten der Sicherung, wie PostgREST beim echten
+Zurückspielen; die neue Probe `scripts/rueckspielprobe.test.ts` fährt das
+Skript mit einer Sicherung von vor E4.
+
+**Die Migrationsprobe vergleicht nach Namen** (`katalogVergleich`, wie gegen
+die Produktion): Bis hierher legte keine Migration eine Spalte an, und der
+Vergleich der rohen Listen hielt auch die Stelle einer Spalte gleich. Eine
+Migration hängt eine neue Spalte aber hinten an, und eine entfernte lässt eine
+Lücke in der Zählung.
+
+**Die Rechte-Wache** (`tests/rechte-nur-ueber-rechtevon.test.ts`): `admin`
+heißt jetzt auch das abgeleitete Recht (`rechteVon(…).admin`). Die Wache
+trennt beides; eine eigene Probe hält das fest.
+
+**Schritt 2** (offen): sobald Schritt 1 ausgerollt ist und jedes Gerät die
+neue Fassung geladen hat — eine Migration entfernt `members.planner`,
+`persons.planner_vorgemerkt` und die beiden Trigger, `schema.sql` verliert den
+Übergang, und `scripts/zurueckspielen.mjs` schreibt in einer Sicherung von
+davor `planner` auf `admin` um (sonst weist es sie ab, und das Recht ginge
+verloren). Mit fort: die Übergangsprobe (`supabase/admin-recht-uebergang.test.ts`,
+sie fragt die alten Spalten) und die Übernahme der Momentaufnahme Fassung 2
+(`ausFassung2` in `src/lib/snapshot.ts`). Außerhalb des Repos liest
+`nws-export/neuaufbau-werkzeug/startstand-setzen.mjs` noch `members.planner` —
+auf `admin` umstellen. Danach eine frische Sicherung und die
+Mitgliedsrechte-Probe.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -11387,7 +11452,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Den Vortragsplan übernimmt der Betreiber in der App (XML, Planung › Vortragsplan) — das Zurücksetzen hat `vortraege` geleert |
-| **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4** (`planner` → `admin`, `is_planner()` → `ist_admin()`, `planner_vorgemerkt` → `admin_vorgemerkt`; `zuteiler` und `darf_zuteilen()` bleiben) kommt als Migration, wann der Betreiber will |
+| **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): Schritt 1 am 8. November umgesetzt; Schritt 2 entfernt die alten Spalten, sobald Schritt 1 ausgerollt ist und die Geräte neu geladen haben |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
 | **T169** | — | **erledigt am 7. November**, umgestellt am Abend: lesender Abgleich der Produktion (acht Katalog-Abschnitte), Verlauf für die Migrationen 1 und 2 eingetragen, Migration 3 räumt `persons.dn` und zwölf alte Spaltenrechte, danach null Abweichungen; die Einmal-Blöcke sind aus `schema.sql` heraus. Nicht mehr offen |
 | **T170** | — | **erledigt am 7. November**, ohne Staging (Betreiber): `ausrollen.yml` rollt bei jedem Push auf `main` neue Migrationen und geänderte Functions vor dem Frontend in die Produktion aus und prüft danach lesend — Verlauf, Katalog gegen die Kette, Functions, Rauchtest. Abgenommen mit vier Schritten, darunter einer absichtlich roten Probe, die Datenbank und Frontend anhielt. Das Secret `SUPABASE_ACCESS_TOKEN` hat kein Ablaufdatum. Nicht mehr offen |

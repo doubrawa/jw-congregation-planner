@@ -54,7 +54,7 @@ function start(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     personId: ich.id,
-    planner: false,
+    admin: false,
     persons: [ich],
     services: [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }],
     congregation: { name: 'Nordheim', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -133,7 +133,7 @@ describe('Freie Plätze — vom Angebot zum Eintrag', () => {
 function hydrateAus(s: AppState, sentLog: AppState['sentLog']) {
   return {
     congregationId: s.congregationId, userId: s.userId, empty: false, congregation: s.congregation,
-    planner: s.planner, personId: s.personId, persons: s.persons, services: s.services, groups: s.groups,
+    admin: s.admin, personId: s.personId, persons: s.persons, services: s.services, groups: s.groups,
     weeks: s.weeks, fsRules: s.fsRules, fsWeeks: s.fsWeeks, gruppenbesuche: s.gruppenbesuche,
     trolleys: s.trolleys, trolleyTermine: s.trolleyTermine, plaene: s.plaene, planEintraege: s.planEintraege,
     absences: s.absences, notifications: s.notifs, confirmations: s.confirmations, sentLog,

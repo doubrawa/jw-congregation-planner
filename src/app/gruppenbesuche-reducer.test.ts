@@ -21,7 +21,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   const basis = demoZustand()
   return {
     ...basis,
-    planner: true,
+    admin: true,
     fsWeeks: buildFsWeeks(basis.weeks.map((w) => w.start), DEMO_FS_RULES),
     confirmations: {},
     terminGewaehlt: true,
@@ -200,7 +200,7 @@ describe('Wege ohne eigene Aktion', () => {
       userId: 'u1',
       empty: false,
       congregation: s.congregation,
-      planner: true,
+      admin: true,
       personId: null,
       persons: s.persons,
       services: s.services,

@@ -100,7 +100,7 @@ function rpcFor(name: string, args: Record<string, unknown> = {}) {
 const grenze = (table: string): unknown =>
   store.filter.find(([t, m]) => t === table && m === 'limit')?.[3]
 
-const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', planner: false, role: 'verkuendiger', female: true, priv: {}, grp: null }
+const personRow = { id: 'p1', fn: 'Anna', ln: 'Beispiel', admin: false, role: 'verkuendiger', female: true, priv: {}, grp: null }
 const serviceRow = { key: 'mik', name: 'Mikrofone', count: 2, priv: null, groups: false, position: 0 }
 const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: null, position: 0, ohne_reinigung: false }
 
@@ -108,8 +108,8 @@ const groupRow = { id: 'g1', name: 'Gruppe 1', overseer_id: null, assistant_id: 
 function seedResponses(over: Partial<Record<string, Array<{ data: unknown; error: unknown; count?: number }>>> = {}) {
   store.responses = {
     members: [
-      { data: { congregation_id: 'c1', person_id: 'p9', planner: true }, error: null },
-      { data: [{ user_id: 'u1', person_id: 'p9', planner: true, email: 'a@b' }], error: null },
+      { data: { congregation_id: 'c1', person_id: 'p9', admin: true }, error: null },
+      { data: [{ user_id: 'u1', person_id: 'p9', admin: true, email: 'a@b' }], error: null },
     ],
     congregations: [{ data: { name: 'Krumbach', hall: 'H', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: false, cong_lang: 'de', prog_langs: ['en'], aux_class: false }, error: null }],
     persons: [{ data: [personRow], error: null }],
@@ -625,7 +625,7 @@ describe('Gründe (Sicherheits-Review 29.10.2026)', () => {
   it('auch ein Mitglied ohne Admin-Recht fragt nach den Gründen — die eigenen bekommt es', async () => {
     seedResponses({
       members: [
-        { data: { congregation_id: 'c1', person_id: 'p9', planner: false, zuteiler: true }, error: null },
+        { data: { congregation_id: 'c1', person_id: 'p9', admin: false, zuteiler: true }, error: null },
         { data: [], error: null },
       ],
     })

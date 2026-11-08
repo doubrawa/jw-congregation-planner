@@ -130,7 +130,7 @@ function zeige(lang: Lang, notifs: Notification[]) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'mitteilungen', lang, congLang: 'de',
-    dataStatus: 'ready', planner: true, personId: 'p-1', persons: [person('p-1', 'Xabebo', 'Xidavo')],
+    dataStatus: 'ready', admin: true, personId: 'p-1', persons: [person('p-1', 'Xabebo', 'Xidavo')],
     notifs, myTasks: [], substituteReqs: [], weeks: [], fsWeeks: [],
   }
   function Buehne() {

@@ -73,7 +73,7 @@ function zeige(over: Partial<AppState> = {}, link?: string) {
     congregationId: 'c1',
     userId: 'u1',
     personId: 'p1',
-    planner: true,
+    admin: true,
     screen: 'start',
     confirmations: {},
     notifs: [],
@@ -426,7 +426,7 @@ describe('Zurück am Handy', () => {
   it('ein Blatt über einem Bildschirm schließt zuerst', async () => {
     // `a1` ist eine offene Aufgabe des Demo-Bestands (DEMO_MY_TASKS); „Ich kann
     // nicht" an ihrer Karte legt das Blatt zum Absagen darüber.
-    const { container } = zeige({ planner: false, personId: 'p9' })
+    const { container } = zeige({ admin: false, personId: 'p9' })
     klickMenue(container, t.navAufgabenLong)
     fireEvent.click([...container.querySelectorAll('.aufgabe-karte button')].find((b) => b.textContent === t.kannNicht)!)
     await ausklingen()
@@ -483,7 +483,7 @@ describe('Zurück am Handy', () => {
 
   it('Tipp auf die eigene Aufgabe: ihr Blatt auf „Meine Aufgaben" — Zurück schließt es, dann geht es zu Start', async () => {
     // `a1` ist eine offene Aufgabe des Demo-Bestands (DEMO_MY_TASKS).
-    const { container } = zeige({ planner: false, personId: 'p9', notifs: [zeile({ taskId: 'a1' })] })
+    const { container } = zeige({ admin: false, personId: 'p9', notifs: [zeile({ taskId: 'a1' })] })
     await tippeAufDieMitteilung(container)
     expect(aktiv(container)).toBe(t.navAufgabenLong)
     expect(container.querySelector('.sheet'), 'das Blatt ist nicht offen').not.toBeNull()

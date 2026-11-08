@@ -28,7 +28,7 @@ describe('tausch_anfragen', () => {
     expect(rumpf).toMatch(/von_user = auth\.uid\(\)/)
     expect(rumpf).toMatch(/von_person = public\.my_person_id\(\)/)
     expect(rumpf).toMatch(/an_person = public\.my_person_id\(\)/)
-    expect(rumpf).not.toMatch(/darf_zuteilen|is_planner/)
+    expect(rumpf).not.toMatch(/darf_zuteilen|ist_admin/)
   })
 
   it('je abgegebenem Platz eine Anfrage, und nie ein Platz gegen sich selbst', () => {

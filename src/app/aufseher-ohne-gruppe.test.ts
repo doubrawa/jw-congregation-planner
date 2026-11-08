@@ -20,7 +20,7 @@ describe('Der Aufseher der gelöschten Gruppe', () => {
     const demo = demoZustand()
     const gruppe = demo.groups.find((g) => g.overseerId)
     if (!gruppe?.overseerId) throw new Error('Demo-Bestand ohne Gruppenaufseher')
-    const vorher = { ...demo, screen: 'planen' as const, personId: gruppe.overseerId, planner: false, zuteiler: false }
+    const vorher = { ...demo, screen: 'planen' as const, personId: gruppe.overseerId, admin: false, zuteiler: false }
     expect(rechteVon(vorher).gruppe).toBe(gruppe.id)
     expect(fsBereiche(vorher)).toContain('grundplan')
 

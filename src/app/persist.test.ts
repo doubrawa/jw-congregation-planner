@@ -145,7 +145,7 @@ function st(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     // Ein Admin. Der Planer schreibt Wochen genauso unmittelbar (eigener Fall unten).
-    planner: true,
+    admin: true,
     zuteiler: false,
     personId: 'p9',
     week: 0,
@@ -339,8 +339,8 @@ describe('Zuteilen', () => {
    * `zuteilen`, die nur Zuteilungen durchließ.
    */
   it('beim Planer geht dieselbe Woche unmittelbar hinaus, die Zusagen räumt er selbst ab', async () => {
-    const prev = st({ planner: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
-    const next = st({ planner: false, zuteiler: true })
+    const prev = st({ admin: false, zuteiler: true, confirmations: { [VERFALLEN]: 'bestätigt' } })
+    const next = st({ admin: false, zuteiler: true })
     persist(prev, next, { type: 'autoAssign' })
     // Zusagen löschen darf der Planer selbst (RLS `confirmations_delete_planner`
     // gilt auch in `woche_speichern`).
@@ -768,12 +768,12 @@ describe('Vortragsplan (T122)', () => {
 
   it('die Woche, in die der Plan schrieb, geht beim Planer unmittelbar hinaus', () => {
     const vortraege = [V5]
-    const prev = st({ planner: false, zuteiler: true, vortraege })
+    const prev = st({ admin: false, zuteiler: true, vortraege })
     const weeks = vortragSetzen(prev.weeks, 0, {
       redner: 'Max Mustermann', versammlung: 'Musterstadt', eigener: false, thema: 'Demo-Thema 1', lied: '151',
     })
     expect(weeks).not.toBe(prev.weeks)
-    const next = st({ planner: false, zuteiler: true, weeks, vortraege })
+    const next = st({ admin: false, zuteiler: true, weeks, vortraege })
     persist(prev, next, UEBERNEHMEN)
     expect(saveWeek).toHaveBeenCalledTimes(1)
     expect(saveWeek).toHaveBeenCalledWith('c1', next.weeks[0], [])
@@ -1251,15 +1251,15 @@ describe('Personen (inkl. Debounce)', () => {
   it('updatePerson mit Admin-Recht spiegelt die Konten sofort', () => {
     const p = DEMO_PERSONS[0]!
     const next = st({
-      members: [{ userId: 'm1', email: '', personId: p.id, planner: true, zuteiler: false }, { userId: 'u1', email: '', personId: p.id, planner: true, zuteiler: false }],
+      members: [{ userId: 'm1', email: '', personId: p.id, admin: true, zuteiler: false }, { userId: 'u1', email: '', personId: p.id, admin: true, zuteiler: false }],
     })
-    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { plannerVorgemerkt: true } })
+    persist(st(), next, { type: 'updatePerson', id: p.id, patch: { adminVorgemerkt: true } })
     expect(saveMemberRow).toHaveBeenCalledTimes(1) // eigenes Konto (u1) ausgenommen
   })
 
   it('updatePerson mit Planer-Recht (zuteiler) spiegelt ebenso — dieselbe Zeile, beide Rechte', () => {
     const p = DEMO_PERSONS[0]!
-    const konto = { userId: 'm1', email: '', personId: p.id, planner: false, zuteiler: false }
+    const konto = { userId: 'm1', email: '', personId: p.id, admin: false, zuteiler: false }
     const next = st({ members: [{ ...konto, zuteiler: true }] })
     persist(st({ members: [konto] }), next, { type: 'updatePerson', id: p.id, patch: { zuteilerVorgemerkt: true } })
     // Mit dem Stand davor: Hinaus geht nur das Recht, das sich geändert hat.
@@ -1298,7 +1298,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('removePerson löscht die Zeile und nimmt ihr Konto mit', () => {
     persist(
-      st({ members: [{ userId: 'm1', email: '', personId: 'p1', planner: false, zuteiler: false }] }),
+      st({ members: [{ userId: 'm1', email: '', personId: 'p1', admin: false, zuteiler: false }] }),
       st(),
       { type: 'removePerson', id: 'p1' },
     )
@@ -1313,7 +1313,7 @@ describe('Personen (inkl. Debounce)', () => {
 
   it('removePerson der eigenen Person lässt das eigene Konto stehen — sich selbst entfernen sperrt die Datenbank', () => {
     persist(
-      st({ members: [{ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }] }),
+      st({ members: [{ userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false }] }),
       st(),
       { type: 'removePerson', id: 'p1' },
     )
@@ -1878,23 +1878,23 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
   })
 
   it('updateMember / removeMember', () => {
-    const m = { userId: 'm1', email: '', personId: null, planner: false, zuteiler: false }
-    const admin = { ...m, planner: true }
-    persist(st({ members: [m] }), st({ members: [admin] }), { type: 'updateMember', userId: 'm1', patch: { planner: true } })
+    const m = { userId: 'm1', email: '', personId: null, admin: false, zuteiler: false }
+    const admin = { ...m, admin: true }
+    persist(st({ members: [m] }), st({ members: [admin] }), { type: 'updateMember', userId: 'm1', patch: { admin: true } })
     expect(saveMemberRow).toHaveBeenCalledWith(admin, m)
     persist(st(), st(), { type: 'removeMember', userId: 'm1' })
     expect(deleteMemberRow).toHaveBeenCalledWith('m1')
   })
 
   it('mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich wieder herein', () => {
-    const m = { userId: 'm1', email: '', personId: 'p-a', planner: false, zuteiler: false }
+    const m = { userId: 'm1', email: '', personId: 'p-a', admin: false, zuteiler: false }
     persist(st({ members: [m] }), st(), { type: 'removeMember', userId: 'm1' })
     expect(deleteMemberRow).toHaveBeenCalledWith('m1')
     expect(deleteAnmeldeLink).toHaveBeenCalledWith('p-a')
   })
 
   it('ein Konto ohne Person hat keinen Link zu löschen', () => {
-    const m = { userId: 'm1', email: '', personId: null, planner: false, zuteiler: false }
+    const m = { userId: 'm1', email: '', personId: null, admin: false, zuteiler: false }
     persist(st({ members: [m] }), st(), { type: 'removeMember', userId: 'm1' })
     expect(deleteAnmeldeLink).not.toHaveBeenCalled()
   })
@@ -2348,7 +2348,7 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
     congregationId: 'Kennung des Ladevorgangs, kein Inhalt',
     userId: 'Kennung des Ladevorgangs, kein Inhalt',
     empty: 'abgeleitet beim Laden',
-    planner: 'Recht des eigenen Kontos — gelesen, nie hier gesetzt',
+    admin: 'Recht des eigenen Kontos — gelesen, nie hier gesetzt',
     personId: 'Zuordnung des eigenen Kontos — gelesen, nie hier gesetzt',
     weeks: 'allgemeiner Schreibweg unter dem Switch',
     fsWeeks: 'allgemeiner Schreibweg unter dem Switch (seit dem 16.10.2026)',

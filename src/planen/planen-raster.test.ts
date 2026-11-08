@@ -52,20 +52,20 @@ describe('istGewaehlt', () => {
 
 const zustand = (over: Partial<AppState> = {}): AppState => ({
   ...demoZustand(),
-  screen: 'planen', tab: 'mid', week: 0, planner: true, userId: 'u1', slotSel: TEIL,
+  screen: 'planen', tab: 'mid', week: 0, admin: true, userId: 'u1', slotSel: TEIL,
   ...over,
 })
 /** Aufseher von Gruppe 1, ohne Admin und ohne Zuteilen. */
 const gruppenaufseher = (over: Partial<AppState> = {}): AppState => {
   const s = zustand(over)
-  return { ...s, planner: false, zuteiler: false, personId: 'p-ov', groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null }] }
+  return { ...s, admin: false, zuteiler: false, personId: 'p-ov', groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-ov', assistantId: null }] }
 }
 
 describe('planArt — welche Leiste der Plan trägt (T121, Phase 5e)', () => {
   it('die Zusammenkünfte für den, der zuteilt — nicht „Woche einrichten", nicht die Zusagen', () => {
     expect(planArt(zustand())).toBe('zusammenkuenfte')
     expect(planArt(zustand({ tab: 'we' }))).toBe('zusammenkuenfte')
-    expect(planArt(zustand({ planner: false, zuteiler: true }))).toBe('zusammenkuenfte')
+    expect(planArt(zustand({ admin: false, zuteiler: true }))).toBe('zusammenkuenfte')
     expect(planArt(zustand({ tab: 'edit' }))).toBeNull()
     expect(planArt(zustand({ tab: 'zusagen' }))).toBeNull()
   })
@@ -83,7 +83,7 @@ describe('planArt — welche Leiste der Plan trägt (T121, Phase 5e)', () => {
 
   it('ohne Woche und ohne Recht keine', () => {
     expect(planArt(zustand({ weeks: [] }))).toBeNull()
-    expect(planArt(zustand({ planner: false, zuteiler: false, personId: null }))).toBeNull()
+    expect(planArt(zustand({ admin: false, zuteiler: false, personId: null }))).toBeNull()
   })
 })
 

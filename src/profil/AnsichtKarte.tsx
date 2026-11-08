@@ -10,7 +10,7 @@ const EIGENES_RECHT = 'admin'
  * **Ansicht zum Testen**: Der Admin sieht die App mit den
  * Rechten einer anderen Stufe (`data/ansicht.ts`).
  *
- * Angeboten am **echten** Recht (`planner`), nicht an der Ansicht — sonst
+ * Angeboten am **echten** Recht (`admin`), nicht an der Ansicht — sonst
  * verschwände die Karte mit dem Umschalten auf „Verkündiger", und es gäbe kein
  * Zurück. Sie steht im Profil, weil das jede Stufe sieht; die Einstellungen
  * sieht schon der Planer nicht.
@@ -22,7 +22,7 @@ const EIGENES_RECHT = 'admin'
 export function AnsichtKarte() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  if (!state.planner) return null
+  if (!state.admin) return null
   const { ansicht, groups } = state
   const eigeneGruppe = ansichtsGruppe(groups, state.persons, state.personId)
   const gruppenName = groups.find((g) => g.id === eigeneGruppe)?.name

@@ -49,7 +49,7 @@ function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'mitteilungen',
-    dataStatus: 'ready', congregationId: null, userId: null, planner: false,
+    dataStatus: 'ready', congregationId: null, userId: null, admin: false,
     notifs: [], myTasks: [], substituteReqs: [], persons: [], weeks: [], fsWeeks: [],
     ...over,
   }
@@ -128,11 +128,11 @@ describe('Die Seite', () => {
 
   it('die eigene, lokal entstandene Absage-Meldung sieht ein Verkündiger nicht — sie gilt den Admins', () => {
     const lokal = notif({ id: 'lokal', type: 'verhindert', title: 'Verhinderung gemeldet', local: true })
-    const { container } = zeige({ notifs: [lokal], planner: false })
+    const { container } = zeige({ notifs: [lokal], admin: false })
     expect(container.querySelectorAll('.mitteilung')).toHaveLength(0)
     expect(container.querySelector('.mitteilungen-leer')).toBeTruthy()
     cleanup()
-    const admin = zeige({ notifs: [lokal], planner: true })
+    const admin = zeige({ notifs: [lokal], admin: true })
     expect(admin.container.querySelectorAll('.mitteilung')).toHaveLength(1)
   })
 })
@@ -243,7 +243,7 @@ describe('Gleich hier erledigen (T121)', () => {
     // Aufgabe. Übernimmt der Planer den Platz selbst, ist es seine — an der
     // Meldung über die Absage stünde sonst „Bestätigen".
     const absage = notif({ type: 'verhindert', title: 'Verhinderung gemeldet', taskId: 'T1' })
-    const { container } = zeige({ notifs: [absage], myTasks: [task({ id: 'T1' })], planner: true })
+    const { container } = zeige({ notifs: [absage], myTasks: [task({ id: 'T1' })], admin: true })
     expect(knopf(container, t.bestaetigen)).toBeUndefined()
   })
 

@@ -69,7 +69,7 @@ function zeige(inhalt: ReactNode, over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'wochen', tab: 'mid', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-pl', planner: true,
+    congregationId: 'c1', userId: 'u1', personId: 'p-pl', admin: true,
     persons: [person('p-pl'), person('p-ov')], groups: GRUPPEN, services: DIENSTE, absences: [],
     weeks: [VORIGE, DIESE, NAECHSTE, KONGRESS], fsWeeks: [[], [], [], []], fsRules: [], week: 1,
     confirmations: {}, sentLog: {}, persoenlich: {},
@@ -247,7 +247,7 @@ describe('Die Spalte neben dem Plan (`GDesktopPlanen`)', () => {
 
   it('der Gruppenaufseher bekommt sie nicht — er plant allein die Treffpunkte seiner Gruppe', () => {
     breite(true)
-    const { container } = zeige(<PlanenScreen />, { screen: 'planen', tab: 'fs', planner: false, personId: 'p-ov' })
+    const { container } = zeige(<PlanenScreen />, { screen: 'planen', tab: 'fs', admin: false, personId: 'p-ov' })
     expect(container.querySelector('.wochen-spalte')).toBeNull()
   })
 

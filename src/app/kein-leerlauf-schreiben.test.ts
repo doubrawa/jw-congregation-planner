@@ -120,7 +120,7 @@ function ladung(): HydratePayload {
     userId: 'u1',
     empty: false,
     congregation: { ...CONGREGATION },
-    planner: true,
+    admin: true,
     personId: DEMO_PERSONS[0]!.id,
     persons: DEMO_PERSONS.map((p) => ({ ...p })),
     services: DEMO_SERVICES.map((s) => ({ ...s })),
@@ -142,7 +142,7 @@ function ladung(): HydratePayload {
     congLang: 'de',
     progLangs: [],
     auxClass: true,
-    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, planner: true, zuteiler: false, email: 'a@b.c' }],
+    members: [{ userId: 'u1', personId: DEMO_PERSONS[0]!.id, admin: true, zuteiler: false, email: 'a@b.c' }],
     anmeldeLinks: [],
   }
 }

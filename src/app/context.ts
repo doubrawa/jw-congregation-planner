@@ -95,7 +95,7 @@ export interface HydratePayload {
   userId: string
   empty: boolean // Versammlung hat noch keine Personen/Wochen
   congregation: Congregation
-  planner: boolean
+  admin: boolean
   /** Planer-Recht (4.10.2026). Einer Momentaufnahme von davor fehlt es. */
   zuteiler?: boolean
   personId: string | null
@@ -178,7 +178,7 @@ export interface AppState {
    * Supabase das Token übers Netz, bevor es die Sitzung herausgibt.
    */
   sitzungPruefen: boolean
-  planner: boolean // „Admin": darf alles — Planen, Personen, Einstellungen
+  admin: boolean // „Admin": darf alles — Planen, Personen, Einstellungen
   /**
    * „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin, nur
    * Personen und Einstellungen nicht. Gefragt wird fast nie danach allein,
@@ -540,7 +540,7 @@ export type AppAction =
   | { type: 'updateGroup'; id: string; patch: Partial<Omit<Group, 'id'>> }
   | { type: 'updateCongregation'; patch: Partial<Congregation> } // speichert automatisch (debounced)
   // Mitglieder & Anmelde-Links (nur Admins)
-  | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'planner' | 'zuteiler'>> }
+  | { type: 'updateMember'; userId: string; patch: Partial<Pick<Member, 'personId' | 'admin' | 'zuteiler'>> }
   | { type: 'removeMember'; userId: string }
   // Die Function `send-invite` hat Links ausgestellt — geschrieben hat sie selbst.
   | { type: 'linksAusgestellt'; links: AnmeldeLink[] }

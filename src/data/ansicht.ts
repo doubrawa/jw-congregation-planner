@@ -4,7 +4,7 @@
  *
  * Die Ansicht legt sich in `rechteVon` über die echten Rechte — eine Stelle
  * statt der rund zwanzig, die nach Rechten fragen. Sie gilt nur für ein
- * echtes Admin-Konto (`planner`), wird nirgends gespeichert und endet mit dem
+ * echtes Admin-Konto (`admin`), wird nirgends gespeichert und endet mit dem
  * Neuladen. Die Datenbank kennt weiter nur das echte Recht: Was man in der
  * Ansicht tut, geschieht mit den Rechten des Admins, und was die RLS einem
  * Verkündiger gar nicht schickte, liegt trotzdem im Speicher.
@@ -28,13 +28,13 @@ export interface Ansicht {
 }
 
 /**
- * **Die Ansicht, die gilt** — nur an einem echten Admin-Konto (`planner`),
+ * **Die Ansicht, die gilt** — nur an einem echten Admin-Konto (`admin`),
  * geprüft am echten Recht, nicht an der Ansicht: Ein Planer kann sich damit
  * weder Rechte geben noch nehmen. Eine Stelle für `rechteVon`, `rechteStufe`
  * und die Leiste; bis zum 17.10.2026 stand die Bedingung dreimal da.
  */
-export function aktiveAnsicht(s: { planner: boolean; ansicht?: Ansicht | null }): Ansicht | null {
-  return s.planner && s.ansicht ? s.ansicht : null
+export function aktiveAnsicht(s: { admin: boolean; ansicht?: Ansicht | null }): Ansicht | null {
+  return s.admin && s.ansicht ? s.ansicht : null
 }
 
 /**

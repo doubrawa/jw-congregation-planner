@@ -35,8 +35,8 @@
 --   * Mandantenfähig über `congregations` — jede Zeile jeder Tabelle gehört
 --     zu genau einer Versammlung.
 --   * `members` verknüpft Auth-Benutzer (auth.users) mit ihrer Versammlung
---     und zwei Rechten: `planner` — der **Admin**, der alles darf, auch
---     Personen und Einstellungen (`is_planner()`) — und `zuteiler` — der
+--     und zwei Rechten: `admin` — der **Admin**, der alles darf, auch
+--     Personen und Einstellungen (`ist_admin()`) — und `zuteiler` — der
 --     **Planer**, der seit dem 15.10.2026 alles plant wie der Admin, nur
 --     Personen und Einstellungen nicht (`darf_zuteilen()`).
 --   * Row-Level-Security überall: Mitglieder lesen nur ihre Versammlung,
@@ -151,16 +151,19 @@ create table if not exists public.persons (
   -- wtVertreter) plus je Hilfsdienst ein dynamischer Schlüssel `svc:<key>`.
   priv            jsonb not null default '{}'::jsonb,
 
-  -- **Vormerkung** des Planer-Rechts, nicht das Recht selbst: Bei der ersten
-  -- Anmeldung übernimmt die Function `anmelden` sie in `members.planner`
+  -- **Vormerkung** des Admin-Rechts, nicht das Recht selbst: Bei der ersten
+  -- Anmeldung übernimmt die Function `anmelden` sie in `members.admin`
   -- (T121, Phase 8), damit jemand das Recht gleich hat. Wirksam ist allein
-  -- `members.planner` — daran hängt `is_planner()`.
+  -- `members.admin` — daran hängt `ist_admin()`.
   --
-  -- Die Spalte hieß bis zum 17. September 2026 ebenfalls `planner`, und dieser
+  -- Vormerkung und Recht hießen bis zum 17. September 2026 gleich, und dieser
   -- eine Name für zwei verschiedene Tatsachen war der ganze Fehler: Der
-  -- Personen-Neuaufbau aus New World Scheduler schreibt sie nicht mit, also
-  -- stand sie bei allen auf `false` — und der Personen-Bildschirm zeigte dem
-  -- Betreiber „Admin: aus", während er Admin war (PlannerToggle).
+  -- Personen-Neuaufbau aus New World Scheduler schreibt die Vormerkung nicht
+  -- mit, also stand sie bei allen auf `false` — und der Personen-Bildschirm
+  -- zeigte dem Betreiber „Admin: aus", während er Admin war.
+  admin_vorgemerkt boolean not null default false,
+  -- Der frühere Name (bis E4, 8.11.2026). Steht im Übergang daneben, bis
+  -- Schritt 2 ihn entfernt — siehe „Übergang" nach `members`.
   planner_vorgemerkt boolean not null default false,
   -- Dasselbe für das Planer-Recht (4.10.2026): bei der ersten Anmeldung in
   -- `members.zuteiler`.
@@ -276,7 +279,9 @@ create table if not exists public.members (
   -- null})` beim Löschen einer Person). Wer eine Person per Skript löschte,
   -- hinterließ eine Zeile, deren `my_person_id()` ins Leere zeigt.
   person_id       uuid,
-  planner         boolean not null default false,   -- „Admin": darf alles (`is_planner()`)
+  admin           boolean not null default false,   -- „Admin": darf alles (`ist_admin()`)
+  -- Der frühere Name (bis E4, 8.11.2026), im Übergang daneben — siehe unten.
+  planner         boolean not null default false,
   -- „Planer" (4.10.2026): plant seit dem 15.10.2026 alles wie der Admin —
   -- Personen und Einstellungen nicht. Ein Admin hat das Recht ohnehin;
   -- gefragt wird es über `darf_zuteilen()`.
@@ -294,6 +299,59 @@ alter table public.members
 
 create index if not exists members_congregation_idx
   on public.members (congregation_id);
+
+-- **Übergang (E4, 8.11.2026): Das Admin-Recht hieß `planner`** — und der Planer
+-- heißt `zuteiler`. Wer `planner` las, dachte an den Planer; bei jeder
+-- Änderung an den Rechten war das eine Falle. Jetzt heißen Recht und
+-- Vormerkung `admin` und `admin_vorgemerkt`.
+--
+-- Umbenannt wird in zwei Schritten, weil ältere App-Stände auf den Geräten und
+-- die Functions bis zu ihrem Ausrollen die alten Spalten lesen und schreiben.
+-- Schritt 1 legt die neuen daneben, und diese Trigger halten beide gleich: Wer
+-- eine Spalte ändert, ändert die andere mit; beim Anlegen zählt, was eine von
+-- beiden setzt. Schritt 2 entfernt die alten Spalten und die Trigger, sobald
+-- jedes Gerät die neue Fassung geladen hat.
+create or replace function public.admin_recht_angleichen()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.admin := new.admin or new.planner;
+  elsif new.admin is not distinct from old.admin then
+    new.admin := new.planner;
+  end if;
+  new.planner := new.admin;
+  return new;
+end;
+$$;
+
+drop trigger if exists members_admin_angleichen on public.members;
+create trigger members_admin_angleichen
+  before insert or update on public.members
+  for each row execute function public.admin_recht_angleichen();
+
+create or replace function public.admin_vormerkung_angleichen()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.admin_vorgemerkt := new.admin_vorgemerkt or new.planner_vorgemerkt;
+  elsif new.admin_vorgemerkt is not distinct from old.admin_vorgemerkt then
+    new.admin_vorgemerkt := new.planner_vorgemerkt;
+  end if;
+  new.planner_vorgemerkt := new.admin_vorgemerkt;
+  return new;
+end;
+$$;
+
+drop trigger if exists persons_admin_angleichen on public.persons;
+create trigger persons_admin_angleichen
+  before insert or update on public.persons
+  for each row execute function public.admin_vormerkung_angleichen();
 
 -- **Ohne Versammlung kein Konto** (21.10.2026): Geht die Mitgliedschaft, geht
 -- das Konto mit. Ohne Versammlung ist die App nicht zu nutzen (Betreiber), und
@@ -1058,13 +1116,15 @@ as $$
   select congregation_id from public.members where user_id = auth.uid()
 $$;
 
-create or replace function public.is_planner()
+-- Ist der aktuelle Nutzer Admin (`members.admin`)? Bis E4 (8.11.2026) hieß die
+-- Funktion `is_planner()`.
+create or replace function public.ist_admin()
 returns boolean
 language sql stable security definer
 set search_path = public
 as $$
   select coalesce(
-    (select planner from public.members where user_id = auth.uid()),
+    (select admin from public.members where user_id = auth.uid()),
     false
   )
 $$;
@@ -1081,11 +1141,11 @@ as $$
   select person_id from public.members where user_id = auth.uid()
 $$;
 
--- Darf der aktuelle Nutzer planen — als Admin (`members.planner`) oder als
+-- Darf der aktuelle Nutzer planen — als Admin (`members.admin`) oder als
 -- Planer (`members.zuteiler`, 4.10.2026)? Seit dem 15.10.2026 plant der Planer
 -- alles wie der Admin: Wochen, Treffpunkte samt Grundplan, Gruppenbesuche,
 -- Weitere Pläne („ein planer plant ja schließlich die woche"). Personen und
--- Einstellungen bleiben beim Admin (`is_planner()`). Bis dahin teilte er nur zu
+-- Einstellungen bleiben beim Admin (`ist_admin()`). Bis dahin teilte er nur zu
 -- und schrieb Wochen über die Edge Function `zuteilen`.
 create or replace function public.darf_zuteilen()
 returns boolean
@@ -1093,7 +1153,7 @@ language sql stable security definer
 set search_path = public
 as $$
   select coalesce(
-    (select planner or zuteiler from public.members where user_id = auth.uid()),
+    (select admin or zuteiler from public.members where user_id = auth.uid()),
     false
   )
 $$;
@@ -1538,14 +1598,14 @@ alter table public.notifications enable row level security;
 alter table public.confirmations enable row level security;
 
 -- Versammlung: Mitglieder lesen ihre eigene; ändern nur der Admin
--- (`is_planner()` — der Name stammt aus der Zeit vor dem Planer-Recht).
+-- (`ist_admin()`).
 drop policy if exists congregations_select on public.congregations;
 create policy congregations_select on public.congregations
   for select using (id = public.my_congregation_id());
 
 drop policy if exists congregations_update on public.congregations;
 create policy congregations_update on public.congregations
-  for update using (id = public.my_congregation_id() and public.is_planner());
+  for update using (id = public.my_congregation_id() and public.ist_admin());
 
 -- Mitglieder: eigene Zeile lesen; der Admin sieht und verwaltet alle seiner
 -- Versammlung (sich selbst entfernen ist gesperrt).
@@ -1553,20 +1613,20 @@ drop policy if exists members_select on public.members;
 create policy members_select on public.members
   for select using (
     user_id = auth.uid()
-    or (congregation_id = public.my_congregation_id() and public.is_planner())
+    or (congregation_id = public.my_congregation_id() and public.ist_admin())
   );
 
 drop policy if exists members_update on public.members;
 create policy members_update on public.members
   for update
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists members_delete on public.members;
 create policy members_delete on public.members
   for delete using (
     congregation_id = public.my_congregation_id()
-    and public.is_planner()
+    and public.ist_admin()
     and user_id <> auth.uid()
   );
 
@@ -1579,8 +1639,8 @@ create policy persons_select on public.persons
 drop policy if exists persons_write on public.persons;
 create policy persons_write on public.persons
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 -- Haushalte trägt niemand für sich ein: Sie entstehen und vergehen mit der
 -- Zuordnung im Personen-Detail, und die macht der Admin.
@@ -1591,8 +1651,8 @@ create policy households_select on public.households
 drop policy if exists households_write on public.households;
 create policy households_write on public.households
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists services_select on public.services;
 create policy services_select on public.services
@@ -1601,8 +1661,8 @@ create policy services_select on public.services
 drop policy if exists services_write on public.services;
 create policy services_write on public.services
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists groups_select on public.groups;
 create policy groups_select on public.groups
@@ -1611,8 +1671,8 @@ create policy groups_select on public.groups
 drop policy if exists groups_write on public.groups;
 create policy groups_write on public.groups
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists weeks_select on public.weeks;
 create policy weeks_select on public.weeks
@@ -1660,7 +1720,7 @@ create policy absences_write on public.absences
     and (
       user_id = auth.uid()
       or (person_id is not null and person_id = public.my_person_id())
-      or public.is_planner()
+      or public.ist_admin()
     )
   )
   with check (
@@ -1668,7 +1728,7 @@ create policy absences_write on public.absences
     and (
       (user_id = auth.uid() and (person_id is null or person_id = public.my_person_id()))
       or (person_id is not null and person_id = public.my_person_id())
-      or public.is_planner()
+      or public.ist_admin()
     )
   );
 
@@ -1712,7 +1772,7 @@ as $$
    where a.congregation_id = public.my_congregation_id()
      and a.reason <> ''
      and (
-       public.is_planner()
+       public.ist_admin()
        or a.user_id = auth.uid()
        or (a.person_id is not null and a.person_id = public.my_person_id())
      )
@@ -1739,7 +1799,7 @@ drop policy if exists notifications_insert on public.notifications;
 create policy notifications_insert on public.notifications
   for insert with check (
     congregation_id = public.my_congregation_id()
-    and public.is_planner()
+    and public.ist_admin()
   );
 
 drop policy if exists notifications_update on public.notifications;
@@ -2114,8 +2174,8 @@ create policy trolleys_select on public.trolleys
 drop policy if exists trolleys_write on public.trolleys;
 create policy trolleys_write on public.trolleys
   for all
-  using (congregation_id = public.my_congregation_id() and public.is_planner())
-  with check (congregation_id = public.my_congregation_id() and public.is_planner());
+  using (congregation_id = public.my_congregation_id() and public.ist_admin())
+  with check (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists trolley_termine_select on public.trolley_termine;
 create policy trolley_termine_select on public.trolley_termine
@@ -2140,11 +2200,11 @@ grant delete on public.anmelde_links to authenticated;
 
 drop policy if exists anmelde_links_select on public.anmelde_links;
 create policy anmelde_links_select on public.anmelde_links
-  for select using (congregation_id = public.my_congregation_id() and public.is_planner());
+  for select using (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 drop policy if exists anmelde_links_delete on public.anmelde_links;
 create policy anmelde_links_delete on public.anmelde_links
-  for delete using (congregation_id = public.my_congregation_id() and public.is_planner());
+  for delete using (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 -- Weitere Pläne: Plan und Gruppen darin pflegen Admin und Planer (der Planer
 -- den Plan selbst seit dem 15.10.2026; bis dahin verteilte er nur die Gruppen).
@@ -2218,7 +2278,7 @@ create policy geraete_fehler_insert on public.geraete_fehler
 
 drop policy if exists geraete_fehler_select on public.geraete_fehler;
 create policy geraete_fehler_select on public.geraete_fehler
-  for select using (congregation_id = public.my_congregation_id() and public.is_planner());
+  for select using (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 -- ---------------------------------------------------------------------------
 -- Mitteilung an die Planer der eigenen Versammlung — je Planer eine Zeile mit
@@ -2260,7 +2320,7 @@ begin
   select m.congregation_id, m.user_id, kind, subject, message, nullif(left(task, 300), '')
     from public.members m
    where m.congregation_id = public.my_congregation_id()
-     and (m.planner or m.zuteiler);
+     and (m.admin or m.zuteiler);
 end;
 $$;
 

@@ -47,7 +47,7 @@ function zeige(was: 'sonder' | 'termine', over: Partial<AppState> = {}, tab: 'mi
   const state: AppState = {
     ...demoZustand(),
     screen: 'planen', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', planner: true,
+    congregationId: 'c1', userId: 'u1', admin: true,
     persons: [], services: [], groups: [], weeks: [woche()], fsWeeks: [], week: 0,
     congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,

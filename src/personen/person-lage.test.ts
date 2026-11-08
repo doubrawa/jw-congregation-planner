@@ -12,7 +12,7 @@ const person = (id: string, over: Partial<Person> = {}): Person => ({
   id, fn: id, ln: id, role: 'verkuendiger', priv: emptyQualifications(), ...over,
 })
 const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
-  userId: `u-${personId}`, email: '', personId, planner: false, zuteiler: false, ...over,
+  userId: `u-${personId}`, email: '', personId, admin: false, zuteiler: false, ...over,
 })
 const link = (personId: string, gueltigBis = '2026-10-07T09:00:00.000Z'): AnmeldeLink => ({
   personId, gueltigBis, erstelltAt: '2026-09-07T09:00:00.000Z', gesendetAt: null, benutztAt: null,
@@ -74,7 +74,7 @@ describe('Heute abwesend', () => {
 
 describe('Das Recht in der Zeile', () => {
   it('mit Konto zählt das Konto — die Vormerkung an der Person nicht', () => {
-    const vorgemerkt = person('a', { plannerVorgemerkt: true })
+    const vorgemerkt = person('a', { adminVorgemerkt: true })
     const [e] = mitLage([vorgemerkt], { ...keine, members: [konto('a')] }, '2026-09-07')
     expect(e?.lage.rechte).toEqual({ admin: false, planer: false })
   })
@@ -85,7 +85,7 @@ describe('Das Recht in der Zeile', () => {
   })
 
   it('die Konten der anderen zählen nicht mit', () => {
-    const lagen = mitLage([person('a'), person('b')], { ...keine, members: [konto('a', { planner: true })] }, '2026-09-07')
+    const lagen = mitLage([person('a'), person('b')], { ...keine, members: [konto('a', { admin: true })] }, '2026-09-07')
     expect(lagen.map((e) => e.lage.rechte.admin)).toEqual([true, false])
   })
 })

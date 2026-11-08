@@ -64,7 +64,7 @@ function zeige(p: Person, over: Partial<AppState> = {}, spalte = false) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'personen', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', planner: true,
+    congregationId: 'c1', userId: 'u1', admin: true,
     persons: [p, BRAND, COHN], groups: GRUPPEN, services: DIENSTE,
     members: [], anmeldeLinks: [], weeks: [], fsWeeks: [], absences: [],
     ...over,
@@ -120,7 +120,7 @@ describe('Der Kopf', () => {
   })
 
   it('der Ring ist voll, wenn die Person angemeldet ist — sonst gestrichelt', () => {
-    const konto: Member[] = [{ userId: 'u9', personId: 'p-a', email: '', planner: false, zuteiler: false }]
+    const konto: Member[] = [{ userId: 'u9', personId: 'p-a', email: '', admin: false, zuteiler: false }]
     expect(zeige(person(), { members: konto }).container.querySelector('.person-bild')?.className).toContain(
       'is-angemeldet',
     )
@@ -430,14 +430,14 @@ describe('Person entfernen braucht zwei Tipps', () => {
 
   // Seit dem 21.10.2026 geht ihr Konto mit — die Frage sagt es, bevor es geschieht.
   it('hat die Person ein Konto, nennt die Frage auch das', () => {
-    const konto = { userId: 'u-a', email: '', personId: 'p-a', planner: false, zuteiler: false }
+    const konto = { userId: 'u-a', email: '', personId: 'p-a', admin: false, zuteiler: false }
     const { container } = zeige(person(), { members: [konto] })
     fireEvent.click(entfernen(container))
     expect(entfernen(container).textContent).toContain(t.confirmPersonDelKonto)
   })
 
   it('ohne Konto — und beim eigenen, das bleibt — steht der Satz nicht da', () => {
-    const eigenes = { userId: 'u1', email: '', personId: 'p-a', planner: true, zuteiler: false }
+    const eigenes = { userId: 'u1', email: '', personId: 'p-a', admin: true, zuteiler: false }
     for (const members of [[], [eigenes]]) {
       const { container } = zeige(person(), { members })
       fireEvent.click(entfernen(container))

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ABSCHNITTE, katalog as katalogVon } from '../scripts/katalog.mjs'
+import { ABSCHNITTE, katalog as katalogVon, katalogVergleich } from '../scripts/katalog.mjs'
 import { leerePostgres } from '../scripts/pglite-postgres.mjs'
 
 /**
@@ -123,16 +123,26 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
     expect(ABSCHNITTE.filter((a) => ausSchema[a]!.length === 0)).toEqual([])
   })
 
+  /**
+   * Verglichen wie gegen die Produktion (`katalogVergleich`): Zeile für Zeile
+   * nach Namen, ohne die Stelle einer Spalte. Eine Migration hängt eine neue
+   * Spalte hinten an, eine entfernte lässt eine Lücke in der Zählung —
+   * `schema.sql` nennt sie, wo sie hingehört. Bis E4 (8.11.2026) legte keine
+   * Migration eine Spalte an, und der Vergleich der rohen Listen fiel nicht auf.
+   */
+  const unterschiede = (links: Katalog, rechts: Katalog, abschnitt: string) =>
+    katalogVergleich({ [abschnitt]: links[abschnitt] }, { [abschnitt]: rechts[abschnitt] })
+
   it.each(ABSCHNITTE)('%s sind gleich', (abschnitt) => {
-    expect(ausMigrationen[abschnitt]).toEqual(ausSchema[abschnitt])
+    expect(unterschiede(ausMigrationen, ausSchema, abschnitt)).toEqual([])
   })
 
   it.each(['spalten', 'richtlinien', 'tabellen', 'kommentare'] as const)('Gegenprobe: eine Änderung an %s fällt auf', (abschnitt) => {
     // **Gegen die Migrationen verglichen, nicht gegen sich selbst.** Genau so
     // liefe der Vergleich oben, stünde die Störung in `schema.sql`: eine
     // Spalte, eine Richtlinie, ein Recht nur dort — und der Abschnitt wird rot.
-    expect(gestoert[abschnitt]).not.toEqual(ausMigrationen[abschnitt])
-    expect(gestoert[abschnitt]).not.toEqual(ausSchema[abschnitt])
+    expect(unterschiede(gestoert, ausMigrationen, abschnitt)).not.toEqual([])
+    expect(unterschiede(gestoert, ausSchema, abschnitt)).not.toEqual([])
   })
 
   it('die Gegenprobe nennt genau das, was gestört wurde', () => {

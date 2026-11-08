@@ -58,7 +58,7 @@ const ICH: Person = {
   id: 'p-a', fn: 'Anton', ln: 'Alt', role: 'verkuendiger', female: false,
   priv: emptyQualifications(),
 }
-const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@example.org', planner: false, zuteiler: false }]
+const MITGLIED: Member[] = [{ userId: 'u1', personId: 'p-a', email: 'anton@example.org', admin: false, zuteiler: false }]
 
 function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
@@ -228,7 +228,7 @@ describe('Handbuch (1.11.2026)', () => {
     [...(karte(c)?.querySelectorAll('a') ?? [])].map((a) => [a.textContent, a.getAttribute('href')])
 
   it('der Verkündiger findet sein Handbuch — es öffnet sich außerhalb der App', () => {
-    const { container } = zeige({ planner: false, zuteiler: false })
+    const { container } = zeige({ admin: false, zuteiler: false })
     expect(verweise(container)).toEqual([[t.handbuchVerkuendiger, HANDBUCH.verkuendiger]])
     const a = karte(container)!.querySelector('a')!
     expect(a.getAttribute('target')).toBe('_blank')
@@ -237,7 +237,7 @@ describe('Handbuch (1.11.2026)', () => {
   })
 
   it('wer planen darf, bekommt das Handbuch für Planer dazu — Planer wie Admin', () => {
-    for (const rechte of [{ planner: false, zuteiler: true }, { planner: true, zuteiler: false }]) {
+    for (const rechte of [{ admin: false, zuteiler: true }, { admin: true, zuteiler: false }]) {
       expect(verweise(zeige(rechte).container), JSON.stringify(rechte)).toEqual([
         [t.handbuchVerkuendiger, HANDBUCH.verkuendiger],
         [t.handbuchPlaner, HANDBUCH.planer],
@@ -256,7 +256,7 @@ describe('Handbuch (1.11.2026)', () => {
     expect(karte(zeige({ lang: 'de' }).container)?.querySelector('h2')?.textContent).toBe('Handbuch')
     cleanup()
     const en = dict('en')
-    const { container } = zeige({ lang: 'en', planner: false, zuteiler: false })
+    const { container } = zeige({ lang: 'en', admin: false, zuteiler: false })
     expect(karte(container)?.querySelector('h2')?.textContent).toBe('User guide (in German)')
     expect(verweise(container)).toEqual([[en.handbuchVerkuendiger, HANDBUCH.verkuendiger]])
   })
@@ -370,7 +370,7 @@ describe('Abwesenheiten (T121: im Profil statt unter „Meine Aufgaben")', () =>
 
 describe('Verwaltung (Admins, am Handy)', () => {
   it('Personen mit ihrer Zahl und die Einstellungen — ein Tipp führt hin', () => {
-    const { container, dispatch } = zeige({ planner: true })
+    const { container, dispatch } = zeige({ admin: true })
     const karte = container.querySelector('.profil-verwaltung')!
     expect(karte.textContent).toContain(t.navPersonen)
     fireEvent.click(knopf(container, t.navEinstellungen)!)
@@ -378,7 +378,7 @@ describe('Verwaltung (Admins, am Handy)', () => {
   })
 
   it('ein Verkündiger sieht sie nicht', () => {
-    expect(zeige({ planner: false }).container.querySelector('.profil-verwaltung')).toBeNull()
+    expect(zeige({ admin: false }).container.querySelector('.profil-verwaltung')).toBeNull()
   })
 })
 
@@ -423,9 +423,9 @@ describe('Ansicht zum Testen (T124)', () => {
   const auswahl = (c: HTMLElement) => karte(c)!.querySelectorAll<HTMLSelectElement>('select')
 
   it('der Planer und der Verkündiger sehen sie nicht', () => {
-    expect(karte(zeige({ planner: false, zuteiler: true }).container)).toBeUndefined()
+    expect(karte(zeige({ admin: false, zuteiler: true }).container)).toBeUndefined()
     cleanup()
-    expect(karte(zeige({ planner: false, zuteiler: false }).container)).toBeUndefined()
+    expect(karte(zeige({ admin: false, zuteiler: false }).container)).toBeUndefined()
   })
 
   const GRUPPEN = [
@@ -434,7 +434,7 @@ describe('Ansicht zum Testen (T124)', () => {
   ]
 
   it('der Admin wählt die Stufe — zuerst steht sein eigenes Recht da', () => {
-    const { container, dispatch } = zeige({ planner: true, groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
+    const { container, dispatch } = zeige({ admin: true, groups: GRUPPEN, persons: [{ ...ICH, grp: 'g1' }] })
     const [stufen] = auswahl(container)
     expect([...stufen!.options].map((o) => o.textContent)).toEqual([
       t.rolleKoordinator,
@@ -451,11 +451,11 @@ describe('Ansicht zum Testen (T124)', () => {
     // Gewirkt hätte eine andere nur beim Planen; Programm, Start und die Zeile
     // unter dem Namen kennen die eigene Gruppe.
     const ich = { ...ICH, grp: 'g2' }
-    const erst = zeige({ planner: true, groups: GRUPPEN, persons: [ich] })
+    const erst = zeige({ admin: true, groups: GRUPPEN, persons: [ich] })
     fireEvent.change(auswahl(erst.container)[0]!, { target: { value: 'gruppenaufseher' } })
     expect(erst.dispatch).toHaveBeenCalledWith({ type: 'setAnsicht', ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
     cleanup()
-    const dann = zeige({ planner: true, groups: GRUPPEN, persons: [ich], ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
+    const dann = zeige({ admin: true, groups: GRUPPEN, persons: [ich], ansicht: { stufe: 'gruppenaufseher', gruppe: 'g2' } })
     const felder = auswahl(dann.container)
     expect(felder).toHaveLength(1)
     expect(felder[0]!.value).toBe('gruppenaufseher')
@@ -463,15 +463,15 @@ describe('Ansicht zum Testen (T124)', () => {
   })
 
   it('ohne eigene Gruppe gibt es den Gruppenaufseher nicht — auch wenn die Versammlung Gruppen hat', () => {
-    const { container } = zeige({ planner: true, groups: GRUPPEN, persons: [{ ...ICH, grp: null }] })
+    const { container } = zeige({ admin: true, groups: GRUPPEN, persons: [{ ...ICH, grp: null }] })
     expect([...auswahl(container)[0]!.options].map((o) => o.value)).toEqual(['admin', 'planer', 'verkuendiger'])
     cleanup()
-    const ohneGruppen = zeige({ planner: true, groups: [] })
+    const ohneGruppen = zeige({ admin: true, groups: [] })
     expect([...auswahl(ohneGruppen.container)[0]!.options].map((o) => o.value)).toEqual(['admin', 'planer', 'verkuendiger'])
   })
 
   it('in der Ansicht als Verkündiger steht sie weiter da — und führt zurück', () => {
-    const { container, dispatch } = zeige({ planner: true, ansicht: { stufe: 'verkuendiger', gruppe: null } })
+    const { container, dispatch } = zeige({ admin: true, ansicht: { stufe: 'verkuendiger', gruppe: null } })
     const [stufen] = auswahl(container)
     expect(stufen!.value).toBe('verkuendiger')
     // Die Verwaltung gehört dem Admin — in der Ansicht fehlt sie wie beim Verkündiger.

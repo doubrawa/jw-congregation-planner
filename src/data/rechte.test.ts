@@ -64,8 +64,8 @@ const VERKUENDIGER: Rechte = { admin: false, zuteilen: false, gruppe: null }
 
 describe('Die Rechte aus dem Zustand', () => {
   const GRUPPEN: Group[] = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: 'p-geh' }]
-  const von = (planner: boolean, zuteiler: boolean, personId: string | null) =>
-    rechteVon({ planner, zuteiler, groups: GRUPPEN, personId })
+  const von = (admin: boolean, zuteiler: boolean, personId: string | null) =>
+    rechteVon({ admin, zuteiler, groups: GRUPPEN, personId })
 
   it('der Admin darf zuteilen und ist nie auf eine Gruppe beschränkt — auch nicht als Gruppenaufseher', () => {
     expect(von(true, false, 'p-auf')).toEqual(ADMIN)
@@ -208,13 +208,13 @@ describe('Die Liste dahinter bleibt vollständig', () => {
  */
 describe('rechteStufe', () => {
   const GRUPPE: Group = { id: 'g1', name: 'G1', overseerId: 'p-ov', assistantId: 'p-geh' }
-  const stufe = (s: { planner?: boolean; zuteiler?: boolean; personId: string | null }) => {
-    const zustand = { planner: false, zuteiler: false, groups: [GRUPPE], ...s }
+  const stufe = (s: { admin?: boolean; zuteiler?: boolean; personId: string | null }) => {
+    const zustand = { admin: false, zuteiler: false, groups: [GRUPPE], ...s }
     return rechteStufe(rechteVon(zustand), zustand)
   }
 
   it('Admin vor allem — auch wenn er eine Gruppe leitet', () => {
-    expect(stufe({ planner: true, personId: 'p-ov' })).toBe('admin')
+    expect(stufe({ admin: true, personId: 'p-ov' })).toBe('admin')
   })
 
   it('Planer vor der Gruppe', () => {
@@ -242,8 +242,8 @@ describe('Die Ansicht einer anderen Stufe (T124)', () => {
     { id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null },
     { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null },
   ]
-  const ADMIN_ZUSTAND = { planner: true, zuteiler: false, groups: GRUPPEN, personId: 'p-admin' }
-  const echt = (s: { zuteiler?: boolean; personId: string | null }) => rechteVon({ planner: false, zuteiler: false, groups: GRUPPEN, ...s })
+  const ADMIN_ZUSTAND = { admin: true, zuteiler: false, groups: GRUPPEN, personId: 'p-admin' }
+  const echt = (s: { zuteiler?: boolean; personId: string | null }) => rechteVon({ admin: false, zuteiler: false, groups: GRUPPEN, ...s })
   const ansicht = (a: Ansicht) => rechteVon({ ...ADMIN_ZUSTAND, ansicht: a })
 
   it('je Stufe dieselben Rechte und Bildschirme wie ein echtes Konto dieser Stufe', () => {
@@ -264,7 +264,7 @@ describe('Die Ansicht einer anderen Stufe (T124)', () => {
   })
 
   it('nur für ein echtes Admin-Konto: Ohne das Recht zählt keine Ansicht', () => {
-    const planer = { planner: false, zuteiler: true, groups: GRUPPEN, personId: 'p-x' }
+    const planer = { admin: false, zuteiler: true, groups: GRUPPEN, personId: 'p-x' }
     expect(rechteVon({ ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } })).toEqual(PLANER)
     expect(rechteStufe(rechteVon({ ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } }), { ...planer, ansicht: { stufe: 'verkuendiger', gruppe: null } })).toBe('planer')
   })

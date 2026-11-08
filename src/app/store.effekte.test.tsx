@@ -342,7 +342,7 @@ describe('Schreibkonflikt: ein anderer Planer war schneller (T39)', () => {
 /** Was das Laden einspielt: eine kleine, leere Versammlung. */
 const geladen = {
   congregation: { name: 'K', hall: '', times: STANDARD_ZEITEN },
-  planner: false,
+  admin: false,
   zuteiler: false,
   personId: null,
   persons: [],

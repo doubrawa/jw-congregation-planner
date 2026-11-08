@@ -8,8 +8,8 @@ import type { FarbModus, QualificationKey, Role, Theme } from './types'
 /*
  * Hier stand `PLANNER_ROLES = ['aeltester', 'dienstamtgehilfe']` mit dem Satz
  * „Nur Planer/Koordinatoren sehen Planen/Personen/Einstellungen". Beides ist
- * überholt: Das Planer-Recht hängt seit den Mitgliedschaften an
- * `members.planner` bzw. `Person.planner`, **nicht** an der Rolle — ein
+ * überholt: Wer planen darf, hängt seit den Mitgliedschaften am Konto
+ * (`members.admin`, `members.zuteiler`), **nicht** an der Rolle — ein
  * Ältester ohne Haken plant nichts, ein Verkündiger mit Haken schon. Die
  * Konstante hatte keinen Aufrufer mehr und behauptete das Gegenteil der
  * geltenden Regel; ein falscher Wegweiser ist schlechter als keiner.

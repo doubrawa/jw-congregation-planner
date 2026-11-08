@@ -24,7 +24,7 @@ export interface PersonRow {
   id: string
   fn: string
   ln: string
-  planner_vorgemerkt: boolean
+  admin_vorgemerkt: boolean
   /** Fehlt, solange `schema.sql` vom 4.10.2026 nicht eingespielt ist. */
   zuteiler_vorgemerkt?: boolean
   role: string
@@ -89,7 +89,7 @@ export function personFromRow(r: PersonRow): Person {
     id: r.id,
     fn: r.fn,
     ln: r.ln,
-    plannerVorgemerkt: r.planner_vorgemerkt || undefined,
+    adminVorgemerkt: r.admin_vorgemerkt || undefined,
     zuteilerVorgemerkt: r.zuteiler_vorgemerkt || undefined,
     role: asRole(r.role),
     female: r.female || undefined,
@@ -105,7 +105,7 @@ export function personToRow(p: Person, congregationId: string) {
     congregation_id: congregationId,
     fn: p.fn,
     ln: p.ln,
-    planner_vorgemerkt: Boolean(p.plannerVorgemerkt),
+    admin_vorgemerkt: Boolean(p.adminVorgemerkt),
     zuteiler_vorgemerkt: Boolean(p.zuteilerVorgemerkt),
     role: p.role,
     female: Boolean(p.female),

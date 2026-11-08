@@ -92,7 +92,7 @@ interface PersonZeile {
   id: string
   fn: string
   ln: string
-  planner_vorgemerkt: boolean
+  admin_vorgemerkt: boolean
   zuteiler_vorgemerkt?: boolean
 }
 
@@ -195,7 +195,7 @@ const abgelaufen = (zugang: Pick<Zugang, 'gueltig_bis'>, jetzt: number): boolean
 
 async function personZu(link: Zugang): Promise<PersonZeile | undefined> {
   const zeilen = await rest.get<PersonZeile[]>(
-    `persons?select=id,fn,ln,planner_vorgemerkt,zuteiler_vorgemerkt&id=eq.${wert(link.person_id)}&congregation_id=eq.${wert(link.congregation_id)}`,
+    `persons?select=id,fn,ln,admin_vorgemerkt,zuteiler_vorgemerkt&id=eq.${wert(link.person_id)}&congregation_id=eq.${wert(link.congregation_id)}`,
   )
   return zeilen[0]
 }
@@ -231,7 +231,7 @@ async function kontoDer(person: PersonZeile, congregationId: string): Promise<{ 
     user_id: konto.id,
     congregation_id: congregationId,
     person_id: person.id,
-    planner: Boolean(person.planner_vorgemerkt),
+    admin: Boolean(person.admin_vorgemerkt),
     zuteiler: Boolean(person.zuteiler_vorgemerkt),
     email: '',
   })

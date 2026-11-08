@@ -48,7 +48,7 @@ function ohneReinigung(): AppState {
     mid: { ...w.mid, helpers: { ...w.mid.helpers, rein: [] } },
     we: { ...w.we, helpers: { ...w.we.helpers, rein: [] } },
   })
-  return { ...demo, dataStatus: 'ready', planner: true, weeks: demo.weeks.map(leer) }
+  return { ...demo, dataStatus: 'ready', admin: true, weeks: demo.weeks.map(leer) }
 }
 
 /** Das Blatt der Reinigung über dem echten Reducer — `zustand()` liest, was die Schalter angerichtet haben. */

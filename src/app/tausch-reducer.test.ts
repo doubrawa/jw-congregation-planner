@@ -69,7 +69,7 @@ describe('Die Anfragen', () => {
   })
 
   it('geht eine der beiden Personen, geht die Anfrage mit — wie in der Datenbank', () => {
-    const s = reducer(start({ planner: true, tauschAnfragen: [anfrage()] }), { type: 'removePerson', id: 'p-simon' })
+    const s = reducer(start({ admin: true, tauschAnfragen: [anfrage()] }), { type: 'removePerson', id: 'p-simon' })
     expect(s.tauschAnfragen).toEqual([])
   })
 

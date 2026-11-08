@@ -155,14 +155,14 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
           next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
         }
       }
-      // Admin-Recht in verknüpfte Konten spiegeln (members.planner = Quelle der
+      // Admin-Recht in verknüpfte Konten spiegeln (members.admin = Quelle der
       // Rechteprüfung); das eigene Konto ist per UI-Sperre ausgenommen. Wer
       // noch keines hat, bekommt es bei der ersten Anmeldung aus der
       // Vormerkung (Function `anmelden`).
-      if ('plannerVorgemerkt' in action.patch) {
-        const on = Boolean(action.patch.plannerVorgemerkt)
+      if ('adminVorgemerkt' in action.patch) {
+        const on = Boolean(action.patch.adminVorgemerkt)
         next.members = state.members.map((m) =>
-          m.personId === action.id && m.userId !== state.userId ? { ...m, planner: on } : m,
+          m.personId === action.id && m.userId !== state.userId ? { ...m, admin: on } : m,
         )
       }
       // Ebenso das Planer-Recht. Vom eigenen Konto aus nimmt es

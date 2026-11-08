@@ -95,7 +95,7 @@ describe('Bei einer Person — ihre Abwesenheiten', () => {
 
   const zeigen = (over: Partial<AppState> = {}, dispatch?: () => void) =>
     render(
-      <Buehne state={basis({ planner: true, ...over })} dispatch={dispatch}>
+      <Buehne state={basis({ admin: true, ...over })} dispatch={dispatch}>
         <PersonDetail person={ANDERE} />
       </Buehne>,
     )
@@ -159,7 +159,7 @@ describe('Bei einer Person — ihre Abwesenheiten', () => {
     // Dieselbe Grenze zieht die Datenbank (`absences_write`). Ein Knopf, der
     // ins Leere schriebe, wäre schlimmer als keins: Der Eintrag stünde da und
     // wäre beim nächsten Laden weg.
-    const { container } = zeigen({ planner: false, absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
+    const { container } = zeigen({ admin: false, absences: [abw('a1', 'p-andere', null, '2026-09-01')] })
     expect(within(karte(container)).queryByText('Abwesenheit eintragen')).toBeNull()
     expect(container.querySelector('.abw-entfernen')).toBeNull()
     expect(inDerKarte(container)).toEqual(['Grund a1']) // lesen darf er

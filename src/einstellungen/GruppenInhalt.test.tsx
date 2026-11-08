@@ -51,7 +51,7 @@ function zeige(over: Partial<AppState> = {}, tabelle = false) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: PERSONEN, groups: [GRUPPE_1], fsRules: [], fsWeeks: [], gruppenbesuche: [], planEintraege: [],
     ...over,
   }

@@ -78,7 +78,7 @@ function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'planen', tab: 'mid', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
+    congregationId: 'c1', userId: 'u1', personId: PLANER.id, admin: true,
     persons: [PLANER, AUFSEHER], groups: GRUPPEN, services: DIENSTE, absences: [],
     weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -358,7 +358,7 @@ describe('Der Kopf nennt das Thema (T120)', () => {
   it('beim Gruppenaufseher immer den Predigtdienst — auch mit einem Reiter von früher', () => {
     // Darunter stehen seine Treffpunkte; der Kopf nennt, was darunter steht.
     for (const tab of ['mid', 'edit'] as const) {
-      const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab })
+      const { container } = zeige({ admin: false, personId: AUFSEHER.id, tab })
       expect(titel(container), tab).toBe(t.tabFs)
       cleanup()
     }
@@ -420,7 +420,7 @@ describe('Der Grundplan im Predigtdienst (T120)', () => {
     // Bis T120 stand das unter Einstellungen; die Versammlungstreffpunkte
     // gehören nicht zu ihm.
     const { container } = zeige({
-      planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules: REGELN,
+      admin: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules: REGELN,
     })
     expect(titelDerRegeln(container)).toEqual(['Gruppe 1'])
   })
@@ -445,7 +445,7 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
   })
 
   it('der Gruppenaufseher plant sie nicht — bei ihm gilt der Bereich als „Treffpunkte"', () => {
-    const { container } = zeige({ planner: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'gruppenbesuche' })
+    const { container } = zeige({ admin: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'gruppenbesuche' })
     expect(container.querySelector('.gb-karte')).toBeNull()
     expect(seite(container).querySelector('.treff-leer')).toBeTruthy() // der Plan der Treffpunkte
   })
@@ -461,7 +461,7 @@ describe('Die Gruppenbesuche im Predigtdienst (T120, Phase 2)', () => {
 describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
   amHandy()
   const alsAufseher = (over: Partial<AppState> = {}) =>
-    zeige({ planner: false, personId: AUFSEHER.id, ...over })
+    zeige({ admin: false, personId: AUFSEHER.id, ...over })
 
   it('ohne die Reiter der Zusammenkünfte — er käme sonst auf einen Plan, den er nicht ändern darf', () => {
     const { container } = alsAufseher()
@@ -667,7 +667,7 @@ function amHandy() {
  */
 describe('Der Planer plant alles wie der Admin (15.10.2026)', () => {
   amMontagDerTestwoche()
-  const ALS_PLANER: Partial<AppState> = { planner: false, zuteiler: true }
+  const ALS_PLANER: Partial<AppState> = { admin: false, zuteiler: true }
   const lac: Section = {
     label: 'UNSER LEBEN ALS CHRIST', kind: 'lac', farbe: 'wein',
     items: [{ iid: 'l1', title: 'Örtliche Bedürfnisse', meta: '15 Min.', mins: 15, names: [{ name: 'Olaf Overseer', pid: 'p-ov', bereichsKey: 'besprechung' }] }],
@@ -721,7 +721,7 @@ describe('Der Planer plant alles wie der Admin (15.10.2026)', () => {
     // Gegenprobe: Der Gruppenaufseher ohne Planer-Recht sieht nur seine Regel.
     expect(container.querySelectorAll('.regel-zeile')).toHaveLength(3)
     cleanup()
-    const aufseher = zeige({ planner: false, zuteiler: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules, groups })
+    const aufseher = zeige({ admin: false, zuteiler: false, personId: AUFSEHER.id, tab: 'fs', fsBereich: 'grundplan', fsRules, groups })
     expect(aufseher.container.querySelectorAll('.regel-zeile')).toHaveLength(1)
   })
 })
@@ -731,7 +731,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
   amHandy()
   it('über die Leiste wie der Planer — aber nur, was seine Gruppe betrifft (T121, Phase 5e)', () => {
     const { container } = zeige({
-      planner: false,
+      admin: false,
       personId: AUFSEHER.id,
       tab: 'fs',
       weeks: [woche()],
@@ -780,7 +780,7 @@ describe('„Woche einrichten" beim Blättern (16.10.2026)', () => {
     const start: AppState = {
       ...demoZustand(),
       screen: 'planen', tab: 'edit', dataStatus: 'ready', terminGewaehlt: true,
-      congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
+      congregationId: 'c1', userId: 'u1', personId: PLANER.id, admin: true,
       persons: [PLANER], groups: [], services: DIENSTE, absences: [],
       weeks: [woche(), zweite], fsWeeks: [[], []], fsRules: [], week: 0,
       congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -915,7 +915,7 @@ describe('Was der Import geraten hat (T163)', () => {
     const start: AppState = {
       ...demoZustand(),
       screen: 'planen', tab: 'mid', dataStatus: 'ready',
-      congregationId: 'c1', userId: 'u1', personId: PLANER.id, planner: true,
+      congregationId: 'c1', userId: 'u1', personId: PLANER.id, admin: true,
       persons: [PLANER], groups: [], services: DIENSTE, absences: [],
       weeks: [woche({ befunde: BEFUNDE })], fsWeeks: [[]], fsRules: [], week: 0,
       congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },

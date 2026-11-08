@@ -44,7 +44,7 @@ function zeige(over: Partial<AppState> = {}, tabelle = false) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     trolleys: DEMO_TROLLEYS, trolleyTermine: DEMO_TROLLEY_TERMINE,
     ...over,
   }
@@ -271,7 +271,7 @@ describe('Das Blatt über dem echten Reducer', () => {
   function echt() {
     const start: AppState = {
       ...demoZustand(),
-      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
       trolleys: DEMO_TROLLEYS, trolleyTermine: DEMO_TROLLEY_TERMINE,
     }
     let aktuell = start

@@ -156,7 +156,7 @@ async function alleSeiten<T>(
 
 export interface CongregationData {
   congregation: Congregation
-  planner: boolean
+  admin: boolean
   zuteiler: boolean
   personId: string | null
   persons: Person[]
@@ -219,7 +219,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const { data: member, error: memberErr } = await supabase
     .from('members')
-    .select('congregation_id, person_id, planner, zuteiler')
+    .select('congregation_id, person_id, admin, zuteiler')
     .eq('user_id', userId)
     .maybeSingle()
   if (memberErr) return { ok: false, reason: 'error', message: memberErr.message }
@@ -294,7 +294,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
         .range(von, bis),
     ),
     // Nicht-Admins sehen per RLS nur die eigene Zeile bzw. keine Anmelde-Links
-    supabase.from('members').select('user_id, person_id, planner, zuteiler, email').eq('congregation_id', congregationId).order('created_at'),
+    supabase.from('members').select('user_id, person_id, admin, zuteiler, email').eq('congregation_id', congregationId).order('created_at'),
     supabase.from('anmelde_links').select(ANMELDE_LINK_SPALTEN).eq('congregation_id', congregationId),
     supabase.from('fs_rules').select('*').eq('congregation_id', congregationId).order('created_at'),
     fsWochenAbfrage,
@@ -541,7 +541,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
 
   const data: CongregationData = {
     congregation: { name: c?.name ?? '', hall: c?.hall ?? '', times: zeiten },
-    planner: Boolean(member.planner),
+    admin: Boolean(member.admin),
     zuteiler: Boolean(member.zuteiler),
     personId: (member.person_id as string | null) ?? null,
     persons: personList,
@@ -577,7 +577,7 @@ export async function loadCongregationData(userId: string): Promise<LoadResult> 
       userId: r.user_id,
       email: r.email,
       personId: r.person_id,
-      planner: r.planner,
+      admin: r.admin,
       zuteiler: r.zuteiler,
     })),
     anmeldeLinks: ((linkRows.data ?? []) as AnmeldeLinkRow[]).map(anmeldeLinkAusZeile),

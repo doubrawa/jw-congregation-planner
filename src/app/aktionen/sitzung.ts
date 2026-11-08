@@ -147,7 +147,7 @@ export function sitzung(state: AppState, action: SitzungAktion): AppState {
         congregationId: p.congregationId,
         userId: p.userId,
         personId: p.personId,
-        planner: p.planner,
+        admin: p.admin,
         zuteiler: p.zuteiler ?? false,
         dataStatus: 'ready',
         dataEmpty: p.empty,

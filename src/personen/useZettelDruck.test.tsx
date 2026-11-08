@@ -66,7 +66,7 @@ function Stelle({ knopf }: { knopf?: string }) {
 }
 
 function zeige() {
-  const state: AppState = { ...demoZustand(), dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true, persons: [ANTON] }
+  const state: AppState = { ...demoZustand(), dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true, persons: [ANTON] }
   function Buehne() {
     const store = useStaticStore(state)
     return (

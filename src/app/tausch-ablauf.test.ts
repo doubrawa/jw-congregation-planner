@@ -64,7 +64,7 @@ function start(): AppState {
     congregationId: 'c1',
     userId: 'u-jonas',
     personId: 'p-jonas',
-    planner: true,
+    admin: true,
     persons: [person('p-simon', 'Simon', 'Krüger'), person('p-jonas', 'Jonas', 'Berger')],
     services: [{ key: 'mik', name: 'Mikrofone', count: 1, groups: false }],
     congregation: { name: 'Nordheim', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },

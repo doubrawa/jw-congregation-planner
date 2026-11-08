@@ -51,7 +51,7 @@ const datumsfeld = (c: ParentNode, label: string) =>
 
 // jsdom kennt kein matchMedia; das Blatt des Programms fragt danach.
 window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
-const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0, planner: true })
+const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week: 0, admin: true })
 
 describe('Der Bearbeiten-Reiter', () => {
   it('erscheint nur, wenn er angefordert wird', () => {

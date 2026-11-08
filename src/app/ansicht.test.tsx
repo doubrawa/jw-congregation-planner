@@ -56,10 +56,10 @@ const MITTEILUNGEN: Notification[] = [
 ]
 
 /** Die echten Rechte jeder Stufe — dieselbe Person, dieselben Daten. */
-const ECHT: Record<AnsichtStufe, Pick<AppState, 'planner' | 'zuteiler'>> = {
-  planer: { planner: false, zuteiler: true },
-  gruppenaufseher: { planner: false, zuteiler: false },
-  verkuendiger: { planner: false, zuteiler: false },
+const ECHT: Record<AnsichtStufe, Pick<AppState, 'admin' | 'zuteiler'>> = {
+  planer: { admin: false, zuteiler: true },
+  gruppenaufseher: { admin: false, zuteiler: false },
+  verkuendiger: { admin: false, zuteiler: false },
 }
 
 function zustand(over: Partial<AppState>): AppState {
@@ -134,7 +134,7 @@ describe('Die Ansicht einer Stufe zeigt, was die Stufe sieht (T124)', () => {
       zeige(zustand({ ...ECHT[stufe], groups: echteGruppen(stufe), screen, tab }))
       const echt = sichtbareTexte()
       cleanup()
-      zeige(zustand({ planner: true, zuteiler: false, groups: DEMO.groups, ansicht: { stufe, gruppe }, screen, tab }))
+      zeige(zustand({ admin: true, zuteiler: false, groups: DEMO.groups, ansicht: { stufe, gruppe }, screen, tab }))
       const gespielt = ohneAnsicht(sichtbareTexte())
       cleanup()
       if (JSON.stringify(echt) !== JSON.stringify(gespielt)) {
@@ -148,10 +148,10 @@ describe('Die Ansicht einer Stufe zeigt, was die Stufe sieht (T124)', () => {
 
   it('die Probe sieht einen Unterschied, wo einer ist', () => {
     // Gegenprobe: der Admin selbst gegen den Verkündiger — dort fehlen Planen und Verwaltung.
-    zeige(zustand({ planner: true, screen: 'start' }))
+    zeige(zustand({ admin: true, screen: 'start' }))
     const admin = sichtbareTexte()
     cleanup()
-    zeige(zustand({ planner: false, screen: 'start' }))
+    zeige(zustand({ admin: false, screen: 'start' }))
     const verkuendiger = sichtbareTexte()
     expect(admin).not.toEqual(verkuendiger)
     expect(admin).toContain(t.navPersonen)
@@ -162,7 +162,7 @@ describe('Die Ansicht einer Stufe zeigt, was die Stufe sieht (T124)', () => {
 describe('Die Leiste der Ansicht (T124)', () => {
   it('steht auf jedem Bildschirm, nennt die Stufe und führt zurück', () => {
     for (const screen of BILDSCHIRME) {
-      const { container, dispatch } = zeige(zustand({ planner: true, ansicht: { stufe: 'verkuendiger', gruppe: null }, screen }))
+      const { container, dispatch } = zeige(zustand({ admin: true, ansicht: { stufe: 'verkuendiger', gruppe: null }, screen }))
       const leiste = container.querySelector('.ansicht-leiste')
       expect(leiste?.querySelector('strong')?.textContent, screen).toBe(fill(t.ansichtLeiste, { stufe: t.rolleVerkuendiger }))
       fireEvent.click(leiste!.querySelector('button')!)
@@ -172,14 +172,14 @@ describe('Die Leiste der Ansicht (T124)', () => {
   })
 
   it('ohne Ansicht keine Leiste — und ohne echtes Admin-Recht auch mit keiner', () => {
-    expect(zeige(zustand({ planner: true, screen: 'start' })).container.querySelector('.ansicht-leiste')).toBeNull()
+    expect(zeige(zustand({ admin: true, screen: 'start' })).container.querySelector('.ansicht-leiste')).toBeNull()
     cleanup()
-    const planer = zustand({ planner: false, zuteiler: true, ansicht: { stufe: 'verkuendiger', gruppe: null }, screen: 'start' })
+    const planer = zustand({ admin: false, zuteiler: true, ansicht: { stufe: 'verkuendiger', gruppe: null }, screen: 'start' })
     expect(zeige(planer).container.querySelector('.ansicht-leiste')).toBeNull()
   })
 
   it('unter dem Namen steht die gespielte Stufe', () => {
-    const { container } = zeige(zustand({ planner: true, ansicht: { stufe: 'gruppenaufseher', gruppe: GRUPPE }, screen: 'start' }))
+    const { container } = zeige(zustand({ admin: true, ansicht: { stufe: 'gruppenaufseher', gruppe: GRUPPE }, screen: 'start' }))
     expect(container.querySelector('.leiste')?.textContent).toContain(t.rolleGruppenaufseher)
     expect(container.querySelector('.leiste')?.textContent).not.toContain(t.rolleKoordinator)
   })

@@ -61,7 +61,7 @@ function zeige(inhalt: ReactNode, over: Partial<AppState> = {}) {
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',
-    planner: false,
+    admin: false,
     zuteiler: true,
     screen: 'planen',
     tab: 'we',

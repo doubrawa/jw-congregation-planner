@@ -146,7 +146,7 @@ describe('Trolleys als Ablauf', () => {
   }
 
   it('Trolley anlegen → Namen tippen → abmelden: ein Schreiben, mit dem letzten Namen', () => {
-    const a = ablauf(start({ planner: true }))
+    const a = ablauf(start({ admin: true }))
     a.tue({ type: 'trolleyAnlegen', trolley: T1 })
     for (const name of ['T', 'Tr', 'Trolley Saal']) a.tue({ type: 'trolleyAendern', id: 'tr1', patch: { name } })
     expect(saveTrolleys).not.toHaveBeenCalled()

@@ -181,7 +181,7 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     expect(termine).toEqual(['trolley_termine_select'])
     expect(r.get('trolley_termine_select') ?? '').toContain('congregation_id = public.my_congregation_id()')
     // Die Trolleys pflegt der Admin, nicht der Planer.
-    expect(r.get('trolleys_write') ?? '').toContain('public.is_planner()')
+    expect(r.get('trolleys_write') ?? '').toContain('public.ist_admin()')
     expect(r.get('trolleys_write') ?? '').not.toContain('darf_zuteilen')
   })
 
@@ -224,7 +224,7 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
     expect(fn).toContain('security definer')
     // Wer zuteilt, sucht auch den Ersatz.
-    expect(fn).toContain('and (m.planner or m.zuteiler)')
+    expect(fn).toContain('and (m.admin or m.zuteiler)')
     // Alles außer der Verhinderung bleibt Admins und Planern vorbehalten.
     expect(fn).toContain("kind <> 'verhindert' and not public.darf_zuteilen()")
   })
@@ -259,7 +259,7 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     // Er war nie erreichbar (die App fand keinen Empfänger) und hielte eine
     // zweite Lesart derselben Regel offen.
     const rumpf = richtlinien(schema).get('notifications_insert') ?? ''
-    expect(rumpf).toContain('public.is_planner()')
+    expect(rumpf).toContain('public.ist_admin()')
     expect(rumpf).not.toContain('verhindert')
   })
 
@@ -285,7 +285,7 @@ describe('die Rechteprüfungen stehen im Schema', () => {
 
     it('darf_zuteilen fragt Admin oder Planer, eigene_gruppen Aufseher oder Gehilfe — beide als security definer', () => {
       expect(fn('darf_zuteilen')).toContain('security definer')
-      expect(fn('darf_zuteilen')).toContain('select planner or zuteiler from public.members where user_id = auth.uid()')
+      expect(fn('darf_zuteilen')).toContain('select admin or zuteiler from public.members where user_id = auth.uid()')
       expect(fn('eigene_gruppen')).toContain('security definer')
       expect(fn('eigene_gruppen')).toContain('g.overseer_id = m.person_id or g.assistant_id = m.person_id')
     })
@@ -357,13 +357,13 @@ describe('die Rechteprüfungen stehen im Schema', () => {
         'trolleys_write',
         'anmelde_links_delete',
       ]) {
-        expect(alle.get(name) ?? '', name).toContain('public.is_planner()')
+        expect(alle.get(name) ?? '', name).toContain('public.ist_admin()')
         expect(alle.get(name) ?? '', name).not.toContain('darf_zuteilen')
       }
     })
 
     it('Trolleys pflegt nur der Admin; ihre Termine schreibt die Function (T121)', () => {
-      expect(r().get('trolleys_write') ?? '').toContain('public.is_planner()')
+      expect(r().get('trolleys_write') ?? '').toContain('public.ist_admin()')
       expect(r().has('trolley_termine_write')).toBe(false)
     })
 
@@ -410,7 +410,7 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     it('Personen, Gruppen, Dienste, Versammlung, Mitglieder und Anmelde-Links bleiben beim Admin', () => {
       for (const name of ['persons_write', 'groups_write', 'services_write', 'congregations_update', 'members_update', 'anmelde_links_select', 'anmelde_links_delete', 'households_write']) {
         const rumpf = r().get(name) ?? ''
-        expect(rumpf, name).toContain('public.is_planner()')
+        expect(rumpf, name).toContain('public.ist_admin()')
         expect(rumpf, name).not.toContain('darf_zuteilen')
       }
     })

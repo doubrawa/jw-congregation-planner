@@ -48,7 +48,7 @@ function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'freie', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: false,
     persons: [ICH], services: [], groups: [], absences: [],
     weeks: [], fsWeeks: [], myTasks: [], substituteReqs: [], offenePlaetze: [], notifs: [],
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -234,7 +234,7 @@ describe('Der Sprung aus „Ersatz gesucht"', () => {
   const basis = (over: Partial<AppState>): AppState => ({
     ...demoZustand(),
     screen: 'freie', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: false,
     persons: [ICH], services: [], groups: [], absences: [],
     weeks: [], fsWeeks: [], myTasks: [], substituteReqs: [], notifs: [],
     ...over,

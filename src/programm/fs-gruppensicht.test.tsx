@@ -107,12 +107,12 @@ describe('fsVisible — die Regel', () => {
 })
 
 describe('FsProgram — der Aufrufer', () => {
-  const zeige = (personId: string, planner = false) =>
+  const zeige = (personId: string, admin = false) =>
     render(
       <Buehne
         state={{
           ...demoZustand(),
-          planner,
+          admin,
           personId,
           persons: PERSONEN,
           groups: GRUPPEN,
@@ -146,7 +146,7 @@ describe('FsProgram — der Aufrufer', () => {
       <Buehne
         state={{
           ...demoZustand(),
-          planner: false, personId: 'p-g1', persons: PERSONEN, groups: GRUPPEN,
+          admin: false, personId: 'p-g1', persons: PERSONEN, groups: GRUPPEN,
           week: 0, fsWeeks: [[G2]],
         }}
       >

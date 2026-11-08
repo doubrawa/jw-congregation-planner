@@ -223,7 +223,7 @@ export const TEST_GASTREDNER = [
  * Die Mitgliedsrechte-Probe meldet sich mit allen vieren an und misst, was
  * jede Stufe darf und was nicht.
  *
- * `planer@` ist der **Admin** (`members.planner`). Die Adresse stammt aus der
+ * `planer@` ist der **Admin** (`members.admin`). Die Adresse stammt aus der
  * Zeit, als es nur diese Stufe gab und die App sie „Planer" nannte; Probe,
  * Notizen und Aufrufe kennen sie so, deshalb bleibt sie. Die Stufe „Planer"
  * (`members.zuteiler`: teilt zu, ändert den Plan nicht) hat `zuteiler@`.
@@ -236,10 +236,10 @@ export const TEST_GASTREDNER = [
  * oder aus der Datei, die dieses Skript schreibt (`PROBE_PLANER_PASS`, …).
  */
 export const TEST_KONTEN = [
-  { schalter: 'mail-planer', env: 'PLANER', mail: 'planer@probe.invalid', stufe: 'Admin', planner: true, zuteiler: false, person: ['Martin', 'Aichinger'] },
-  { schalter: 'mail-mitglied', env: 'MITGLIED', mail: 'mitglied@probe.invalid', stufe: 'Mitglied', planner: false, zuteiler: false, person: ['Elena', 'Aichinger'] },
-  { schalter: 'mail-zuteiler', env: 'ZUTEILER', mail: 'zuteiler@probe.invalid', stufe: 'Planer', planner: false, zuteiler: true, person: ['Andreas', 'Rothacker'] },
-  { schalter: 'mail-aufseher', env: 'AUFSEHER', mail: 'aufseher@probe.invalid', stufe: 'Gruppenaufseher', planner: false, zuteiler: false, person: ['Thomas', 'Ebersbach'] },
+  { schalter: 'mail-planer', env: 'PLANER', mail: 'planer@probe.invalid', stufe: 'Admin', admin: true, zuteiler: false, person: ['Martin', 'Aichinger'] },
+  { schalter: 'mail-mitglied', env: 'MITGLIED', mail: 'mitglied@probe.invalid', stufe: 'Mitglied', admin: false, zuteiler: false, person: ['Elena', 'Aichinger'] },
+  { schalter: 'mail-zuteiler', env: 'ZUTEILER', mail: 'zuteiler@probe.invalid', stufe: 'Planer', admin: false, zuteiler: true, person: ['Andreas', 'Rothacker'] },
+  { schalter: 'mail-aufseher', env: 'AUFSEHER', mail: 'aufseher@probe.invalid', stufe: 'Gruppenaufseher', admin: false, zuteiler: false, person: ['Thomas', 'Ebersbach'] },
 ]
 
 /** Zu welcher Versammlung die Kontendatei gehört — leer, wenn es keine gibt. */
@@ -755,15 +755,15 @@ export async function main(argv = process.argv.slice(2)) {
     await rest(
       'members',
       'POST',
-      { user_id: user.id, congregation_id: cong.id, person_id: person.id, planner: k.planner, zuteiler: k.zuteiler, email: k.mail },
+      { user_id: user.id, congregation_id: cong.id, person_id: person.id, admin: k.admin, zuteiler: k.zuteiler, email: k.mail },
       'return=minimal',
     )
-    // `planner_vorgemerkt` und `zuteiler_vorgemerkt` sind die **Vormerkung**
-    // für die Einladung; wirksam ist die `members`-Zeile darüber. Die Spalte
-    // hieß bis T105 ebenfalls `planner` — ein Name für zwei verschiedene
+    // `admin_vorgemerkt` und `zuteiler_vorgemerkt` sind die **Vormerkung**
+    // für die Einladung; wirksam ist die `members`-Zeile darüber. Vormerkung
+    // und Recht hießen bis T105 gleich — ein Name für zwei verschiedene
     // Tatsachen. Gesetzt wird beides, wie die App es beim Umlegen des
     // Schalters tut (`updatePerson` spiegelt die Vormerkung in `members`).
-    const vormerkung = { ...(k.planner && { planner_vorgemerkt: true }), ...(k.zuteiler && { zuteiler_vorgemerkt: true }) }
+    const vormerkung = { ...(k.admin && { admin_vorgemerkt: true }), ...(k.zuteiler && { zuteiler_vorgemerkt: true }) }
     if (Object.keys(vormerkung).length) {
       await rest(`persons?id=eq.${person.id}`, 'PATCH', vormerkung, 'return=minimal')
     }

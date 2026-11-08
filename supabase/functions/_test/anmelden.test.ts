@@ -35,13 +35,13 @@ interface LinkRow {
 }
 
 const PERSONS = [
-  { id: P_ANNA, fn: 'Anna', ln: 'Alt', congregation_id: CONG, planner_vorgemerkt: true, zuteiler_vorgemerkt: false },
-  { id: P_BERT, fn: 'Bert', ln: 'Brand', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: true },
-  { id: P_CARL, fn: 'Carl', ln: 'Cohn', congregation_id: CONG, planner_vorgemerkt: false, zuteiler_vorgemerkt: false },
+  { id: P_ANNA, fn: 'Anna', ln: 'Alt', congregation_id: CONG, admin_vorgemerkt: true, zuteiler_vorgemerkt: false },
+  { id: P_BERT, fn: 'Bert', ln: 'Brand', congregation_id: CONG, admin_vorgemerkt: false, zuteiler_vorgemerkt: true },
+  { id: P_CARL, fn: 'Carl', ln: 'Cohn', congregation_id: CONG, admin_vorgemerkt: false, zuteiler_vorgemerkt: false },
 ]
 
 let links: LinkRow[]
-let members: Array<{ user_id: string; congregation_id: string; person_id: string | null; planner: boolean; zuteiler: boolean; email: string }>
+let members: Array<{ user_id: string; congregation_id: string; person_id: string | null; admin: boolean; zuteiler: boolean; email: string }>
 /** Konten bei Supabase Auth: Id → Adresse. */
 let konten: Map<string, string>
 let fehlversuche: Array<{ id: number; ip: string; at: string }>
@@ -275,7 +275,7 @@ async function call(
 
 beforeEach(async () => {
   links = [await linkZeile(P_ANNA, TOKEN_ANNA, CODE_ANNA)]
-  members = [{ user_id: 'konto-bert', congregation_id: CONG, person_id: P_BERT, planner: false, zuteiler: true, email: '' }]
+  members = [{ user_id: 'konto-bert', congregation_id: CONG, person_id: P_BERT, admin: false, zuteiler: true, email: '' }]
   konten = new Map([['konto-bert', 'bert-alt@example.org']])
   fehlversuche = []
   buchenKaputt = false
@@ -303,14 +303,14 @@ describe('anmelden: mit dem Link aus der Nachricht', () => {
     // Konto-Id = Person-Id, interne Adresse, bestätigt, ohne Kennwort.
     expect(angelegt).toEqual([{ id: P_ANNA, email: `${P_ANNA}@konten.invalid`, email_confirm: true }])
     expect(members.find((m) => m.person_id === P_ANNA)).toEqual({
-      user_id: P_ANNA, congregation_id: CONG, person_id: P_ANNA, planner: true, zuteiler: false, email: '',
+      user_id: P_ANNA, congregation_id: CONG, person_id: P_ANNA, admin: true, zuteiler: false, email: '',
     })
   })
 
   it('die Rechte kommen aus der Vormerkung an der Person', async () => {
     links.push(await linkZeile(P_CARL, 'C'.repeat(43), 'M3ZE7KQR'))
     await call({ aktion: 'link', token: 'C'.repeat(43) })
-    expect(members.find((m) => m.person_id === P_CARL)).toMatchObject({ planner: false, zuteiler: false })
+    expect(members.find((m) => m.person_id === P_CARL)).toMatchObject({ admin: false, zuteiler: false })
   })
 
   it('wer schon ein Konto hat, bekommt seins — kein zweites', async () => {
@@ -553,7 +553,7 @@ describe('anmelden: ein Einmal-Code fürs nächste Gerät', () => {
   })
 
   it('ein Konto ohne Person (der Betreiber) → 403, nichts angelegt', async () => {
-    members.push({ user_id: 'konto-betreiber', congregation_id: CONG, person_id: null, planner: true, zuteiler: false, email: '' })
+    members.push({ user_id: 'konto-betreiber', congregation_id: CONG, person_id: null, admin: true, zuteiler: false, email: '' })
     const r = await call({ aktion: 'einmalcode' }, { sitzung: 'konto-betreiber' })
     expect(r.status).toBe(403)
     expect(einmal).toEqual([])

@@ -78,7 +78,7 @@ const DIENSTE: Service[] = [
 ]
 
 const konto = (personId: string | null, over: Partial<Member> = {}): Member => ({
-  userId: `u-${personId}`, personId, email: '', planner: false, zuteiler: false, ...over,
+  userId: `u-${personId}`, personId, email: '', admin: false, zuteiler: false, ...over,
 })
 /** Ein Link, der noch `tage` Tage gilt (negativ: abgelaufen) — gerechnet von heute, wie die Liste. */
 const link = (personId: string, tage = 10): AnmeldeLink => ({
@@ -104,7 +104,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
     screen: 'personen',
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: PERSONEN, groups: GRUPPEN, services: DIENSTE,
     members: [], anmeldeLinks: [], weeks: [], fsWeeks: [], absences: [],
     selectedPersonId: null,
@@ -190,7 +190,7 @@ describe('Die Liste', () => {
 
   it('rechts das Recht: „Admin" vor „Planer" — mit Konto zählt das Konto', () => {
     const { container } = zeige({
-      members: [konto('p-a', { planner: true }), konto('p-b', { zuteiler: true }), konto('p-c')],
+      members: [konto('p-a', { admin: true }), konto('p-b', { zuteiler: true }), konto('p-c')],
     })
     expect(zeilen(container).map((z) => z.querySelector('.personen-marke')?.textContent ?? '')).toEqual([
       t.planerLbl,
@@ -535,7 +535,7 @@ describe('Am Desktop (`GDesktopPersonen`)', () => {
   })
 
   it('jede Zeile in Spalten: Name, Gruppe und Rolle, dann Stand und Recht', () => {
-    const { container } = zeige({ members: [konto('p-b', { planner: true })], anmeldeLinks: COHN_LINK })
+    const { container } = zeige({ members: [konto('p-b', { admin: true })], anmeldeLinks: COHN_LINK })
     const zellen = zeilen(container).map((z) => [...z.querySelectorAll('.personen-zelle')].map((s) => s.textContent))
     expect(zellen).toEqual([
       ['Alt, Anton', 'Verkündiger', t.standOhneLink],
@@ -883,7 +883,7 @@ describe('Links senden', () => {
 })
 
 describe('Konten ohne verknüpfte Person', () => {
-  const WAISE: Member[] = [{ userId: 'u9', personId: null, email: 'wer@example.org', planner: false, zuteiler: false }]
+  const WAISE: Member[] = [{ userId: 'u9', personId: null, email: 'wer@example.org', admin: false, zuteiler: false }]
 
   it('stehen ganz oben — sonst übersieht man sie', () => {
     const { container } = zeige({ members: WAISE })
@@ -909,7 +909,7 @@ describe('Konten ohne verknüpfte Person', () => {
       führen je Person genau eine Konto-Id (`userByPerson`).
     */
     const { container } = zeige({
-      members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', planner: false, zuteiler: false }],
+      members: [...WAISE, { userId: 'u8', personId: 'p-a', email: 'a@x.de', admin: false, zuteiler: false }],
     })
     const wahl = container.querySelector<HTMLSelectElement>('.pers-orphans .mem-select')!
     const werte = [...wahl.options].map((o) => o.value)
@@ -928,7 +928,7 @@ describe('Konten ohne verknüpfte Person', () => {
 
   it('das eigene Konto lässt sich nicht entfernen — man sperrte sich selbst aus', () => {
     const { container } = zeige({
-      members: [{ userId: 'u1', personId: null, email: 'ich@example.org', planner: true, zuteiler: false }],
+      members: [{ userId: 'u1', personId: null, email: 'ich@example.org', admin: true, zuteiler: false }],
       userId: 'u1',
     })
     expect(container.querySelector('.pers-orphans .svc-remove')).toBeNull()

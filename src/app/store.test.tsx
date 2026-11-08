@@ -22,7 +22,7 @@ const payload: HydratePayload = {
   userId: 'u1',
   empty: false,
   congregation: { name: 'Alt', hall: '', times: STANDARD_ZEITEN },
-  planner: true,
+  admin: true,
   personId: null,
   persons: [],
   services: [],

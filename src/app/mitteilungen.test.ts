@@ -226,31 +226,31 @@ describe('Ablauf: Mitteilungen offen → Tipp → angekommen', () => {
     )
 
   it('der Planer landet bei der Absage in ihrer Woche', () => {
-    const s = offen({ planner: true })
+    const s = offen({ admin: true })
     const woche = s.weeks[1]!
     const nach = tippen(s, zeile({ taskId: punktKey(woche.start, 'we', 'x', 0) }))
     expect(nach).toMatchObject({ screen: 'planen', week: 1, tab: 'we', terminGewaehlt: true })
   })
 
   it('… bei einem Treffpunkt im Predigtdienst, Reiter Treffpunkte', () => {
-    const s = offen({ planner: true, fsBereich: 'grundplan' })
+    const s = offen({ admin: true, fsBereich: 'grundplan' })
     const nach = tippen(s, zeile({ taskId: fsKey(s.weeks[0]!.start, 'i1') }))
     expect(nach).toMatchObject({ screen: 'planen', week: 0, tab: 'fs', fsBereich: 'treffpunkte' })
   })
 
   it('der Verkündiger landet bei seiner Aufgabe — das Blatt ist offen', () => {
-    const s = offen({ planner: false, myTasks: [aufgabe('a1')] })
+    const s = offen({ admin: false, myTasks: [aufgabe('a1')] })
     const nach = tippen(s, zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: 'a1' }))
     expect(nach).toMatchObject({ screen: 'aufgaben', myTaskId: 'a1' })
   })
 
   it('… beim Ersatzgesuch am Einspringen', () => {
-    const nach = tippen(offen({ planner: false }), zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT }))
+    const nach = tippen(offen({ admin: false }), zeile({ type: 'zuteilung', title: ERSATZ_GESUCHT }))
     expect(nach).toMatchObject({ screen: 'freie', sprungZiel: 'einspringen' })
   })
 
   it('… und eine Woche, die er nur ansehen darf, im Programm — nie im Planen', () => {
-    const s = offen({ planner: false })
+    const s = offen({ admin: false })
     const nach = tippen(s, zeile({ type: 'zuteilung', title: 'Neue Zuteilung', taskId: punktKey(s.weeks[1]!.start, 'mid', 'x', 0) }))
     expect(nach).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
   })

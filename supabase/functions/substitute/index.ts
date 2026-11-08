@@ -149,7 +149,7 @@ async function abwesendeAm(cong: string, tagISO: string | null): Promise<Readonl
 interface Member {
   user_id: string
   person_id: string | null
-  planner: boolean
+  admin: boolean
   /** Planer-Recht (4.10.2026): Er sucht Ersatz wie der Admin, also erfährt er „Ersatz gefunden". */
   zuteiler?: boolean
 }
@@ -311,7 +311,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const eigene = await rest.get<(Member & { congregation_id: string })[]>(
-      `members?select=user_id,person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
+      `members?select=user_id,person_id,admin,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const caller = eigene[0]
     if (!caller) return json({ error: 'forbidden' }, 403)
@@ -319,7 +319,7 @@ Deno.serve(async (req: Request) => {
 
     const [members, weekRows, services, persons, subsRows, congRows] = await Promise.all([
       rest.get<Member[]>(
-        `members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${wert(cong)}`,
+        `members?select=user_id,person_id,admin,zuteiler&congregation_id=eq.${wert(cong)}`,
       ),
       // `start` aus der **Spalte**, nicht aus dem Blob (T66): die Kennung steht
       // dort, `data.start` ist nur noch Beifang und könnte jederzeit wegfallen.
@@ -592,7 +592,7 @@ Deno.serve(async (req: Request) => {
     const recipients = [
       ...(originalPerson ? [kontoFuer(originalPerson.id, displayName(originalPerson))].filter(Boolean) as string[] : []),
       // Admins und Planer — wer zuteilt, sucht auch den Ersatz (4.10.2026).
-      ...members.filter((m) => m.planner || m.zuteiler).map((m) => m.user_id),
+      ...members.filter((m) => m.admin || m.zuteiler).map((m) => m.user_id),
     ]
     await notifyUsers(
       cong,

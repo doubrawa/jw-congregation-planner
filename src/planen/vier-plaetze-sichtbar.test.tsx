@@ -99,7 +99,7 @@ function zeige(weeks: Week[]) {
     congregationId: 'c1',
     userId: 'u1',
     personId: DEMO_PERSONS[0]!.id,
-    planner: true,
+    admin: true,
     screen: 'planen',
     tab: 'mid',
     terminGewaehlt: true,

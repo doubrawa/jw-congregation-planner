@@ -67,7 +67,7 @@ function zeige(
   const weeks = over.weeks ?? [tab === 'we' ? woche([], [section]) : woche([section])]
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: PERSONEN, services: [], groups: [], absences: [],
     confirmations: {}, weeks, fsWeeks: [[]],
     ...over,
@@ -617,7 +617,7 @@ describe('Ändert sich ein Titel von außen, zeigt das Feld den neuen', () => {
   function Buehne({ section, tab }: { section: Section; tab: 'mid' | 'we' }) {
     const state: AppState = {
       ...demoZustand(),
-      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+      dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
       persons: PERSONEN, services: [], groups: [], absences: [], confirmations: {},
       weeks: [tab === 'we' ? woche([], [section]) : woche([section])], fsWeeks: [[]], tab,
     }

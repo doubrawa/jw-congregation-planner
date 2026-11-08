@@ -47,7 +47,7 @@ import {
   DEMO_PERSONS,
   DEMO_PLAENE,
   demoPlanEintraege,
-  DEMO_PLANNER,
+  DEMO_ADMIN,
   DEMO_SERVICES,
   DEMO_TAUSCH_ANFRAGEN,
   DEMO_UNBESTAETIGT,
@@ -74,7 +74,7 @@ export function demoZustand(): AppState {
   const fsWeeks = fsLeiterBinden(buildDemoFsWeeks(), DEMO_PERSONS)
   return {
     ...initialState(),
-    planner: DEMO_PLANNER,
+    admin: DEMO_ADMIN,
     congregation: { ...CONGREGATION },
     weeks,
     persons: DEMO_PERSONS,
@@ -114,7 +114,7 @@ export interface DebugHash {
   me?: string
   tab?: MeetingTab // Programm/Planen-Tab (mid|we|fs|wp) — für Doku-Screenshots
   fsBereich?: FsBereich // fb=<treffpunkte|gruppenbesuche|trolleys|grundplan> — Reiter im Predigtdienst (T120)
-  planner?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Admin, pl=2 Planer)
+  admin?: boolean // Rechte erzwingen (pl=0 Verkündiger, pl=1 Admin, pl=2 Planer)
   /** `pl=2`: Planer — teilt zu und sendet, ändert die Pläne nicht (4.10.2026). */
   zuteiler?: boolean
   shot?: boolean // Screenshot-Modus: Spaltenschatten aus (randloses Zuschneiden)
@@ -197,9 +197,9 @@ export function parseDebugHash(hash: string, jetzt = Date.now()): DebugHash | nu
   const fb = p.get('fb')
   if (fb === 'treffpunkte' || fb === 'gruppenbesuche' || fb === 'trolleys' || fb === 'grundplan') out.fsBereich = fb
   const pl = p.get('pl')
-  if (pl === '0' || pl === '1') out.planner = pl === '1'
+  if (pl === '0' || pl === '1') out.admin = pl === '1'
   if (pl === '2') {
-    out.planner = false
+    out.admin = false
     out.zuteiler = true
   }
   if (p.get('shot') === '1') out.shot = true
@@ -252,7 +252,7 @@ function demoPersoenlich(versand: SentLog): PersoenlichLog {
 function demoKonten(persons: readonly Person[], me: string | undefined): Pick<AppState, 'userId' | 'members' | 'anmeldeLinks'> {
   const members = persons
     .filter((_, i) => i % 3 === 0)
-    .map((p, j) => ({ userId: p.id === me ? 'demo-konto' : `konto-${p.id}`, email: '', personId: p.id, planner: j === 0, zuteiler: false }))
+    .map((p, j) => ({ userId: p.id === me ? 'demo-konto' : `konto-${p.id}`, email: '', personId: p.id, admin: j === 0, zuteiler: false }))
   const anmeldeLinks = persons
     .filter((_, i) => i % 3 === 1)
     .map((p, j) => ({
@@ -307,7 +307,7 @@ export function entwicklerStart(hash: string = location.hash): AppState {
     fsBereich: debug?.fsBereich ?? basis.fsBereich,
     theme: debug?.theme ?? basis.theme,
     fontScale: debug?.fontScale ?? basis.fontScale,
-    planner: debug?.planner ?? basis.planner,
+    admin: debug?.admin ?? basis.admin,
     zuteiler: debug?.zuteiler ?? basis.zuteiler,
     personId: debug?.me ?? null,
     selectedPersonId: debug?.personId ?? null,

@@ -76,7 +76,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   const ich = basis.persons[0]!
   return {
     ...basis,
-    planner: false,
+    admin: false,
     zuteiler: false,
     personId: ich.id,
     persons: basis.persons.map((p) => (p.id === ich.id ? { ...p, fn: VORNAME } : p)),

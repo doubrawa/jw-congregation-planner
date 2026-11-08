@@ -34,14 +34,14 @@ const U_OHNE = 'user-ohne' // ohne Trolley-Recht
 const U_FREMD = 'user-fremd' // Admin einer anderen Versammlung
 const U_OHNE_PERSON = 'user-ohne-person' // Admin, dessen Konto keiner Person zugeordnet ist
 
-const MEMBERS: { user_id: string; person_id: string | null; planner: boolean; congregation_id: string }[] = [
-  { user_id: U_ADMIN, person_id: 'p-admin', planner: true, congregation_id: CONG },
-  { user_id: U_JONAS, person_id: 'p-jonas', planner: false, congregation_id: CONG },
-  { user_id: U_SIMON, person_id: 'p-simon', planner: false, congregation_id: CONG },
-  { user_id: U_LENA, person_id: 'p-lena', planner: false, congregation_id: CONG },
-  { user_id: U_OHNE, person_id: 'p-ohne', planner: false, congregation_id: CONG },
-  { user_id: U_FREMD, person_id: 'p-fremd', planner: true, congregation_id: 'cong-2' },
-  { user_id: U_OHNE_PERSON, person_id: null, planner: true, congregation_id: CONG },
+const MEMBERS: { user_id: string; person_id: string | null; admin: boolean; congregation_id: string }[] = [
+  { user_id: U_ADMIN, person_id: 'p-admin', admin: true, congregation_id: CONG },
+  { user_id: U_JONAS, person_id: 'p-jonas', admin: false, congregation_id: CONG },
+  { user_id: U_SIMON, person_id: 'p-simon', admin: false, congregation_id: CONG },
+  { user_id: U_LENA, person_id: 'p-lena', admin: false, congregation_id: CONG },
+  { user_id: U_OHNE, person_id: 'p-ohne', admin: false, congregation_id: CONG },
+  { user_id: U_FREMD, person_id: 'p-fremd', admin: true, congregation_id: 'cong-2' },
+  { user_id: U_OHNE_PERSON, person_id: null, admin: true, congregation_id: CONG },
 ]
 
 const recht = { zeugnis: true }
@@ -513,7 +513,7 @@ describe('am Rand (31.10.2026)', () => {
   })
 
   it('ist die eigene Person gelöscht, trägt man sich nicht ein', async () => {
-    MEMBERS.push({ user_id: 'user-geloescht', person_id: 'p-geloescht', planner: false, congregation_id: CONG })
+    MEMBERS.push({ user_id: 'user-geloescht', person_id: 'p-geloescht', admin: false, congregation_id: CONG })
     try {
       expect(await antwort(await ruf(eintrag(), 'user-geloescht'))).toEqual({ status: 403, body: { error: 'no-person' } })
     } finally {

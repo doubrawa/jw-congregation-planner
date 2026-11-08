@@ -37,9 +37,9 @@ function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'einstellungen', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: true,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: true,
     persons: [person('p-a', 'Anna', 'Aal'), person('p-b', 'Bernd', 'Berg')],
-    members: [{ userId: 'u1', email: '', personId: 'p-a', planner: true, zuteiler: false }],
+    members: [{ userId: 'u1', email: '', personId: 'p-a', admin: true, zuteiler: false }],
     groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }],
     trolleys: [
       { id: 'tr1', name: 'Trolley 1', ort: 'Depot', hinweis: '' },
@@ -215,8 +215,8 @@ describe('Wer plant', () => {
   it('nennt alle, die planen dürfen, und die Admins — als einen Satz', () => {
     const { container } = zeige({
       members: [
-        { userId: 'u1', email: '', personId: 'p-a', planner: true, zuteiler: false },
-        { userId: 'u2', email: '', personId: 'p-b', planner: false, zuteiler: true },
+        { userId: 'u1', email: '', personId: 'p-a', admin: true, zuteiler: false },
+        { userId: 'u2', email: '', personId: 'p-b', admin: false, zuteiler: true },
       ],
     })
     expect(karte(container).querySelector('.einst-namen')?.textContent).toBe('Anna Aal und Bernd Berg')

@@ -90,7 +90,7 @@ describe('Die Funktion für den Grund', () => {
 
   it('die Gründe der Admin — sonst nur, wem die Abwesenheit gehört oder wer sie eintrug; der Planer nicht', () => {
     const r = rumpf('abwesenheit_gruende')
-    expect(r).toMatch(/public\.is_planner\(\)\s+or a\.user_id = auth\.uid\(\)\s+or \(a\.person_id is not null and a\.person_id = public\.my_person_id\(\)\)/)
+    expect(r).toMatch(/public\.ist_admin\(\)\s+or a\.user_id = auth\.uid\(\)\s+or \(a\.person_id is not null and a\.person_id = public\.my_person_id\(\)\)/)
     expect(r).not.toMatch(/darf_zuteilen/)
   })
 

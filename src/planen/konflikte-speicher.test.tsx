@@ -56,7 +56,7 @@ function Fernbedienung() {
 }
 
 function zeigePlanen() {
-  const anfang: AppState = { ...demoZustand(), screen: 'planen', tab: 'mid', dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true }
+  const anfang: AppState = { ...demoZustand(), screen: 'planen', tab: 'mid', dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true }
   render(
     <AppProvider start={() => anfang}>
       <Fernbedienung />

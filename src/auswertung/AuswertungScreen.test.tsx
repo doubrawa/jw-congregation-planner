@@ -78,7 +78,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',
-    planner: true,
+    admin: true,
     ...over,
   }
 }

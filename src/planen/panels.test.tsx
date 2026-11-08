@@ -60,7 +60,7 @@ function buehne(kind: 'aux' | 'fs' | 'fsAuto', over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: [ANTON], services: [], groups: GRUPPEN, absences: [], confirmations: {},
     weeks: [woche()], fsWeeks: [[]], week: 0,
     congregation: { name: 'Test', hall: 'Königreichssaal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -326,7 +326,7 @@ describe('Der Gruppenaufseher plant nur seine eigene Gruppe', () => {
   // Wirklich Gruppenaufseher: kein Admin, aber Aufseher von Gruppe 1. Die
   // Einschränkung liest `FsPlan` selbst aus den Rechten (`treffpunktGruppe`).
   const AUFSEHER: Partial<AppState> = {
-    planner: false,
+    admin: false,
     zuteiler: false,
     personId: 'p-a',
     groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],
@@ -375,7 +375,7 @@ describe('Der Planer ändert die Treffpunkte der Woche wie der Admin (15.10.2026
     inst({ id: 'f1', grp: 'g1' }),
     inst({ id: 'f2', grp: 'g2', time: '10:00', place: 'Am Markt' }),
   ]]
-  const PLANER: Partial<AppState> = { planner: false, zuteiler: true, personId: null }
+  const PLANER: Partial<AppState> = { admin: false, zuteiler: true, personId: null }
 
   it('sieht alle Gruppen und ändert jeden Treffpunkt — der Leiter-Platz zum Zuteilen dazu', () => {
     const { container } = buehne('fs', { fsWeeks: woche, ...PLANER })
@@ -434,7 +434,7 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
   it('beim Gruppenaufseher wirkt beides nur auf seine Gruppe — und zählt nur sie', () => {
     const { dispatch } = buehne('fsAuto', {
       fsWeeks: [[inst({ id: 'f1', grp: 'g1', leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', grp: 'g1', time: '10:00' }), inst({ id: 'f3', grp: 'g2' })]],
-      planner: false,
+      admin: false,
       zuteiler: false,
       personId: 'p-a',
       groups: [{ ...GRUPPEN[0]!, overseerId: 'p-a' }, GRUPPEN[1]!],

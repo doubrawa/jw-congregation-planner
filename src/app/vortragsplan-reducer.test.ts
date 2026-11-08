@@ -25,7 +25,7 @@ import { DE } from '../i18n/de'
 
 /** Demo-Bestand: Wochen vom 7. bis 28. September 2026, der Planer ist Admin. */
 function zustand(over: Partial<AppState> = {}): AppState {
-  return { ...demoZustand(), planner: true, confirmations: {}, ...over }
+  return { ...demoZustand(), admin: true, confirmations: {}, ...over }
 }
 
 /** Ein Vortrag am Sonntag der Woche. */

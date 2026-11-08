@@ -405,8 +405,8 @@ Deno.serve(async (req: Request) => {
     if (!payload?.aktion) return nein('bad-request')
 
     // Versammlung und eigene Person aus der eigenen Mitgliedszeile.
-    const eigene = await rest.get<{ person_id: string | null; planner: boolean; congregation_id: string }[]>(
-      `members?select=person_id,planner,congregation_id&user_id=eq.${wert(userId)}`,
+    const eigene = await rest.get<{ person_id: string | null; admin: boolean; congregation_id: string }[]>(
+      `members?select=person_id,admin,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const mich = eigene[0]
     if (!mich?.congregation_id) return json({ error: 'no-congregation' }, 403)
@@ -414,7 +414,7 @@ Deno.serve(async (req: Request) => {
     const heute = new Date(heuteUtc(payload.heute)).toISOString().slice(0, 10)
     // Einen Trolley entfernt der Admin auch ohne eigene Person.
     if (payload.aktion === 'entfernen') {
-      return await entfernen({ cong: mich.congregation_id, admin: mich.planner, ichId: mich.person_id }, payload.trolleyId, heute)
+      return await entfernen({ cong: mich.congregation_id, admin: mich.admin, ichId: mich.person_id }, payload.trolleyId, heute)
     }
 
     if (!mich.person_id) return json({ error: 'no-person' }, 403)

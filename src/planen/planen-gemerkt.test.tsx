@@ -70,7 +70,7 @@ afterEach(() => {
 describe('Planen: gemerkt an dem, was gelesen wird', () => {
   it('Toast und Farbschema rechnen weder Kandidaten noch S-89-Zettel neu — neue Wochen beides', () => {
     breit()
-    const anfang: AppState = { ...demoZustand(), screen: 'planen', tab: 'mid', dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true }
+    const anfang: AppState = { ...demoZustand(), screen: 'planen', tab: 'mid', dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true }
     const { container } = render(
       <AppProvider start={() => anfang}>
         <Fernbedienung />

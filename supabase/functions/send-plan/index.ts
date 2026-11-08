@@ -52,7 +52,7 @@
 // Plan steht.
 //
 // Sicherheit: Aufrufer muss per JWT eingeloggt sein und zuteilen dürfen — Admin
-// oder Planer (`members.planner`/`zuteiler`, 4.10.2026). Der Gruppenaufseher
+// oder Planer (`members.admin`/`zuteiler`, 4.10.2026). Der Gruppenaufseher
 // sendet nur, was seine Gruppe betrifft: den Plan der Woche für ihre
 // Treffpunkte und den Entzug einer Leitung dort. Die Versammlung kommt aus
 // seiner Mitgliedszeile, nie aus dem Rumpf; jeder Wert geht durch `wert()` in
@@ -105,7 +105,7 @@ const rest = restKlient(SUPABASE_URL, SERVICE_KEY)
 interface MemberRow {
   user_id: string
   person_id: string | null
-  planner: boolean
+  admin: boolean
 }
 interface PersonRow {
   id: string
@@ -561,19 +561,19 @@ Deno.serve(async (req: Request) => {
     // (`nurEigeneTreffpunkte`) — und keine Erinnerung aus den Zusagen der
     // Woche, die nur sieht, wer zuteilt.
     const eigene = await rest.get<(MemberRow & { zuteiler?: boolean })[]>(
-      `members?select=user_id,person_id,planner,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
+      `members?select=user_id,person_id,admin,zuteiler,congregation_id&user_id=eq.${wert(userId)}`,
     )
     const mich = eigene[0] as (MemberRow & { zuteiler?: boolean; congregation_id?: string }) | undefined
     const cong = mich?.congregation_id
     if (!cong) return json({ error: 'no-congregation' }, 403)
-    const darfZuteilen = Boolean(mich?.planner || mich?.zuteiler)
+    const darfZuteilen = Boolean(mich?.admin || mich?.zuteiler)
     const aufseherVon = darfZuteilen ? null : await geleiteteGruppen(cong, mich?.person_id ?? null)
     if (aufseherVon && (payload.action === 'erinnern' || aufseherVon.size === 0)) {
       return json({ error: 'forbidden' }, 403)
     }
 
     const [members, persons, subs] = await Promise.all([
-      rest.get<MemberRow[]>(`members?select=user_id,person_id,planner&congregation_id=eq.${wert(cong)}`),
+      rest.get<MemberRow[]>(`members?select=user_id,person_id,admin&congregation_id=eq.${wert(cong)}`),
       rest.get<PersonRow[]>(`persons?select=id,fn,ln&congregation_id=eq.${wert(cong)}`),
       rest.get<SubscriptionRow[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,

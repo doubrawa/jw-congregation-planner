@@ -48,7 +48,7 @@ function zeige(
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: false,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: false,
     notifs: [], myTasks: [], persons: [], weeks: [], fsWeeks: [],
     ...over,
   }

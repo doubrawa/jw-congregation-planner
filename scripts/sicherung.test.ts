@@ -202,7 +202,7 @@ describe('ein ganzer Lauf', () => {
   const bestand = {
     congregations: [{ id: C, name: 'Probeversammlung' }],
     persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Person' }],
-    members: [{ user_id: U1, congregation_id: C, planner: true }],
+    members: [{ user_id: U1, congregation_id: C, admin: true }],
   }
   const konten = [{ id: U1, email: `${P1}@konten.invalid` }]
 

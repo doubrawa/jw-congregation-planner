@@ -19,7 +19,7 @@ describe('initialState – leer bis zur Hydration', () => {
     expect(s.screen).toBe('login')
     expect(s.persons).toEqual([])
     expect(s.weeks).toEqual([])
-    expect(s.planner).toBe(false)
+    expect(s.admin).toBe(false)
     expect(s.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
   })
 
@@ -39,7 +39,7 @@ describe('initialState – leer bis zur Hydration', () => {
     expect(s.weeks).toEqual([])
     expect(s.personId).toBeNull()
     expect(s.selectedPersonId).toBeNull()
-    expect(s.planner).toBe(false)
+    expect(s.admin).toBe(false)
   })
 })
 

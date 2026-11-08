@@ -1007,7 +1007,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       //
       // Admin- und Planer-Recht sofort in gespiegelte Konten schreiben — beide
       // Rechte stehen in derselben Zeile.
-      if ('plannerVorgemerkt' in action.patch || 'zuteilerVorgemerkt' in action.patch) {
+      if ('adminVorgemerkt' in action.patch || 'zuteilerVorgemerkt' in action.patch) {
         for (const m of next.members) {
           if (m.personId === action.id && m.userId !== next.userId) saveMemberRow(m, prev.members.find((x) => x.userId === m.userId))
         }
@@ -1219,7 +1219,7 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * **Die Empfänger sucht die Datenbank** (`notify_planners`), nicht der
    * Client. Ein Verkündiger sieht in `members` nur die eigene Zeile (RLS);
    * `next.members` enthält für ihn keinen einzigen Planer. Bis zum 24.9.2026
-   * stand hier `members.filter((m) => m.planner)` — für jede Verhinderung eine
+   * stand hier `members.filter((m) => m.admin)` — für jede Verhinderung eine
    * leere Empfängerliste, und der Schreiber brach über ihr still ab. Kein
    * Planer hat je eine Verhinderung erhalten; dem Test-Fixture lag ein Planer
    * bei, deshalb blieb es grün.

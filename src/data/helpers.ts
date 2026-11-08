@@ -688,7 +688,7 @@ export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
  * Die Gruppe, die jemand als **Gruppenaufseher** betreut — `null`, wenn keine.
  * Es ist höchstens eine, und zwar seine eigene (`overseerGroup`).
  *
- * Ein Planer ist nie Gruppenaufseher: er plant ohnehin alles, und die
+ * Ein Admin ist nie Gruppenaufseher: er plant ohnehin alles, und die
  * Einschränkung auf eine Gruppe wäre dann falsch. Genau diese Verbindung stand
  * an vier Stellen ausgeschrieben (Reducer, Navigation, Einstellungen, Planen) —
  * sie entscheidet, welche Ansichten es gibt und was darin zu sehen ist. Wer sie
@@ -696,11 +696,11 @@ export const MEETING_TABS: readonly MeetingKey[] = ['mid', 'we']
  * den der Reducer gleich wieder abweist.
  */
 export function aufseherGruppe(
-  planner: boolean,
+  admin: boolean,
   groups: readonly Group[],
   personId: string | null,
 ): string | null {
-  return planner ? null : overseerGroup(groups, personId)
+  return admin ? null : overseerGroup(groups, personId)
 }
 
 /**

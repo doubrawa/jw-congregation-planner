@@ -58,7 +58,7 @@ function zeige(over: Partial<AppState> = {}) {
     screen: 'planen',
     tab: 'fs',
     fsBereich: 'gruppenbesuche',
-    planner: true,
+    admin: true,
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',
@@ -339,7 +339,7 @@ describe('„Besuch hinzufügen" — vorbelegt, erst „Hinzufügen" legt an (13
  * Planen"). Bis dahin wechselte er nur den Besucher.
  */
 describe('Der Planer bei den Gruppenbesuchen (15.10.2026)', () => {
-  const alsPlaner = (over: Partial<AppState> = {}) => zeige({ planner: false, zuteiler: true, ...over })
+  const alsPlaner = (over: Partial<AppState> = {}) => zeige({ admin: false, zuteiler: true, ...over })
 
   it('sieht die Besuche und wechselt im Blatt den Besucher', () => {
     const { container, dispatch } = alsPlaner({ gruppenbesuche: [besuch(W1)] })

@@ -70,7 +70,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     ...demo,
     congregationId: 'c1',
     userId: 'u1',
-    planner: true,
+    admin: true,
     personId: 'p9',
     persons,
     fsWeeks: besuchEintragen(buildFsWeeks(kennungen, DEMO_FS_RULES), kennungen, BESUCH, persons),

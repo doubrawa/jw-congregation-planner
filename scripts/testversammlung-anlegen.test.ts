@@ -485,8 +485,8 @@ describe('Die Konten: je Rechte-Stufe eines (seit 4.10.2026)', () => {
     for (const k of TEST_KONTEN) expect(k.mail, k.stufe).toMatch(/@probe\.invalid$/)
   })
 
-  it('die Rechte passen zur Stufe: Admin `planner`, Planer nur `zuteiler`, die beiden anderen keins', () => {
-    expect(TEST_KONTEN.map((k) => `${k.stufe}: ${k.planner}/${k.zuteiler}`)).toEqual([
+  it('die Rechte passen zur Stufe: Admin `admin`, Planer nur `zuteiler`, die beiden anderen keins', () => {
+    expect(TEST_KONTEN.map((k) => `${k.stufe}: ${k.admin}/${k.zuteiler}`)).toEqual([
       'Admin: true/false', 'Mitglied: false/false', 'Planer: false/true', 'Gruppenaufseher: false/false',
     ])
   })

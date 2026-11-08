@@ -78,7 +78,7 @@ function zeige(weeks: Week[] = [woche()], over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const onClose = vi.fn()
   const state = (w: Week[]): AppState => ({
-    ...demoZustand(), dataStatus: 'ready', screen: 'planen', tab: 'edit', planner: true, weeks: w, week: 0, ...over,
+    ...demoZustand(), dataStatus: 'ready', screen: 'planen', tab: 'edit', admin: true, weeks: w, week: 0, ...over,
   })
   const r = render(<Buehne state={state(weeks)} dispatch={dispatch} onClose={onClose} />)
   const neuZeichnen = (w: Week[]) => r.rerender(<Buehne state={state(w)} dispatch={dispatch} onClose={onClose} />)

@@ -61,7 +61,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
     congregationId: 'c1',
     userId: 'u1',
     personId: PLANER.id,
-    planner: true,
+    admin: true,
     persons: [PLANER, AUFSEHER, VERKUENDIGER],
     groups: GRUPPEN,
     weeks: [],
@@ -133,7 +133,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
    */
   it('der Admin sieht Eigenes, die Bereiche der Versammlung, die Planung und die Verwaltung', () => {
     // „Weitere Pläne" (T120, Phase 5) immer — dort legt er den ersten an.
-    const { container } = zeige({ planner: true })
+    const { container } = zeige({ admin: true })
     expect(navPunkte(container)).toEqual([
       t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen,
       t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
@@ -143,7 +143,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
   })
 
   it('der Planer sieht die Auswertung wie der Admin — Personen und Einstellungen nicht (T126)', () => {
-    const { container, dispatch } = zeige({ planner: false, zuteiler: true })
+    const { container, dispatch } = zeige({ admin: false, zuteiler: true })
     expect(navPunkte(container)).toEqual([
       t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen,
       t.navZusammenkuenfte, t.tabFs, t.navWeiterePlaene,
@@ -154,25 +154,25 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
   })
 
   it('der Verkündiger sieht dieselben Bereiche — ohne Planen und Verwalten, ohne leere Weitere Pläne', () => {
-    const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const { container } = zeige({ admin: false, personId: VERKUENDIGER.id })
     expect(navPunkte(container)).toEqual([t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen, t.navZusammenkuenfte, t.tabFs])
     expect(abschnittTitel(container)).toEqual([t.versammlungLbl])
   })
 
   it('„Weitere Pläne" erscheint dem Verkündiger, sobald ein veröffentlichter Plan läuft', () => {
     const plan = { id: 'pl', vorlage: 'saal' as const, name: 'Winterdienst', von: '2026-01-05', bis: '2099-12-31', entwurf: false }
-    const sichtbar = zeige({ planner: false, personId: VERKUENDIGER.id, plaene: [plan] })
+    const sichtbar = zeige({ admin: false, personId: VERKUENDIGER.id, plaene: [plan] })
     expect(navPunkte(sichtbar.container)).toContain(t.navWeiterePlaene)
     cleanup()
     // Ein Entwurf nicht.
-    const entwurf = zeige({ planner: false, personId: VERKUENDIGER.id, plaene: [{ ...plan, entwurf: true }] })
+    const entwurf = zeige({ admin: false, personId: VERKUENDIGER.id, plaene: [{ ...plan, entwurf: true }] })
     expect(navPunkte(entwurf.container)).not.toContain(t.navWeiterePlaene)
   })
 
   it('der Gruppenaufseher plant über „Planung" — die Treffpunkte seiner Gruppe', () => {
     // Die Einstellungen brauchte er nur für den Grundplan seiner Gruppe; der
     // steht seit T120 im Predigtdienst. Personen bleiben ohnehin zu.
-    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id })
+    const { container, dispatch } = zeige({ admin: false, personId: AUFSEHER.id })
     expect(navPunkte(container)).toEqual([
       t.navStart, t.navAufgabenLong, t.freiePlaetzeTitle, t.mitteilungen, t.navZusammenkuenfte, t.tabFs, t.dashPlanung,
     ])
@@ -188,7 +188,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
         matches: breit && abfrage === '(min-width: 1400px)',
       })) as unknown as typeof window.matchMedia
       try {
-        const { container, dispatch } = zeige({ planner: true })
+        const { container, dispatch } = zeige({ admin: true })
         tippe(container, t.dashPlanung)
         expect(dispatch, breit ? 'breit' : 'Handy').toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
       } finally {
@@ -199,7 +199,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
   })
 
   it('das Profil ist kein Menüpunkt — der Name im Fuß führt hin und nennt es', () => {
-    const { container, dispatch } = zeige({ planner: true })
+    const { container, dispatch } = zeige({ admin: true })
     expect(navPunkte(container)).not.toContain(t.navProfil)
     const fuss = container.querySelector(`${LEISTE} .menue-profil`)!
     expect(fuss.querySelector('.menue-profil-unterzeile')?.textContent).toBe(`${t.navProfil} · ${t.rolleKoordinator}`)
@@ -227,7 +227,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
   })
 
   it('auf dem Profil ist der Name als aktuelle Seite markiert', () => {
-    const { container } = zeige({ planner: true, screen: 'profil' })
+    const { container } = zeige({ admin: true, screen: 'profil' })
     const fuss = container.querySelector(`${LEISTE} .menue-profil`)!
     expect(fuss.classList.contains('is-active')).toBe(true)
     expect(fuss.getAttribute('aria-current')).toBe('page')
@@ -240,9 +240,9 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     // Bereichen samt ihrem Reiter.
     const { reducer } = await import('./reducer')
     for (const [rolle, over] of [
-      ['Planer', { planner: true, personId: PLANER.id }],
-      ['Gruppenaufseher', { planner: false, personId: AUFSEHER.id }],
-      ['Verkündiger', { planner: false, personId: VERKUENDIGER.id }],
+      ['Admin', { admin: true, personId: PLANER.id }],
+      ['Gruppenaufseher', { admin: false, personId: AUFSEHER.id }],
+      ['Verkündiger', { admin: false, personId: VERKUENDIGER.id }],
     ] as const) {
       const { container, dispatch } = zeige(over)
       for (const label of navPunkte(container)) {
@@ -260,7 +260,7 @@ describe('Die Navigationsliste ist die zweite Hälfte der Rechteprüfung', () =>
     // Planen ist ein eigener Modus (11.10.2026): über „Planen" am Titel oder
     // über „Planung" im Menü. Bis dahin öffnete ein Thema beim Planen, wer
     // zuletzt geplant hatte.
-    const { container, dispatch } = zeige({ planner: true, screen: 'planen', tab: 'mid' })
+    const { container, dispatch } = zeige({ admin: true, screen: 'planen', tab: 'mid' })
     tippe(container, t.tabFs)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
@@ -501,7 +501,7 @@ describe('Die Status-Ansichten der Datenanbindung', () => {
   })
 
   it('die leere Versammlung verweist den Verkündiger an einen Admin — ohne Knopf, der Demo-Daten einfüllt', () => {
-    const { getByText, container } = zeige({ dataEmpty: true, planner: false })
+    const { getByText, container } = zeige({ dataEmpty: true, admin: false })
     expect(getByText(t.stLeer)).toBeTruthy()
     expect(getByText(t.stLeerText)).toBeTruthy()
     // Nur der Weg hinaus (seit 4.10.2026) — kein Knopf, der etwas einfüllt.
@@ -511,13 +511,13 @@ describe('Die Status-Ansichten der Datenanbindung', () => {
   it('dem Planer steht die leere Versammlung offen — er ist der Admin, an den der Hinweis verwiese', () => {
     // Personen anlegen und „Nächste Woche importieren" sind sein Weg hinein;
     // hinter dem Hinweis waren beide unerreichbar (bis zum 24.9.2026).
-    const { container, queryByText } = zeige({ dataEmpty: true, planner: true })
+    const { container, queryByText } = zeige({ dataEmpty: true, admin: true })
     expect(container.querySelector('.status-view')).toBeNull()
     expect(queryByText(t.stLeer)).toBeNull()
   })
 
   it('ebenso dem Planer ohne Admin-Recht: Er holt das erste Programm (15.10.2026)', () => {
-    const { container } = zeige({ dataEmpty: true, planner: false, zuteiler: true })
+    const { container } = zeige({ dataEmpty: true, admin: false, zuteiler: true })
     expect(container.querySelector('.status-view')).toBeNull()
   })
 
@@ -583,14 +583,14 @@ describe('Die Schublade am Handy (und am Tablet hochkant)', () => {
   })
 
   it('sie führt dieselben Punkte wie die Leiste — ohne Mitteilungen, die hat die Glocke', () => {
-    const { container } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const { container } = zeige({ admin: false, personId: VERKUENDIGER.id })
     fireEvent.click(menueKnopf(container))
     const inDerSchublade = beschriftungen(container.querySelector('.schublade'))
     expect(inDerSchublade).toEqual(navPunkte(container).filter((p) => p !== t.mitteilungen))
   })
 
   it('die schmale Leiste ebenso — mit dem kurzen Namen für Meine Aufgaben', () => {
-    const { container } = zeige({ planner: true })
+    const { container } = zeige({ admin: true })
     const kurz = [...container.querySelectorAll('.schmale-leiste .leisten-text')].map((e) => e.textContent)
     expect(kurz).toEqual(
       navPunkte(container)
@@ -668,7 +668,7 @@ describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"'
   it('beim Gruppenaufseher nennt er den Predigtdienst — auch mit einem Reiter von früher', () => {
     // Darunter stehen seine Treffpunkte (`geplantesThema`); „Fertig" führt
     // dorthin zurück, nicht in die Zusammenkünfte.
-    const { container, dispatch } = zeige({ planner: false, personId: AUFSEHER.id, screen: 'planen', tab: 'mid' })
+    const { container, dispatch } = zeige({ admin: false, personId: AUFSEHER.id, screen: 'planen', tab: 'mid' })
     const kopf = container.querySelector('.planenkopf')!
     expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(t.tabFs)
     fireEvent.click([...kopf.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
@@ -746,7 +746,7 @@ describe('Aus der Wahl auf „Planung" geplant: am Handy der Kopf mit Zurück, e
   })
 
   it('der Gruppenaufseher hat keine Wahl — bei ihm bleibt es bei „Fertig"', () => {
-    const { container } = zeige({ planner: false, personId: AUFSEHER.id, screen: 'planen', tab: 'fs', planenVon: 'planung' })
+    const { container } = zeige({ admin: false, personId: AUFSEHER.id, screen: 'planen', tab: 'fs', planenVon: 'planung' })
     expect(container.querySelector('.planenkopf')).not.toBeNull()
     expect(zurueckImKopf(container)).toBeNull()
   })
@@ -796,14 +796,14 @@ describe('Abmelden und Rollenanzeige', () => {
    */
   it('der Aufseher einer Gruppe steht als Gruppenaufseher da, sein Gehilfe als Gehilfe', () => {
     const rolle = (c: HTMLElement) => c.querySelector('.menue-profil-unterzeile')?.textContent?.split(' · ')[1]
-    const aufseher = zeige({ planner: false, personId: AUFSEHER.id })
+    const aufseher = zeige({ admin: false, personId: AUFSEHER.id })
     expect(rolle(aufseher.container)).toBe(t.rolleGruppenaufseher)
     cleanup()
     const mitGehilfe = [{ ...GRUPPEN[0]!, overseerId: 'p-anders', assistantId: AUFSEHER.id }]
-    const gehilfe = zeige({ planner: false, personId: AUFSEHER.id, groups: mitGehilfe })
+    const gehilfe = zeige({ admin: false, personId: AUFSEHER.id, groups: mitGehilfe })
     expect(rolle(gehilfe.container)).toBe(t.rolleGehilfe)
     cleanup()
-    const verk = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const verk = zeige({ admin: false, personId: VERKUENDIGER.id })
     expect(rolle(verk.container)).toBe(t.rolleVerkuendiger)
   })
 
@@ -852,7 +852,7 @@ describe('Abmelden und Rollenanzeige', () => {
    */
   it.each([
     ['nach einem Ladefehler', { dataStatus: 'error' } as Partial<AppState>],
-    ['vor einer leeren Versammlung (Verkündiger)', { dataEmpty: true, planner: false } as Partial<AppState>],
+    ['vor einer leeren Versammlung (Verkündiger)', { dataEmpty: true, admin: false } as Partial<AppState>],
   ])('%s: die Statusseite meldet selbst ab', (_was, over) => {
     const { container, dispatch } = zeige(over)
     const knopf = [...container.querySelectorAll('.status-view button')].find((b) => b.textContent === t.abmelden)
@@ -895,13 +895,13 @@ describe('Der Toast', () => {
 describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
   it('führt den Planer dorthin, wohin der Push zeigt', () => {
     history.replaceState(null, '', '/#go=planen')
-    const { dispatch } = zeige({ planner: true })
+    const { dispatch } = zeige({ admin: true })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
   })
 
   it('einen Verkündiger, der „planen" gar nicht sehen darf, führt er zu den Aufgaben', () => {
     history.replaceState(null, '', '/#go=planen')
-    const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const { dispatch } = zeige({ admin: false, personId: VERKUENDIGER.id })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'aufgaben' })
   })
 
@@ -928,7 +928,7 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
     const dispatch = vi.fn()
     let setzen: (s: AppState) => void = () => {}
     function Buehne() {
-      const [state, setState] = useState(() => zustand({ planner: false, userId: null }))
+      const [state, setState] = useState(() => zustand({ admin: false, userId: null }))
       setzen = setState
       const store = useStaticStore(state)
       return (
@@ -943,7 +943,7 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
     }
     render(<Buehne />)
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'navigate' }))
-    act(() => setzen(zustand({ planner: true, userId: 'u1' })))
+    act(() => setzen(zustand({ admin: true, userId: 'u1' })))
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planen' })
   })
 
@@ -967,13 +967,13 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
    */
   it('„Ersatz gesucht" nimmt den Bereich Einspringen mit — auf „Freie Plätze"', () => {
     history.replaceState(null, '', '/#go=aufgaben&abschnitt=einspringen')
-    const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const { dispatch } = zeige({ admin: false, personId: VERKUENDIGER.id })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' })
     expect(location.hash).toBe('')
   })
 
   it('auch bei schon offenem Fenster — dort kommt das Ziel als Hash-Wechsel', () => {
-    const { dispatch } = zeige({ planner: false, personId: VERKUENDIGER.id })
+    const { dispatch } = zeige({ admin: false, personId: VERKUENDIGER.id })
     dispatch.mockClear()
     act(() => {
       history.replaceState(null, '', '/#go=freie&abschnitt=einspringen')
@@ -1046,7 +1046,7 @@ describe('Der Push-Deep-Link führt in den erlaubten Bereich', () => {
 
   it('ein Bereich, der nicht zum Screen gehört, wird nicht mitgenommen', () => {
     history.replaceState(null, '', '/#go=planen&abschnitt=einspringen')
-    const { dispatch } = zeige({ planner: true })
+    const { dispatch } = zeige({ admin: true })
     const navigiert = dispatch.mock.calls.map(([a]) => a).filter((a) => a.type === 'navigate')
     expect(navigiert).toEqual([{ type: 'navigate', screen: 'planen' }])
   })

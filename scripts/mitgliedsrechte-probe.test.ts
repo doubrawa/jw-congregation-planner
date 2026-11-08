@@ -318,7 +318,7 @@ describe('Woher die Probe ihren Zugang nimmt', () => {
     // Zwei Skripte, eine Liste: Wiche eine Adresse ab, fragte die Probe nach
     // einem Konto, das es nicht gibt, und die Anmeldung scheiterte.
     expect(PROBE_KONTEN).toEqual({
-      planer: TEST_KONTEN.find((k) => k.planner)!.mail,
+      planer: TEST_KONTEN.find((k) => k.admin)!.mail,
       mitglied: TEST_KONTEN.find((k) => k.stufe === 'Mitglied')!.mail,
       zuteiler: TEST_KONTEN.find((k) => k.zuteiler)!.mail,
       aufseher: TEST_KONTEN.find((k) => k.stufe === 'Gruppenaufseher')!.mail,

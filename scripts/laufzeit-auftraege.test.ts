@@ -67,7 +67,7 @@ describe('Jeder Schalter wird verstanden', () => {
     s: (d, w) => d.screen === w,
     tab: (d, w) => d.tab === w,
     fb: (d, w) => d.fsBereich === w,
-    pl: (d, w) => (w === '2' ? d.zuteiler === true : d.planner === (w === '1')),
+    pl: (d, w) => (w === '2' ? d.zuteiler === true : d.admin === (w === '1')),
     me: (d, w) => d.me === w,
     p: (d, w) => d.personId === w,
     konto: (d) => d.konto === true,

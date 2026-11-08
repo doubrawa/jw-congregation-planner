@@ -103,7 +103,7 @@ function mitSerien(anzahl: number): { weeks: Week[]; persons: Person[] } {
 const basis = (over: Partial<AppState>): AppState => ({
   ...demoZustand(),
   week: 1, // mittlere Woche der Serie
-  planner: true,
+  admin: true,
   services: DIENSTE,
   absences: [],
   ...over,

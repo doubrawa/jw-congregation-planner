@@ -33,7 +33,7 @@ function zeige(reminders: Reminders = STANDARD, lang: Lang = 'de') {
   const state: AppState = {
     ...demoZustand(),
     screen: 'einstellungen', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', planner: true,
+    congregationId: 'c1', userId: 'u1', admin: true,
     reminders, lang,
   }
   function Buehne() {

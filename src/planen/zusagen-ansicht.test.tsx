@@ -42,7 +42,7 @@ function zeige(over: Partial<AppState> = {}) {
     dataStatus: 'ready',
     congregationId: 'c1',
     userId: 'u1',
-    planner: true,
+    admin: true,
     ...over,
   }
   function Buehne() {
@@ -160,12 +160,12 @@ describe('Die Zusagen der Woche', () => {
   })
 
   it('auch der Planer, der nicht Admin ist, sieht sie', () => {
-    const { container } = zeige({ planner: false, zuteiler: true })
+    const { container } = zeige({ admin: false, zuteiler: true })
     expect(container.querySelector('.screen.zusagen')).not.toBeNull()
   })
 
   it('wer nicht zuteilt, bekommt sie nicht — der Gruppenaufseher plant die Treffpunkte', () => {
-    const { container } = zeige({ planner: false, zuteiler: false, personId: 'p1' })
+    const { container } = zeige({ admin: false, zuteiler: false, personId: 'p1' })
     expect(container.querySelector('.screen.zusagen')).toBeNull()
   })
 })

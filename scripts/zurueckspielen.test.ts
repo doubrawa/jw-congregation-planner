@@ -44,7 +44,7 @@ const BESTAND = {
   congregations: [{ id: C, name: 'Probeversammlung' }],
   groups: [{ id: G1, congregation_id: C, name: 'Gruppe 1', position: 0, overseer_id: P1 }],
   persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Person', grp: G1 }],
-  members: [{ user_id: U1, congregation_id: C, planner: true, person_id: P1 }],
+  members: [{ user_id: U1, congregation_id: C, admin: true, person_id: P1 }],
 }
 const KONTEN = [{ id: U1, email: `${P1}@konten.invalid`, created_at: '2026-10-01T00:00:00.000Z' }]
 

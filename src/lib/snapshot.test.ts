@@ -10,7 +10,7 @@ const payload = (over: Partial<HydratePayload> = {}): HydratePayload => ({
   userId: 'u1',
   empty: false,
   congregation: { name: 'Musterstadt', hall: '', times: STANDARD_ZEITEN },
-  planner: true,
+  admin: true,
   personId: 'p1',
   persons: [],
   services: [],
@@ -76,6 +76,29 @@ describe('saveSnapshot / readSnapshot', () => {
     localStorage.setItem('snapshot', JSON.stringify({ ...raw, v: 99 }))
     expect(readSnapshot('u1')).toBeNull()
     expect(localStorage.getItem('snapshot')).toBeNull()
+  })
+
+  it('übernimmt eine Aufnahme von vor E4 — das Admin-Recht hieß dort planner', () => {
+    // Verworfen, hätte ein Gerät, das die neue Fassung zum ersten Mal ohne Netz
+    // startet, nichts zu zeigen. Übernommen ohne Umbenennen, stünde der Admin
+    // ohne sein Recht da: Die App fragt `admin`.
+    const person = (id: string): HydratePayload['persons'][number] => ({
+      id, fn: 'Xavo', ln: 'Quintus', role: 'verkuendiger', priv: {} as HydratePayload['persons'][number]['priv'],
+    })
+    const neu = payload({
+      admin: true,
+      members: [{ userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false }],
+      persons: [{ ...person('p1'), adminVorgemerkt: true }, person('p2')],
+    })
+    const { admin, members, persons, ...rest } = neu
+    const alt = {
+      ...rest,
+      planner: admin,
+      members: members.map(({ admin: recht, ...m }) => ({ ...m, planner: recht })),
+      persons: persons.map(({ adminVorgemerkt, ...p }) => (adminVorgemerkt === undefined ? p : { ...p, plannerVorgemerkt: adminVorgemerkt })),
+    }
+    localStorage.setItem('snapshot', JSON.stringify({ v: 2, at: Date.now(), userId: 'u1', payload: alt }))
+    expect(readSnapshot('u1')?.payload).toEqual(neu)
   })
 
   it('verwirft beschädigten Inhalt statt zu werfen — und räumt ihn weg', () => {

@@ -91,7 +91,7 @@
  *
  * **Seit dem 4. Oktober 2026 misst sie die Rechte-Stufen** — mit vier Konten
  * statt zwei, je Stufe eines (`testversammlung-anlegen.mjs` legt sie an). Das
- * Konto `planer@` ist dabei der **Admin** (`members.planner`, die App nannte
+ * Konto `planer@` ist dabei der **Admin** (`members.admin`, die App nannte
  * ihn bis dahin „Planer"); die Stufe „Planer" (`members.zuteiler`) hat
  * `zuteiler@`. Im Code heißt das Admin-Konto deshalb weiter `planer`, in der
  * Ausgabe „Admin". **Seit dem 15.10.2026 plant der Planer alles wie der
@@ -684,7 +684,7 @@ async function anmelden(url, anon, mail, pass) {
   // liegt, entscheidet die Speicherreihenfolge. Bis zum 4.10.2026 fehlte der
   // Filter — dass der Admin sich selbst fand, war Glück: Seine Zeile war die
   // zuerst angelegte.
-  const { status, daten: mitglied } = await rest(`members?select=congregation_id,person_id,planner,zuteiler&user_id=eq.${user.id}`)
+  const { status, daten: mitglied } = await rest(`members?select=congregation_id,person_id,admin,zuteiler&user_id=eq.${user.id}`)
   // Ein Fehler hier hieße sonst „in keiner Versammlung" — die falsche Spur.
   if (status >= 400) throw new Error(`${mail}: members nicht lesbar (${status}): ${JSON.stringify(mitglied)}`)
   if (!mitglied?.[0]) throw new Error(`${mail} ist in keiner Versammlung.`)
@@ -696,7 +696,7 @@ async function anmelden(url, anon, mail, pass) {
     uid: user.id,
     cong: ich.congregation_id,
     pid: ich.person_id,
-    planer: Boolean(ich.planner),
+    planer: Boolean(ich.admin),
     zuteiler: Boolean(ich.zuteiler),
   }
 }
@@ -1282,13 +1282,13 @@ async function wochenProben(k, woche, neu) {
   await aenderVersuch(k, {
     nr: 41,
     was: 'Planer: sich selbst zum Admin machen',
-    schreiben: () => zuteiler.rest(konto, 'PATCH', { planner: true }, 'return=minimal'),
+    schreiben: () => zuteiler.rest(konto, 'PATCH', { admin: true }, 'return=minimal'),
     nachsehen: async () => {
-      const r = await planer.rest(`members?select=planner&user_id=eq.${zuteiler.uid}`)
+      const r = await planer.rest(`members?select=admin&user_id=eq.${zuteiler.uid}`)
       const m = zeilenVon(r)[0]
-      return { status: r.status, angekommen: Boolean(m?.planner), fehlt: r.status < 400 && !m ? 'der Admin sieht das Konto des Planers nicht' : null }
+      return { status: r.status, angekommen: Boolean(m?.admin), fehlt: r.status < 400 && !m ? 'der Admin sieht das Konto des Planers nicht' : null }
     },
-    zurueck: () => planer.rest(konto, 'PATCH', { planner: false }, 'return=minimal'),
+    zurueck: () => planer.rest(konto, 'PATCH', { admin: false }, 'return=minimal'),
     erwartet: false,
     folge: ['AUCH DAS!', 'Rechte vergibt nur der Admin'],
   })

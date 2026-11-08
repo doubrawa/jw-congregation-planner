@@ -68,7 +68,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
     screen: 'programm', tab: 'mid', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: true,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: true,
     services: DIENSTE, weeks: [woche()], week: 0,
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
     ...over,
@@ -377,7 +377,7 @@ describe('Der Bogen der Treffpunkte', () => {
   const zellen = (zeilen: Iterable<Element>) => [...zeilen].map((z) => [...z.children].map((c) => c.textContent))
 
   it('wer zuteilt, druckt Versammlung und alle Gruppen je Datum — ein freier Leiter gepunktet', () => {
-    const { container } = zeigeBogen({ planner: true })
+    const { container } = zeigeBogen({ admin: true })
     expect(zellen(tabelle(container, t.druckVersammlungstreffpunkte)).map((z) => [z[2], z[3]])).toEqual([
       ['Königreichssaal', 'Leo Leiter'],
       ['Königreichssaal', 'Leo Leiter'],
@@ -388,7 +388,7 @@ describe('Der Bogen der Treffpunkte', () => {
   })
 
   it('„Anders als sonst": was entfällt, und der Besuch des Dienstaufsehers', () => {
-    const { container } = zeigeBogen({ planner: true })
+    const { container } = zeigeBogen({ admin: true })
     const anders = texte(container, '.druck-anders-zeile')
     expect(anders).toContainEqual(expect.stringContaining(`Gruppe 2 · ${t.druckEntfaellt}`))
     expect(anders).toContainEqual(expect.stringContaining(`Gruppe 1 · ${t.gbMarker}`))
@@ -398,7 +398,7 @@ describe('Der Bogen der Treffpunkte', () => {
     // Der Grundplan hat Gruppe 1 am Samstag; in dieser Woche steht sie am Freitag.
     const [erste, ...rest] = fsWeeks()
     const verlegt = [erste!.map((inst) => (inst.id === 'r1' ? { ...inst, wd: 5 } : inst)), ...rest]
-    const { container } = zeigeBogen({ planner: true, fsWeeks: verlegt })
+    const { container } = zeigeBogen({ admin: true, fsWeeks: verlegt })
     expect(texte(container, '.druck-anders-zeile')).toContainEqual(
       expect.stringContaining(fill(t.druckStatt, { alt: 'Sa., 12.9. · 09:30 · Bei Familie A' })),
     )
@@ -411,7 +411,7 @@ describe('Der Bogen der Treffpunkte', () => {
     const regeln = REGELN.map((r) => (r.id === 'r1' ? { ...r, place: '   ' } : r))
     const [erste, ...rest] = STARTS.map((start) => genFsWeek(start, regeln))
     const verlegt = [erste!.map((inst) => (inst.id === 'r1' ? { ...inst, wd: 5, place: '  ' } : inst)), ...rest]
-    const { container } = zeigeBogen({ planner: true, fsRules: regeln, fsWeeks: verlegt })
+    const { container } = zeigeBogen({ admin: true, fsRules: regeln, fsWeeks: verlegt })
     const zeile = texte(container, '.druck-anders-zeile').find((z) => z.includes('Gruppe 1') && z.includes(fill(t.druckStatt, { alt: '' }).trim()))
     expect(zeile).toContain(`Gruppe 1 · 09:30 · ${fill(t.druckStatt, { alt: 'Sa., 12.9. · 09:30' })}`)
     expect(zeile).not.toMatch(/·\s*·|·\s*$/)
@@ -419,7 +419,7 @@ describe('Der Bogen der Treffpunkte', () => {
 
   it('der Bogen der Gruppenbesuche nennt die kommenden — vorbeigegangene nicht, wie die Ansicht', () => {
     const { container } = zeige(<GruppenbesuchBogen />, {
-      planner: true,
+      admin: true,
       groups: GRUPPEN,
       gruppenbesuche: [
         { id: 'alt', woche: '2020-01-06', grp: 'g1', pid: null },
@@ -431,7 +431,7 @@ describe('Der Bogen der Treffpunkte', () => {
   })
 
   it('wer nicht zuteilt, druckt die Versammlung und die eigene Gruppe — von fremden Besuchen nur Woche und Gruppe', () => {
-    const { container } = zeigeBogen({ planner: false, zuteiler: false })
+    const { container } = zeigeBogen({ admin: false, zuteiler: false })
     expect([...tabelle(container, t.druckGruppentreffpunkte)].map((z) => z.children[2]?.textContent)).toEqual(['Gruppe 1', 'Gruppe 1'])
     expect(texte(container, '.druck-anders-zeile').some((z) => z.includes('Gruppe 2'))).toBe(false)
     const besuche = zellen(tabelle(container, t.fsGruppenbesucheTab))

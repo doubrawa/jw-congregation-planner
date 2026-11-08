@@ -51,7 +51,7 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     // Nach dem Abmelden steht fest: niemand. Beim Start mit Datenbank setzt der
     // Provider den Merker, denn erst er fragt nach (`store.tsx`).
     sitzungPruefen: false,
-    planner: false,
+    admin: false,
     zuteiler: false,
     ansicht: null,
     congregation: { name: '', hall: '', times: STANDARD_ZEITEN },

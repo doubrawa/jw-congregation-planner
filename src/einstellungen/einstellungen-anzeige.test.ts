@@ -17,7 +17,7 @@ const person = (id: string, fn: string, ln: string, over: Partial<Person> = {}):
   id, fn, ln, role: 'verkuendiger', female: false, priv: emptyQualifications(), grp: null, ...over,
 })
 const konto = (personId: string, over: Partial<Member> = {}): Member => ({
-  userId: `u-${personId}`, email: '', personId, planner: false, zuteiler: false, ...over,
+  userId: `u-${personId}`, email: '', personId, admin: false, zuteiler: false, ...over,
 })
 
 describe('Die Zusammenkunft in einer Zeile', () => {
@@ -51,7 +51,7 @@ describe('Wer plant', () => {
   const CARL = person('p-c', 'Carl', 'Cohn')
 
   it('wer planen darf und wer Admin ist — beide, nach dem Namen geordnet', () => {
-    const konten = [konto('p-c', { planner: true }), konto('p-a', { zuteiler: true })]
+    const konten = [konto('p-c', { admin: true }), konto('p-a', { zuteiler: true })]
     expect(werPlant([CARL, BERND, ANNA], konten, 'de').map((p) => p.id)).toEqual(['p-a', 'p-c'])
   })
 
@@ -61,7 +61,7 @@ describe('Wer plant', () => {
   })
 
   it('mit Konto entscheidet das Konto, nicht eine alte Vormerkung', () => {
-    const vorgemerkt = { ...BERND, plannerVorgemerkt: true }
+    const vorgemerkt = { ...BERND, adminVorgemerkt: true }
     expect(werPlant([vorgemerkt], [konto('p-b')], 'de')).toEqual([])
   })
 })

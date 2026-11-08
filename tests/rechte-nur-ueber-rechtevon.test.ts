@@ -8,7 +8,7 @@ import { quelldateien, WURZEL } from './quelldateien'
  *
  * Die befristete Ansicht — der Admin sieht die App mit den Rechten einer
  * anderen Stufe — legt sich in `rechteVon` über die echten Rechte. Sie wirkt
- * deshalb nur, wo die App über `rechteVon` fragt. Wer `planner` oder
+ * deshalb nur, wo die App über `rechteVon` fragt. Wer `admin` oder
  * `zuteiler` selbst liest, entscheidet daran vorbei: So bot
  * `darfAbwesenheitBearbeiten` in der Ansicht als Verkündiger die Abwesenheiten
  * anderer weiter zum Bearbeiten an, bis es über `rechteVon` fragte.
@@ -35,14 +35,22 @@ const ERLAUBT = new Set([
   'src/profil/AnsichtKarte.tsx',
 ])
 
-/** Ein Lesen des Rechts als Eigenschaft — `state.planner`, `m.zuteiler`, `{ planner } = state`. */
-const LESEN = [/\.(planner|zuteiler)\b/, /\{[^}]*\b(planner|zuteiler)\b[^}]*\}\s*=\s*\w/]
+/**
+ * Ein Lesen des Rechts als Eigenschaft — `state.admin`, `m.zuteiler`,
+ * `{ admin } = state`.
+ *
+ * `admin` heißt seit E4 (8.11.2026) auch, was `rechteVon` liefert — und dort zu
+ * lesen ist gerade der erlaubte Weg: `rechteVon(state).admin`, `rechte.admin`,
+ * `{ admin } = rechteDerPerson(…)`. Davor stand `planner`, ein Name, den nur
+ * das echte Recht trug.
+ */
+const LESEN = [/\.zuteiler\b/, /(?<!\brechte|\brechteVon\([^()]*\))\.admin\b/, /\{[^}]*\b(admin|zuteiler)\b[^}]*\}\s*=\s*(?!rechte)\w/]
 
 /** Kommentarzeilen zählen nicht — dort darf vom Recht die Rede sein. */
 const kommentar = (zeile: string): boolean => /^\s*(\*|\/\/|\/\*)/.test(zeile)
 
 describe('Rechte-Entscheide fragen rechteVon', () => {
-  it('niemand liest planner oder zuteiler selbst — außer den erlaubten Stellen', () => {
+  it('niemand liest admin oder zuteiler selbst — außer den erlaubten Stellen', () => {
     const funde: string[] = []
     // Jede Quelldatei der App unter `src`, ohne Tests.
     for (const datei of quelldateien({ orte: ['src'], endungen: ['.ts', '.tsx'], ohneTests: true })) {
@@ -54,6 +62,27 @@ describe('Rechte-Entscheide fragen rechteVon', () => {
         })
     }
     expect(funde).toEqual([])
+  })
+
+  it('sie trennt das echte Recht vom abgeleiteten, das ebenfalls admin heißt', () => {
+    const liest = (zeile: string) => LESEN.some((m) => m.test(zeile))
+    const echt = [
+      'if (!state.admin) return state',
+      'const { admin } = state',
+      'konten.some((m) => m.admin)',
+      's.zuteiler || x',
+      // Über ein Aufrufergebnis ist es ebenso das echte Recht — nur `rechteVon` leitet ab.
+      'if (useApp().state.admin) x',
+      'if (zustand().admin) x',
+    ]
+    const abgeleitet = [
+      '{rechteVon(state).admin && (',
+      'const marke = lage.rechte.admin ? a : b',
+      'return rechte.admin || rechte.planer',
+      'const { admin, planer } = rechteDerPerson(state.members, person)',
+    ]
+    expect(echt.filter((z) => !liest(z))).toEqual([])
+    expect(abgeleitet.filter(liest)).toEqual([])
   })
 
   it('die Probe findet ein Lesen, wo es steht', () => {

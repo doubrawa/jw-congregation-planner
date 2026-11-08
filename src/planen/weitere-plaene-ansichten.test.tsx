@@ -59,7 +59,7 @@ function zeige(Screen: () => React.JSX.Element, over: Partial<AppState> = {}) {
     congregationId: 'c1',
     userId: 'u1',
     personId: ANNA.id,
-    planner: false,
+    admin: false,
     persons: [ANNA, CARL],
     groups: GRUPPEN,
     plaene: [SAAL, ENTWURF],
@@ -211,7 +211,7 @@ function amHandy() {
 
 describe('Planen: die Liste', () => {
   amHandy()
-  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
+  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', admin: true, ...over })
 
   it('je Stand eine Karte — die Entwürfe zuerst, dann was gilt, dann was war', () => {
     const alt: WeitererPlan = { ...SAAL, id: 'pl-a', name: 'Gartenpflege', von: '2026-03-02', bis: '2026-08-30' }
@@ -257,7 +257,7 @@ describe('Planen: die Liste', () => {
 
 describe('Planen: ein Plan', () => {
   amHandy()
-  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', planner: true, ...over })
+  const planen = (over: Partial<AppState> = {}) => zeige(PlanenScreen, { screen: 'planen', admin: true, ...over })
 
   it('die Spur, der Name, eine Woche umsetzen — und am Handy unten „Zurück zum Entwurf"', () => {
     const { container, dispatch } = planen()
@@ -558,7 +558,7 @@ describe('Planen: ein Plan', () => {
  */
 describe('Der Planer in den Weiteren Plänen (15.10.2026)', () => {
   amHandy()
-  const alsPlaner = () => zeige(PlanenScreen, { screen: 'planen', planner: false, zuteiler: true })
+  const alsPlaner = () => zeige(PlanenScreen, { screen: 'planen', admin: false, zuteiler: true })
 
   it('legt einen Plan an — und sieht die Entwürfe', () => {
     const { container } = alsPlaner()

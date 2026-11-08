@@ -18,7 +18,7 @@ const SPAETER: WeitererPlan = { id: 'pl-w', name: '', von: '2026-11-30', bis: '2
 const woche = (datum: string, grp: string | null): PlanEintrag => ({ id: `e-${datum}`, planId: 'pl-s', datum, grp })
 
 function zustand(over: Partial<AppState> = {}): AppState {
-  return { ...demoZustand(), planner: true, personId: 'p6', plaene: [], planEintraege: [], terminGewaehlt: true, ...over }
+  return { ...demoZustand(), admin: true, personId: 'p6', plaene: [], planEintraege: [], terminGewaehlt: true, ...over }
 }
 
 beforeEach(() => {
@@ -158,7 +158,7 @@ describe('Das dritte Thema', () => {
   })
 
   it('planen darf es nur ein Planer — ein Verkündiger landet beim Ansehen', () => {
-    const s = reducer(zustand({ planner: false, personId: 'p9', screen: 'start' }), {
+    const s = reducer(zustand({ admin: false, personId: 'p9', screen: 'start' }), {
       type: 'navigate',
       screen: 'planen',
       thema: 'weitere',
@@ -176,7 +176,7 @@ describe('Das dritte Thema', () => {
         userId: 'u1',
         empty: false,
         congregation: basis.congregation,
-        planner: true,
+        admin: true,
         personId: 'p6',
         persons: basis.persons,
         services: basis.services,

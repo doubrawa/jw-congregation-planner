@@ -80,7 +80,7 @@ function zeige(over: Partial<AppState> = {}) {
   const dispatch = vi.fn()
   const state: AppState = {
     ...demoZustand(),
-    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+    dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
     persons: [], services: DIENSTE, groups: [], weeks: [], fsWeeks: [],
     congLang: 'de', progLangs: [],
     ...over,

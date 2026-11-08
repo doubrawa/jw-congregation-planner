@@ -24,7 +24,7 @@ function verkuendiger(mitRecht: boolean): AppState {
   const persons = demo.persons.map((p) => (recht.has(p.id) ? { ...p, priv: { ...p.priv, zeugnis: true } } : p))
   const person = persons.find((p) => recht.has(p.id) === mitRecht && !demo.groups.some((g) => g.overseerId === p.id || g.assistantId === p.id))
   if (!person) throw new Error('Demo-Bestand ohne passende Person')
-  return { ...demo, persons, trolleys: DEMO_TROLLEYS, screen: 'programm', personId: person.id, planner: false, zuteiler: false }
+  return { ...demo, persons, trolleys: DEMO_TROLLEYS, screen: 'programm', personId: person.id, admin: false, zuteiler: false }
 }
 
 describe('Wer den Reiter „Trolleys" sieht', () => {
@@ -40,17 +40,17 @@ describe('Wer den Reiter „Trolleys" sieht', () => {
 
   it('Admin und Planer sehen ihn immer, auch ohne das Recht', () => {
     const ohne = verkuendiger(false)
-    expect(fsBereiche({ ...ohne, planner: true })).toContain('trolleys')
+    expect(fsBereiche({ ...ohne, admin: true })).toContain('trolleys')
     expect(fsBereiche({ ...ohne, zuteiler: true })).toContain('trolleys')
   })
 
   it('ohne Trolley in der Versammlung sieht ihn niemand — auch mit Recht nicht', () => {
     expect(fsBereiche({ ...verkuendiger(true), trolleys: [] })).not.toContain('trolleys')
-    expect(fsBereiche({ ...verkuendiger(false), planner: true, trolleys: [] })).not.toContain('trolleys')
+    expect(fsBereiche({ ...verkuendiger(false), admin: true, trolleys: [] })).not.toContain('trolleys')
   })
 
   it('beim Planen gibt es ihn nicht — es gibt dort nichts zu planen', () => {
-    expect(fsBereiche({ ...verkuendiger(true), screen: 'planen', planner: true })).not.toContain('trolleys')
+    expect(fsBereiche({ ...verkuendiger(true), screen: 'planen', admin: true })).not.toContain('trolleys')
   })
 
   it('ein Konto ohne Person sieht ihn nicht, solange es nicht plant', () => {

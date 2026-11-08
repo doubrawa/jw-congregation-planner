@@ -730,6 +730,13 @@ Fassung geladen haben. Ein Gerät holt sie, wenn es zur App zurückkehrt
 zweite Push, solange der erste noch baut, gehen beide in einem Lauf hinaus —
 genau das, was die zwei Pushes vermeiden sollen.
 
+**Umbenennen ist beides.** Der erste Push legt die neue Spalte neben die alte,
+übernimmt die Werte und hält beide per Trigger gleich; Functions und App
+nutzen ab da den neuen Namen. Der zweite entfernt die alte Spalte samt
+Trigger. So läuft es beim Admin-Recht (`planner` → `admin`, E4): Schritt 1 ist
+`supabase/migrations/20261108150000_admin-recht.sql`, Schritt 2 steht noch aus
+(T174 in der Aufgabenliste).
+
 **Das Secret** `SUPABASE_ACCESS_TOKEN` ist ein persönlicher Zugangstoken
 (supabase.com/dashboard/account/tokens), angelegt am 7. November 2026 ohne
 Ablaufdatum: Er gilt, bis er dort widerrufen wird. Danach scheitert der
@@ -934,7 +941,7 @@ nicht mehr, in der App seit dem 2.10.2026 gar keine). „Meine Aufgaben" entsteh
 `confirmations`, Erinnerungen und Versammlungssprache in eigenen Spalten von
 `congregations`. **Konten & Anmelde-Links laufen
 personenzentriert im Personen-Screen:** Admin-Recht als feste Rolle im
-Personen-Detail (gespiegelt in `members.planner`, vorgemerkt an der Person),
+Personen-Detail (gespiegelt in `members.admin`, vorgemerkt an der Person),
 Konto-Karte mit „Link senden" (Link und Code als Nachricht über Teilen oder
 Kopieren, ausgestellt von der Edge Function `send-invite`; oder ein Zettel mit
 QR-Code) und „Links senden" in der Liste — je Person eine Zeile zum Kopieren,

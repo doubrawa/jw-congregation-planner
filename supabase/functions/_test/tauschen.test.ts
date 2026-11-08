@@ -221,12 +221,12 @@ const U_OHNE = 'user-ohne-person'
 const U_KARL = 'user-karl'
 
 const MEMBERS = [
-  { user_id: U_SIMON, person_id: 'p-simon', planner: false, zuteiler: false, congregation_id: CONG },
-  { user_id: U_JONAS, person_id: 'p-jonas', planner: false, zuteiler: false, congregation_id: CONG },
-  { user_id: U_OTTO, person_id: 'p-otto', planner: false, zuteiler: false, congregation_id: CONG },
-  { user_id: U_ADMIN, person_id: 'p-ada', planner: true, zuteiler: false, congregation_id: CONG },
-  { user_id: U_OHNE, person_id: null, planner: false, zuteiler: false, congregation_id: CONG },
-  { user_id: U_KARL, person_id: 'p-karl', planner: false, zuteiler: false, congregation_id: CONG },
+  { user_id: U_SIMON, person_id: 'p-simon', admin: false, zuteiler: false, congregation_id: CONG },
+  { user_id: U_JONAS, person_id: 'p-jonas', admin: false, zuteiler: false, congregation_id: CONG },
+  { user_id: U_OTTO, person_id: 'p-otto', admin: false, zuteiler: false, congregation_id: CONG },
+  { user_id: U_ADMIN, person_id: 'p-ada', admin: true, zuteiler: false, congregation_id: CONG },
+  { user_id: U_OHNE, person_id: null, admin: false, zuteiler: false, congregation_id: CONG },
+  { user_id: U_KARL, person_id: 'p-karl', admin: false, zuteiler: false, congregation_id: CONG },
 ]
 const SUBS = [
   { id: 's1', user_id: U_JONAS, endpoint: 'https://push.test/jonas', p256dh: 'k', auth: 'a', lang: 'de' },
@@ -604,16 +604,16 @@ describe('Function: direkt — mit jemandem ohne Konto (30.10.2026)', () => {
     // dem „Getauscht" etwas sagte. Die Gegenprobe mit Ada steht oben.
     const simon = MEMBERS[0]!
     const ada = MEMBERS[3]!
-    simon.planner = true
-    ada.planner = false
+    simon.admin = true
+    ada.admin = false
     try {
       expect((await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })).status).toBe(200)
       expect(bestand.get(W2)?.data.mid?.helpers?.mik?.[0]?.pid).toBe('p-simon')
       expect(geschrieben.filter((w) => w.method === 'POST' && w.path.startsWith('notifications'))).toEqual([])
       expect(sentPush).toEqual([])
     } finally {
-      simon.planner = false
-      ada.planner = true
+      simon.admin = false
+      ada.admin = true
     }
   })
 })

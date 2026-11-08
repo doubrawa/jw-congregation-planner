@@ -14,8 +14,8 @@ import {
   DEMO_GROUPS,
   DEMO_MY_TASKS,
   DEMO_NOTIFICATIONS,
+  DEMO_ADMIN,
   DEMO_PERSONS,
-  DEMO_PLANNER,
   DEMO_REMINDERS,
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
@@ -55,7 +55,7 @@ function makeState(over: Partial<AppState> = {}): AppState {
     theme: 'auto',
     fontScale: 1,
     sitzungPruefen: false,
-    planner: DEMO_PLANNER,
+    admin: DEMO_ADMIN,
     zuteiler: false,
     ansicht: null,
     congregation: { ...CONGREGATION },
@@ -171,12 +171,12 @@ describe('isNameless', () => {
 
 describe('navigate (Rechteprüfung)', () => {
   it('Planer darf jede Ansicht', () => {
-    expect(reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen' }).screen).toBe('planen')
-    expect(reducer(makeState({ planner: true }), { type: 'navigate', screen: 'personen' }).screen).toBe('personen')
+    expect(reducer(makeState({ admin: true }), { type: 'navigate', screen: 'planen' }).screen).toBe('planen')
+    expect(reducer(makeState({ admin: true }), { type: 'navigate', screen: 'personen' }).screen).toBe('personen')
   })
 
   it('Nicht-Planer wird von Planer-Ansichten auf Programm umgeleitet', () => {
-    const s = makeState({ planner: false, personId: 'p9', groups: [] })
+    const s = makeState({ admin: false, personId: 'p9', groups: [] })
     expect(reducer(s, { type: 'navigate', screen: 'planen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
@@ -187,7 +187,7 @@ describe('navigate (Rechteprüfung)', () => {
     // p1 ist Aufseher (ov) von Gruppe 1 → fsOverseer. Die Einstellungen
     // brauchte er nur für den Grundplan seiner Gruppe; der steht seit T120 im
     // Predigtdienst.
-    const s = makeState({ planner: false, personId: 'p1' })
+    const s = makeState({ admin: false, personId: 'p1' })
     expect(reducer(s, { type: 'navigate', screen: 'planen' }).screen).toBe('planen')
     expect(reducer(s, { type: 'navigate', screen: 'einstellungen' }).screen).toBe('programm')
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
@@ -195,7 +195,7 @@ describe('navigate (Rechteprüfung)', () => {
 
   it('merkt sich, woher das Planen kommt — jede Navigation ohne Angabe vergisst es (T144)', () => {
     // Von außen (Start, Mitteilung, Push) gibt es keinen Weg zurück außer „Fertig".
-    const ausWahl = reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen', thema: 'predigtdienst', von: 'planung' })
+    const ausWahl = reducer(makeState({ admin: true }), { type: 'navigate', screen: 'planen', thema: 'predigtdienst', von: 'planung' })
     expect(ausWahl.planenVon).toBe('planung')
     expect(reducer(ausWahl, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'mid' } }).planenVon).toBeNull()
     expect(reducer(ausWahl, { type: 'navigate', screen: 'start' }).planenVon).toBeNull()
@@ -205,7 +205,7 @@ describe('navigate (Rechteprüfung)', () => {
 
   it('setzt den fs-Tab beim Verlassen von Programm/Planen zurück', () => {
     expect(reducer(makeState({ tab: 'fs' }), { type: 'navigate', screen: 'aufgaben' }).tab).toBe('mid')
-    expect(reducer(makeState({ tab: 'fs', planner: true }), { type: 'navigate', screen: 'planen' }).tab).toBe('fs')
+    expect(reducer(makeState({ tab: 'fs', admin: true }), { type: 'navigate', screen: 'planen' }).tab).toBe('fs')
     expect(reducer(makeState({ tab: 'we' }), { type: 'navigate', screen: 'aufgaben' }).tab).toBe('we')
   })
 
@@ -216,7 +216,7 @@ describe('navigate (Rechteprüfung)', () => {
    * Navigation, damit die Rechteprüfung eine Stelle bleibt.
    */
   it('mit Zielwoche öffnet Planen genau diese Woche und diesen Reiter', () => {
-    const s = makeState({ planner: true, week: 0, tab: 'mid', terminGewaehlt: false })
+    const s = makeState({ admin: true, week: 0, tab: 'mid', terminGewaehlt: false })
     const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 2, tab: 'fs' } })
     expect(next).toMatchObject({ screen: 'planen', week: 2, tab: 'fs' })
     // Eine Wahl wie das Blättern: Der nächste Wechsel springt nicht weg (T82).
@@ -226,7 +226,7 @@ describe('navigate (Rechteprüfung)', () => {
   it('ohne Planer-Recht bleibt es beim Programm — und die Woche wird nicht umgestellt', () => {
     // Die Karte steht nur beim Planer; ein veralteter Knopf oder ein
     // Doppeltipp nach Rechteentzug darf trotzdem nirgends hinführen.
-    const s = makeState({ planner: false, personId: 'p9', groups: [], week: 1, tab: 'we' })
+    const s = makeState({ admin: false, personId: 'p9', groups: [], week: 1, tab: 'we' })
     const next = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 3, tab: 'mid' } })
     expect(next.screen).toBe('programm')
     expect(next.week).not.toBe(3)
@@ -234,27 +234,27 @@ describe('navigate (Rechteprüfung)', () => {
 
   it('eine Zielwoche außerhalb des Bestands wird an seinen Rand gelegt', () => {
     // Zwischen Rechnen und Tippen kann ein Nachladen die Wochen verkürzt haben.
-    const s = makeState({ planner: true })
+    const s = makeState({ admin: true })
     const zuWeit = reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 99, tab: 'mid' } })
     expect(zuWeit.week).toBe(s.weeks.length - 1)
     expect(reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: -1, tab: 'mid' } }).week).toBe(0)
   })
 
   it('„Bearbeiten" gibt es nur im Planen — im Programm wird daraus die Zusammenkunft', () => {
-    const s = makeState({ planner: true })
+    const s = makeState({ admin: true })
     const next = reducer(s, { type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'edit' } })
     expect(next).toMatchObject({ screen: 'programm', week: 1, tab: 'mid' })
   })
 
   it('… für Admin und Planer — wer die Woche plant, richtet sie auch ein (15.10.2026)', () => {
-    const admin = reducer(makeState({ planner: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
+    const admin = reducer(makeState({ admin: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
     expect(admin).toMatchObject({ screen: 'planen', tab: 'edit' })
-    const planer = reducer(makeState({ planner: false, zuteiler: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
+    const planer = reducer(makeState({ admin: false, zuteiler: true }), { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } })
     expect(planer).toMatchObject({ screen: 'planen', week: 1, tab: 'edit' })
     // Wer nicht plant, kommt dort nicht hin — der Gruppenaufseher plant nur
     // Treffpunkte. Er darf ins Planen, also misst das die Grenze am Reiter.
     const aufseher = reducer(
-      makeState({ planner: false, zuteiler: false, personId: 'p-auf', groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null }] }),
+      makeState({ admin: false, zuteiler: false, personId: 'p-auf', groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-auf', assistantId: null }] }),
       { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'edit' } },
     )
     expect(aufseher.screen).toBe('planen')
@@ -262,7 +262,7 @@ describe('navigate (Rechteprüfung)', () => {
   })
 
   it('der Planer kommt ins Planen aller Themen — Personen und Einstellungen bleiben zu (4.10.2026)', () => {
-    const s = makeState({ planner: false, zuteiler: true })
+    const s = makeState({ admin: false, zuteiler: true })
     expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' }).screen).toBe('planen')
     expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'weitere' })).toMatchObject({ screen: 'planen', tab: 'wp' })
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
@@ -280,12 +280,12 @@ describe('setAnsicht (T124)', () => {
   const PLANER = { stufe: 'planer', gruppe: null } as const
 
   it('ohne echtes Admin-Recht ändert sich nichts — auch nicht für den Planer', () => {
-    const s = makeState({ planner: false, zuteiler: true, screen: 'profil' })
+    const s = makeState({ admin: false, zuteiler: true, screen: 'profil' })
     expect(reducer(s, { type: 'setAnsicht', ansicht: VERKUENDIGER })).toBe(s)
   })
 
   it('der Admin schaltet um und wieder zurück — der Bildschirm bleibt, wo er erlaubt ist', () => {
-    const an = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    const an = reducer(makeState({ admin: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
     expect(an.ansicht).toEqual(VERKUENDIGER)
     expect(an.screen).toBe('profil')
     const aus = reducer(an, { type: 'setAnsicht', ansicht: null })
@@ -294,10 +294,10 @@ describe('setAnsicht (T124)', () => {
   })
 
   it('fällt der Bildschirm weg, geht es zum Start', () => {
-    expect(reducer(makeState({ planner: true, screen: 'personen' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('start')
-    expect(reducer(makeState({ planner: true, screen: 'planung' }), { type: 'setAnsicht', ansicht: VERKUENDIGER }).screen).toBe('start')
+    expect(reducer(makeState({ admin: true, screen: 'personen' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('start')
+    expect(reducer(makeState({ admin: true, screen: 'planung' }), { type: 'setAnsicht', ansicht: VERKUENDIGER }).screen).toBe('start')
     // Planen bleibt dem Planer — auch beim Bearbeiten des Programms.
-    expect(reducer(makeState({ planner: true, screen: 'planen', tab: 'edit' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('planen')
+    expect(reducer(makeState({ admin: true, screen: 'planen', tab: 'edit' }), { type: 'setAnsicht', ansicht: PLANER }).screen).toBe('planen')
   })
 
   it('fällt der Bildschirm weg, steht derselbe Zustand da wie nach navigate zum Start über den ganzen Reducer', () => {
@@ -308,7 +308,7 @@ describe('setAnsicht (T124)', () => {
     // abgeleiteten Aufgaben und allem, was navigate abräumt.
     const s = aufgabenAbgeleitet(
       makeState({
-        planner: true,
+        admin: true,
         screen: 'personen',
         personId: DEMO_PERSONS[0]!.id,
         slotSel: firstPartSlot(buildDemoWeeks()[0]!, 'mid'),
@@ -327,17 +327,17 @@ describe('setAnsicht (T124)', () => {
   it('der Gruppenaufseher behält Planen nur bei den Treffpunkten', () => {
     const aufseher = { stufe: 'gruppenaufseher', gruppe: 'g1' } as const
     const groups = [{ id: 'g1', name: 'Gruppe 1', overseerId: null, assistantId: null }]
-    expect(reducer(makeState({ planner: true, groups, screen: 'planen', tab: 'fs' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('planen')
-    expect(reducer(makeState({ planner: true, groups, screen: 'planen', tab: 'mid' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('start')
+    expect(reducer(makeState({ admin: true, groups, screen: 'planen', tab: 'fs' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('planen')
+    expect(reducer(makeState({ admin: true, groups, screen: 'planen', tab: 'mid' }), { type: 'setAnsicht', ansicht: aufseher }).screen).toBe('start')
   })
 
   it('unter der Ansicht weist navigate ab, was die Stufe nicht sieht', () => {
-    const s = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    const s = reducer(makeState({ admin: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
     expect(reducer(s, { type: 'navigate', screen: 'personen' }).screen).toBe('programm')
   })
 
   it('das Abmelden beendet die Ansicht', () => {
-    const s = reducer(makeState({ planner: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
+    const s = reducer(makeState({ admin: true, screen: 'profil' }), { type: 'setAnsicht', ansicht: VERKUENDIGER })
     expect(reducer(s, { type: 'logout' }).ansicht).toBeNull()
   })
 })
@@ -349,7 +349,7 @@ describe('setAnsicht (T124)', () => {
  */
 describe('navigate nach Thema (T120)', () => {
   it('der Predigtdienst öffnet die Treffpunkte', () => {
-    const next = reducer(makeState({ planner: true, tab: 'we' }), {
+    const next = reducer(makeState({ admin: true, tab: 'we' }), {
       type: 'navigate', screen: 'programm', thema: 'predigtdienst',
     })
     expect(next).toMatchObject({ screen: 'programm', tab: 'fs' })
@@ -367,7 +367,7 @@ describe('navigate nach Thema (T120)', () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(2026, 8, tag, 10))
       try {
-        return reducer(makeState({ planner: true, tab: 'fs', terminGewaehlt: true, ...over }), {
+        return reducer(makeState({ admin: true, tab: 'fs', terminGewaehlt: true, ...over }), {
           type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
         })
       } finally {
@@ -397,7 +397,7 @@ describe('navigate nach Thema (T120)', () => {
   it('wer schon bei den Zusammenkünften ist, behält seinen Reiter', () => {
     // Auch „Bearbeiten": Es gehört zu den Zusammenkünften und bleibt im Planen.
     for (const tab of ['we', 'edit'] as const) {
-      const next = reducer(makeState({ planner: true, tab, terminGewaehlt: true, screen: 'planen' }), {
+      const next = reducer(makeState({ admin: true, tab, terminGewaehlt: true, screen: 'planen' }), {
         type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte',
       })
       expect(next.tab).toBe(tab)
@@ -405,7 +405,7 @@ describe('navigate nach Thema (T120)', () => {
   })
 
   it('der Gruppenaufseher plant nur den Predigtdienst', () => {
-    const s = makeState({ planner: false, personId: 'p1', tab: 'mid' })
+    const s = makeState({ admin: false, personId: 'p1', tab: 'mid' })
     // Ausdrücklich die Zusammenkünfte planen → er sieht sie an.
     expect(reducer(s, { type: 'navigate', screen: 'planen', thema: 'zusammenkuenfte' })).toMatchObject({
       screen: 'programm',
@@ -434,7 +434,7 @@ describe('navigate nach Thema (T120)', () => {
     // Stand der Bereich noch auf Grundplan oder Gruppenbesuchen, zeigte der
     // Sprung keine Woche — die Treffpunkte, um die es ging, fehlten.
     for (const fsBereich of ['grundplan', 'gruppenbesuche'] as const) {
-      const s = makeState({ planner: true, screen: 'planen', fsBereich })
+      const s = makeState({ admin: true, screen: 'planen', fsBereich })
       expect(reducer(s, { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'fs' } })).toMatchObject({
         tab: 'fs', week: 1, fsBereich: 'treffpunkte',
       })
@@ -456,20 +456,20 @@ describe('Auswahl beim Wechsel der Ansicht', () => {
 
   it('„Woche einrichten", „Zusagen" und der andere Tag räumen sie ab', () => {
     for (const tab of ['edit', 'zusagen', 'we', 'fs'] as const) {
-      const s = makeState({ planner: true, screen: 'planen', tab: 'mid', slotSel: platz })
+      const s = makeState({ admin: true, screen: 'planen', tab: 'mid', slotSel: platz })
       expect(reducer(s, { type: 'setTab', tab }).slotSel, tab).toBeNull()
     }
   })
 
   it('im eigenen Reiter bleibt sie — auch ein Treffpunkt bei den Treffpunkten', () => {
-    const s = makeState({ planner: true, screen: 'planen', tab: 'mid', slotSel: platz })
+    const s = makeState({ admin: true, screen: 'planen', tab: 'mid', slotSel: platz })
     expect(reducer(s, { type: 'setTab', tab: 'mid' }).slotSel).toBe(platz)
-    const fs = makeState({ planner: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
+    const fs = makeState({ admin: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
     expect(reducer(fs, { type: 'setTab', tab: 'fs' }).slotSel).toBe(treffpunkt)
   })
 
   it('ein anderer Bereich des Predigtdienstes räumt den gewählten Treffpunkt ab', () => {
-    const s = makeState({ planner: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
+    const s = makeState({ admin: true, screen: 'planen', tab: 'fs', slotSel: treffpunkt })
     expect(reducer(s, { type: 'setFsBereich', bereich: 'grundplan' }).slotSel).toBeNull()
   })
 })
@@ -482,7 +482,7 @@ describe('Auswahl beim Wechsel der Ansicht', () => {
  */
 describe('navigate mit Bereich (Sprung aus dem Push)', () => {
   it('merkt sich den Bereich, wenn der Screen erreicht wird', () => {
-    const s = makeState({ planner: false, personId: 'p9', groups: [] })
+    const s = makeState({ admin: false, personId: 'p9', groups: [] })
     const next = reducer(s, { type: 'navigate', screen: 'aufgaben', abschnitt: 'einspringen' })
     expect(next.screen).toBe('aufgaben')
     expect(next.sprungZiel).toBe('einspringen')
@@ -491,7 +491,7 @@ describe('navigate mit Bereich (Sprung aus dem Push)', () => {
   it('wird der Screen abgewiesen, gilt auch der Bereich nicht', () => {
     // Der Bereich gehört zu seinem Screen. Landet die Navigation woanders,
     // gäbe es dort nichts, wohin gesprungen werden könnte.
-    const s = makeState({ planner: false, personId: 'p9', groups: [] })
+    const s = makeState({ admin: false, personId: 'p9', groups: [] })
     const next = reducer(s, { type: 'navigate', screen: 'planen', abschnitt: 'einspringen' })
     expect(next.screen).toBe('programm')
     expect(next.sprungZiel).toBeNull()
@@ -672,13 +672,13 @@ describe('Personen', () => {
     const s = makeState({
       userId: 'me',
       members: [
-        { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
-        { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
+        { userId: 'u1', email: 'u1@x', personId: target.id, admin: false, zuteiler: false },
+        { userId: 'me', email: 'me@x', personId: target.id, admin: false, zuteiler: false },
       ],
     })
-    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { plannerVorgemerkt: true } })
-    expect(next.members.find((m) => m.userId === 'u1')!.planner).toBe(true)
-    expect(next.members.find((m) => m.userId === 'me')!.planner).toBe(false)
+    const next = reducer(s, { type: 'updatePerson', id: target.id, patch: { adminVorgemerkt: true } })
+    expect(next.members.find((m) => m.userId === 'u1')!.admin).toBe(true)
+    expect(next.members.find((m) => m.userId === 'me')!.admin).toBe(false)
   })
 
   it('updatePerson spiegelt ebenso das Recht „Planer" (zuteiler) ins Konto, das eigene ausgenommen', () => {
@@ -688,15 +688,15 @@ describe('Personen', () => {
     const s = makeState({
       userId: 'me',
       members: [
-        { userId: 'u1', email: 'u1@x', personId: target.id, planner: false, zuteiler: false },
-        { userId: 'me', email: 'me@x', personId: target.id, planner: false, zuteiler: false },
+        { userId: 'u1', email: 'u1@x', personId: target.id, admin: false, zuteiler: false },
+        { userId: 'me', email: 'me@x', personId: target.id, admin: false, zuteiler: false },
       ],
     })
     const an = reducer(s, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: true } })
     expect(an.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(true)
     expect(an.members.find((m) => m.userId === 'me')!.zuteiler).toBe(false)
     // Das Admin-Recht bleibt dabei unberührt.
-    expect(an.members.find((m) => m.userId === 'u1')!.planner).toBe(false)
+    expect(an.members.find((m) => m.userId === 'u1')!.admin).toBe(false)
     const aus = reducer(an, { type: 'updatePerson', id: target.id, patch: { zuteilerVorgemerkt: false } })
     expect(aus.members.find((m) => m.userId === 'u1')!.zuteiler).toBe(false)
   })
@@ -706,8 +706,8 @@ describe('Personen', () => {
       userId: 'u-admin',
       groups: [{ id: 'g1', name: 'G1', overseerId: 'p1', assistantId: 'p6' }],
       members: [
-        { userId: 'u1', email: 'u1@x', personId: 'p1', planner: true, zuteiler: false },
-        { userId: 'u6', email: '', personId: 'p6', planner: false, zuteiler: false },
+        { userId: 'u1', email: 'u1@x', personId: 'p1', admin: true, zuteiler: false },
+        { userId: 'u6', email: '', personId: 'p6', admin: false, zuteiler: false },
       ],
       anmeldeLinks: [link('p1'), link('p6')],
     })
@@ -723,10 +723,10 @@ describe('Personen', () => {
   it('removePerson der eigenen Person: das eigene Konto bleibt, nur ohne Person — sich selbst entfernen sperrt die Datenbank', () => {
     const s = makeState({
       userId: 'u1',
-      members: [{ userId: 'u1', email: '', personId: 'p1', planner: true, zuteiler: false }],
+      members: [{ userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false }],
     })
     const next = reducer(s, { type: 'removePerson', id: 'p1' })
-    expect(next.members).toEqual([{ userId: 'u1', email: '', personId: null, planner: true, zuteiler: false }])
+    expect(next.members).toEqual([{ userId: 'u1', email: '', personId: null, admin: true, zuteiler: false }])
   })
 
   it('removePerson nimmt die Abwesenheiten der Person mit (T118)', () => {
@@ -782,7 +782,7 @@ describe('Personen', () => {
     // Demo: Manfred Albrecht (p1) ist Aufseher von Gruppe 1, Jonas Berger (p6) ihr Gehilfe.
     const gruppe = (s: AppState, id: string) => s.groups.find((g) => g.id === id)
     const plantGruppe = (s: AppState, personId: string) =>
-      rechteVon({ planner: false, zuteiler: false, groups: s.groups, personId }).gruppe
+      rechteVon({ admin: false, zuteiler: false, groups: s.groups, personId }).gruppe
 
     it('der Aufseher wechselt: Gruppe 1 hat keinen mehr, und er plant sie nicht mehr', () => {
       const s = makeState()
@@ -933,13 +933,13 @@ describe('Versammlung / Mitglieder / Einladungen', () => {
     })
   })
   it('updateMember / removeMember', () => {
-    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false, zuteiler: false }] })
-    expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { planner: true } }).members[0]!.planner).toBe(true)
+    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, admin: false, zuteiler: false }] })
+    expect(reducer(s, { type: 'updateMember', userId: 'u1', patch: { admin: true } }).members[0]!.admin).toBe(true)
     expect(reducer(s, { type: 'removeMember', userId: 'u1' }).members).toEqual([])
   })
   it('mit dem Konto geht der Link der Person — sonst käme sie mit ihm gleich wieder herein', () => {
     const s = makeState({
-      members: [{ userId: 'u1', email: '', personId: 'p1', planner: false, zuteiler: false }],
+      members: [{ userId: 'u1', email: '', personId: 'p1', admin: false, zuteiler: false }],
       anmeldeLinks: [link('p1'), link('p6')],
     })
     expect(reducer(s, { type: 'removeMember', userId: 'u1' }).anmeldeLinks.map((l) => l.personId)).toEqual(['p6'])
@@ -2027,7 +2027,7 @@ describe('login / logout', () => {
       congregationId: 'cA',
       personId: 'p9',
       myTasks: [offen],
-      members: [{ userId: 'uA', email: 'a@example.org', personId: 'p9', planner: false, zuteiler: false }],
+      members: [{ userId: 'uA', email: 'a@example.org', personId: 'p9', admin: false, zuteiler: false }],
       theme: 'dunkel',
       fontScale: 1.3,
       lang: 'en',
@@ -2084,7 +2084,7 @@ describe('hydrate / setDataStatus', () => {
     empty: false,
     congregation: { name: 'Krumbach', hall: 'H', times: STANDARD_ZEITEN },
     auxClass: false,
-    planner: true,
+    admin: true,
     personId: 'p9',
     persons: DEMO_PERSONS,
     services: DEMO_SERVICES,
@@ -3045,8 +3045,8 @@ describe('Was eine Aktion nicht meint, bleibt dasselbe', () => {
   })
 
   it('updateMember ändert nur dieses Konto', () => {
-    const anderes = { userId: 'u2', email: 'u2@x', personId: 'p2', planner: false, zuteiler: false }
-    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, planner: false, zuteiler: false }, anderes] })
+    const anderes = { userId: 'u2', email: 'u2@x', personId: 'p2', admin: false, zuteiler: false }
+    const s = makeState({ members: [{ userId: 'u1', email: 'u1@x', personId: null, admin: false, zuteiler: false }, anderes] })
     const next = reducer(s, { type: 'updateMember', userId: 'u1', patch: { zuteiler: true } })
     expect(next.members.map((m) => [m.userId, m.zuteiler])).toEqual([['u1', true], ['u2', false]])
     expect(next.members[1]).toBe(anderes)

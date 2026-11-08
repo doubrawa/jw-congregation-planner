@@ -225,7 +225,7 @@ function trolleyFunktion(
   }
   if (rumpf.aktion === 'entfernen') {
     if (!kennung(rumpf.trolleyId)) return nein('bad-request')
-    if (!ich.planner) return nein('forbidden')
+    if (!ich.admin) return nein('forbidden')
     const trolley = trolleys.find((x) => x.id === rumpf.trolleyId)
     if (!trolley) return nein('weg')
     entfernen(trolleys, trolley)
@@ -557,7 +557,7 @@ const LAEUFE: Record<string, Lauf[]> = {
         bestand: {
           congregations: [{ id: C }],
           persons: [{ id: P_ALT, congregation_id: C, fn: 'Probe', ln: 'Eins' }],
-          members: [{ user_id: U1, congregation_id: C, email: 'planer@probe.invalid', person_id: P_ALT, planner: true }],
+          members: [{ user_id: U1, congregation_id: C, email: 'planer@probe.invalid', person_id: P_ALT, admin: true }],
           // Ein ausgegebener Link übersteht das Zurücksetzen (T121, Phase 8).
           anmelde_links: [
             {
@@ -638,7 +638,7 @@ const LAEUFE: Record<string, Lauf[]> = {
             congregations: [{ id: C, name: 'Probeversammlung' }],
             groups: [{ id: G1, congregation_id: C, name: 'Gruppe 1', position: 0 }],
             persons: [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Planer', grp: G1 }],
-            members: [{ user_id: U1, congregation_id: C, planner: true, person_id: P1 }],
+            members: [{ user_id: U1, congregation_id: C, admin: true, person_id: P1 }],
           },
         },
       },
@@ -665,8 +665,8 @@ const LAEUFE: Record<string, Lauf[]> = {
         bestand: {
           congregations: [{ id: C, name: 'Probe A' }, { id: CB, name: 'Probe B' }],
           members: [
-            { user_id: U1, congregation_id: C, planner: true, email: 'a@probe.invalid' },
-            { user_id: U2, congregation_id: CB, planner: true, email: 'b@probe.invalid' },
+            { user_id: U1, congregation_id: C, admin: true, email: 'a@probe.invalid' },
+            { user_id: U2, congregation_id: CB, admin: true, email: 'b@probe.invalid' },
           ],
           persons: [
             { id: P1, congregation_id: C, fn: 'Probe', ln: 'A' },
@@ -699,10 +699,10 @@ const LAEUFE: Record<string, Lauf[]> = {
         bestand: {
           congregations: [{ id: C, name: 'Probe' }],
           members: [
-            { user_id: U1, congregation_id: C, person_id: P1, planner: true, zuteiler: false },
-            { user_id: U2, congregation_id: C, person_id: P2, planner: false, zuteiler: false },
-            { user_id: U3, congregation_id: C, person_id: P3, planner: false, zuteiler: true },
-            { user_id: U4, congregation_id: C, person_id: P4, planner: false, zuteiler: false },
+            { user_id: U1, congregation_id: C, person_id: P1, admin: true, zuteiler: false },
+            { user_id: U2, congregation_id: C, person_id: P2, admin: false, zuteiler: false },
+            { user_id: U3, congregation_id: C, person_id: P3, admin: false, zuteiler: true },
+            { user_id: U4, congregation_id: C, person_id: P4, admin: false, zuteiler: false },
           ],
           persons: [
             // Mit Adresse: Ohne sie blieben (88) und (89) ungemessen.
@@ -1167,7 +1167,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     // (81); die Woche aus (40) und die Person aus (80) sind weg.
     expect(tabellen.weeks).toHaveLength(1)
     expect(tabellen.weeks![0]!.data).toEqual(vorher.weeks![0]!.data)
-    expect(tabellen.members!.find((m) => m.user_id === U3)!.planner).toBe(false)
+    expect(tabellen.members!.find((m) => m.user_id === U3)!.admin).toBe(false)
     expect(tabellen.congregations).toEqual(vorher.congregations)
     expect(tabellen.persons!.filter((p) => String(p.fn).startsWith('PROBE-'))).toEqual([])
     // Was die Probe anlegte, ist weg: die Treffpunkt-Woche und jede Zeile mit Kennzeichen.
@@ -1643,7 +1643,7 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
     fest, was das Skript wirklich schreibt, nicht nur, was in seiner Liste
     steht (seit 4.10.2026: vier Konten statt zwei).
   */
-  it('Admin `planner`, Planer `zuteiler`, die Personen wie in TEST_KONTEN, die Vormerkung an der Person', async () => {
+  it('Admin `admin`, Planer `zuteiler`, die Personen wie in TEST_KONTEN, die Vormerkung an der Person', async () => {
     const l = LAEUFE['testversammlung-anlegen.mjs']![0]!
     const modul = (await MODULE['./testversammlung-anlegen.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
     const { tabellen } = await fahre(() => l.fahren(modul, ''), l.umgebung)
@@ -1651,14 +1651,14 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
       const p = tabellen.persons!.find((x) => x.id === id)
       return `${String(p?.fn)} ${String(p?.ln)}`
     }
-    expect(tabellen.members!.map((m) => `${String(m.email)} ${String(m.planner)}/${String(m.zuteiler)} ${name(m.person_id)}`)).toEqual([
+    expect(tabellen.members!.map((m) => `${String(m.email)} ${String(m.admin)}/${String(m.zuteiler)} ${name(m.person_id)}`)).toEqual([
       'planer@probe.invalid true/false Martin Aichinger',
       'mitglied@probe.invalid false/false Elena Aichinger',
       'zuteiler@probe.invalid false/true Andreas Rothacker',
       'aufseher@probe.invalid false/false Thomas Ebersbach',
     ])
-    const vorgemerkt = tabellen.persons!.filter((p) => p.planner_vorgemerkt || p.zuteiler_vorgemerkt)
-    expect(vorgemerkt.map((p) => `${name(p.id)} ${Boolean(p.planner_vorgemerkt)}/${Boolean(p.zuteiler_vorgemerkt)}`)).toEqual([
+    const vorgemerkt = tabellen.persons!.filter((p) => p.admin_vorgemerkt || p.zuteiler_vorgemerkt)
+    expect(vorgemerkt.map((p) => `${name(p.id)} ${Boolean(p.admin_vorgemerkt)}/${Boolean(p.zuteiler_vorgemerkt)}`)).toEqual([
       'Martin Aichinger true/false',
       'Andreas Rothacker false/true',
     ])
@@ -1722,8 +1722,8 @@ describe('testversammlung-anlegen: jedes Konto bekommt seine Rechte-Stufe', () =
     const bestand = {
       congregations: [{ id: C, name: 'Probeversammlung Talheim' }],
       members: [
-        { user_id: U1, congregation_id: C, email: '', person_id: null, planner: true },
-        { user_id: U2, congregation_id: C, email: 'planer@probe.invalid', person_id: null, planner: false },
+        { user_id: U1, congregation_id: C, email: '', person_id: null, admin: true },
+        { user_id: U2, congregation_id: C, email: 'planer@probe.invalid', person_id: null, admin: false },
       ],
     }
     await expect(fahre(() => l.fahren(modul, ''), { ...l.umgebung, bestand })).rejects.toThrow('process.exit(1)')
@@ -1757,8 +1757,8 @@ describe('versammlung-zuruecksetzen: Konten und Links überstehen das Zurückset
           { id: P_ALT2, congregation_id: C, fn: 'Probe', ln: 'Zwei' },
         ],
         members: [
-          { user_id: U1, congregation_id: C, email: '', person_id: P_ALT, planner: true },
-          { user_id: U2, congregation_id: C, email: '', person_id: P_ALT2, planner: false },
+          { user_id: U1, congregation_id: C, email: '', person_id: P_ALT, admin: true },
+          { user_id: U2, congregation_id: C, email: '', person_id: P_ALT2, admin: false },
         ],
       }
       return await fahre(() => l.fahren(modul, eingaben), { ...l.umgebung, bestand })
@@ -2288,7 +2288,7 @@ describe('versammlung-zuruecksetzen: die Sicherung zählt nur nach einem Abbruch
 
   it('stehen die Personen noch da, gilt die Datenbank — ein gelöstes Konto bleibt gelöst', async () => {
     const { tabellen, ausgabe, sicherungDa } = await fahreMit(
-      { members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, planner: true }] },
+      { members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, admin: true }] },
       [{ userId: U1, email: '', personName: 'Probe Eins' }],
     )
     expect(tabellen.members!.find((m) => m.user_id === U1)?.person_id).toBeNull()
@@ -2299,7 +2299,7 @@ describe('versammlung-zuruecksetzen: die Sicherung zählt nur nach einem Abbruch
   it('nach einem Abbruch kommt sie zurück — gezählt wird, was ein Konto getroffen hat', async () => {
     const { tabellen, ausgabe, sicherungDa } = await fahreMit(
       // Die Personen sind schon gelöscht, das Konto steht ohne Person da.
-      { persons: [], members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, planner: true }] },
+      { persons: [], members: [{ user_id: U1, congregation_id: C, email: '', person_id: null, admin: true }] },
       [
         { userId: U1, email: '', personName: 'Probe Eins' },
         { userId: U2, email: '', personName: 'Probe Zwei' }, // das Konto gibt es nicht mehr

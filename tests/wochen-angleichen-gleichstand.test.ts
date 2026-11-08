@@ -56,7 +56,7 @@ describe('wochen-angleichen.mjs: dieselbe Kette wie Laden und hydrate', () => {
     const personen = DEMO_PERSONS.map((p) => personToRow(p, 'c1'))
     const regeln = DEMO_FS_RULES.map((r) => fsRuleToRow(r, 'c1'))
     antworten.je = {
-      members: [{ congregation_id: 'c1', person_id: null, planner: true }, []],
+      members: [{ congregation_id: 'c1', person_id: null, admin: true }, []],
       congregations: [{ name: 'Probe', hall: '', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', cong_lang: 'de', prog_langs: [], aux_class: true }],
       persons: [personen],
       weeks: [wochen],

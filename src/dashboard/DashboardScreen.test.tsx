@@ -119,7 +119,7 @@ function zustand(over: Partial<AppState> = {}): AppState {
   return {
     ...demoZustand(),
     screen: 'start', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: false,
     persons: [ICH], services: DIENSTE, groups: [], absences: [],
     weeks: [laufendeWoche()], fsWeeks: [[]], fsRules: [],
     myTasks: [], notifs: [], substituteReqs: [],
@@ -575,7 +575,7 @@ function allesGesendet(weeks: Week[]): Record<string, string> {
 /** Ein Planer mit festem Tag, vier geladenen Wochen und genug Leuten. */
 function planer(over: Partial<AppState> = {}) {
   return zeige({
-    planner: true,
+    admin: true,
     persons: LEUTE,
     fsWeeks: [],
     ...over,
@@ -603,14 +603,14 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich dan
   afterEach(() => vi.useRealTimers())
 
   it('ein Verkündiger sieht sie nicht — er dürfte den Screen dahinter gar nicht betreten', () => {
-    const { container } = zeige({ planner: false, weeks: [importiert(W1)] })
+    const { container } = zeige({ admin: false, weeks: [importiert(W1)] })
     expect(container.querySelector('.dash-planung')).toBeNull()
     expect(container.querySelector('.dash-plan')).toBeNull()
   })
 
   it('ein Gruppenaufseher auch nicht — seine Treffpunkte plant er in Planen', () => {
     const { container } = zeige({
-      planner: false,
+      admin: false,
       weeks: [importiert(W1)],
       groups: [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-a', assistantId: null }],
     })
@@ -636,7 +636,7 @@ describe('Die Planungs-Karte gehört dem Planer — und steht bei ihm gleich dan
   })
 
   it('wer nicht plant, hat die Woche in seiner einen Spalte unter den eigenen Aufgaben', () => {
-    const { container } = zeige({ planner: false, weeks: [importiert(W1)], myTasks: [task()] })
+    const { container } = zeige({ admin: false, weeks: [importiert(W1)], myTasks: [task()] })
     const spalten = [...container.querySelectorAll('.start-spalten > .start-spalte')]
     expect(spalten).toHaveLength(1)
     expect(spalten[0]!.lastElementChild?.className).toBe('start-woche')
@@ -858,7 +858,7 @@ describe('Reichen die Programme nicht mehr, steht „Holen" gleich auf der Karte
 
   it('auch der Planer holt das Programm — wer die Woche plant, holt sie (15.10.2026)', () => {
     const weeks = [besetzt(W1)]
-    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), planner: false, zuteiler: true })
+    const { container } = planer({ weeks, confirmations: allesBestaetigt(weeks), admin: false, zuteiler: true })
     expect(importKnopf(container)?.textContent).toBe(t.holen)
   })
 

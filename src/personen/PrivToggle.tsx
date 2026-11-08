@@ -120,7 +120,7 @@ export function RechteKarte({ person, update }: { person: Person; update: Update
         unter={t.rechtAdminUnter}
         an={admin}
         gesperrt={eigen}
-        onToggle={() => update({ plannerVorgemerkt: !admin })}
+        onToggle={() => update({ adminVorgemerkt: !admin })}
       />
     </section>
   )

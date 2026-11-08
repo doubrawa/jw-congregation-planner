@@ -85,9 +85,14 @@ export async function main(argv = process.argv.slice(2)) {
     if (unbekannt.length) {
       throw new Error(`${t.name}: ${unbekannt.join(', ')} gibt es im Ziel nicht — PostgREST nähme diese Zeilen nicht an.`)
     }
-    await db.query(`insert into public.${t.name} select * from json_populate_recordset(null::public.${t.name}, $1::json)`, [
-      JSON.stringify(geteilt.map((g) => g.jetzt)),
-    ])
+    // Nur die Spalten der Sicherung, wie PostgREST: Eine, die eine Migration
+    // seither angelegt hat, bekommt ihren Standardwert — mit `select *` käme sie
+    // als NULL an (so am 8.11.2026 mit `persons.admin_vorgemerkt`, E4).
+    const spalten = [...new Set(geteilt.flatMap((g) => Object.keys(g.jetzt)))].join(', ')
+    await db.query(
+      `insert into public.${t.name} (${spalten}) select ${spalten} from json_populate_recordset(null::public.${t.name}, $1::json)`,
+      [JSON.stringify(geteilt.map((g) => g.jetzt))],
+    )
     for (const [i, g] of geteilt.entries()) if (Object.keys(g.nach).length) nachtraege.push({ t, zeile: zeilen[i], werte: g.nach })
   }
   for (const n of nachtraege) {

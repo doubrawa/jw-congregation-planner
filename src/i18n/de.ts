@@ -797,7 +797,7 @@ export const DE = {
     erinDieAufgabe: 'Die Aufgabe', erinDanachStill: 'Ab hier meldet sich die App nicht mehr.',
     // Was ohne Einstellung sofort hinausgeht und an wen — am Code gemessen
     // (14.10.2026): die Absage über `notify_planners` (an jedes Mitglied mit
-    // `planner` oder `zuteiler`, also Admins und Planer — Wortlaut wie
+    // `admin` oder `zuteiler`, also Admins und Planer — Wortlaut wie
     // `wpEntwurfHint`), das Ersatzgesuch in `substitute` (nur Hilfsdienste,
     // ohne die an dem Tag Abwesenden), der Entzug in `send-plan` (eine
     // Zuteilung, von der die Person wusste: mitgeteilt oder zugesagt — seit dem

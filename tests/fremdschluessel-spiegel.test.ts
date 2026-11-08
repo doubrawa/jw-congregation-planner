@@ -76,7 +76,7 @@ const SPIEGEL: Record<string, Spiegel> = {
   members: {
     feld: 'members',
     spalten: { person_id: 'personId' },
-    basis: { userId: 'zz', personId: null, planner: false },
+    basis: { userId: 'zz', personId: null, admin: false },
     schluessel: 'userId',
     // `persist.ts` löscht die Mitgliedschaft (21.10.2026), die Datenbank mit
     // ihr das Konto — nur das eigene bleibt, ohne Person.

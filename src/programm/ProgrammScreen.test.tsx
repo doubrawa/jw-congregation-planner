@@ -78,7 +78,7 @@ function zeige(over: Partial<AppState> = {}) {
   const state: AppState = {
     ...demoZustand(),
     screen: 'programm', tab: 'mid', dataStatus: 'ready',
-    congregationId: 'c1', userId: 'u1', personId: 'p-a', planner: false,
+    congregationId: 'c1', userId: 'u1', personId: 'p-a', admin: false,
     persons: [ICH, NAMENSVETTER], services: DIENSTE, groups: [], absences: [],
     weeks: [woche()], fsWeeks: [[]], fsRules: [], week: 0,
     congregation: { name: 'Nordheim', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -182,7 +182,7 @@ describe('Kopf und Navigation', () => {
     cleanup()
     // Planer: „Planen" führt in den Modus, beim selben Bereich — und merkt sich,
     // dass Zurück hierher führt (T144).
-    const planer = zeige({ planner: true, tab: 'fs' })
+    const planer = zeige({ admin: true, tab: 'fs' })
     expect(titel(planer.container)).toBe(t.tabFs)
     expect(planen(planer.container)?.textContent).toBe(t.planen)
     fireEvent.click(planen(planer.container)!)
@@ -899,7 +899,7 @@ describe('Die Treffpunkte der Woche (T121)', () => {
     const zwei = [...GRUPPEN, { id: 'g2', name: 'Gruppe 2', overseerId: null, assistantId: null }]
     const { container } = zeige({
       tab: 'fs',
-      planner: true,
+      admin: true,
       groups: zwei,
       persons: [{ ...ICH, grp: 'g1' }],
       fsWeeks: [[treffpunkt({ id: 'a', wd: 6, grp: 'g2' }), treffpunkt({ id: 'b', wd: 6, grp: 'g1' })]],
@@ -1263,7 +1263,7 @@ describe('Am Desktop', () => {
     vi.setSystemTime(new Date(2026, 8, 13, 12, 0))
     try {
       const { container } = zeige({
-        planner: true,
+        admin: true,
         anwesenheit: [{ woche: '2026-09-07', tab: 'mid', saal: 64, video: 23, pid: null }],
       })
       const tage = [...seite(container).querySelectorAll('.prog-tag')]

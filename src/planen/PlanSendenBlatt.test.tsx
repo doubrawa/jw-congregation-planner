@@ -86,7 +86,7 @@ const key = (i: number) => `${MONTAG}|mid|part|i${i}|0`
 
 const stand = (over: Partial<AppState>): AppState => ({
   ...demoZustand(),
-  dataStatus: 'ready', congregationId: 'c1', userId: 'u1', planner: true,
+  dataStatus: 'ready', congregationId: 'c1', userId: 'u1', admin: true,
   persons: [AUFSEHER], groups: GRUPPEN, services: DIENSTE,
   weeks: [woche()], fsWeeks: [[]], week: 0, confirmations: {}, sentLog: {},
   congregation: { name: 'Test', hall: 'Saal', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
@@ -149,18 +149,18 @@ describe('Wer den Knopf bekommt', () => {
   it('der Admin und der Planer — sie senden die ganze Woche', () => {
     expect(leiste().container.querySelector('.aktion-haupt')).not.toBeNull()
     cleanup()
-    expect(leiste({ planner: false, zuteiler: true }).container.querySelector('.aktion-haupt')).not.toBeNull()
+    expect(leiste({ admin: false, zuteiler: true }).container.querySelector('.aktion-haupt')).not.toBeNull()
   })
 
   it('ein Verkündiger nicht — die Function wiese ihn ohnehin ab', () => {
-    const { container } = leiste({ planner: false, zuteiler: false, personId: 'p-x' })
+    const { container } = leiste({ admin: false, zuteiler: false, personId: 'p-x' })
     expect(container.querySelector('.aktion-haupt')).toBeNull()
   })
 
   it('auf altem Stand niemand — es ginge an der Momentaufnahme vorbei hinaus', () => {
     expect(leiste({ staleAt: 1_700_000_000_000 }).container.querySelector('.aktion-haupt')).toBeNull()
     cleanup()
-    const aufseher: Partial<AppState> = { planner: false, zuteiler: false, personId: AUFSEHER.id, staleAt: 1_700_000_000_000 }
+    const aufseher: Partial<AppState> = { admin: false, zuteiler: false, personId: AUFSEHER.id, staleAt: 1_700_000_000_000 }
     expect(leiste(aufseher, 'treffpunkte').container.querySelector('.aktion-haupt')).toBeNull()
   })
 })
@@ -169,7 +169,7 @@ describe('Der Gruppenaufseher sendet die Treffpunkte seiner Gruppe (4.10.2026)',
   const treffpunkt = (id: string, grp: string, leader: string): FsInstance =>
     ({ id, ruleId: null, grp, wd: 6, time: '09:30', place: 'Saal', leader })
   const GRUPPENAUFSEHER: Partial<AppState> = {
-    planner: false, zuteiler: false, personId: AUFSEHER.id,
+    admin: false, zuteiler: false, personId: AUFSEHER.id,
     weeks: [woche()],
     fsWeeks: [[treffpunkt('f1', 'g1', 'C. Dorn'), treffpunkt('f2', 'g2', 'E. Falk')]],
   }

@@ -25,9 +25,9 @@ const U_PLANER = 'user-planer'
 const U_VERK = 'user-verkuendiger' // Mitglied, aber kein Admin
 const U_FREMD = 'user-fremd' // Konto ohne Mitgliedschaft
 
-const MEMBERS: Record<string, { congregation_id: string; planner: boolean }[]> = {
-  [U_PLANER]: [{ congregation_id: CONG, planner: true }],
-  [U_VERK]: [{ congregation_id: CONG, planner: false }],
+const MEMBERS: Record<string, { congregation_id: string; admin: boolean }[]> = {
+  [U_PLANER]: [{ congregation_id: CONG, admin: true }],
+  [U_VERK]: [{ congregation_id: CONG, admin: false }],
   [U_FREMD]: [],
 }
 

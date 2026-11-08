@@ -41,11 +41,11 @@ Deno.serve(async (req: Request) => {
     if (!userId) return json({ error: 'unauthorized' }, 401)
 
     // Nur Admins; alles Weitere ist auf ihre Versammlung beschränkt.
-    const membership = await rest.get<{ congregation_id: string; planner: boolean }[]>(
-      `members?select=congregation_id,planner&user_id=eq.${wert(userId)}`,
+    const membership = await rest.get<{ congregation_id: string; admin: boolean }[]>(
+      `members?select=congregation_id,admin&user_id=eq.${wert(userId)}`,
     )
     const member = membership[0]
-    if (!member?.planner) return json({ error: 'forbidden' }, 403)
+    if (!member?.admin) return json({ error: 'forbidden' }, 403)
 
     const payload = (await req.json().catch(() => null)) as { personIds?: unknown } | null
     const ids = Array.isArray(payload?.personIds)

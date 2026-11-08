@@ -120,7 +120,7 @@ const ANFRAGE_SPALTEN = 'id,von_user,von_person,an_person,gibt_ab,nimmt,bis'
 interface Mitglied {
   user_id: string
   person_id: string | null
-  planner: boolean
+  admin: boolean
   zuteiler?: boolean
 }
 
@@ -182,7 +182,7 @@ async function lesen(k: Aufrufer, wochen: string[] | { ab: string }): Promise<Ge
     rest.get<{ person_id: string | null; from_date: string; to_date: string }[]>(
       `absences?select=person_id,from_date,to_date&congregation_id=eq.${c}&to_date=gte.${wert(k.heute)}`,
     ),
-    rest.get<Mitglied[]>(`members?select=user_id,person_id,planner,zuteiler&congregation_id=eq.${c}`),
+    rest.get<Mitglied[]>(`members?select=user_id,person_id,admin,zuteiler&congregation_id=eq.${c}`),
   ])
   const gesendet = new Set<string>()
   await Promise.all(
@@ -498,7 +498,7 @@ async function planerBenachrichtigen(
   b: TauschPlatz,
   beteiligt: readonly string[],
 ): Promise<void> {
-  const planer = members.filter((m) => (m.planner || m.zuteiler) && !beteiligt.includes(m.user_id)).map((m) => m.user_id)
+  const planer = members.filter((m) => (m.admin || m.zuteiler) && !beteiligt.includes(m.user_id)).map((m) => m.user_id)
   await benachrichtigen(
     k.cong,
     planer,

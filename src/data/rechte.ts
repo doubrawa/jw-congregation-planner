@@ -12,7 +12,7 @@
  * **Drei Stufen und eine Gruppe** (4.10.2026; neu gefasst am 15.10.2026,
  * Betreiber: „ein planer plant ja schließlich die woche" — „Alles Planen"):
  *
- *  - **Admin** (`members.planner`): alles.
+ *  - **Admin** (`members.admin`): alles.
  *  - **Planer** (`members.zuteiler`): plant alles wie der Admin — Wochen holen
  *    und einrichten, zuteilen, senden, Treffpunkte samt Grundplan,
  *    Gruppenbesuche, Weitere Pläne. Personen und Einstellungen sieht er nicht.
@@ -23,7 +23,7 @@
  * Admin-Recht): Er pflegt die Treffpunkte seiner Gruppe ganz — Zeit, Ort,
  * Grundplan, Leiter — und sendet sie.
  *
- * Durchgesetzt wird das in der Datenbank (`darf_zuteilen`, `is_planner`,
+ * Durchgesetzt wird das in der Datenbank (`darf_zuteilen`, `ist_admin`,
  * `eigene_gruppen`); hier steht, was die App anbietet.
  */
 
@@ -54,7 +54,7 @@ export interface Rechte {
 
 /** Was `rechteVon` braucht: die echten Rechte des Kontos — und die Ansicht. */
 export interface RechteQuelle {
-  planner: boolean
+  admin: boolean
   zuteiler: boolean
   groups: readonly Group[]
   personId: string | null
@@ -68,9 +68,9 @@ export function rechteVon(s: RechteQuelle): Rechte {
   const ansicht = aktiveAnsicht(s)
   if (ansicht) return rechteDerAnsicht(ansicht)
   return {
-    admin: s.planner,
-    zuteilen: s.planner || s.zuteiler,
-    gruppe: aufseherGruppe(s.planner, s.groups, s.personId),
+    admin: s.admin,
+    zuteilen: s.admin || s.zuteiler,
+    gruppe: aufseherGruppe(s.admin, s.groups, s.personId),
   }
 }
 
@@ -85,11 +85,11 @@ export type RechteStufe = 'admin' | 'planer' | 'gruppenaufseher' | 'gehilfe' | '
 
 export function rechteStufe(
   r: Rechte,
-  s: { groups: readonly Group[]; personId: string | null; planner?: boolean; ansicht?: Ansicht | null },
+  s: { groups: readonly Group[]; personId: string | null; admin?: boolean; ansicht?: Ansicht | null },
 ): RechteStufe {
   // Die Ansicht nennt ihre Stufe selbst (T124): Der Admin ist nicht Aufseher der
   // Gruppe, die er spielt — gefragt nach `overseerId`, hieße er „Gehilfe".
-  const ansicht = aktiveAnsicht({ planner: s.planner ?? false, ansicht: s.ansicht })
+  const ansicht = aktiveAnsicht({ admin: s.admin ?? false, ansicht: s.ansicht })
   if (ansicht) return ansicht.stufe
   if (r.admin) return 'admin'
   if (r.zuteilen) return 'planer'
@@ -214,7 +214,7 @@ export function geplantesThema(r: Rechte, tab: MeetingTab): Thema {
  * anderen offen, schriebe er ins Leere, und die Zeile verschwände beim
  * nächsten Laden wieder. `personId` ist die **betroffene** Person.
  *
- * Über `rechteVon`, nicht über `planner` selbst: Sonst böte die Ansicht als
+ * Über `rechteVon`, nicht über `admin` selbst: Sonst böte die Ansicht als
  * Verkündiger (T124) die Abwesenheiten anderer weiter zum Bearbeiten an.
  */
 export function darfAbwesenheitBearbeiten(s: RechteQuelle, personId: string | null): boolean {
@@ -226,8 +226,8 @@ export function darfAbwesenheitBearbeiten(s: RechteQuelle, personId: string | nu
  * Planer-Recht, ohne das, was im Admin schon steckt.
  *
  * Das Recht steht an **zwei** Stellen, und nur eine entscheidet: Sobald ein
- * Konto verknüpft ist, zählt das Konto (`members.planner`, `members.zuteiler`
- * — daran hängt `is_planner()` in der Datenbank). Die Vormerkung an der Person
+ * Konto verknüpft ist, zählt das Konto (`members.admin`, `members.zuteiler`
+ * — daran hängt `ist_admin()` in der Datenbank). Die Vormerkung an der Person
  * trägt nur, wo es keines gibt; bei der ersten Anmeldung übernimmt sie die
  * Function `anmelden` ins Konto.
  * Angezeigt wurde bis August 2026 die Vormerkung — der Personen-Neuaufbau aus
@@ -238,11 +238,11 @@ export function darfAbwesenheitBearbeiten(s: RechteQuelle, personId: string | nu
  */
 export function rechteDerPerson(
   members: readonly Member[],
-  person: Pick<Person, 'id' | 'plannerVorgemerkt' | 'zuteilerVorgemerkt'>,
+  person: Pick<Person, 'id' | 'adminVorgemerkt' | 'zuteilerVorgemerkt'>,
 ): { admin: boolean; planer: boolean } {
   const konten = members.filter((m) => m.personId === person.id)
   if (konten.length === 0) {
-    return { admin: Boolean(person.plannerVorgemerkt), planer: Boolean(person.zuteilerVorgemerkt) }
+    return { admin: Boolean(person.adminVorgemerkt), planer: Boolean(person.zuteilerVorgemerkt) }
   }
-  return { admin: konten.some((m) => m.planner), planer: konten.some((m) => m.zuteiler) }
+  return { admin: konten.some((m) => m.admin), planer: konten.some((m) => m.zuteiler) }
 }

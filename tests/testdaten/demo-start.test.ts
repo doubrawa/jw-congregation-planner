@@ -5,7 +5,7 @@ import { reducer } from '../../src/app/reducer'
 import { deriveMyTasks } from '../../src/data/planung/aufgaben'
 import type { Person } from '../../src/data/types'
 import { BLAETTER, demoZustand, entwicklerStart, parseDebugHash, type Blatt } from './demo-start'
-import { DEMO_PERSONS, DEMO_PLANNER } from './testdaten'
+import { DEMO_ADMIN, DEMO_PERSONS } from './testdaten'
 import { ENTWICKLER_HEUTE, uhrAusHash, uhrStellen } from './uhr'
 
 beforeEach(() => {
@@ -25,7 +25,7 @@ describe('demoZustand – der Bestand der Tests und der Entwicklerseite', () => 
     expect(s.congregationId).toBeNull()
     expect(s.persons).toBe(DEMO_PERSONS)
     expect(s.weeks.length).toBeGreaterThan(0)
-    expect(s.planner).toBe(DEMO_PLANNER)
+    expect(s.admin).toBe(DEMO_ADMIN)
   })
 
   it('bindet die Namen an Personen wie der echte Ladevorgang — ein Namensvetter auf Zeit nimmt niemandem etwas', () => {
@@ -149,10 +149,10 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
   it('tab und pl (Rechte) steuern Reiter und Rolle für Doku-Screenshots', () => {
     const s = entwicklerStart('#s=planen&tab=fs&pl=0')
     expect(s.tab).toBe('fs')
-    expect(s.planner).toBe(false) // pl=0 → Verkündiger-Ansicht
+    expect(s.admin).toBe(false) // pl=0 → Verkündiger-Ansicht
     // Ein gewählter Reiter springt beim ersten Navigieren nicht weg.
     expect(s.terminGewaehlt).toBe(true)
-    expect(entwicklerStart('#s=planen&pl=1').planner).toBe(true)
+    expect(entwicklerStart('#s=planen&pl=1').admin).toBe(true)
   })
 
   it('fb=<Bereich> wählt den Reiter im Predigtdienst (T120) — nur bekannte Bereiche', () => {

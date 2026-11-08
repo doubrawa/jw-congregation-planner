@@ -151,7 +151,7 @@ describe('Die Bereiche des Predigtdienstes als große Wahl', () => {
   })
 
   it('beim Planen: Treffpunkte, Grundplan und Gruppenbesuche — ein Tipp öffnet den Grundplan, Trolleys gibt es dort nicht', () => {
-    const { container } = zeige(PlanenScreen, { screen: 'planen', planner: true })
+    const { container } = zeige(PlanenScreen, { screen: 'planen', admin: true })
     expect(knoepfe(container).map((b) => b.textContent)).toEqual([t.fsTreffpunkteTab, t.fsGrundplan, t.fsGruppenbesucheTab])
 
     fireEvent.click(knopf(container, t.fsGrundplan))
@@ -165,7 +165,7 @@ describe('Die Bereiche des Predigtdienstes als große Wahl', () => {
     const ansehen = zeige(ProgrammScreen, { screen: 'programm', fsBereich: 'gruppenbesuche' }).container
     expect(knoepfe(ansehen).at(-1)?.textContent).toBe(t.fsGruppenbesucheTab)
     cleanup()
-    const planen = zeige(PlanenScreen, { screen: 'planen', planner: true, fsBereich: 'gruppenbesuche' }).container
+    const planen = zeige(PlanenScreen, { screen: 'planen', admin: true, fsBereich: 'gruppenbesuche' }).container
     expect(knoepfe(planen).at(-1)?.textContent).toBe(t.fsGruppenbesucheTab)
     expect(gedrueckt(planen)).toEqual([t.fsGruppenbesucheTab])
   })
