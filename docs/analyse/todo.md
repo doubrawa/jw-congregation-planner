@@ -10922,6 +10922,11 @@ hatte, weil der Trigger ihn auffing: `supabase/geraete-fehler-rechte.test.ts`
 legte Konten mit `planner` an. Außerhalb des Repos liest
 `nws-export/neuaufbau-werkzeug/startstand-setzen.mjs` jetzt `admin`.
 
+**Ausgerollt am 8. November** mit `815a58b6` (Betreiber: „Ja, pushen"): CI
+grün — Migration 6 eingespielt, Verlauf mit allen sechs Migrationen, Katalog
+gleich der Kette, Functions aktiv, Rauchtest; App `shell-815a58b`,
+Laufzeit-Messung in der CI grün.
+
 Danach offen: die Mitgliedsrechte-Probe (fährt der Betreiber) — mit den
 Testern melden sich zum ersten Mal andere an.
 
