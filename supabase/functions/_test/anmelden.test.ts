@@ -69,6 +69,13 @@ let protokoll: string[]
 let einmalLaeuftGleichAb: boolean
 /** Das Einlösen (DELETE) eines Einmal-Codes scheitert an der Datenbank. */
 let einloesenKaputt: boolean
+/**
+ * Das Einlösen (DELETE) eines Einmal-Codes wartet, bis `noch` Anfragen ihn
+ * gelesen haben. Ohne diese Schranke hängt die Reihenfolge zweier gleichzeitiger
+ * Anfragen am Takt von `crypto.subtle`: In der CI löste eine schon ein, bevor die
+ * andere las, und die bekam 404 statt 410.
+ */
+let einloesenSchranke: { noch: number; offen: Promise<void>; oeffnen: () => void } | null
 
 const zukunft = () => new Date(Date.now() + 10 * 864e5).toISOString()
 
@@ -162,9 +169,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     const ohneSumme = (z: (typeof einmal)[number]) => ({ person_id: z.person_id, congregation_id: z.congregation_id, gueltig_bis: z.gueltig_bis })
     if (method === 'GET') {
       const gelesen = einmal.filter(trifft).map(ohneSumme)
+      if (einloesenSchranke && --einloesenSchranke.noch === 0) einloesenSchranke.oeffnen()
       return jsonRes(einmalLaeuftGleichAb ? gelesen.map((z) => ({ ...z, gueltig_bis: zukunft() })) : gelesen)
     }
     if (method === 'DELETE') {
+      if (einloesenSchranke) await einloesenSchranke.offen
       if (einloesenKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
       const weg = einmal.filter(trifft)
       einmal = einmal.filter((z) => !trifft(z))
@@ -293,6 +302,7 @@ beforeEach(async () => {
   protokoll = []
   einmalLaeuftGleichAb = false
   einloesenKaputt = false
+  einloesenSchranke = null
 })
 
 describe('anmelden: mit dem Link aus der Nachricht', () => {
@@ -650,7 +660,13 @@ describe('anmelden: ein Einmal-Code fürs nächste Gerät', () => {
 
   it('zwei Geräte zugleich mit demselben Code: nur eines kommt hinein', async () => {
     const code = (await holen()).code!
-    // Eine Function, zwei Anfragen zugleich — beide lesen den Code, bevor eine ihn einlöst.
+    // Eine Function, zwei Anfragen zugleich — die Schranke lässt beide den Code
+    // lesen, bevor eine ihn einlöst.
+    let oeffnen = () => {}
+    const offen = new Promise<void>((los) => {
+      oeffnen = los
+    })
+    einloesenSchranke = { noch: 2, offen, oeffnen }
     const handler = await loadFn()
     const anfrage = () =>
       handler(new Request('https://fn.test/anmelden', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ aktion: 'code', code }) }))
