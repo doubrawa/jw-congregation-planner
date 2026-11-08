@@ -321,7 +321,7 @@ describe('Aus dem Export „Person Abwesenheiten" (8.11.2026)', () => {
       zeile('endete-vorher', BERND_APP, '2026-10-01', '2026-10-31'),
       zeile('nicht-gelistet', uuid5('person:999'), '2026-12-01', '2026-12-02'),
     ]
-    expect(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08').map((r) => r.id)).toEqual(['alte-fassung', 'in-nws-geloescht'])
+    expect(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08').map((r: { id: string }) => r.id)).toEqual(['alte-fassung', 'in-nws-geloescht'])
   })
 })
 
