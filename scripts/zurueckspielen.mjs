@@ -253,10 +253,14 @@ export function zeileTeilen(zeile, warten, auslassen = []) {
   return { jetzt, nach }
 }
 
-/** Der PostgREST-Filter auf genau eine Zeile — über ihren Primärschlüssel. */
+/**
+ * Der PostgREST-Filter auf genau eine Zeile — über ihren Primärschlüssel, eine
+ * Bedingung je Spalte (PostgREST verknüpft sie mit „und"). Getrennte Bedingungen
+ * statt `and=(…)`: Die Attrappe der Schema-Probe liest sie, und ein Wert mit
+ * Komma oder Klammer bräche `and=(…)` auf.
+ */
 export function pkFilter(zeile, pk) {
-  const teile = pk.map((c) => `${c}.eq.${encodeURIComponent(String(zeile[c]))}`)
-  return teile.length === 1 ? teile[0].replace('.eq.', '=eq.') : `and=(${teile.join(',')})`
+  return pk.map((c) => `${c}=eq.${encodeURIComponent(String(zeile[c]))}`).join('&')
 }
 
 /* ===================== Ausführung ======================================== */

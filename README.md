@@ -848,8 +848,12 @@ das gibt es nicht (entschieden am 7. November 2026).
 #### Eine Versammlung auf eine Sicherung zurücksetzen
 
 ```powershell
-node scripts/versammlung-auf-sicherung.mjs C:\DATA\Claude\jw-sicherungen\vor-der-beta\sicherung-….json --cong <id> --trocken
+node scripts/versammlung-auf-sicherung.mjs C:\DATA\Claude\jw-sicherungen\vor-der-beta\sicherung-….json --cong <id>
 ```
+
+**Ohne `--wirklich` rechnet es nur** und nennt die Versammlung beim Namen;
+geschrieben wird erst mit `--wirklich`. Während des Laufs benutzt niemand die
+App — zum Livegang also, bevor die neuen Links hinausgehen.
 
 Für den Livegang nach der Beta (Betreiber, 8. November 2026): Die Tester
 probieren in der echten Versammlung aus, danach geht sie auf die Sicherung von
@@ -859,7 +863,9 @@ Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Fehlermeldungen der
 Geräte (`BLEIBEN`, je mit Grund). Alles andere aus `schema.sql` geht auf die
 Sicherung zurück — Wochen, Personen, Treffpunkte, Abwesenheiten, Zusagen,
 Glocken, Tausche. Eine Person, an der ein Konto oder Link hängt, bleibt, auch
-wenn die Sicherung sie nicht kennt.
+wenn die Sicherung sie nicht kennt; trägt sie den Namen einer Person aus der
+Sicherung, hält das Skript vor dem ersten Schreiben an und nennt sie. Ein
+Konto, dessen Person in der Beta gelöscht wurde, bekommt sie zurück.
 
 Abgeleitet wird wie beim Zurückspielen aus `schema.sql`: Reihenfolge, der Ring
 `persons.grp ↔ groups`, Fremdschlüssel samt `on delete`. Gelöscht wird von
@@ -867,12 +873,12 @@ hinten nach vorn, geschrieben je Tabelle frisch gelesen (Kaskaden und Trigger
 schreiben mit), am Ende jede Tabelle gegen die Sicherung gezählt. Ein zweiter
 Lauf ändert nichts mehr. Ausgegeben werden nur Zahlen. Die Probe dazu
 (`versammlung-auf-sicherung.test.ts`) fährt eine ganze Beta gegen PGlite:
-gelöschtes Konto, neuer Tester, neue Gruppe, entzogenes Trolley-Recht,
-Tausch-Anfrage.
+gelöschtes Konto, gelöschte Person mit Konto, neuer Tester, neue Gruppe,
+entzogenes Trolley-Recht, Tausch-Anfrage, dazu den Namenskonflikt.
 
 **Erst an der Testversammlung üben** — Sicherung in einen eigenen Ordner, etwas
 ändern (die Mitgliedsrechte-Probe fahren und im Supabase-Dashboard den Namen
-der Testversammlung ändern), trocken, dann ohne `--trocken`, danach die
+der Testversammlung ändern), erst ohne, dann mit `--wirklich`, danach die
 Mitgliedsrechte-Probe noch einmal (sie muss grün bleiben), zuletzt den
 Übungsordner löschen. Die Kennung der Testversammlung steht in `.env.probe`
 (`PROBE_VERSAMMLUNG`).

@@ -58,7 +58,8 @@
  *     [--daten C:\DATA\Claude\nws-export\MyData-decrypted] \
  *     [--cong <congregation-id>] [--ab 2026-08-22] [--auch-unverfuegbar] [--trocken]
  *
- * `--nws-gilt` löscht, was der Export nicht führt (nur mit `--abwesenheiten`).
+ * `--nws-gilt` löscht, was der Export nicht führt (nur mit `--abwesenheiten`) —
+ * was jemand in der App eingetragen hat, erst mit `--auch-eingetragene`.
  *
  * **Nichts vorher setzen.** Die Projekt-URL holt sich das Skript aus
  * `.env.local` (`VITE_SUPABASE_URL`), und nach dem Schlüssel fragt es, wenn
@@ -232,10 +233,20 @@ export function planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab) {
  * sein Fenster fällt (endet ab `fensterAb`), bei Personen, die er führt
  * (`gelistet`): Was davor endete oder wen er nicht kennt, darüber sagt er
  * nichts. Reine Funktion.
+ *
+ * **Was in der App eingetragen wurde, ist nicht dabei** (`user_id` gesetzt —
+ * der Import trägt es nie ein): Ein Urlaub, den jemand selbst gemeldet hat,
+ * kennt NWS nicht, und gelöscht teilte die Planung ihn wieder ein. Nur mit
+ * `auchEingetragene` (Aufruf: `--auch-eingetragene`).
  */
-export function nurInDerApp(vorhandenRows, nws, gelistet, fensterAb) {
+export function nurInDerApp(vorhandenRows, nws, gelistet, fensterAb, { auchEingetragene = false } = {}) {
   return vorhandenRows.filter(
-    (r) => r.person_id && gelistet.has(r.person_id) && r.to_date >= fensterAb && !nws.has(abwSchluessel(r.person_id, r.from_date, r.to_date)),
+    (r) =>
+      r.person_id &&
+      (auchEingetragene || !r.user_id) &&
+      gelistet.has(r.person_id) &&
+      r.to_date >= fensterAb &&
+      !nws.has(abwSchluessel(r.person_id, r.from_date, r.to_date)),
   )
 }
 
@@ -293,6 +304,10 @@ export async function main(argv = process.argv.slice(2)) {
     console.error('--nws-gilt gehört zum Export (--abwesenheiten): Nur er nennt jede Abwesenheit ab seinem Monat.')
     process.exit(2)
   }
+  if (arg['auch-eingetragene'] && !arg['nws-gilt']) {
+    console.error('--auch-eingetragene gehört zu --nws-gilt: Ohne es wird nichts gelöscht.')
+    process.exit(2)
+  }
   const { url, key } = await zugangsdaten()
   const datenDir = arg.daten || 'C:/DATA/Claude/nws-export/MyData-decrypted'
   appCodeBereit()
@@ -334,7 +349,7 @@ export async function main(argv = process.argv.slice(2)) {
   // vergangenen — und ab 1000 Zeilen schneidet PostgREST still ab (Supabase
   // „Max rows"). Was dahinter lag, sah der Abgleich nicht, und es kam doppelt.
   const vorhandenRows = await rest(
-    `absences?select=id,person_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,
+    `absences?select=id,person_id,user_id,from_date,to_date&congregation_id=eq.${cong}&to_date=gte.${ab}`,
   )
   const vorhanden = new Set(
     vorhandenRows
@@ -343,8 +358,11 @@ export async function main(argv = process.argv.slice(2)) {
   )
 
   const plan = planeImport(zeitraeume, vorhanden, appIds, personIdOf, ab)
-  // Das Fenster des Exports: ab seinem Monat, nie vor `ab`.
-  const entfernen = export_ ? nurInDerApp(vorhandenRows, plan.nws, export_.gelistet, ab > export_.beginn ? ab : export_.beginn) : []
+  // Das Fenster des Exports: ab seinem Monat, nie vor `ab`. Gezeigt wird alles,
+  // was nur in der App steht; gelöscht nur mit --nws-gilt, und was jemand in der
+  // App eingetragen hat, erst mit --auch-eingetragene.
+  const fensterAb = export_ && ab < export_.beginn ? export_.beginn : ab
+  const entfernen = export_ ? nurInDerApp(vorhandenRows, plan.nws, export_.gelistet, fensterAb, { auchEingetragene: true }) : []
 
   console.log(`NWS: ${zeitraeume.length} Zeiträume (${export_ ? 'Export' : `Quellen: ${quellen}`}).`)
   console.log(`App: ${personen.length} Personen, ${vorhanden.size} Abwesenheiten bis ${ab} oder später bereits gespeichert.`)
@@ -369,16 +387,22 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (plan.neu.length > 10) console.log(`  … und ${plan.neu.length - 10} weitere`)
 
+  const loeschbar = (r) => Boolean(arg['nws-gilt']) && (Boolean(arg['auch-eingetragene']) || !r.user_id)
+  const loeschen = entfernen.filter(loeschbar)
   if (export_) {
     const appName = new Map(personen.map((p) => [p.id, `${p.fn} ${p.ln}`.trim()]))
+    const eingetragen = entfernen.filter((r) => r.user_id).length
     console.log(
-      `\nNur in der App (endet ab ${ab > export_.beginn ? ab : export_.beginn}, NWS führt die Person): ${entfernen.length}` +
-        (entfernen.length ? (arg['nws-gilt'] ? ' — werden gelöscht (--nws-gilt)' : ' — bleiben; mit --nws-gilt gelöscht') : ''),
+      `\nNur in der App (endet ab ${fensterAb}, NWS führt die Person): ${entfernen.length}` +
+        (eingetragen ? `, davon in der App eingetragen: ${eingetragen}` : '') +
+        (!entfernen.length ? '' : arg['nws-gilt'] ? ` — gelöscht werden ${loeschen.length}` : ' — bleiben; mit --nws-gilt gelöscht'),
     )
-    for (const r of entfernen) console.log(`  − ${appName.get(r.person_id) ?? r.person_id}: ${r.from_date} → ${r.to_date}`)
+    for (const r of entfernen) {
+      const wie = r.user_id ? ` (in der App eingetragen${loeschbar(r) ? '' : ' — bleibt, löschen mit --auch-eingetragene'})` : ''
+      console.log(`  − ${appName.get(r.person_id) ?? r.person_id}: ${r.from_date} → ${r.to_date}${wie}`)
+    }
   }
 
-  const loeschen = arg['nws-gilt'] ? entfernen : []
   if (arg.trocken) {
     console.log('\n--trocken: nichts geschrieben.')
     return
@@ -425,13 +449,19 @@ export async function main(argv = process.argv.slice(2)) {
   await abwesenheitenLoeschen(rest, cong, loeschen)
 }
 
+/** So viele Kennungen je Aufruf — ein `in.(…)` bleibt damit unter der Längengrenze einer Adresse. */
+const BUENDEL = 100
+
 /** Die Abwesenheiten, die NWS nicht (mehr) führt, nach ihrer Kennung löschen. */
 async function abwesenheitenLoeschen(rest, cong, zeilen) {
   if (!zeilen.length) return
-  await rest(`absences?congregation_id=eq.${cong}&id=in.(${zeilen.map((r) => r.id).join(',')})`, {
-    method: 'DELETE',
-    headers: { Prefer: 'return=minimal' },
-  })
+  for (let i = 0; i < zeilen.length; i += BUENDEL) {
+    const kennungen = zeilen.slice(i, i + BUENDEL).map((r) => r.id)
+    await rest(`absences?congregation_id=eq.${cong}&id=in.(${kennungen.join(',')})`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=minimal' },
+    })
+  }
   console.log(`Gelöscht: ${zeilen.length} Abwesenheiten, die NWS nicht (mehr) führt.`)
 }
 

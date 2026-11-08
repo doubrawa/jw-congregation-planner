@@ -687,7 +687,7 @@ const LAEUFE: Record<string, Lauf[]> = {
   'versammlung-auf-sicherung.mjs': [
     {
       titel: 'eine Versammlung zurück auf die Sicherung — die Konten bleiben',
-      fahren: (m, dateien) => m.main!([path.join(dateien, 'sicherung.json'), '--cong', C]),
+      fahren: (m, dateien) => m.main!([path.join(dateien, 'sicherung.json'), '--cong', C, '--wirklich']),
       dateien: {
         'sicherung.json': volleSicherung(
           {

@@ -30,6 +30,17 @@
  * oder Anmelde-Link: Sonst stünde das Konto ohne Person da (`set null`), und
  * der Link ginge mit (`cascade`). Gezählt, nicht genannt.
  *
+ * Trägt so eine Person denselben Namen wie eine aus der Sicherung, hält das
+ * Skript **vor dem ersten Schreiben** an (`namensKonflikte`): Beide zugleich
+ * nimmt `persons_name_eindeutig` nicht an, und ein Lauf, der erst beim
+ * Einfügen scheitert, hinterließe eine halb zurückgesetzte Versammlung. Nur
+ * hier nennt es Namen — der Betreiber muss die Person in der App finden.
+ *
+ * Von den Konten ändert es genau eines: eine **verlorene Verknüpfung** mit der
+ * Person (`verknuepfungen`). Löscht jemand in der Beta eine Person mit Konto,
+ * bleibt das Konto ohne Person; kommt die Person aus der Sicherung zurück,
+ * bekommt das Konto sie wieder — Rechte bleiben, wie sie sind.
+ *
  * ----------------------------------------------------------- Der Ablauf -----
  *
  * 1. Löschen, was die Sicherung nicht kennt — von hinten nach vorn, Kinder vor
@@ -41,7 +52,8 @@
  *    beim Einfügen einer Absage.
  * 3. Die Verweise nachtragen, deren Ziel erst später kommt — der Ring
  *    `persons.grp ↔ groups` (`aufgeschobene` aus `zurueckspielen.mjs`).
- * 4. Gegenprobe: jede Tabelle der Versammlung gegen die Sicherung.
+ * 4. Konten wieder mit ihrer Person verknüpfen (siehe oben).
+ * 5. Gegenprobe: jede Tabelle der Versammlung gegen die Sicherung.
  *
  * Ein zweiter Lauf ändert nichts mehr; bricht einer mittendrin ab, holt der
  * nächste den Rest nach.
@@ -52,19 +64,29 @@
  *
  * ---------------------------------------------------------------- Aufruf ----
  *
- *   node scripts/versammlung-auf-sicherung.mjs <sicherung.json> --cong <id> [--trocken]
+ *   node scripts/versammlung-auf-sicherung.mjs <sicherung.json> --cong <id> [--wirklich]
  *
- * Das Projekt kommt aus `.env.local` wie bei allen Skripten. **Immer zuerst
- * mit `--trocken`, und das erste Mal an der Testversammlung.** Ausgegeben
- * werden nur Zahlen, keine Namen. Der Trockenlauf rechnet ohne die Kaskaden
- * der Datenbank — seine Zahlen sind die Untergrenze.
+ * **Ohne `--wirklich` rechnet es nur** und schreibt nichts (`--trocken` geht
+ * ebenso): Ein Lauf ersetzt die ganze Planung einer Versammlung, eine falsche
+ * Kennung beim Üben träfe die echte. Der Trockenlauf nennt die Versammlung
+ * beim Namen und rechnet ohne die Kaskaden der Datenbank — seine Zahlen sind
+ * die Untergrenze. **Das erste Mal an der Testversammlung.**
+ *
+ * **Während des Laufs benutzt niemand die App**: Was ein Gerät zwischen den
+ * Schritten schreibt, landet halb oder gar nicht (die Gegenprobe meldet es,
+ * ein zweiter Lauf räumt es ab). Zum Livegang also, bevor die neuen Links
+ * hinausgehen.
+ *
+ * Das Projekt kommt aus `.env.local` wie bei allen Skripten. Ausgegeben werden
+ * Zahlen, keine Namen (bis auf `namensKonflikte`).
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { alleZeilen, alsSkript, argumente, restKlient, zugangsdaten } from './gemeinsam.mjs'
+import { isDeepStrictEqual } from 'node:util'
+import { alleZeilen, alsSkript, argumente, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 import { AUSGENOMMEN, konten, REPO, schemaFingerabdruck, tabellenAusSchema } from './sicherung.mjs'
-import { alteNamenUebernehmen, aufgeschobene, fremdschluessel, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
+import { alteNamenUebernehmen, aufgeschobene, fremdschluessel, pkFilter, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
 
 /**
  * Tabellen, die so bleiben, wie sie sind — je mit Grund. Sie gehören zum
@@ -74,7 +96,7 @@ export const BLEIBEN = {
   members:
     'die Konten der Versammlung samt Rechten und Verknüpfung mit der Person. Eine gelöschte Zeile nähme ' +
     'das Konto mit (`members_konto_loeschen`), die Tester bräuchten neue Links; die Rechte stellt der ' +
-    'Betreiber zum Livegang ohnehin neu ein.',
+    'Betreiber zum Livegang ohnehin neu ein. Nur eine verlorene Verknüpfung kommt zurück (`verknuepfungen`).',
   push_subscriptions: 'die Geräte, die Mitteilungen bekommen — sie hängen am Konto; gelöscht müsste jeder Push neu einschalten.',
   anmelde_links: 'Link und Zettel-Code jeder Person — mit ihnen kommt ein Gerät wieder hinein; zurückgesetzt gälten die der Tester nicht mehr.',
   anmelde_einmalcodes: 'Einmal-Codes fürs nächste Gerät — sie hängen am Konto und verfallen von selbst.',
@@ -103,15 +125,8 @@ export const zurVersammlung = (t, cong) => (z) => (t.name === 'congregations' ? 
 /** Der Primärschlüssel einer Zeile als Text — zum Wiederfinden. */
 export const schluessel = (zeile, pk) => JSON.stringify(pk.map((c) => zeile[c] ?? null))
 
-/** Gleich im Inhalt — Objekte (jsonb) unabhängig von der Reihenfolge ihrer Schlüssel. */
-export function gleich(a, b) {
-  if (Object.is(a, b)) return true
-  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false
-  if (Array.isArray(a) !== Array.isArray(b)) return false
-  if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => gleich(x, b[i]))
-  const ka = Object.keys(a)
-  return ka.length === Object.keys(b).length && ka.every((k) => Object.hasOwn(b, k) && gleich(a[k], b[k]))
-}
+/** Gleich im Inhalt — Objekte (jsonb) unabhängig von der Reihenfolge ihrer Schlüssel, sonst genau. */
+export const gleich = isDeepStrictEqual
 
 /**
  * Was an einer Zeile abweicht: die Spalten der Sicherung, deren Wert in der
@@ -182,6 +197,52 @@ export function geschuetzte(fks, tabellenNachName, bleibende) {
   return out
 }
 
+/** Der Name einer Person, wie `persons_name_eindeutig` ihn vergleicht: Vor- und Nachname, Leerraum zusammengezogen, klein. */
+export function namensSchluessel(p) {
+  return `${p.fn ?? ''} ${p.ln ?? ''}`.replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+/**
+ * **Personen, die nicht zugleich gehen**: eine, die bleibt, obwohl die
+ * Sicherung sie nicht kennt (`geschuetzte`), mit dem Namen einer Person aus der
+ * Sicherung. `persons_name_eindeutig` nähme beide nicht an — geprüft wird vor
+ * dem ersten Schreiben, nicht erst beim Einfügen.
+ *
+ * @returns {{ bleibt: object, sicherung: object }[]}
+ */
+export function namensKonflikte(bleibendePersonen, sollPersonen) {
+  const nachName = new Map()
+  for (const p of sollPersonen) if (namensSchluessel(p)) nachName.set(namensSchluessel(p), p)
+  const out = []
+  for (const p of bleibendePersonen) {
+    const gegen = nachName.get(namensSchluessel(p))
+    if (gegen && gegen.id !== p.id) out.push({ bleibt: p, sicherung: gegen })
+  }
+  return out
+}
+
+/**
+ * **Verlorene Verknüpfungen** zwischen Konto und Person: ein Konto, das heute
+ * ohne Person dasteht, in der Sicherung aber eine hatte, die nach dem
+ * Zurücksetzen wieder da ist. So kommt es durch eine in der Beta gelöschte
+ * Person — die App setzt `members.person_id` dann leer. Nicht, wenn ein
+ * anderes Konto die Person inzwischen trägt.
+ *
+ * @returns {Map<string, string>} Konto → Person
+ */
+export function verknuepfungen(mitglieder, mitgliederVorher, personenNachher) {
+  const vorher = new Map(mitgliederVorher.map((m) => [m.user_id, m.person_id]))
+  const vergeben = new Set(mitglieder.map((m) => m.person_id).filter(Boolean))
+  const out = new Map()
+  for (const m of mitglieder) {
+    const p = vorher.get(m.user_id)
+    if (m.person_id || !p || !personenNachher.has(p) || vergeben.has(p)) continue
+    out.set(m.user_id, p)
+    vergeben.add(p)
+  }
+  return out
+}
+
 /**
  * **Die Versammlung `cong` auf die Sicherung zurücksetzen** — über `zugriff`,
  * damit derselbe Ablauf im Betrieb über PostgREST (`restZugriff`) und in der
@@ -193,7 +254,7 @@ export function geschuetzte(fks, tabellenNachName, bleibende) {
  *
  * @typedef {{ geloescht: number, eingefuegt: number, geaendert: number, bleibt: number, ohneKonto: number, nachgetragen: number }} Zaehler
  * @typedef {{ tabelle: string, fehlt: number, anders: number, zuviel: number }} Abweichung
- * @returns {Promise<{ bericht: Map<string, Zaehler>, abweichungen: Abweichung[], mitglieder: { gleich: number, dazu: number, anders: number, fort: number }, hinweise: string[] }>}
+ * @returns {Promise<{ bericht: Map<string, Zaehler>, abweichungen: Abweichung[], mitglieder: { gleich: number, dazu: number, anders: number, fort: number }, verknuepft: number, hinweise: string[] }>}
  */
 export async function zuruecksetzen({ zugriff, schema, sicherung, cong, trocken = false }) {
   const alle = tabellenAusSchema(schema)
@@ -234,6 +295,24 @@ export async function zuruecksetzen({ zugriff, schema, sicherung, cong, trocken 
   for (const name of Object.keys(BLEIBEN)) if (nachName.has(name)) bleibende[name] = await zugriff.lesen(nachName.get(name), cong)
   const schutz = geschuetzte(fks, nachName, bleibende)
   const istZuviel = (t, z) => !soll.get(t.name).has(schluessel(z, t.pk)) && !schutz.get(t.name)?.has(schluessel(z, t.pk))
+
+  // Vor dem ersten Schreiben: Was sich nicht auflösen lässt, hält hier an.
+  const personen = nachName.get('persons')
+  const sollPersonen = soll.has('persons') ? [...soll.get('persons').values()] : []
+  if (personen && soll.has('persons')) {
+    const bleibendePersonen = (await zugriff.lesen(personen, cong)).filter(
+      (p) => !soll.get('persons').has(schluessel(p, personen.pk)) && schutz.get('persons')?.has(schluessel(p, personen.pk)),
+    )
+    const konflikte = namensKonflikte(bleibendePersonen, sollPersonen)
+    if (konflikte.length) {
+      throw new Error(
+        `${konflikte.length} Person(en) mit Konto oder Anmelde-Link tragen den Namen einer Person aus der Sicherung — ` +
+          'beide zugleich nimmt die Datenbank nicht an (persons_name_eindeutig):\n' +
+          konflikte.map((k) => `  „${personDisplayName(k.bleibt.fn, k.bleibt.ln)}" (${k.bleibt.id} bleibt, ${k.sicherung.id} aus der Sicherung)`).join('\n') +
+          '\nIn der App umbenennen oder Konto und Link der Person lösen, dann neu. Nichts geschrieben.',
+      )
+    }
+  }
 
   // 1. Löschen, was die Sicherung nicht kennt — Kinder vor Eltern.
   for (const t of [...tabellen].reverse()) {
@@ -291,13 +370,19 @@ export async function zuruecksetzen({ zugriff, schema, sicherung, cong, trocken 
     }
   }
 
-  // Die Konten bleiben — aber was an ihnen seit der Sicherung anders ist, soll
-  // der Betreiber wissen (Rechte, Verknüpfung mit der Person).
-  const mitglieder = { gleich: 0, dazu: 0, anders: 0, fort: 0 }
+  // 4. Konten, die ihre Person verloren haben, bekommen sie wieder.
   const members = nachName.get('members')
+  const mitgliederVorher = members ? (sicherung.tabellen.members ?? []).filter(zurVersammlung(members, cong)) : []
+  const wieder = members ? verknuepfungen(bleibende.members ?? [], mitgliederVorher, new Set(sollPersonen.map((p) => p.id))) : new Map()
+  if (!trocken) for (const [konto, person] of wieder) await zugriff.aendern(members, cong, { user_id: konto }, { person_id: person })
+
+  // Sonst bleiben die Konten — aber was an ihnen seit der Sicherung anders ist,
+  // soll der Betreiber wissen (Rechte, Verknüpfung mit der Person).
+  const mitglieder = { gleich: 0, dazu: 0, anders: 0, fort: 0 }
   if (members) {
-    const vorher = new Map(sicherung.tabellen.members?.filter(zurVersammlung(members, cong)).map((z) => [schluessel(z, members.pk), z]) ?? [])
-    for (const z of bleibende.members ?? []) {
+    const vorher = new Map(mitgliederVorher.map((z) => [schluessel(z, members.pk), z]))
+    for (const heute of bleibende.members ?? []) {
+      const z = wieder.has(heute.user_id) ? { ...heute, person_id: wieder.get(heute.user_id) } : heute
       const v = vorher.get(schluessel(z, members.pk))
       if (!v) mitglieder.dazu++
       else if (Object.keys(abweichend(v, z)).length) mitglieder.anders++
@@ -307,7 +392,7 @@ export async function zuruecksetzen({ zugriff, schema, sicherung, cong, trocken 
     mitglieder.fort = vorher.size
   }
 
-  // 4. Gegenprobe — gezählt wird am Ende, nicht geglaubt.
+  // 5. Gegenprobe — gezählt wird am Ende, nicht geglaubt.
   const abweichungen = []
   if (!trocken) {
     for (const t of tabellen) {
@@ -324,16 +409,15 @@ export async function zuruecksetzen({ zugriff, schema, sicherung, cong, trocken 
       if (fehlt || anders || zuviel) abweichungen.push({ tabelle: t.name, fehlt, anders, zuviel })
     }
   }
-  return { bericht, abweichungen, mitglieder, hinweise }
+  return { bericht, abweichungen, mitglieder, verknuepft: wieder.size, hinweise }
 }
 
 /* ===================== Über PostgREST ===================================== */
 
-/** Der Filter auf genau eine Zeile: der Primärschlüssel, dazu die Versammlung. */
+/** Der Filter auf genau eine Zeile: der Primärschlüssel (`pkFilter`), dazu die Versammlung. */
 function zeilenFilter(t, cong, zeile) {
-  const teile = t.pk.map((c) => `${c}=eq.${encodeURIComponent(String(zeile[c]))}`)
-  if (t.name !== 'congregations' && !t.pk.includes('congregation_id')) teile.unshift(`congregation_id=eq.${cong}`)
-  return teile.join('&')
+  const filter = pkFilter(zeile, t.pk)
+  return t.name === 'congregations' || t.pk.includes('congregation_id') ? filter : `congregation_id=eq.${cong}&${filter}`
 }
 
 /** Zeilen nach ihren Spalten gebündelt — PostgREST nimmt beim Einfügen mehrerer Zeilen nur gleiche Schlüssel an. */
@@ -392,7 +476,7 @@ export async function main(argv = process.argv.slice(2)) {
   const datei = argv.find((a) => !a.startsWith('--') && a.endsWith('.json'))
   const cong = typeof arg.cong === 'string' ? arg.cong : ''
   if (!datei || !fs.existsSync(datei) || !cong) {
-    console.error('Aufruf: node scripts/versammlung-auf-sicherung.mjs <sicherung.json> --cong <id> [--trocken]')
+    console.error('Aufruf: node scripts/versammlung-auf-sicherung.mjs <sicherung.json> --cong <id> [--wirklich]')
     process.exit(2)
   }
   const sicherung = alteNamenUebernehmen(JSON.parse(fs.readFileSync(datei, 'utf8')))
@@ -404,10 +488,16 @@ export async function main(argv = process.argv.slice(2)) {
 
   const { url, key } = await zugangsdaten()
   const zugriff = restZugriff(restKlient(url, key), () => konten(url, key))
-  const trocken = Boolean(arg.trocken)
+  // Geschrieben wird nur mit `--wirklich` — siehe Kopf.
+  const trocken = Boolean(arg.trocken) || !arg.wirklich
+  const [versammlung] = await zugriff.lesen({ name: 'congregations', pk: ['id'] }, cong)
   console.log(`Sicherung:   ${datei} (erstellt ${sicherung.erstellt})`)
-  console.log(`Versammlung: ${cong}`)
-  console.log(trocken ? '--trocken: Es wird nichts geschrieben.\n' : '')
+  console.log(`Versammlung: ${versammlung ? `„${versammlung.name}" ` : ''}(${cong})`)
+  console.log(
+    trocken
+      ? 'Es wird nur gerechnet, nichts geschrieben (geschrieben wird mit --wirklich).\n'
+      : 'Mit --wirklich: Es wird geschrieben. Während des Laufs benutzt niemand die App.\n',
+  )
 
   let erg
   try {
@@ -430,11 +520,12 @@ export async function main(argv = process.argv.slice(2)) {
   console.log('\n„bleibt": Zeilen, die die Sicherung nicht kennt, an denen aber ein Konto oder Anmelde-Link hängt.')
   console.log('„ohne Konto": Zeilen der Sicherung, deren Konto es nicht mehr gibt — so fort, wie beim Löschen des Kontos.')
   const m = erg.mitglieder
-  console.log(`\nKonten (bleiben, wie sie sind): ${m.gleich} wie in der Sicherung, ${m.dazu} seither dazu, ${m.anders} mit anderen Rechten oder anderer Person, ${m.fort} nicht mehr da.`)
+  if (erg.verknuepft) console.log(`\nKonten wieder mit ihrer Person verknüpft: ${erg.verknuepft} (die Person war in der Beta gelöscht worden).`)
+  console.log(`\nKonten (bleiben sonst, wie sie sind): ${m.gleich} wie in der Sicherung, ${m.dazu} seither dazu, ${m.anders} mit anderen Rechten oder anderer Person, ${m.fort} nicht mehr da.`)
   for (const [t, grund] of Object.entries(BLEIBEN)) console.log(`unberührt: ${t} — ${grund}`)
 
   if (trocken) {
-    console.log('\n--trocken: nichts geschrieben. Kaskaden der Datenbank sind nicht mitgezählt.')
+    console.log('\nNichts geschrieben — zum Schreiben derselbe Aufruf mit --wirklich. Kaskaden der Datenbank sind nicht mitgezählt.')
     return
   }
   if (erg.abweichungen.length) {

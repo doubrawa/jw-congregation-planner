@@ -193,8 +193,10 @@ describe('pkFilter', () => {
   it('filtert über eine Spalte und über mehrere', () => {
     expect(pkFilter({ id: 'abc' }, ['id'])).toBe('id=eq.abc')
     expect(pkFilter({ congregation_id: C, woche: '2026-11-02', zusammenkunft: 'mid' }, ['congregation_id', 'woche', 'zusammenkunft'])).toBe(
-      `and=(congregation_id.eq.${C},woche.eq.2026-11-02,zusammenkunft.eq.mid)`,
+      `congregation_id=eq.${C}&woche=eq.2026-11-02&zusammenkunft=eq.mid`,
     )
+    // Ein Aufgaben-Schlüssel trägt „|" — er wird kodiert, nicht getrennt.
+    expect(pkFilter({ task_key: '2026-11-02|mid|gebet' }, ['task_key'])).toBe('task_key=eq.2026-11-02%7Cmid%7Cgebet')
   })
 })
 

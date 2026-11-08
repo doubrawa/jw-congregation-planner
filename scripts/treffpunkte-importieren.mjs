@@ -97,7 +97,7 @@ import {
 } from './gemeinsam.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
-import { csvLesen, docxDokument, exportNamensAufloeser, monatAusDateiname, treffpunkteAusUebersicht, uhrzeitAufloesen } from './nws-exporte.mjs'
+import { csvLesen, docxDokument, exportNamensAufloeser, monatAusDateiname, tagNach, treffpunkteAusUebersicht, uhrzeitAufloesen } from './nws-exporte.mjs'
 import { lebend, nameAufloeser, nurDatum, personIdAufloeser } from './nws-personen.mjs'
 import { mondayOf, uuid5 } from './wochenplanung-importieren.mjs'
 
@@ -217,6 +217,25 @@ export function manuelleKennung(nwsId) {
   return `x${uuid5(`fs-meeting:${nwsId}`)}`
 }
 
+/** So viele Termine zur selben Zeit am selben Tag zählt `ausExportAngelegt` durch (`#2`, `#3` … in `treffpunkteAusExporten`). */
+const GLEICHZEITIG_HOECHSTENS = 9
+
+/**
+ * Hat ein **früherer Import aus den Exporten** diesen Treffpunkt angelegt? Seine
+ * Kennung ist dann `manuelleKennung` aus seinem eigenen Tag und seiner Uhrzeit
+ * (`treffpunkteAusExporten`). Ein Treffpunkt aus der App trägt eine zufällige
+ * Kennung und trifft das nie; einer, dessen Zeit jemand in der App geändert
+ * hat, auch nicht mehr — er gehört dann dem Planer.
+ */
+export function ausExportAngelegt(inst, montag) {
+  if (!inst.manual) return false
+  const termin = `export:${tagNach(montag, (inst.wd + 6) % 7)}T${inst.time}`
+  for (let n = 1; n <= GLEICHZEITIG_HOECHSTENS; n++) {
+    if (inst.id === manuelleKennung(n > 1 ? `${termin}#${n}` : termin)) return true
+  }
+  return false
+}
+
 /**
  * Gilt dieser Treffpunkt der ganzen Versammlung? In der App heißt das
  * `grp: null`; `''` steht noch in dem, was frühere Läufe dieses Skripts angelegt
@@ -269,11 +288,16 @@ export function passenderPlatz(insts, tp, belegt = new Set()) {
  * hierher und nicht zum Aufrufer: Dort stand „Leiter gesetzt oder angelegt",
  * und ein nachgeführter Treffpunkt mit demselben Leiter ging verloren — die
  * Liste war richtig, geschrieben wurde sie nie.
+ *
+ * `veraltet(inst)` (aus den Exporten: `ausExportAngelegt`): Was ein früherer
+ * Lauf angelegt hat und NWS in dieser Woche nicht mehr führt, geht — dort ist
+ * die Kennung Tag und Uhrzeit, ein verlegter Termin also ein neuer, und der alte
+ * stünde sonst samt Leiter daneben. Mit `nurLeere` bleibt einer mit Leiter.
  */
 export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
-  const { nurLeere = false, standardOrt = '' } = opt
+  const { nurLeere = false, standardOrt = '', veraltet = () => false } = opt
   const next = insts.map((i) => ({ ...i }))
-  const z = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
+  const z = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0, entfernt: 0 }
   const belegt = new Set()
   // Der Zusatz aus NWS („Pioniertag") steht mit im Ort — die App hat kein
   // eigenes Feld dafür, und ohne ihn sähe der Termin aus wie jeder andere.
@@ -308,8 +332,11 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
     belegt.add(platz.id)
     // Einen Treffpunkt, den dieser Import selbst angelegt hat, führt er auch
     // nach: Verschiebt NWS ihn auf einen anderen Tag oder eine andere Zeit,
-    // stünde sonst beim nächsten Lauf der alte Termin daneben. Was aus dem
-    // Grundplan kommt, bleibt unberührt — dort entscheidet der Planer.
+    // stünde sonst beim nächsten Lauf der alte Termin daneben. Das trägt nur
+    // mit der NWS-Kennung aus den entschlüsselten Tabellen; aus den Exporten
+    // ist die Kennung Tag und Uhrzeit selbst — dort räumt `veraltet` den alten
+    // ab. Was aus dem Grundplan kommt, bleibt unberührt — dort entscheidet der
+    // Planer.
     //
     // Dazu gehört die Art: Frühere Läufe schrieben `grp: ''`, die App erkennt
     // den Versammlungstreffpunkt nur an `null` (siehe Kopf).
@@ -337,8 +364,10 @@ export function verteileFsWoche(insts, treffpunkte, bind, opt = {}) {
     z.gesetzt++
   }
 
-  next.sort(fsSort)
-  return { insts: next, ...z, geaendert: z.gesetzt + z.angelegt + z.nachgefuehrt > 0 }
+  const bleibt = next.filter((i) => belegt.has(i.id) || !veraltet(i) || (nurLeere && i.leader))
+  z.entfernt = next.length - bleibt.length
+  bleibt.sort(fsSort)
+  return { insts: bleibt, ...z, geaendert: z.gesetzt + z.angelegt + z.nachgefuehrt + z.entfernt > 0 }
 }
 
 /* ===================== Grundplan-Vorschlag ================================ */
@@ -469,7 +498,7 @@ export async function main(argv = process.argv.slice(2)) {
   const fsStand = new Map(fsRows.map((r) => [r.start, r.updated_at]))
   console.log(`App: ${personen.length} Personen, ${wochen.length} Programmwochen, ${fsRows.length} Treffpunkt-Wochen ab ${ab}.`)
 
-  const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0 }
+  const summe = { gesetzt: 0, angelegt: 0, nachgefuehrt: 0, offen: 0, geschuetzt: 0, mehrdeutig: 0, ohnePid: 0, entfernt: 0 }
   const geschrieben = []
   let ohneWoche = 0
   let zuAlt = 0
@@ -478,7 +507,10 @@ export async function main(argv = process.argv.slice(2)) {
     if (montag < ab) { zuAlt++; continue }
     if (!bekannteWochen.has(montag)) { ohneWoche++; continue }
     const vorher = fsNachStart.get(montag) ?? []
-    const z = verteileFsWoche(vorher, tps, bind, { nurLeere, standardOrt })
+    // Aus den Exporten führt NWS jeden Termin der Woche — was ein früherer
+    // Export-Lauf angelegt hat und jetzt fehlt, ist verlegt oder gestrichen.
+    const veraltet = exporte ? (inst) => ausExportAngelegt(inst, montag) : undefined
+    const z = verteileFsWoche(vorher, tps, bind, { nurLeere, standardOrt, veraltet })
     for (const k of Object.keys(summe)) summe[k] += z[k]
     if (z.geaendert) {
       const verfallen = fsVerwaisteZusagen(vorher, z.insts, montag)
@@ -491,7 +523,8 @@ export async function main(argv = process.argv.slice(2)) {
     `\nLeiter gesetzt: ${summe.gesetzt}` +
     ` · Treffpunkte angelegt: ${summe.angelegt}` +
     ` · nachgeführt: ${summe.nachgefuehrt}` +
-    ` · in NWS offen: ${summe.offen}`,
+    ` · in NWS offen: ${summe.offen}` +
+    (summe.entfernt ? ` · entfernt (NWS führt sie nicht mehr): ${summe.entfernt}` : ''),
   )
   if (summe.geschuetzt) console.log(`--nur-leere hat ${summe.geschuetzt} besetzte Treffpunkte geschützt.`)
   if (summe.mehrdeutig) console.log(`! ${summe.mehrdeutig} Termine passten auf mehrere Gruppentreffpunkte — nicht zugeordnet.`)
@@ -511,7 +544,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (arg.trocken) {
     console.log(`\n--trocken: nichts geschrieben (${geschrieben.length} Wochen wären betroffen).`)
     for (const g of geschrieben.slice(0, 5)) {
-      console.log(`  ${g.montag}: ${g.z.gesetzt} Leiter, ${g.z.angelegt} angelegt, ${g.z.nachgefuehrt} nachgeführt`)
+      console.log(`  ${g.montag}: ${g.z.gesetzt} Leiter, ${g.z.angelegt} angelegt, ${g.z.nachgefuehrt} nachgeführt, ${g.z.entfernt} entfernt`)
     }
     if (verfallen) console.log(`  ${verfallen} Zusagen fielen weg — der Treffpunkt bekäme einen anderen Leiter.`)
     return

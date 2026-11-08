@@ -564,6 +564,12 @@ describe('treffpunkteAusUebersicht — die Treffpunkte aus der Tabelle „Predig
     expect(() => treffpunkte([kopf, abschnitt('Predigtdienst', [['Montag', 'Probetag'], ['·', '·']])])).toThrow('unbekannte Spalte „Probetag"')
     expect(() => treffpunkte([kopf, predigtdienst(['Probe-Ort', '9:30'])])).toThrow('Text vor der ersten Uhrzeit')
     expect(() => treffpunkte([predigtdienst(['9:30'])])).toThrow('vor dem ersten Wochenkopf')
+    // Als Zusatz genommen, ginge hier ein zweiter Termin im ersten auf — und sein
+    // Leiter überschriebe den des ersten.
+    expect(() => treffpunkte([kopf, predigtdienst(['9:30', 'Probe-Ort', 'Leiter: Probe Eins', 'Leiter: Probe Zwei'])])).toThrow('zwei Zeilen „Leiter:"')
+    expect(() => treffpunkte([kopf, predigtdienst(['9:30', 'Probe-Ort', 'Leiter: Probe Eins', '14:30 Uhr', 'Probe-Saal'])])).toThrow(
+      'keine lesbare Uhrzeit',
+    )
   })
 })
 

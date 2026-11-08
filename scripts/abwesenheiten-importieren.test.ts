@@ -323,6 +323,19 @@ describe('Aus dem Export „Person Abwesenheiten" (8.11.2026)', () => {
     ]
     expect(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08').map((r: { id: string }) => r.id)).toEqual(['alte-fassung', 'in-nws-geloescht'])
   })
+
+  it('was jemand in der App eingetragen hat, gehört nicht dazu — erst mit auchEingetragene', () => {
+    // Ein Urlaub, den ein Mitglied selbst gemeldet hat, kennt NWS nicht; gelöscht
+    // teilte die Planung es wieder ein. Der Import trägt nie ein Konto ein.
+    const plan = planeImport(ex.zeitraeume, new Set(), new Set([ANNA_APP, BERND_APP]), ex.personIdOf, '2026-11-08')
+    const app = [
+      { id: 'importiert', person_id: BERND_APP, user_id: null, from_date: '2027-01-04', to_date: '2027-01-08' },
+      { id: 'selbst-gemeldet', person_id: BERND_APP, user_id: 'konto-bernd', from_date: '2027-02-01', to_date: '2027-02-05' },
+    ]
+    const ids = (r: { id: string }[]) => r.map((z) => z.id)
+    expect(ids(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08'))).toEqual(['importiert'])
+    expect(ids(nurInDerApp(app, plan.nws, ex.gelistet, '2026-11-08', { auchEingetragene: true }))).toEqual(['importiert', 'selbst-gemeldet'])
+  })
 })
 
 describe('nameAufloeser', () => {

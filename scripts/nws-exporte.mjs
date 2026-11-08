@@ -540,7 +540,7 @@ export function wochenAusUebersicht(xml, { jahr, monat, person }) {
 const WOCHENTAGE = { Montag: 1, Dienstag: 2, Mittwoch: 3, Donnerstag: 4, Freitag: 5, Samstag: 6, Sonntag: 0 }
 
 /** Ein ISO-Datum, um `tage` verschoben — über UTC-Mittag, damit keine Zeitzone einen Tag verschiebt. */
-function tagNach(iso, tage) {
+export function tagNach(iso, tage) {
   const d = new Date(`${iso}T12:00:00Z`)
   d.setUTCDate(d.getUTCDate() + tage)
   return d.toISOString().slice(0, 10)
@@ -559,7 +559,10 @@ function tagNach(iso, tage) {
  * **Die Uhrzeit steht ohne Vor- oder Nachmittag:** „2:30" ist 14:30. Sie bleibt
  * hier, wie sie dasteht (`zeitRoh`); welche es ist, entscheidet
  * `uhrzeitAufloesen`. Was sich nicht einordnen lässt, bricht ab, statt still
- * einen Termin zu verlieren.
+ * einen Termin zu verlieren — auch eine Zeile, die wie eine Uhrzeit beginnt,
+ * aber keine lesbare ist, und eine zweite „Leiter:"-Zeile: Als Zusatz
+ * genommen, ginge ein zweiter Termin der Zelle im ersten auf, und sein Leiter
+ * überschriebe den des ersten.
  */
 export function treffpunkteAusUebersicht(xml, { jahr, monat }) {
   const out = []
@@ -577,15 +580,24 @@ export function treffpunkteAusUebersicht(xml, { jahr, monat }) {
       z.forEach((inhalt, i) => {
         if (leer(inhalt)) return
         const wd = WOCHENTAGE[tage[i]]
+        if (wd === undefined) throw new Error(`Predigtdienst ${montag}: eine Zelle mehr als Spalten.`)
         let termin = null
+        let mitLeiter = false
         for (const absatz of inhalt.absaetze) {
           const zeit = /^(\d{1,2}:\d{2})(?:\s*\(([^)]*)\))?$/.exec(absatz)
+          const wo = `Predigtdienst ${montag}, ${tage[i]}`
           if (zeit) {
             termin = { montag, datum: tagNach(montag, (wd + 6) % 7), wd, zeitRoh: zeit[1], etikett: (zeit[2] ?? '').trim(), ort: '', leiter: null }
+            mitLeiter = false
             out.push(termin)
-          } else if (!termin) throw new Error(`Predigtdienst ${montag}, ${tage[i]}: Text vor der ersten Uhrzeit.`)
-          else if (absatz.startsWith('Leiter:')) termin.leiter = namensForm(absatz.slice('Leiter:'.length)) || null
-          else if (!termin.ort) termin.ort = absatz
+          } else if (!termin) throw new Error(`${wo}: Text vor der ersten Uhrzeit.`)
+          else if (absatz.startsWith('Leiter:')) {
+            if (mitLeiter) throw new Error(`${wo}: zwei Zeilen „Leiter:" im Termin um ${termin.zeitRoh}.`)
+            mitLeiter = true
+            termin.leiter = namensForm(absatz.slice('Leiter:'.length)) || null
+          } else if (/^\d{1,2}\s*[:.]\s*\d{2}/.test(absatz)) {
+            throw new Error(`${wo}: „${absatz}" ist keine lesbare Uhrzeit — als Zusatz ginge ein zweiter Termin im ersten auf.`)
+          } else if (!termin.ort) termin.ort = absatz
           // Jede weitere Zeile ist ein Zusatz wie der in Klammern hinter der Uhrzeit.
           else termin.etikett = [termin.etikett, absatz].filter(Boolean).join(' · ')
         }

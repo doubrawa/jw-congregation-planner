@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ausExportAngelegt,
   grundplanVorschlag,
   istVersammlungstreffpunkt,
   manuelleKennung,
@@ -177,6 +178,29 @@ describe('treffpunkteAusExporten — die Termine aus der Wochenübersicht', () =
     const zweit = verteileFsWoche(erst.insts, treffpunkte, bind)
     expect(zweit.geaendert).toBe(false)
     expect(zweit.insts).toEqual(erst.insts)
+  })
+
+  it('verlegt NWS einen Termin, geht der alte, den ein früherer Lauf angelegt hat — einer aus der App bleibt', () => {
+    // Aus den Exporten ist die Kennung Tag und Uhrzeit: Der verlegte Termin ist
+    // ein neuer, und ohne `veraltet` stünde der alte samt Leiter daneben.
+    const lauf = (zeit: string) =>
+      treffpunkteAusExporten([datei('Probe August 2026 Wochenübersicht.docx', [['August 24-30', ['·', [zeit, 'Probe-Ort', 'Leiter: Probe Eins']]]])], GRUNDPLAN)
+        .treffpunkte
+    const bind = (text: string | null) => ({ name: text ?? '' })
+    const veraltet = (inst: FsInstance) => ausExportAngelegt(inst, '2026-08-24')
+    const ausDerApp: FsInstance = { id: 'x-aus-der-app', ruleId: null, grp: null, wd: 2, time: '18:00', place: 'Probe-Saal', leader: 'Probe Zwei', manual: true }
+    const erst = verteileFsWoche([ausDerApp], lauf('9:30'), bind, { veraltet })
+    expect(erst.insts.filter(veraltet)).toHaveLength(1)
+    expect(veraltet(ausDerApp)).toBe(false)
+
+    const zweit = verteileFsWoche(erst.insts, lauf('10:00'), bind, { veraltet })
+    expect(zweit.insts.map((i: FsInstance) => `${i.time} ${i.leader}`)).toEqual(['10:00 Probe Eins', '18:00 Probe Zwei'])
+    expect(zweit.entfernt).toBe(1)
+    expect(zweit.geaendert).toBe(true)
+    // Gegenprobe: Ohne `veraltet` (die entschlüsselten Tabellen) bliebe er stehen —
+    // und mit --nur-leere bleibt einer mit Leiter.
+    expect(verteileFsWoche(erst.insts, lauf('10:00'), bind).insts).toHaveLength(3)
+    expect(verteileFsWoche(erst.insts, lauf('10:00'), bind, { veraltet, nurLeere: true }).entfernt).toBe(0)
   })
 })
 

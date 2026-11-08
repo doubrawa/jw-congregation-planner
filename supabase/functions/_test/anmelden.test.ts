@@ -173,7 +173,10 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
       return jsonRes(einmalLaeuftGleichAb ? gelesen.map((z) => ({ ...z, gueltig_bis: zukunft() })) : gelesen)
     }
     if (method === 'DELETE') {
-      if (einloesenSchranke) await einloesenSchranke.offen
+      // Kommen keine zwei Lesezugriffe, geht es nach einer Sekunde weiter: Dann
+      // scheitert der Test an der Zählung der Lesezugriffe, statt bis zum
+      // Timeout zu hängen, ohne zu sagen, was fehlt.
+      if (einloesenSchranke) await Promise.race([einloesenSchranke.offen, new Promise((weiter) => setTimeout(weiter, 1000))])
       if (einloesenKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
       const weg = einmal.filter(trifft)
       einmal = einmal.filter((z) => !trifft(z))

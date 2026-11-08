@@ -1,10 +1,12 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import type { PGlite } from '@electric-sql/pglite'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { leerePostgres } from './pglite-postgres.mjs'
+import { fahre } from './schema-attrappe'
 import { AUSGENOMMEN, REPO, schemaFingerabdruck, tabellenAusSchema } from './sicherung.mjs'
-import { BLEIBEN, gleich, zuruecksetzbare, zuruecksetzen } from './versammlung-auf-sicherung.mjs'
+import { BLEIBEN, gleich, main, namensSchluessel, zuruecksetzbare, zuruecksetzen } from './versammlung-auf-sicherung.mjs'
 import { fremdschluessel } from './zurueckspielen.mjs'
 
 /**
@@ -42,8 +44,8 @@ const ZURUECK = new Set(zuruecksetzbare(TABELLEN).map((t: Tabelle) => t.name))
 
 const k = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const [C, CB, H1, G1, G2] = [k(1), k(2), k(11), k(31), k(32)]
-const [P1, P2, P3, P4, P5, P6, P7, PB] = [k(21), k(22), k(23), k(24), k(25), k(26), k(27), k(28)]
-const [U1, U2, U3, U4] = [k(41), k(42), k(43), k(44)]
+const [P1, P2, P3, P4, P5, P6, P7, PB, P8] = [k(21), k(22), k(23), k(24), k(25), k(26), k(27), k(28), k(29)]
+const [U1, U2, U3, U4, U5] = [k(41), k(42), k(43), k(44), k(45)]
 const [W1, W2, WB, WB2, FW1] = [k(51), k(52), k(53), k(54), k(55)]
 const [A1, A2, A3] = [k(61), k(62), k(63)]
 const [N1, N2, N3, N5] = [k(71), k(72), k(73), k(75)]
@@ -52,7 +54,7 @@ const [PS2, PS4, T1] = [k(91), k(94), k(111)]
 
 /** Der Stand, den der Betreiber sichert. */
 const AUFBAU = `
-insert into auth.users (id, email) values ('${U1}', 'u1@konten.invalid'), ('${U2}', 'u2@konten.invalid'), ('${U3}', 'u3@konten.invalid');
+insert into auth.users (id, email) values ('${U1}', 'u1@konten.invalid'), ('${U2}', 'u2@konten.invalid'), ('${U3}', 'u3@konten.invalid'), ('${U5}', 'u5@konten.invalid');
 insert into public.congregations (id, name) values ('${C}', 'Probe'), ('${CB}', 'Probe Zwei');
 insert into public.households (id, congregation_id) values ('${H1}', '${C}');
 insert into public.persons (id, congregation_id, fn, ln, fam, priv) values
@@ -60,12 +62,13 @@ insert into public.persons (id, congregation_id, fn, ln, fam, priv) values
   ('${P2}', '${C}', 'Probe', 'Zwei', null, '{"zeugnis": true}'),
   ('${P3}', '${C}', 'Probe', 'Drei', null, '{}'),
   ('${P4}', '${C}', 'Probe', 'Vier', null, '{}'),
+  ('${P8}', '${C}', 'Probe', 'Acht', null, '{}'),
   ('${PB}', '${CB}', 'Probe', 'Fremd', null, '{}');
 insert into public.groups (id, congregation_id, name, overseer_id, position) values ('${G1}', '${C}', 'Gruppe 1', '${P1}', 0);
 update public.persons set grp = '${G1}' where id in ('${P2}', '${P4}');
 insert into public.services (congregation_id, key, name) values ('${C}', 'mik', 'Mikrofone');
 insert into public.members (user_id, congregation_id, person_id, admin) values
-  ('${U1}', '${C}', '${P1}', true), ('${U2}', '${C}', '${P2}', false), ('${U3}', '${C}', '${P3}', false);
+  ('${U1}', '${C}', '${P1}', true), ('${U2}', '${C}', '${P2}', false), ('${U3}', '${C}', '${P3}', false), ('${U5}', '${C}', '${P8}', false);
 insert into public.weeks (id, congregation_id, start, data) values
   ('${W1}', '${C}', '2099-01-05', '{"v": 1, "mid": {"teile": []}}'), ('${WB}', '${CB}', '2099-01-05', '{"v": 1}');
 insert into public.absences (id, congregation_id, user_id, person_id, from_date, to_date, reason) values
@@ -106,6 +109,8 @@ update public.persons set grp = '${G2}' where id = '${P2}';
 update public.groups set overseer_id = '${P6}' where id = '${G1}';
 update public.fs_rules set grp = '${G2}' where id = 'r1';
 delete from public.persons where id = '${P4}';
+-- Eine Person mit Konto geht: Das Konto bleibt, ohne Person (set null) — kommt die Person zurück, soll es sie wiederhaben.
+delete from public.persons where id = '${P8}';
 -- Ohne Trolley-Recht kein Termin: Wer ihn zurückbringt, muss vorher das Recht zurückbringen.
 delete from public.trolley_termine where id = 'tt1';
 update public.persons set priv = '{}' where id = '${P2}';
@@ -210,9 +215,10 @@ describe('versammlung-auf-sicherung — eine Beta in der echten Versammlung, dan
   it('trocken: zählt, was geschähe — und schreibt nichts', async () => {
     const erg = await lauf(true)
     expect(await alles(db)).toEqual(vorher)
-    // P6 geht; P5 (Konto) und P7 (Anmelde-Link) bleiben; P4 kommt wieder.
-    expect(erg.bericht.get('persons')).toMatchObject({ geloescht: 1, bleibt: 2, eingefuegt: 1 })
+    // P6 geht; P5 (Konto) und P7 (Anmelde-Link) bleiben; P4 und P8 kommen wieder.
+    expect(erg.bericht.get('persons')).toMatchObject({ geloescht: 1, bleibt: 2, eingefuegt: 2 })
     expect(erg.bericht.get('notifications')).toMatchObject({ ohneKonto: 1 })
+    expect(erg.verknuepft).toBe(1)
     expect(erg.abweichungen).toEqual([])
   })
 
@@ -230,15 +236,19 @@ describe('versammlung-auf-sicherung — eine Beta in der echten Versammlung, dan
     soll.persons = [...soll.persons!, ...geschuetzt].sort(nachId)
     expect(versammlung(nachher, C, (n) => ZURUECK.has(n))).toEqual(soll)
 
-    // Was bleibt, bleibt: Konten, Mitgliedschaften (auch das geänderte Recht), Links, Push, Fehlermeldungen.
+    // Was bleibt, bleibt: Konten, Mitgliedschaften (auch das geänderte Recht), Links, Push, Fehlermeldungen —
+    // bis auf die verlorene Verknüpfung: Das Konto U5 hat seine Person P8 wieder.
     const bleibt = (n: string): boolean => n in BLEIBEN
-    expect(versammlung(nachher, C, bleibt)).toEqual(versammlung(vorher, C, bleibt))
+    const bleibtSoll = versammlung(vorher, C, bleibt)
+    bleibtSoll.members = bleibtSoll.members!.map((z) => (z.user_id === U5 ? { ...z, person_id: P8 } : z)).sort(nachId)
+    expect(versammlung(nachher, C, bleibt)).toEqual(bleibtSoll)
     expect(nachher['auth.users']).toEqual(vorher['auth.users'])
     // Die andere Versammlung ist unberührt — auch ihre Woche aus der Beta.
     expect(versammlung(nachher, CB, () => true)).toEqual(versammlung(vorher, CB, () => true))
 
     expect(erg.abweichungen).toEqual([])
-    expect(erg.mitglieder).toEqual({ gleich: 1, dazu: 1, anders: 1, fort: 1 })
+    expect(erg.verknuepft).toBe(1)
+    expect(erg.mitglieder).toEqual({ gleich: 2, dazu: 1, anders: 1, fort: 1 })
     // Die Treffpunkt-Regel ging mit der neuen Gruppe (cascade) und kam aus der Sicherung wieder.
     expect(nachher.fs_rules!.filter(zurVersammlung('fs_rules', C))).toEqual([expect.objectContaining({ id: 'r1', grp: G1 })])
     // Personen ohne Gruppe kamen zurück in ihre (der Ring persons.grp ↔ groups).
@@ -251,8 +261,62 @@ describe('versammlung-auf-sicherung — eine Beta in der echten Versammlung, dan
     for (const [name, b] of erg.bericht) {
       expect({ name, ...b }).toMatchObject({ name, geloescht: 0, eingefuegt: 0, geaendert: 0, nachgetragen: 0 })
     }
+    expect(erg.verknuepft).toBe(0)
     expect(erg.abweichungen).toEqual([])
     expect(versammlung(await alles(db), C, () => true)).toEqual(versammlung(vorZweitem, C, () => true))
+  })
+})
+
+describe('versammlung-auf-sicherung — eine Person, die bleibt, trägt den Namen einer aus der Sicherung', () => {
+  it('hält vor dem ersten Schreiben an und nennt die Person — trocken wie wirklich', async () => {
+    const db = await leerePostgres([SCHEMA])
+    await db.exec(`
+insert into public.congregations (id, name) values ('${C}', 'Probe');
+insert into public.persons (id, congregation_id, fn, ln) values ('${P1}', '${C}', 'Probe', 'Konflikt');`)
+    const sicherung = await sichern(db)
+    // Beta: die Person gelöscht und gleichnamig neu angelegt (anders geschrieben, für den
+    // Index derselbe Name), mit Anmelde-Link — sie bleibt; dazu eine Woche, die gehen müsste.
+    await db.exec(`
+delete from public.persons where id = '${P1}';
+insert into public.persons (id, congregation_id, fn, ln) values ('${P2}', '${C}', 'probe ', ' KONFLIKT');
+insert into public.anmelde_links (person_id, congregation_id, token_hash, code_hash, gueltig_bis) values ('${P2}', '${C}', 'h', 'c', '2100-01-01');
+insert into public.weeks (id, congregation_id, start, data) values ('${W2}', '${C}', '2099-01-12', '{}');`)
+    const vorher = await alles(db)
+    for (const trocken of [true, false]) {
+      await expect(zuruecksetzen({ zugriff: pgliteZugriff(db), schema: SCHEMA, sicherung, cong: C, trocken })).rejects.toThrow(P2)
+    }
+    expect(await alles(db)).toEqual(vorher)
+  })
+
+  it('vergleicht Namen wie persons_name_eindeutig: Leerraum zusammengezogen, Groß und klein gleich', () => {
+    expect(namensSchluessel({ fn: ' Probe ', ln: 'ACHT  Neun' })).toBe('probe acht neun')
+    expect(namensSchluessel({ fn: '', ln: '' })).toBe('')
+  })
+})
+
+describe('versammlung-auf-sicherung — ohne --wirklich wird nur gerechnet', () => {
+  it('schreibt nichts, nennt die Versammlung beim Namen und sagt, wie geschrieben wird', async () => {
+    const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'auf-sicherung-'))
+    const datei = path.join(ordner, 'sicherung.json')
+    const tabellen: Record<string, Zeile[]> = Object.fromEntries(GESICHERT.map((t) => [t.name, []]))
+    tabellen.congregations = [{ id: C, name: 'Probe' }]
+    tabellen.persons = [{ id: P1, congregation_id: C, fn: 'Probe', ln: 'Eins' }]
+    fs.writeFileSync(datei, JSON.stringify({ erstellt: '2026-11-08T20:00:00.000Z', projekt: 'probe', konten: [], tabellen }))
+    const bestand = {
+      congregations: [{ id: C, name: 'Probe neu' }],
+      persons: [{ id: P2, congregation_id: C, fn: 'Probe', ln: 'Zwei' }],
+    }
+    try {
+      const ohne = await fahre(() => main([datei, '--cong', C]), { bestand })
+      expect(ohne.aufrufe.filter((a) => a.method !== 'GET')).toEqual([])
+      expect(ohne.ausgabe.join('\n')).toContain('„Probe neu"')
+      expect(ohne.ausgabe.join('\n')).toContain('mit --wirklich')
+      // Gegenprobe: mit --wirklich wird geschrieben.
+      const mit = await fahre(() => main([datei, '--cong', C, '--wirklich']), { bestand })
+      expect(mit.aufrufe.map((a) => a.method)).toEqual(expect.arrayContaining(['DELETE', 'POST', 'PATCH']))
+    } finally {
+      fs.rmSync(ordner, { recursive: true, force: true })
+    }
   })
 })
 
