@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { quelldateien, WURZEL } from './quelldateien'
+import { kommentarZeile, quelldateien, WURZEL } from './quelldateien'
 
 /**
  * **Kein Rechte-Entscheid an `rechteVon` vorbei** (T124).
@@ -47,7 +47,7 @@ const ERLAUBT = new Set([
 const LESEN = [/\.zuteiler\b/, /(?<!\brechte|\brechteVon\([^()]*\))\.admin\b/, /\{[^}]*\b(admin|zuteiler)\b[^}]*\}\s*=\s*(?!rechte)\w/]
 
 /** Kommentarzeilen zählen nicht — dort darf vom Recht die Rede sein. */
-const kommentar = (zeile: string): boolean => /^\s*(\*|\/\/|\/\*)/.test(zeile)
+const liest = (zeile: string): boolean => !kommentarZeile(zeile) && LESEN.some((m) => m.test(zeile))
 
 describe('Rechte-Entscheide fragen rechteVon', () => {
   it('niemand liest admin oder zuteiler selbst — außer den erlaubten Stellen', () => {
@@ -58,14 +58,13 @@ describe('Rechte-Entscheide fragen rechteVon', () => {
       readFileSync(join(WURZEL, datei), 'utf8')
         .split('\n')
         .forEach((zeile, i) => {
-          if (!kommentar(zeile) && LESEN.some((m) => m.test(zeile))) funde.push(`${datei}:${i + 1}: ${zeile.trim()}`)
+          if (liest(zeile)) funde.push(`${datei}:${i + 1}: ${zeile.trim()}`)
         })
     }
     expect(funde).toEqual([])
   })
 
   it('sie trennt das echte Recht vom abgeleiteten, das ebenfalls admin heißt', () => {
-    const liest = (zeile: string) => LESEN.some((m) => m.test(zeile))
     const echt = [
       'if (!state.admin) return state',
       'const { admin } = state',
@@ -90,7 +89,7 @@ describe('Rechte-Entscheide fragen rechteVon', () => {
     const gelesen = [...ERLAUBT].filter((datei) =>
       readFileSync(join(WURZEL, datei), 'utf8')
         .split('\n')
-        .some((zeile) => !kommentar(zeile) && LESEN.some((m) => m.test(zeile))),
+        .some(liest),
     )
     expect(gelesen).toEqual([...ERLAUBT])
   })

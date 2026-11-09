@@ -36,3 +36,6 @@ export function quelldateien({ orte, endungen, ohneTests = false }: Auswahl): st
   for (const ort of orte) gehe(ort)
   return out
 }
+
+/** Eine Kommentarzeile (`//`, `/*`, ` *`) — dort darf eine Probe ihr Muster nennen, ohne anzuschlagen. */
+export const kommentarZeile = (zeile: string): boolean => /^\s*(\*|\/\/|\/\*)/.test(zeile)

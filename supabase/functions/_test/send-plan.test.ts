@@ -166,6 +166,9 @@ let erinnert: { user_id: string; kind: string; sent_on: string }[]
 let fsRegeln: { id: string; grp: string | null }[]
 /** Tabellen, deren Lesen scheitert (PostgREST antwortet 500) — Schema fehlt, kurzer Ausfall. */
 let kaputt: ReadonlySet<string>
+/** Die Dienste der Versammlung (`services`) und die Push-Abos — ein Fall stellt sie um. */
+let dienste: typeof SERVICES
+let abos: typeof SUBS
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -221,8 +224,8 @@ const fakeFetch = async (
     return jsonRes(fremd ? [] : MEMBERS)
   }
   if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
-  if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
-  if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
+  if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : abos)
+  if (path.startsWith('services')) return jsonRes(fremd ? [] : dienste)
   if (path.startsWith('groups')) return jsonRes(fremd ? [] : GROUPS)
   if (path.startsWith('congregations')) return jsonRes(fremd ? [] : CONGREGATIONS)
   /*
@@ -306,6 +309,8 @@ beforeEach(() => {
   erinnert = []
   fsRegeln = []
   kaputt = new Set()
+  dienste = SERVICES
+  abos = SUBS
   resetPush()
 })
 
@@ -375,6 +380,46 @@ describe('Plan senden: jede eingeteilte Person erfährt von ihrer Aufgabe', () =
   it('und ein Push geht an die Geräte des Empfängers', async () => {
     await plan()
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
+  })
+})
+
+/*
+ * **Zwei Hilfsdienste am selben Abend stehen alphabetisch** — in der Sprache,
+ * in der die Nachricht hinausgeht, wie jede Liste der App. Angelegt sind sie
+ * umgekehrt („Ton / Video" vor „Mikrofone"), die Schlüssel ebenso: Weder die
+ * Folge des Anlegens noch die der Schlüssel ergäbe die richtige.
+ */
+describe('Mehrere Hilfsdienste eines Abends stehen alphabetisch', () => {
+  beforeEach(() => {
+    dienste = [
+      { key: 'a', name: 'Ton / Video', count: 1, groups: false },
+      { key: 'b', name: 'Mikrofone', count: 1, groups: false },
+    ]
+    const w = frischeWoche() as { mid: { helpers: Record<string, unknown> } }
+    w.mid.helpers = { a: [{ name: 'Anna Berg', pid: 'p-anna' }], b: [{ name: 'Anna Berg', pid: 'p-anna' }] }
+    woche = w
+    // Anna hat zwei Geräte: eines deutsch, eines englisch.
+    abos = [...SUBS, { id: 's4', user_id: U_ANNA, endpoint: 'https://push.test/anna-en', p256dh: 'k', auth: 'a', lang: 'en' }]
+  })
+
+  /** Steht jedes Wort im Text, und in dieser Reihenfolge? */
+  const inFolge = (text: string, ...woerter: string[]): boolean => {
+    const stellen = woerter.map((w) => text.indexOf(w))
+    return stellen.every((s, i) => s >= 0 && (i === 0 || s > stellen[i - 1]!))
+  }
+  const pushAn = (endpunkt: string) =>
+    (JSON.parse(sentPush.find((p) => p.endpoint === endpunkt)!.payload) as { body: string }).body
+
+  it('in der Glocke und im deutschen Push: Mikrofone vor Ton / Video, das Programm davor', async () => {
+    await plan()
+    const glocke = String(zeilenIn('notifications').find((z) => z.user_id === U_ANNA)!.body)
+    expect(inFolge(glocke, 'Bibellesung', 'Mikrofone', 'Ton / Video')).toBe(true)
+    expect(inFolge(pushAn('https://push.test/anna'), 'Bibellesung', 'Mikrofone', 'Ton / Video')).toBe(true)
+  })
+
+  it('im englischen Push nach dem englischen Namen: Audio / video vor Microphones', async () => {
+    await plan()
+    expect(inFolge(pushAn('https://push.test/anna-en'), 'Audio / video', 'Microphones')).toBe(true)
   })
 })
 

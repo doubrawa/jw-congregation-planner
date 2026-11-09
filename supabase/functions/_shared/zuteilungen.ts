@@ -25,6 +25,7 @@ import {
   type Abweichungen,
 } from './planung.ts'
 import { makeTr } from './i18n/translate.ts'
+import { LOCALE_JE_CODE } from './i18n/locales.ts'
 import { fsKey, helferKey, punktKey, ratgeberKey } from './aufgaben-schluessel.ts'
 
 /* ---- Datenmodell (Teilmengen der Client-Typen aus src/data/types.ts) ---- */
@@ -207,6 +208,8 @@ export interface Pending {
    * welcher Platz schon gemeldet wurde.
    */
   key: string
+  /** Ein Hilfsdienst-Platz — `label` ist dann der Name des Dienstes (`inDienstFolge`). */
+  dienst?: true
 }
 
 /**
@@ -326,7 +329,7 @@ export function pendingOfMeeting(
       if (!name) continue // unbesetzter Platz
       const key = helferKey(woche, tab, svc.key, pos)
       if (conf.has(key)) continue
-      out.push({ name, pid: helperPid(arr[pos]), label: svc.name, key })
+      out.push({ name, pid: helperPid(arr[pos]), label: svc.name, key, dienst: true })
     }
   }
   return out
@@ -371,7 +374,7 @@ export function offeneDerWoche(
     // fest, nennt die Nachricht von vornherein den richtigen Tag.
     const datum = terminText(weekStart, offset, meeting.date, zeit)
     for (const pend of pendingOfMeeting(weekStart, tab, meeting, services, conf)) {
-      offen.push({ ...pend, eintrag: { datum, label: pend.label } })
+      offen.push({ ...pend, eintrag: eintragVon(pend, datum) })
     }
   }
   for (const pend of pendingOfFsWeek(weekStart, fsInsts, conf)) {
@@ -401,10 +404,75 @@ export function offeneDerWoche(
 export interface Eintrag {
   datum: string
   label: string
+  /** Ein Hilfsdienst: Mehrere desselben Termins stehen alphabetisch (`inDienstFolge`). */
+  dienst?: true
+}
+
+/** Die Zeile eines Platzes zu seinem Termin. */
+export function eintragVon(pend: Pending, datum: string): Eintrag {
+  return { datum, label: pend.label, dienst: pend.dienst }
 }
 
 /** Kanonisch deutsch — so steht die Zeile in der Glocke. */
 export const kanonisch = (e: Eintrag): string => `${e.datum}: ${e.label}`
+
+/**
+ * **Wie zwei Dienstnamen zueinander stehen** — die Regel jeder Liste der
+ * Dienste, in der App (`diensteAlphabetisch`) wie in den Nachrichten
+ * (`inDienstFolge`): alphabetisch nach den Regeln der Sprache, Zahlen nach
+ * ihrem Wert („Ordner 2" vor „Ordner 10"). Beide Namen schon übersetzt.
+ */
+export function dienstNamenFolge(a: string, b: string, locale: string | undefined): number {
+  return a.localeCompare(b, locale, { numeric: true })
+}
+
+/**
+ * **Mehrere Hilfsdienste desselben Termins alphabetisch** — nach dem Namen in
+ * der Sprache, in der die Nachricht hinausgeht (`tr`), wie jede Liste der App
+ * (`useDienste` im Client). Sortiert wird erst hier, beim Text: Dieselbe
+ * Nachricht geht je Abo in einer anderen Sprache hinaus, und „Ton / Video" vor
+ * „Mikrofone" stimmt auf Englisch („Audio / video", „Microphones"), auf
+ * Deutsch nicht.
+ *
+ * Alles andere bleibt, wo es steht: die Termine in ihrer Folge, das Programm
+ * vor den Diensten. Umgestellt werden nur Läufe aufeinanderfolgender Dienste
+ * mit demselben Termin — so kommen sie aus `pendingOfMeeting`.
+ */
+export function inDienstFolge<T>(
+  liste: readonly T[],
+  eintrag: (t: T) => Eintrag,
+  tr: (s: string) => string,
+  lang: string,
+): T[] {
+  const locale = LOCALE_JE_CODE[lang] ?? LOCALE_JE_CODE.de
+  const name = (t: T): string => tr(eintrag(t).label)
+  const nachName = (a: T, b: T): number => dienstNamenFolge(name(a), name(b), locale)
+  /** Gehört `t` zum Lauf, den `erster` beginnt — ein Dienst desselben Termins? */
+  const imLauf = (t: T, erster: Eintrag): boolean => {
+    const e = eintrag(t)
+    return Boolean(e.dienst) && e.datum === erster.datum
+  }
+  const out = [...liste]
+  for (let von = 0; von < out.length; ) {
+    const erster = eintrag(out[von]!)
+    let bis = von + 1
+    if (erster.dienst) while (bis < out.length && imLauf(out[bis]!, erster)) bis++
+    out.splice(von, bis - von, ...out.slice(von, bis).sort(nachName))
+    von = bis
+  }
+  return out
+}
+
+/**
+ * **Der Rumpf einer Nachricht an eine Person** — ihre Zeilen in der Sprache von
+ * `tr`, die Dienste eines Termins alphabetisch. Ohne `tr` kanonisch deutsch, so
+ * steht er in der Glocke.
+ */
+export function rumpfVon(eintraege: readonly Eintrag[], tr: (s: string) => string = (s) => s, lang = 'de'): string {
+  return inDienstFolge(eintraege, (e) => e, tr, lang)
+    .map((e) => uebersetzt(e, tr))
+    .join(' · ')
+}
 
 /**
  * Dieselbe Zeile in der Sprache eines Push-Abos.

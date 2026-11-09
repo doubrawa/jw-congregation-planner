@@ -66,12 +66,15 @@ import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import { dueKind, type Rhythmus } from '../_shared/erinnerung.ts'
 import {
   type Eintrag,
+  eintragVon,
   type FsInstance,
+  inDienstFolge,
   kanonisch,
   nachSprache,
   pendingOfFsWeek,
   pendingOfMeeting,
   type Pending,
+  rumpfVon,
   type ServiceRow,
   type SubscriptionRow,
   tagebuchSchluessel,
@@ -487,8 +490,7 @@ Deno.serve(async (req: Request) => {
           if (!kind) continue
           for (const pend of pendingOfMeeting(start, tab, meeting, services, conf)) {
             vormerken(pend, kind, days, {
-              datum: terminText(start, offset, meeting.date, zeit),
-              label: pend.label,
+              ...eintragVon(pend, terminText(start, offset, meeting.date, zeit)),
               key: pend.key,
             })
           }
@@ -525,7 +527,7 @@ Deno.serve(async (req: Request) => {
           const push: Push = {
             userId,
             title: pushTexte(lang).erinnerung,
-            body: entries.map((e) => uebersetzt(e, tr)).join(' · '),
+            body: rumpfVon(entries, tr, lang),
             url: `${APP_URL}#go=aufgaben`,
           }
           preview.push(push)
@@ -542,7 +544,7 @@ Deno.serve(async (req: Request) => {
             user_id: userId,
             type: 'erinnerung',
             title: TITEL_ERINNERUNG,
-            body: mainEntries.map(kanonisch).join(' · '),
+            body: rumpfVon(mainEntries),
             // Nur bei **einer** offenen Aufgabe: dann trägt die Glocke den
             // Bestätigen-Knopf, und die Erinnerung lässt sich an Ort und Stelle
             // erledigen. Bei mehreren zeigte ein einzelner Knopf auf eine
@@ -610,14 +612,20 @@ Deno.serve(async (req: Request) => {
         // Anzeigen jedes Atom, und ein Bruder namens „Markus 2" stünde dort
         // sonst als „Mark 2" (`_shared/i18n/freitext.ts`). Für den Push gilt
         // dasselbe eine Zeile tiefer, wo der Kommentar es seit je fordert.
-        const rumpfDeutsch = unreachable.map((u) => `${alsFreitext(u.name)} — ${kanonisch(u.eintrag)}`).join(' · ')
+        // Dienste desselben Termins alphabetisch, wie in jeder Nachricht (`inDienstFolge`).
+        const nachDienst = (tr: (s: string) => string, lang: string) => inDienstFolge(unreachable, (u) => u.eintrag, tr, lang)
+        const rumpfDeutsch = nachDienst((s) => s, 'de')
+          .map((u) => `${alsFreitext(u.name)} — ${kanonisch(u.eintrag)}`)
+          .join(' · ')
         const rumpfJeSprache = new Map<string, string>()
         const rumpfFuer = (lang: string): string => {
           const fertig = rumpfJeSprache.get(lang)
           if (fertig !== undefined) return fertig
           const tr = uebersetzer(lang)
           // Der Name bleibt, was er ist — Eigennamen werden nicht übersetzt.
-          const gebaut = unreachable.map((u) => `${alsFreitext(u.name)} — ${uebersetzt(u.eintrag, tr)}`).join(' · ')
+          const gebaut = nachDienst(tr, lang)
+            .map((u) => `${alsFreitext(u.name)} — ${uebersetzt(u.eintrag, tr)}`)
+            .join(' · ')
           rumpfJeSprache.set(lang, gebaut)
           return gebaut
         }

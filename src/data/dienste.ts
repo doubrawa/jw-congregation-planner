@@ -26,6 +26,7 @@
 
 import { MEETING_TABS } from './helpers'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { dienstNamenFolge } from '../../supabase/functions/_shared/zuteilungen.ts'
 import type { ConfirmationMap, Person, Service, Week } from './types'
 
 /** Den Aufgabenbereich eines gelöschten Dienstes aus allen Personen nehmen. */
@@ -135,10 +136,9 @@ export function gruppeInWochenUmbenennen(
 
 /**
  * **Die Dienste in der Folge, in der jede Liste sie zeigt: alphabetisch** nach
- * dem Namen, wie der Leser ihn liest (`tu`). Dieselbe Regel wie bei den
- * Bereichen der Person (`bereichsGruppen`): `numeric` hält „Ordner 2" vor
- * „Ordner 10"; bei gleichem Namen entscheidet der Schlüssel, damit die Folge
- * nicht vom Laden abhängt.
+ * dem Namen, wie der Leser ihn liest (`tu`) — dieselbe Regel wie in den
+ * Nachrichten der Functions (`dienstNamenFolge`). Bei gleichem Namen
+ * entscheidet der Schlüssel, damit die Folge nicht vom Laden abhängt.
  *
  * Gespeichert bleibt die Folge des Anlegens (`services.position`); verschieben
  * lässt sich ein Dienst nicht.
@@ -150,6 +150,6 @@ export function diensteAlphabetisch(
 ): Service[] {
   return services
     .map((service) => ({ service, name: tu(service.name) }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale, { numeric: true }) || a.service.key.localeCompare(b.service.key))
+    .sort((a, b) => dienstNamenFolge(a.name, b.name, locale) || a.service.key.localeCompare(b.service.key))
     .map(({ service }) => service)
 }

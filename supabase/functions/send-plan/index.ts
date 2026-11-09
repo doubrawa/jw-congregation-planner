@@ -73,15 +73,14 @@ import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import {
   type Eintrag,
   type FsInstance,
-  kanonisch,
   nachSprache,
   offeneDerWoche,
   type Pending,
+  rumpfVon,
   type ServiceRow,
   type SubscriptionRow,
   tagebuchSchluessel,
   uebersetzerFuer,
-  uebersetzt,
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { bibelbuecherLaden } from '../_shared/i18n/translate.ts'
@@ -202,7 +201,7 @@ async function verschicken(
     // Eine Erinnerung steht in der Glocke wie die des täglichen Laufs.
     type: n.art === 'erinnerung' ? 'erinnerung' : 'zuteilung',
     title: titelVon(n.art, 'de'),
-    body: n.eintraege.map(kanonisch).join(' · '),
+    body: rumpfVon(n.eintraege),
     ...(n.taskKey ? { task_key: n.taskKey } : {}),
   }))
   await rest.insert('notifications', notifRows)
@@ -218,7 +217,7 @@ async function verschicken(
       if (subs.length === 0) continue
       const tr = uebersetzer(lang)
       const titel = titelVon(n.art, lang)
-      const body = n.eintraege.map((e) => uebersetzt(e, tr)).join(' · ')
+      const body = rumpfVon(n.eintraege, tr, lang)
       for (const abo of subs) zustellungen.push({ abo, titel, body, url: ZIEL })
     }
   }

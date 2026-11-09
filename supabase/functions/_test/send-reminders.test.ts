@@ -180,6 +180,8 @@ let confirmations: { task_key: string; status: string }[]
 /** Heutige Versand-Sperre (`reminder_log`); ohne Angabe gehört ein Eintrag zu `CONG`. */
 let reminderLog: { user_id: string; kind: string; congregation_id?: string }[]
 let subs: typeof SUBS
+/** Die Dienste der Versammlung (`services`) — je Test überschreibbar. */
+let dienste: typeof SERVICES
 /** Personen der Versammlung — je Test überschreibbar (Namensvetter). */
 let persons: typeof PERSONS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
@@ -207,7 +209,7 @@ function alleBesetzten(): { task_key: string; name: string }[] {
   const versammlung = weeks.flatMap((w) =>
     (['mid', 'we'] as const).flatMap((tab) => {
       const m = (w.data as Week)[tab]
-      return m ? pendingOfMeeting(w.start, tab, m, SERVICES, leer) : []
+      return m ? pendingOfMeeting(w.start, tab, m, dienste, leer) : []
     }),
   )
   const treffpunkte = fsWeeks.flatMap((w) => pendingOfFsWeek(w.start, w.data as FsInstance[], leer))
@@ -307,7 +309,7 @@ const fakeFetch = async (
   }
   if (path.startsWith('members')) return jsonRes(members)
   if (path.startsWith('persons')) return jsonRes(persons)
-  if (path.startsWith('services')) return jsonRes(SERVICES)
+  if (path.startsWith('services')) return jsonRes(dienste)
   if (path.startsWith('push_subscriptions')) return jsonRes(subs)
   return jsonRes([])
 }
@@ -374,6 +376,7 @@ beforeEach(() => {
   confirmations = []
   reminderLog = []
   subs = [...SUBS]
+  dienste = SERVICES
   members = [...MEMBERS]
   persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
@@ -856,6 +859,61 @@ describe('send-reminders: Hilfsdienste erinnern (Slot-Objekte)', () => {
     expect(all.match(/Mikrofone/g)).toHaveLength(1)
   })
 
+})
+
+/*
+ * **Zwei Hilfsdienste am selben Abend stehen alphabetisch** — in der Sprache
+ * des Geräts, wie jede Liste der App. Angelegt sind sie umgekehrt, die
+ * Schlüssel ebenso: Weder die Folge des Anlegens noch die der Schlüssel ergäbe
+ * die richtige. Max ist erreichbar (persönliche Erinnerung), Nina nicht (sie
+ * steht in der Meldung an die Planer).
+ */
+describe('send-reminders: mehrere Hilfsdienste eines Abends stehen alphabetisch', () => {
+  const abo = (id: string, lang: string) => ({ id, user_id: U_MAX, endpoint: `https://push.test/${id}`, p256dh: 'k', auth: 'a', lang })
+
+  beforeEach(() => {
+    dienste = [
+      { key: 'a', name: 'Ton / Video', count: 2, groups: false },
+      { key: 'b', name: 'Mikrofone', count: 2, groups: false },
+    ]
+    weeks = [{
+      start: WEEK_START,
+      data: {
+        mid: {
+          date: 'Dienstag, 8. September · 19:00 · Königreichssaal',
+          sections: [],
+          helpers: {
+            a: [{ name: 'Max Mustermann' }, { name: 'Nina Nolink' }],
+            b: [{ name: 'Max Mustermann' }, { name: 'Nina Nolink' }],
+          },
+        },
+      },
+    }]
+    subs = [abo('s-de', 'de'), abo('s-en', 'en')]
+  })
+
+  /** Steht jedes Wort im Text, und in dieser Reihenfolge? */
+  const inFolge = (text: string | undefined, ...woerter: string[]): boolean => {
+    const stellen = woerter.map((w) => text?.indexOf(w) ?? -1)
+    return stellen.every((s, i) => s >= 0 && (i === 0 || s > stellen[i - 1]!))
+  }
+
+  it('im Push je Sprache nach dem Namen in dieser Sprache', async () => {
+    const max = (await run()).preview?.filter((p) => p.userId === U_MAX) ?? []
+    expect(max.map((p) => p.title).sort()).toEqual([pushTexte('de').erinnerung, pushTexte('en').erinnerung].sort())
+    const rumpf = (lang: 'de' | 'en') => max.find((p) => p.title === pushTexte(lang).erinnerung)?.body
+    expect(inFolge(rumpf('de'), 'Mikrofone', 'Ton / Video')).toBe(true)
+    expect(inFolge(rumpf('en'), 'Audio / video', 'Microphones')).toBe(true)
+  })
+
+  it('in der Glocke und in der Meldung an die Planer ebenso', async () => {
+    await live()
+    const glocke = (wer: string) =>
+      writesTo('notifications').flatMap((w) => w.body as { user_id: string; body: string }[]).find((z) => z.user_id === wer)?.body
+    expect(inFolge(glocke(U_MAX), 'Mikrofone', 'Ton / Video')).toBe(true)
+    // Nina erreicht nichts: Ihre beiden Dienste stehen bei den Planern.
+    expect(inFolge(glocke(U_PLANER), 'Mikrofone', 'Ton / Video')).toBe(true)
+  })
 })
 
 describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
