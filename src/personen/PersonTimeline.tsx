@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
+import { useDienste } from '../app/useDienste'
 import { useKalendertag } from '../app/useKalendertag'
 import { AufgabeText } from '../aufgaben/AufgabeText'
 import { fromIso } from '../data/meeting-dates'
@@ -31,11 +32,16 @@ export function PersonTimeline({ person }: { person: Person }) {
   // auch wenn sich sonst nichts ändert (wie bei „Meine Aufgaben"). Bis zum
   // 16.10.2026 galt der Tag, an dem zuletzt gerechnet wurde.
   const tag = useKalendertag()
+  // Mehrere Hilfsdienste derselben Zusammenkunft stehen alphabetisch.
+  const dienste = useDienste()
   /*
    * Gemerkt: `personTimeline` läuft über **alle** geladenen Wochen (bis zu 52,
    * zwei Zusammenkünfte je Woche).
    */
-  const entries = useMemo(() => personTimeline(person, state, fromIso(tag)), [person, state, tag])
+  const entries = useMemo(
+    () => personTimeline(person, { ...state, services: dienste }, fromIso(tag)),
+    [person, state, dienste, tag],
+  )
 
   const beschriftung = (e: TimelineEntry): ReactNode => {
     // Der Programmpunkt mit dem `lang` des Programms, die Rolle in der Sprache des Lesers.

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
-import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { listName, personCompare, serviceQualKey } from '../data/helpers'
@@ -10,8 +9,9 @@ import { BereichZeile, PrivToggle } from '../personen/PrivToggle'
 import { uebernehmenKoennen, uebernehmenText } from './einstellungen-anzeige'
 
 /**
- * **Ein Hilfsdienst** (T121, Phase 6c-2): wer ihn übernehmen darf, seine Stelle
- * in der Folge der Dienste — sie gilt auch im Programm — und Entfernen.
+ * **Ein Hilfsdienst** (T121, Phase 6c-2): wer ihn übernehmen darf, und
+ * Entfernen. Eine Stelle in der Folge hat er nicht — die Listen ordnen nach dem
+ * Namen (`useDienste`).
  *
  * **Wer ihn übernehmen darf (T79):** alle Personen, je eine mit Schalter.
  * Wer einen Dienst übernehmen darf, entschied bis dahin allein das
@@ -39,29 +39,15 @@ export function HilfsdienstBlatt({ svcKey }: { svcKey: string }) {
   const close = () => dispatch({ type: 'closeServiceSheet' })
 
   const service = state.services.find((s) => s.key === svcKey)
-  const position = state.services.findIndex((s) => s.key === svcKey)
   if (!service) return null
 
   const name = tu(service.name)
   const art = service.groups ? t.gruppenRotation : t.eigenerBereich
   const sub = `${art} · ${uebernehmenText(t, service, uebernehmenKoennen(state, service))}`
-  const verschieben = (dir: -1 | 1) => dispatch({ type: 'moveService', key: svcKey, dir })
 
   return (
     <Sheet variante="lang" label={name} title={name} sub={sub} onClose={close}>
       <div className="sheet-inhalt hd-blatt">
-        <div className="hd-reihenfolge">
-          <GesperrterKnopf className="knopf-umriss" gesperrt={position <= 0} onTipp={() => verschieben(-1)}>
-            {t.a11yMoveUp}
-          </GesperrterKnopf>
-          <GesperrterKnopf
-            className="knopf-umriss"
-            gesperrt={position >= state.services.length - 1}
-            onTipp={() => verschieben(1)}
-          >
-            {t.a11yMoveDown}
-          </GesperrterKnopf>
-        </div>
         {service.groups ? <GruppenSchalter /> : <PersonenSchalter svcKey={svcKey} />}
       </div>
       <div className="hd-fuss">

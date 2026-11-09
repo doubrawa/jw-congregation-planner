@@ -144,7 +144,7 @@ export default {
   "gruppeDelBesuche": "Le visite a questo gruppo verranno eliminate.",
   "gruppeDelPlaene": "Negli altri programmi i suoi periodi resteranno senza gruppo.",
   "gruppeEntfernen": "Rimuovi gruppo",
-  "hdDesc": "Il numero indica quanti posti ci sono per ogni adunanza. Il programma segue lo stesso ordine.",
+  "hdDesc": "Il numero indica quanti posti ci sono per ogni adunanza.",
   "gruppenRotation": "Rotazione dei gruppi",
   "neuerDienstPh": "Nuovo servizio, es. parcheggio",
   "hinzufuegen": "+ AGGIUNGI",

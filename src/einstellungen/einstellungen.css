@@ -177,17 +177,11 @@
   font-weight: 600;
 }
 
-/* Im Blatt eines Dienstes: oben die Reihenfolge, unten Entfernen mit seinem Hinweis. */
+/* Im Blatt eines Dienstes: oben wer ihn übernehmen darf, unten Entfernen mit seinem Hinweis. */
 .hd-blatt {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.hd-reihenfolge {
-  display: flex;
-  gap: 8px;
-  padding-block-end: 8px;
 }
 
 .hd-fuss {

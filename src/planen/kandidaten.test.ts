@@ -223,6 +223,20 @@ describe('Kandidatenliste allgemein', () => {
     const liste = kandidaten(state, partnerSlot(true), KEINE_ABWESENHEIT, DE, (x) => x)
     expect(liste.find((c) => c.name === 'Clara Cohn')?.today.length).toBe(1)
   })
+
+  it('„An diesem Tag schon" nennt mehrere Hilfsdienste alphabetisch — nicht in der Folge des Anlegens', () => {
+    const w = wocheMitKlasse('', '')
+    w.mid.helpers = { a: [{ name: 'Bernd Brand', pid: BRUDER_B.id }], b: [{ name: 'Bernd Brand', pid: BRUDER_B.id }] }
+    const s: KandidatenDaten = {
+      ...daten([w]),
+      services: [
+        { key: 'a', name: 'Ton / Video', count: 1, groups: false },
+        { key: 'b', name: 'Mikrofone', count: 1, groups: false },
+      ],
+    }
+    const bernd = kandidaten(s, partnerSlot(false), KEINE_ABWESENHEIT, DE, (x) => x).find((c) => c.key === BRUDER_B.id)
+    expect(bernd?.today.map((z) => z.text)).toEqual(['Mikrofone', 'Ton / Video'])
+  })
 })
 
 /**

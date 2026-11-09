@@ -240,6 +240,19 @@ describe('Wer noch nichts weiß', () => {
     expect(zeilen()[0]!.querySelector('.klein-text')?.textContent).toMatch(/Saal.* · Treffpunkt-Leiter$/)
   })
 
+  it('mehrere Hilfsdienste stehen alphabetisch — nicht in der Folge des Anlegens', () => {
+    const w = woche([])
+    w.mid.helpers = { a: [{ name: 'T. Ton' }], b: [{ name: 'M. Mik' }] }
+    zeige({
+      weeks: [w],
+      services: [
+        { key: 'a', name: 'Ton / Video', count: 1, groups: false },
+        { key: 'b', name: 'Mikrofone', count: 1, groups: false },
+      ],
+    })
+    expect(namen()).toEqual(['M. Mik', 'T. Ton'])
+  })
+
   it('bei vielen bleibt es beim Satz — eine Wand von Namen liest niemand', () => {
     zeige({ weeks: [woche(Array.from({ length: 12 }, (_u, i) => `P${i}. Beispiel`))] })
     expect(blatt().querySelector('.senden-liste')).toBeNull()

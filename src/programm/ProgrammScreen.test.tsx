@@ -488,6 +488,19 @@ describe('Die Hilfsdienst-Übersicht', () => {
     expect(seite(container).querySelector('.prog-dienst-name')?.textContent).toBe('Mikrofone')
   })
 
+  it('die Dienste stehen alphabetisch, nicht in der Folge des Anlegens und nicht nach dem Schlüssel', () => {
+    // Schlüssel und Anlegen in derselben, falschen Folge: Beides ergäbe „Ton / Video" zuerst.
+    const { container } = zeige({
+      services: [
+        { key: 'a', name: 'Ton / Video', count: 1, groups: false },
+        { key: 'b', name: 'Mikrofone', count: 1, groups: false },
+        { key: 'c', name: 'Eingangsordner', count: 1, groups: false },
+      ],
+    })
+    const namen = [...seite(container).querySelectorAll('.prog-dienst-name')].map((x) => x.textContent)
+    expect(namen).toEqual(['Eingangsordner', 'Mikrofone', 'Ton / Video'])
+  })
+
   /*
    * **Ein Personenname geht nie durch den Übersetzer** (15.10.2026). Der
    * erkennt Bibelstellen und machte in einer englischen App aus dem Zusatz

@@ -9,6 +9,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { emptyQualifications, privSetzen, serviceQualKey } from '../data/helpers'
 import type { Group, Person, Qualifications, Service } from '../data/types'
 import { dict } from '../i18n/ui'
@@ -18,8 +19,8 @@ import { zahlBinden } from '../i18n/zahl-binden'
 
 /**
  * **Hilfsdienste** (T121, Phase 6c-2, Entwurf `GHilfsdienste`): je Dienst die
- * Plätze je Zusammenkunft, in der Folge des Programms; ein Tipp öffnet den
- * Dienst, „Hilfsdienst hinzufügen" legt einen an.
+ * Plätze je Zusammenkunft, alphabetisch; ein Tipp öffnet den Dienst,
+ * „Hilfsdienst hinzufügen" legt einen an.
  *
  * Dazu ein Fall, der sonst unsichtbar bliebe (T79): Ein **neu angelegter**
  * Dienst bringt einen Aufgabenbereich mit, den bis dahin keine Person gesetzt
@@ -85,11 +86,23 @@ const knopf = (wo: ParentNode, text: string) =>
 const neuBlatt = () => document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${t.hilfsdienstHinzu}"]`)!
 
 describe('Die Liste', () => {
-  it('jeder Dienst steht mit Name und Plätzen da — in der Folge des Programms', () => {
+  it('jeder Dienst steht mit Name und Plätzen da', () => {
     const { container } = zeige()
     expect(zeilen(container).map(name)).toEqual(['Mikrofone', 'Reinigung'])
     expect(zeilen(container)[0]!.querySelector('.plus-minus-wert')?.textContent).toBe('2')
     expect(container.querySelector('.einst-einleitung')?.textContent).toBe(t.hdDesc)
+  })
+
+  it('alphabetisch, nicht in der Folge des Anlegens — in der Sprache des Lesers', () => {
+    // Die Folge des Anlegens wäre „Ton / Video, Mikrofone, Zoom-Ordner, …".
+    expect(zeilen(zeige({ services: DEMO_SERVICES }).container).map(name)).toEqual([
+      'Eingangsordner', 'Mikrofone', 'Reinigung', 'Rundgangsordner', 'Saalordner', 'Ton / Video', 'Zoom-Ordner',
+    ])
+    cleanup()
+    // Englisch ordnet anders: „Cleaning" vor „Microphones".
+    expect(zeilen(zeige({ services: DEMO_SERVICES, lang: 'en' }).container).map(name)).toEqual([
+      'Audio / video', 'Cleaning', 'Entrance attendant', 'Hall attendant', 'Microphones', 'Roving attendant', 'Zoom attendant',
+    ])
   })
 
   it('die Plätze lassen sich in Einerschritten ändern', () => {
@@ -106,7 +119,7 @@ describe('Die Liste', () => {
     expect(zeilen(container)[0]!.querySelector('.plus-minus')?.getAttribute('aria-label')).toBe('Plätze für Mikrofone')
   })
 
-  it('ein Tipp auf den Namen öffnet den Dienst — auch einen Gruppen-Dienst, für Folge und Entfernen', () => {
+  it('ein Tipp auf den Namen öffnet den Dienst — auch einen Gruppen-Dienst, zum Entfernen', () => {
     const { container, dispatch } = zeige()
     fireEvent.click(zeilen(container)[1]!.querySelector('.hd-name')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openServiceSheet', key: 'rein' })

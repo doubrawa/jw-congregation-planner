@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
+import { useDienste } from '../app/useDienste'
 import { PlusMinus } from '../bausteine/PlusMinus'
 import { Zeichen } from '../bausteine/Zeichen'
 import { fill, useT } from '../i18n/useT'
@@ -9,11 +10,9 @@ import { HilfsdienstNeuBlatt } from './HilfsdienstNeuBlatt'
 
 /**
  * **Hilfsdienste** (T121, Entwurf `GHilfsdienste`): je Dienst, wie viele Plätze
- * es je Zusammenkunft gibt (− und +), in der Folge, in der sie auch im Programm
- * stehen. Ein Tipp auf den Namen öffnet den Dienst (`HilfsdienstBlatt`): wer ihn
- * übernehmen darf, die Reihenfolge, Entfernen. Der Entwurf zeigt zum Umsortieren
- * einen Griff; hier geht es über „Nach oben" und „Nach unten" im Blatt, wie bei
- * den Programmpunkten.
+ * es je Zusammenkunft gibt (− und +), alphabetisch wie überall (`useDienste`).
+ * Ein Tipp auf den Namen öffnet den Dienst (`HilfsdienstBlatt`): wer ihn
+ * übernehmen darf, Entfernen.
  *
  * Unter dem Namen steht, wie viele Personen den Dienst übernehmen dürfen (T79) —
  * hervorgehoben bei niemandem: Die Auto-Zuteilung sucht über den
@@ -25,13 +24,14 @@ import { HilfsdienstNeuBlatt } from './HilfsdienstNeuBlatt'
 export function HilfsdiensteInhalt() {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
+  const dienste = useDienste()
   const [neu, setNeu] = useState(false)
 
   return (
     <>
       <p className="einst-einleitung">{t.hdDesc}</p>
       <section className="karte einst-karte hd-karte">
-        {state.services.map((service) => {
+        {dienste.map((service) => {
           const name = tu(service.name)
           const anzahl = uebernehmenKoennen(state, service)
           return (

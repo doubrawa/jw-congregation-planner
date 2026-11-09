@@ -446,6 +446,7 @@ describe('Der Name am Hilfsdienst-Platz', () => {
       </Buehne>,
     )
     expect(makeTr('en')('Gruppe 1')).not.toBe('Gruppe 1')
-    expect(namen(container)).toEqual(['Markus 2 Weber', makeTr('en')('Gruppe 1')])
+    // Die Dienste alphabetisch nach dem englischen Namen: „Cleaning" vor „Microphones".
+    expect(namen(container)).toEqual([makeTr('en')('Gruppe 1'), 'Markus 2 Weber'])
   })
 })

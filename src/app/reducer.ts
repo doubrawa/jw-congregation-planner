@@ -30,6 +30,7 @@ import { plaene } from './aktionen/plaene'
 import { zusagen } from './aktionen/zusagen'
 import { dropConfirmations } from './aktionen/gemeinsam'
 import { vorzulegen } from './vorlegen'
+import { diensteDerSprache } from './useDienste'
 
 /**
  * myTasks/Ersatzgesuche aus Wochen + Bestätigungen ableiten. `openConfirm`
@@ -49,6 +50,9 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // Wochen, die als Variante in der Sprache des Lesers vorliegen: Deren Titel
   // und Datum gehören in seine Sprache (`aufgabenTp`), wie im Programm.
   const inLesersprache = new Set(weeks.filter((w, i) => w !== state.weeks[i]).map((w) => w.start))
+  // Mehrere Hilfsdienste an einem Tag — freie Plätze, Ersatzgesuche — stehen
+  // alphabetisch untereinander, wie in jeder Liste der Dienste.
+  const dienste = me ? diensteDerSprache(state.services, state.lang) : []
   const markieren = <T extends object>(eintrag: T, key: string): T => {
     const teile = schluesselTeile(key)
     // Nur Plätze einer Zusammenkunft haben Programmtext. Der Treffpunkt
@@ -64,7 +68,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // Aufgaben" und bestätigt sie dort.
   const myTasks = me
     ? [
-        ...deriveMyTasks(weeks, state.services, displayName(me), state.confirmations, state.congregation.times, me.id),
+        ...deriveMyTasks(weeks, dienste, displayName(me), state.confirmations, state.congregation.times, me.id),
         ...deriveMyFsTasks(
           state.fsWeeks,
           kennungen,
@@ -101,7 +105,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // (`abwesenheitenVon`).
   const abwesend = me ? abwesenheitenVon(state.absences, state.weeks, state.congregation.times) : undefined
   const substituteReqs = me
-    ? deriveSubstituteReqs(weeks, state.services, state.confirmations, me, state.congregation.times, abwesend)
+    ? deriveSubstituteReqs(weeks, dienste, state.confirmations, me, state.congregation.times, abwesend)
         .map((req) => markieren(req, req.key))
         .map((req) => (state.abgelehnteGesuche.includes(gesuchKennung(req)) ? { ...req, abgelehnt: true as const } : req))
     : []
@@ -109,7 +113,7 @@ function withDerivedTasks(state: AppState, openConfirm: boolean): AppState {
   // Nicht im Blatt beim Öffnen: Ein Angebot ist keine Pflicht wie eine
   // Zuteilung, und ein Gesuch drängt mehr als ein leerer Platz.
   const offen = me
-    ? offenePlaetze(weeks, state.services, state.sentLog, me, state.congregation.times, abwesend).map((platz) =>
+    ? offenePlaetze(weeks, dienste, state.sentLog, me, state.congregation.times, abwesend).map((platz) =>
         markieren(platz, platz.key),
       )
     : []
@@ -323,7 +327,6 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setFamily':
       return personen(state, action)
     case 'changeServiceCount':
-    case 'moveService':
     case 'removeService':
     case 'addService':
     case 'addGroup':

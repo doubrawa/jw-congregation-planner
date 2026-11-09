@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
+import { useDienste } from '../app/useDienste'
 import { useKalendertag } from '../app/useKalendertag'
 import { Saal } from '../bausteine/Saal'
 import { Spur } from '../bausteine/Spur'
@@ -83,7 +84,9 @@ export function BesetzungKarte({ tab, tpw, sprache }: { tab: MeetingKey; tpw: (s
   const abwesend = useAbwesend()
   const konflikte = useKonflikte(tab)
   const week = state.weeks[state.week]
-  const { services, confirmations, persoenlich, persons } = state
+  const { confirmations, persoenlich, persons } = state
+  // Alphabetisch: Offene Plätze und Engpässe nennen die Dienste der Reihe nach.
+  const dienste = useDienste()
   /*
    * Gemerkt und vor jedem Ausstieg, aus demselben Grund wie oben: `engpaesse`
    * läuft je Bereich zweimal über alle Personen. Eine ausgefallene
@@ -93,13 +96,13 @@ export function BesetzungKarte({ tab, tpw, sprache }: { tab: MeetingKey; tpw: (s
   const da = week && !istAusgefallen(week, tab) ? week : null
   const b = useMemo(
     () =>
-      da ? besetzung(da[tab], services, confirmations, persoenlich, da.start, tab, null, konflikte.betrifft) : null,
-    [da, tab, services, confirmations, persoenlich, konflikte],
+      da ? besetzung(da[tab], dienste, confirmations, persoenlich, da.start, tab, null, konflikte.betrifft) : null,
+    [da, tab, dienste, confirmations, persoenlich, konflikte],
   )
-  const offen = useMemo(() => (da ? openSlotLabels(da[tab], services) : []), [da, tab, services])
+  const offen = useMemo(() => (da ? openSlotLabels(da[tab], dienste) : []), [da, tab, dienste])
   const engpass = useMemo(
-    () => (da ? engpaesse(da[tab], services, persons, abwesend, state.week, tab) : []),
-    [da, tab, services, persons, abwesend, state.week],
+    () => (da ? engpaesse(da[tab], dienste, persons, abwesend, state.week, tab) : []),
+    [da, tab, dienste, persons, abwesend, state.week],
   )
   if (!b) return null
 
@@ -107,7 +110,7 @@ export function BesetzungKarte({ tab, tpw, sprache }: { tab: MeetingKey; tpw: (s
   const { besetzt, gesamt } = besetztVon(b)
   const zahl = besetzungText(t, besetzt, gesamt)
   const offenGesamt = offen.reduce((summe, slot) => summe + slot.n, 0)
-  const bereichName = (key: string): string => bereichsName(key, services, t, tu)
+  const bereichName = (key: string): string => bereichsName(key, dienste, t, tu)
 
   return (
     <section className="karte karte--held besetzung" aria-label={t.saalBesetzung}>

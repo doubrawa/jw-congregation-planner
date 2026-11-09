@@ -1073,10 +1073,6 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (svc) saveService(congId, svc, idx, zeilenstandIn(prev.services, (s) => s.key === action.key))
       break
     }
-    case 'moveService':
-      // Zwei Dienste tauschen die Plätze — beide bekommen ihre neue Position.
-      geaenderteSchreiben(prev.services, next.services, (s) => s.key, (svc, pos, alt) => saveService(congId, svc, pos, alt))
-      break
     case 'removeService': {
       deleteServiceRow(congId, action.key)
       geaenderteSchreiben(prev.services, next.services, (s) => s.key, (svc, pos, alt) => saveService(congId, svc, pos, alt))

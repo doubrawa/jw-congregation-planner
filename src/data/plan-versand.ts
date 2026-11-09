@@ -89,7 +89,7 @@ export interface OffeneWochenMeldung extends OffeneMeldung {
 export function offeneMeldungen(
   week: Week | undefined,
   fsWeek: FsInstance[] | undefined,
-  services: Service[],
+  services: readonly Service[],
   confirmations: ConfirmationMap,
   sentLog: SentLog,
   zeiten: MeetingTimes,

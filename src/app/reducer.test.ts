@@ -843,17 +843,6 @@ describe('Dienste', () => {
     expect(reducer(s, { type: 'updateGroup', id: 'g1', patch: { overseerId: 'p1' } }).weeks).toBe(s.weeks)
   })
 
-  it('moveService tauscht mit dem Nachbarn — am Rand bleibt alles, wie es ist', () => {
-    const dienst = (key: string) => ({ key, name: key, count: 1, groups: false })
-    const s = makeState({ services: [dienst('a'), dienst('b'), dienst('c')] })
-    const keys = (st: typeof s) => st.services.map((d) => d.key)
-    expect(keys(reducer(s, { type: 'moveService', key: 'b', dir: -1 }))).toEqual(['b', 'a', 'c'])
-    expect(keys(reducer(s, { type: 'moveService', key: 'b', dir: 1 }))).toEqual(['a', 'c', 'b'])
-    expect(reducer(s, { type: 'moveService', key: 'a', dir: -1 })).toBe(s)
-    expect(reducer(s, { type: 'moveService', key: 'c', dir: 1 })).toBe(s)
-    expect(reducer(s, { type: 'moveService', key: 'gibt-es-nicht', dir: 1 })).toBe(s)
-  })
-
   it('addService / removeService', () => {
     const svc = { key: 'neu', name: 'Neu', count: 1, groups: false }
     expect(reducer(makeState(), { type: 'addService', service: svc }).services.at(-1)).toEqual(svc)
@@ -2801,6 +2790,41 @@ describe('Einspringen: takeSubstitute und platzUebernehmen', () => {
     expect(next.weeks[0]!.mid.helpers.mik![0]).toMatchObject({ pid: frei.id })
     expect(next.confirmations[KEY]).toBe('bestätigt')
     expect(next.toast?.text).toBe(t.toastUebernommenKonflikt)
+  })
+})
+
+/**
+ * **Mehrere Hilfsdienste an einem Tag stehen alphabetisch** — in den Listen,
+ * die der Reducer ableitet, wie in jeder Liste der Dienste. Angelegt sind die
+ * Testdaten umgekehrt: „Ton / Video" vor „Mikrofone".
+ */
+describe('Ersatzgesuche eines Tages stehen alphabetisch', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 8, 7, 10)) // Montag der ersten Demo-Woche
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const woche = buildDemoWeeks()[0]!
+  const MIK = `${woche.start}|mid|helper|mik|0`
+  const TON = `${woche.start}|mid|helper|ton|0`
+  // Wer schon einen Platz eines der beiden Dienste hat, bekäme dessen Gesuch nicht.
+  const belegt = [...woche.mid.helpers.mik!, ...woche.mid.helpers.ton!].map((platz) => platz.name)
+  const ich = DEMO_PERSONS.find(
+    (p) => !belegt.includes(displayName(p)) && isQualified(p, serviceQualKey('mik')) && isQualified(p, serviceQualKey('ton')),
+  )!
+  // Die Absagen in der Folge der Testdaten — erst Ton, dann Mikrofone. Nicht
+  // über `neuAbgeleitet`: Das wechselt die Sprache.
+  const gesuche = (lang: AppState['lang']) =>
+    aufgabenAbgeleitet(makeState({ personId: ich.id, lang, absences: [], confirmations: { [TON]: 'verhindert', [MIK]: 'verhindert' } }))
+      .substituteReqs.map((r) => r.key)
+      .filter((key) => key === MIK || key === TON)
+
+  it('nach dem Namen in der Sprache des Lesers — nicht in der Folge des Anlegens', () => {
+    expect(ich).toBeDefined()
+    expect(DEMO_SERVICES.findIndex((s) => s.key === 'ton')).toBeLessThan(DEMO_SERVICES.findIndex((s) => s.key === 'mik'))
+    expect(gesuche('de')).toEqual([MIK, TON]) // Mikrofone, Ton / Video
+    expect(gesuche('en')).toEqual([TON, MIK]) // Audio / video, Microphones
   })
 })
 

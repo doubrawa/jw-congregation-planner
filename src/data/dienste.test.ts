@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   dienstAusWochenEntfernen,
   dienstBereichEntfernen,
+  diensteAlphabetisch,
   dienstZusagenKeys,
   gruppeInWochenUmbenennen,
   ohneDienstZusagen,
 } from './dienste'
 import { emptyQualifications, privWert, serviceQualKey } from './helpers'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { makeTr } from '../i18n/translate'
+import { DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import type { Person, Service, Week } from './types'
 
 /**
@@ -125,6 +128,52 @@ describe('Die Bestätigungen der Plätze gehen mit', () => {
     // Ist nichts zu entfernen, bleibt dieselbe Karte — der Zustand ändert sich
     // dann gar nicht.
     expect(ohneDienstZusagen(map, ['nichts'])).toBe(map)
+  })
+})
+
+/**
+ * **Jede Liste der Dienste ist alphabetisch** — nach dem Namen, den der Leser
+ * liest. Die Testdaten stehen absichtlich nicht so: „Ton / Video" vorn,
+ * „Eingangsordner" mittendrin. Ihre Schlüssel sortieren wie die deutschen
+ * Namen; dass nicht nach dem Schlüssel geordnet wird, zeigen erst das Englische
+ * und „Ordner 2"/„Ordner 10".
+ */
+describe('Die Dienste alphabetisch', () => {
+  const ohne = (s: string): string => s
+  const namen = (liste: readonly Service[], tu: (s: string) => string = ohne) => liste.map((s) => tu(s.name))
+
+  it('deutsch nach dem deutschen Namen', () => {
+    expect(namen(diensteAlphabetisch(DEMO_SERVICES, ohne, 'de-DE'))).toEqual([
+      'Eingangsordner',
+      'Mikrofone',
+      'Reinigung',
+      'Rundgangsordner',
+      'Saalordner',
+      'Ton / Video',
+      'Zoom-Ordner',
+    ])
+  })
+
+  it('in einer anderen App-Sprache nach dem übersetzten Namen, nicht nach dem deutschen', () => {
+    // Gegenprobe: Nach dem deutschen Namen stünde „Microphones" vor „Cleaning".
+    const en = makeTr('en')
+    expect(namen(diensteAlphabetisch(DEMO_SERVICES, en, 'en-US'), en)).toEqual([
+      'Audio / video',
+      'Cleaning',
+      'Entrance attendant',
+      'Hall attendant',
+      'Microphones',
+      'Roving attendant',
+      'Zoom attendant',
+    ])
+  })
+
+  it('Zahlen im Namen nach ihrem Wert, gleiche Namen nach dem Schlüssel — die Liste selbst bleibt unberührt', () => {
+    const dienst = (key: string, name: string): Service => ({ key, name, count: 1 })
+    const liste = [dienst('o10', 'Ordner 10'), dienst('b', 'Bühne'), dienst('o2', 'Ordner 2'), dienst('a', 'Bühne')]
+    const vorher = [...liste]
+    expect(diensteAlphabetisch(liste, ohne, 'de-DE').map((s) => s.key)).toEqual(['a', 'b', 'o2', 'o10'])
+    expect(liste).toEqual(vorher)
   })
 })
 

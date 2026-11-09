@@ -6,7 +6,7 @@ import { displayName, gehoertZu } from '../data/helpers'
 import { fromIso, kalendertagMs, meetingDate, meetingTime, tageZwischen } from '../data/meeting-dates'
 import { deriveMyTasks } from '../data/planung/aufgaben'
 import { taskKeyWeek, wochenIndex } from '../data/planung/schluessel'
-import type { Person } from '../data/types'
+import type { Person, Service } from '../data/types'
 import { istDabei, minuten } from '../data/trolleys'
 
 /**
@@ -57,11 +57,14 @@ export type TimelineEntry = {
     }
 )
 
-/** Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). */
+/**
+ * Was die Zeitleiste aus dem Zustand braucht (erleichtert das Testen). Die
+ * Dienste in der Folge, in der mehrere derselben Zusammenkunft dastehen sollen
+ * — die Anzeige gibt sie alphabetisch (`useDienste`).
+ */
 export type TimelineDaten = Pick<
   AppState,
   | 'weeks'
-  | 'services'
   | 'confirmations'
   | 'congregation'
   | 'fsWeeks'
@@ -70,7 +73,7 @@ export type TimelineDaten = Pick<
   | 'trolleys'
   | 'trolleyTermine'
   | 'gruppenbesuche'
->
+> & { services: readonly Service[] }
 
 /** So weit reicht die Zeitleiste zurück (Betreiber 23.10.2026); nach vorn reicht sie, so weit es Einträge gibt. */
 export const WOCHEN_ZURUECK = 8

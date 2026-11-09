@@ -531,7 +531,6 @@ export type AppAction =
   | { type: 'updatePerson'; id: string; patch: Partial<Person> } // speichert automatisch (debounced)
   | { type: 'removePerson'; id: string } // löst Gruppen-/Konto-/Code-Referenzen
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
-  | { type: 'moveService'; key: string; dir: -1 | 1 } // Folge im Programm (T121)
   | { type: 'removeService'; key: string }
   | { type: 'addService'; service: Service }
   // Predigtdienstgruppen (nur Planer)

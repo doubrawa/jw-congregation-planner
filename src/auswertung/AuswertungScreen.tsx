@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
+import { useDienste } from '../app/useDienste'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { UnteransichtKopf } from '../components/UnteransichtKopf'
@@ -70,6 +71,8 @@ export function AuswertungScreen() {
   useBackDismiss(person !== null, () => setPerson(null), 'unteransicht')
 
   const { weeks, fsWeeks, persons, services, groups, absagen, lang } = state
+  // Die Spalten der Hilfsdienste in der Tabelle „Wer bekommt was" — alphabetisch wie überall.
+  const dienste = useDienste()
   const a = useMemo(
     () => auswerten({ weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute }),
     [weeks, fsWeeks, persons, services, groups, abwesend, absagen, heute],
@@ -187,7 +190,7 @@ export function AuswertungScreen() {
       </div>
       {desktop ? (
         <div id={ANKER.einseitig}>
-          <EinseitigMatrix k={k} persons={persons} services={services} filter={matrixFilter} onFilter={setMatrixFilter} />
+          <EinseitigMatrix k={k} persons={persons} services={dienste} filter={matrixFilter} onFilter={setMatrixFilter} />
         </div>
       ) : (
         <section id={ANKER.einseitig} className="aw-abschnitt" aria-label={t.awEinseitigTitel}>

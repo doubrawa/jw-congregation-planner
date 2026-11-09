@@ -144,7 +144,7 @@ export default {
   "gruppeDelBesuche": "Vizitele la această grupă vor fi eliminate.",
   "gruppeDelPlaene": "În celelalte programe, perioadele ei vor rămâne fără grupă.",
   "gruppeEntfernen": "Elimină grupa",
-  "hdDesc": "Numărul arată câte locuri sunt la fiecare întrunire. Aceeași ordine se aplică și în program.",
+  "hdDesc": "Numărul arată câte locuri sunt la fiecare întrunire.",
   "gruppenRotation": "Rotația grupelor",
   "neuerDienstPh": "Sarcină nouă, de ex. parcare",
   "hinzufuegen": "+ ADAUGĂ",

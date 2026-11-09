@@ -1625,9 +1625,10 @@ Gedächtnismahl. Weicht nur eine einzelne Woche ab, stellst du das unter
 
 ### Hilfsdienste
 
-Oben steht: „Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt. Die
-Reihenfolge gilt auch im Programm." Darunter folgen die Dienste in eben dieser
-Reihenfolge, je Dienst eine Zeile:
+Oben steht: „Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt."
+Darunter folgen die Dienste alphabetisch – so stehen sie überall in der App,
+im Programm, beim Planen, unter „Freie Plätze" und in der Auswertung, in einer
+anderen App-Sprache nach dem übersetzten Namen. Je Dienst eine Zeile:
 
 - Links der **Name**, darunter, **für wie viele Personen er freigegeben ist**
   („Personen: 3"). Die Zahl steht dort, weil nur diese Personen den Dienst
@@ -1659,7 +1660,8 @@ schneller über sein Blatt (siehe unten).
 1. Tippe auf **Hilfsdienst hinzufügen**.
 2. Gib einen **Namen** ein, etwa „Parkplatz", und tippe auf **Hinzufügen**.
    Solange das Feld leer ist, geht das nicht.
-3. Der Dienst steht nun unten in der Liste, mit einem Platz je Zusammenkunft.
+3. Der Dienst steht nun an seiner Stelle im Alphabet, mit einem Platz je
+   Zusammenkunft.
    Gleich danach öffnet sich sein Blatt – gib dort frei, wer ihn übernehmen
    darf.
 
@@ -1672,8 +1674,6 @@ Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
 der Reinigung **Gruppen-Rotation** mit der Zahl der Gruppen, die reinigen
 („Gruppen: 4"). Darunter:
 
-- **Nach oben** und **Nach unten** – verschieben den Dienst um eine Stelle. Die
-  Reihenfolge gilt im Programm und beim Planen.
 - **Alle Personen mit je einem Schalter**, sortiert wie die Personenliste,
   darüber ein Suchfeld. Hier gibst du in einem Zug frei, wer den Dienst
   übernehmen darf. Es ist derselbe Schalter wie bei der Person, nur von der

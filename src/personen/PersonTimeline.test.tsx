@@ -96,4 +96,29 @@ describe('PersonTimeline', () => {
     expect(arten).toContain(`${t.privTreffpunkt} · Am Markt`)
     expect(arten.filter((a) => a.trimEnd().endsWith('·'))).toEqual([])
   })
+
+  it('zwei Hilfsdienste derselben Zusammenkunft stehen alphabetisch — nicht in der Folge des Anlegens', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(ENTWICKLER_HEUTE)
+    const demo: AppState = { ...demoZustand(), dataStatus: 'ready' }
+    const p1 = demo.persons.find((p) => p.id === 'p1')!
+    const platz = { name: displayName(p1), pid: 'p1' }
+    // Nur diese Woche, nur diese zwei Plätze: Was sonst in der Leiste steht, stört nicht.
+    const w = demo.weeks[0]!
+    const woche = { ...w, mid: { ...w.mid, sections: [], helpers: { a: [platz], b: [platz] } }, we: { ...w.we, sections: [], helpers: {} } }
+    const { container } = zeige({
+      ...demo,
+      weeks: [woche],
+      fsWeeks: [[]],
+      absences: [],
+      trolleyTermine: [],
+      gruppenbesuche: [],
+      services: [
+        { key: 'a', name: 'Ton / Video', count: 1, groups: false },
+        { key: 'b', name: 'Mikrofone', count: 1, groups: false },
+      ],
+    })
+    const arten = [...container.querySelectorAll('.zeit-art')].map((s) => s.textContent ?? '')
+    expect(arten).toEqual(['Mikrofone', 'Ton / Video'])
+  })
 })

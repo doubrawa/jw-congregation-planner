@@ -144,7 +144,7 @@ export default {
   "gruppeDelBesuche": "Se eliminarán las visitas a este grupo.",
   "gruppeDelPlaene": "En los otros planes, sus periodos quedarán sin grupo.",
   "gruppeEntfernen": "Eliminar grupo",
-  "hdDesc": "El número indica cuántas plazas hay en cada reunión. El programa sigue el mismo orden.",
+  "hdDesc": "El número indica cuántas plazas hay en cada reunión.",
   "gruppenRotation": "Rotación de grupos",
   "neuerDienstPh": "Nuevo servicio, p. ej., estacionamiento",
   "hinzufuegen": "+ AÑADIR",

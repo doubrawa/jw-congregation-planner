@@ -144,7 +144,7 @@ export default {
   "gruppeDelBesuche": "Bu gruba yapılacak ziyaretler kaldırılacak.",
   "gruppeDelPlaene": "Diğer planlarda bu gruba ait dönemler grupsuz kalacak.",
   "gruppeEntfernen": "Grubu kaldır",
-  "hdDesc": "Sayı, her ibadette kaç yer olduğunu gösterir. Programda da aynı sıra geçerlidir.",
+  "hdDesc": "Sayı, her ibadette kaç yer olduğunu gösterir.",
   "gruppenRotation": "Grup rotasyonu",
   "neuerDienstPh": "Yeni görev, örn. otopark",
   "hinzufuegen": "+ EKLE",

@@ -13,6 +13,7 @@
  */
 
 import type { AppState } from '../app/context'
+import { diensteDerSprache } from '../app/useDienste'
 import { abwesenheitAm, istAbwesend, type AbsenceSet } from '../data/absence'
 import { ratgeberSlot, slotsOf } from '../data/aux-class'
 import { fsLeiterZuteilung, fsTag } from '../data/fs'
@@ -234,6 +235,8 @@ function personenKandidaten(
   const anderes = week && !istAusgefallen(week, andererTab) ? week[andererTab] : undefined
   // Der Tag, an dem `abwesend` misst (`buildAbsences`) — für den Zeitraum dazu.
   const termin = week ? meetingDate(week, sel.tab, state.congregation.times) : undefined
+  // „An diesem Tag schon: …" nennt mehrere Hilfsdienste alphabetisch.
+  const dienste = diensteDerSprache(state.services, state.lang)
   /**
    * Die Stufen der Liste: erst, wen die Automatik nähme, dann wer sonst frei
    * ist, dann wer an diesem Tag schon dran ist, zuletzt die Abwesenden —
@@ -249,13 +252,13 @@ function personenKandidaten(
     .map((p): Candidate => {
       const name = displayName(p)
       const absent = istAbwesend(abwesend, p.id, sel.wi, sel.tab)
-      const dort = anderes ? assignmentsInMeeting(anderes, p, state.services) : []
+      const dort = anderes ? assignmentsInMeeting(anderes, p, dienste) : []
       return {
         key: p.id,
         name,
         assignName: name,
         sub: t[ROLE_KEY[p.role]],
-        today: meeting ? assignmentsInMeeting(meeting, p, state.services, sel) : [],
+        today: meeting ? assignmentsInMeeting(meeting, p, dienste, sel) : [],
         absent,
         abwesenheit: absent && termin ? abwesenheitAm(state.absences, p.id, termin) : undefined,
         last: workloadOf(fenster, p, state.services),

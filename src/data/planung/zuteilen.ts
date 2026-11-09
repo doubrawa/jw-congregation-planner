@@ -96,7 +96,7 @@ export function slotValue(weeks: Week[], sel: MeetingSlotSelection): string {
 export function assignmentsInMeeting(
   meeting: Meeting,
   person: Person,
-  services: Service[],
+  services: readonly Service[],
   exclude?: SlotSelection,
 ): MeetingAssignment[] {
   const out: MeetingAssignment[] = []

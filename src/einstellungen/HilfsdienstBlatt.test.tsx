@@ -17,8 +17,8 @@ import { fill } from '../i18n/useT'
 import { HilfsdienstBlatt } from './HilfsdienstBlatt'
 
 /**
- * **Ein Hilfsdienst** — wer ihn übernehmen darf (T79), seine Stelle in der
- * Folge und Entfernen (T121, Phase 6c-2).
+ * **Ein Hilfsdienst** — wer ihn übernehmen darf (T79) und Entfernen (T121,
+ * Phase 6c-2).
  *
  * Das Personen-Detail zeigt eine Person und ihre Bereiche; für einen neuen
  * Dienst hieß das: einmal durch die ganze Versammlung. Hier steht ein Bereich
@@ -141,27 +141,6 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
 
 const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)!
 
-describe('Die Reihenfolge — sie gilt auch im Programm', () => {
-  it('„Nach oben" und „Nach unten" verschieben den Dienst um eine Stelle', () => {
-    const { container, dispatch } = zeige({}, 'mik')
-    fireEvent.click(knopf(container, DE.a11yMoveUp))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'moveService', key: 'mik', dir: -1 })
-    fireEvent.click(knopf(container, DE.a11yMoveDown))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'moveService', key: 'mik', dir: 1 })
-  })
-
-  it('am Rand ist die Richtung gesperrt — ohne den Fokus abzugeben', () => {
-    const erster = zeige({}, 'rund')
-    expect(knopf(erster.container, DE.a11yMoveUp).getAttribute('aria-disabled')).toBe('true')
-    fireEvent.click(knopf(erster.container, DE.a11yMoveUp))
-    expect(erster.dispatch).not.toHaveBeenCalled()
-    cleanup()
-    const letzter = zeige({}, 'rein')
-    expect(knopf(letzter.container, DE.a11yMoveDown).getAttribute('aria-disabled')).toBe('true')
-    expect(knopf(letzter.container, DE.a11yMoveUp).getAttribute('aria-disabled')).toBe('false')
-  })
-})
-
 describe('Entfernen', () => {
   it('nennt über dem Knopf, was mitgeht — und entfernt erst mit dem zweiten Tipp', () => {
     const { container, dispatch } = zeige()
@@ -226,9 +205,8 @@ describe('Ein Gruppen-Dienst (Reinigung) — seine Gruppen', () => {
     expect(reinigung().container.querySelector('.lang-search')).toBeNull()
   })
 
-  it('Reihenfolge und Entfernen stehen wie bei jedem Dienst da', () => {
+  it('Entfernen steht wie bei jedem Dienst da', () => {
     const { container } = reinigung()
-    expect(knopf(container, DE.a11yMoveUp)).toBeDefined()
     expect(knopf(container, DE.hdEntfernen)).toBeDefined()
   })
 

@@ -8,7 +8,6 @@ import { syncAuxSlots } from '../../data/aux-class'
 import {
   dienstAusWochenEntfernen,
   dienstBereichEntfernen,
-  dienstVerschieben,
   dienstZusagenKeys,
   gruppeInWochenUmbenennen,
   ohneDienstZusagen,
@@ -25,7 +24,6 @@ type VersammlungAktion = Extract<
   {
     type:
       | 'changeServiceCount'
-      | 'moveService'
       | 'removeService'
       | 'addService'
       | 'addGroup'
@@ -53,10 +51,6 @@ export function versammlung(state: AppState, action: VersammlungAktion): AppStat
             : s,
         ),
       }
-    case 'moveService': {
-      const services = dienstVerschieben(state.services, action.key, action.dir)
-      return services === state.services ? state : { ...state, services }
-    }
     case 'removeService': {
       // Ein Dienst hinterlässt drei Spuren, und keine räumt sich selbst auf:
       // den Aufgabenbereich bei jeder Person, die Platzreihe in jeder Woche und

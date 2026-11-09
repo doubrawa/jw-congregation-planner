@@ -144,7 +144,7 @@ export default {
   "gruppeDelBesuche": "Wizyty w tej grupie zostaną usunięte.",
   "gruppeDelPlaene": "W innych planach jej okresy pozostaną bez grupy.",
   "gruppeEntfernen": "Usuń grupę",
-  "hdDesc": "Liczba pokazuje, ile miejsc jest na każdym zebraniu. Ta sama kolejność obowiązuje w programie.",
+  "hdDesc": "Liczba pokazuje, ile miejsc jest na każdym zebraniu.",
   "gruppenRotation": "Rotacja grup",
   "neuerDienstPh": "Nowe zadanie, np. parking",
   "hinzufuegen": "+ DODAJ",

@@ -44,14 +44,15 @@ import type {
 /**
  * Offene Ersatzgesuche für `me`: Hilfsdienst-Slots, deren Bearbeiter „verhindert"
  * gemeldet hat und die `me` übernehmen darf (`uebernahmeHindernis`: Bereich,
- * noch kein Platz des Dienstes, nicht vorbei, nicht abwesend). Nächste zuerst.
+ * noch kein Platz des Dienstes, nicht vorbei, nicht abwesend). Nächste zuerst,
+ * am selben Tag in der Folge der Dienste.
  *
  * `heute` steht als Parameter da, damit Tests eine Uhr vorgeben können; im
  * Betrieb ist es jetzt.
  */
 export function deriveSubstituteReqs(
   weeks: Week[],
-  services: Service[],
+  services: readonly Service[],
   confirmations: ConfirmationMap,
   me: Person,
   zeiten: MeetingTimes,
@@ -112,7 +113,11 @@ export function deriveSubstituteReqs(
       }),
     })
   }
-  return out.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
+  // Am selben Tag in der Folge von `services` — der Reducer gibt sie
+  // alphabetisch (`diensteDerSprache`); die Absagen selbst kommen ungeordnet.
+  const rang = new Map(services.map((s, i) => [s.key, i]))
+  const stelle = (req: SubstituteReq): number => rang.get(req.svc) ?? services.length
+  return out.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity) || stelle(a) - stelle(b) || a.key.localeCompare(b.key))
 }
 
 /**
@@ -125,7 +130,7 @@ export function deriveSubstituteReqs(
  */
 export function eachAssignedSlot(
   weeks: Week[],
-  services: Service[],
+  services: readonly Service[],
   zeiten: MeetingTimes,
   visit: (slot: SlotAssignment, key: string, task: () => MyTask, wo: { tab: MeetingKey; platz: Platz }) => void,
 ): void {
@@ -198,7 +203,7 @@ export function aufgabenBezeichnung(task: Pick<MyTask, 'title' | 'rolle'>): stri
  */
 export function deriveMyTasks(
   weeks: Week[],
-  services: Service[],
+  services: readonly Service[],
   personName: string,
   confirmations: ConfirmationMap,
   zeiten: MeetingTimes,

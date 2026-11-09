@@ -134,16 +134,22 @@ export function gruppeInWochenUmbenennen(
 }
 
 /**
- * **Einen Dienst um eine Stelle verschieben** (T121, Phase 6c-2) — die Folge
- * der Dienste ist die des Programms (`ZusammenkunftAnsicht`) und der Planung.
- * Am Rand bleibt die Liste, wie sie ist: dieselbe Referenz, damit `persist.ts`
- * nichts schreibt.
+ * **Die Dienste in der Folge, in der jede Liste sie zeigt: alphabetisch** nach
+ * dem Namen, wie der Leser ihn liest (`tu`). Dieselbe Regel wie bei den
+ * Bereichen der Person (`bereichsGruppen`): `numeric` hält „Ordner 2" vor
+ * „Ordner 10"; bei gleichem Namen entscheidet der Schlüssel, damit die Folge
+ * nicht vom Laden abhängt.
+ *
+ * Gespeichert bleibt die Folge des Anlegens (`services.position`); verschieben
+ * lässt sich ein Dienst nicht.
  */
-export function dienstVerschieben(services: Service[], key: string, dir: -1 | 1): Service[] {
-  const von = services.findIndex((s) => s.key === key)
-  const nach = von + dir
-  if (von < 0 || nach < 0 || nach >= services.length) return services
-  const next = [...services]
-  next.splice(nach, 0, ...next.splice(von, 1))
-  return next
+export function diensteAlphabetisch(
+  services: readonly Service[],
+  tu: (text: string) => string,
+  locale: string,
+): Service[] {
+  return services
+    .map((service) => ({ service, name: tu(service.name) }))
+    .sort((a, b) => a.name.localeCompare(b.name, locale, { numeric: true }) || a.service.key.localeCompare(b.service.key))
+    .map(({ service }) => service)
 }

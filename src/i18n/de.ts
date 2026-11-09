@@ -530,7 +530,7 @@ export const DE = {
     gruppeWennEntfernt: 'Wenn du die Gruppe entfernst', gruppeDelBesuche: 'Ihre Gruppenbesuche entfallen.',
     gruppeDelPlaene: 'In den weiteren Plänen bleiben ihre Zeiträume ohne Gruppe.',
     gruppeEntfernen: 'Gruppe entfernen',
-    hdDesc: 'Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt. Die Reihenfolge gilt auch im Programm.',
+    hdDesc: 'Die Zahl sagt, wie viele Plätze es je Zusammenkunft gibt.',
     gruppenRotation: 'Gruppen-Rotation', eigenerBereich: 'Eigener Aufgabenbereich',
     gruppenCard: 'Predigtdienstgruppen',
     aufseherLbl: 'Aufseher', gehilfeLbl: 'Gehilfe', gruppeLbl: 'Predigtdienstgruppe',

@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { useAbwesend } from '../app/useAbwesend'
+import { useDienste } from '../app/useDienste'
 import { useKalendertag } from '../app/useKalendertag'
 import { AufgabeText } from '../aufgaben/AufgabeText'
 import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
@@ -40,6 +41,8 @@ export function ZusagenAnsicht({ week, rawWeek, tpw, sprache }: { week: Week; ra
   const tag = useKalendertag()
   const abwesend = useAbwesend()
   const { weeks, persons, services, confirmations, sentLog, persoenlich } = state
+  // Die Plätze stehen in der Folge des Durchlaufs — die Hilfsdienste darin alphabetisch.
+  const dienste = useDienste()
   const zeiten = state.congregation.times
   const fsWeek = state.fsWeeks[state.week]
 
@@ -54,7 +57,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw, sprache }: { week: Week; ra
     }
     return zusagenDerWoche({
       week: rawWeek,
-      services,
+      services: dienste,
       confirmations,
       sentLog,
       persoenlich,
@@ -62,7 +65,7 @@ export function ZusagenAnsicht({ week, rawWeek, tpw, sprache }: { week: Week; ra
       konfliktVon: (tab, slot, key) => konfliktVon[tab](slot, key),
       heute: fromIso(tag),
     })
-  }, [rawWeek, weeks, state.week, persons, services, confirmations, sentLog, persoenlich, zeiten, abwesend, tag])
+  }, [rawWeek, weeks, state.week, persons, services, dienste, confirmations, sentLog, persoenlich, zeiten, abwesend, tag])
   const zahlen = useMemo(
     () => zahlenDerWoche(rawWeek, fsWeek, { services, confirmations, persoenlich, sentLog, zeiten }, fromIso(tag)),
     [rawWeek, fsWeek, services, confirmations, persoenlich, sentLog, zeiten, tag],

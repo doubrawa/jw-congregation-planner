@@ -1,5 +1,6 @@
 import { Fragment, useId, type ReactNode } from 'react'
 import { useApp } from '../app/context'
+import { useDienste } from '../app/useDienste'
 import { hatAuxKlasse } from '../data/aux-class'
 import { dauerAbtrennen, gehoertZu, MEETING_TABS, mtab } from '../data/helpers'
 import { deutschesDatum, meetingDate, meetingTime } from '../data/meeting-dates'
@@ -345,9 +346,9 @@ function ProgramRow({
   )
 }
 
-/** Die Hilfsdienste einer Zusammenkunft: je Dienst eine Zeile. */
+/** Die Hilfsdienste einer Zusammenkunft: je Dienst eine Zeile, alphabetisch (`useDienste`). */
 function Hilfsdienste({ helpers, me, ebene }: { helpers: Meeting['helpers']; me: Person | undefined; ebene: Ebene }) {
-  const { state } = useApp()
+  const dienste = useDienste()
   const { t, tu } = useT()
   const Ueberschrift = ebene
   return (
@@ -355,7 +356,7 @@ function Hilfsdienste({ helpers, me, ebene }: { helpers: Meeting['helpers']; me:
       <div className="prog-abschnitt-kopf">
         <Ueberschrift className="prog-abschnitt-name">{t.hilfsdienste}</Ueberschrift>
       </div>
-      {state.services.map((service) => (
+      {dienste.map((service) => (
         <div key={service.key} className="prog-dienst">
           <span className="prog-dienst-name">{tu(service.name)}</span>
           <DienstWer helpers={helpers} service={service} me={me} />

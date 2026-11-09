@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp, type AppState } from '../app/context'
 import { loadAndHydrate } from '../app/hydrate'
 import { ausstehendesSchreiben } from '../app/persist'
+import { useDienste } from '../app/useDienste'
 import { fsInGruppe, fsTaskKey } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
 import { type OffeneWochenMeldung, offeneMeldungen, zuletztGesendet, zuletztGesendetFuer } from '../data/plan-versand'
@@ -165,6 +166,8 @@ export function useOffeneMeldungen(
   zuletzt: string | null
 } {
   const { state } = useApp()
+  // Das Blatt listet die Meldungen in dieser Folge — die Hilfsdienste darin alphabetisch.
+  const dienste = useDienste()
   const week = state.weeks[state.week]
   const fsWeek = state.fsWeeks[state.week]
   // Beim Gruppenaufseher die Aufgaben seiner Treffpunkte, sonst die ganze Woche.
@@ -180,14 +183,14 @@ export function useOffeneMeldungen(
     const alle = offeneMeldungen(
       week,
       fsWeek,
-      state.services,
+      dienste,
       state.confirmations,
       state.sentLog,
       state.congregation.times,
       fromIso(tag),
     )
     return eigene ? alle.filter((o) => eigene.has(o.key)) : alle
-  }, [week, fsWeek, eigene, state.services, state.confirmations, state.sentLog, state.congregation.times, tag])
+  }, [week, fsWeek, eigene, dienste, state.confirmations, state.sentLog, state.congregation.times, tag])
   const zuletzt = useMemo(() => {
     if (!week) return null
     return eigene ? zuletztGesendetFuer(state.sentLog, eigene) : zuletztGesendet(state.sentLog, week.start)

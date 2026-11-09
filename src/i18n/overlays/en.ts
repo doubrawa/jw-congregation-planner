@@ -225,7 +225,7 @@ export default {
   "gruppeDelBesuche": "Its group visits will be removed.",
   "gruppeDelPlaene": "In other plans, its weeks or months will remain without a group.",
   "gruppeEntfernen": "Remove group",
-  "hdDesc": "The number shows how many places there are per meeting. The program uses the same order.",
+  "hdDesc": "The number shows how many places there are per meeting.",
   "gruppenRotation": "Group rotation",
   "eigenerBereich": "Own assignment area",
   "gruppenCard": "Field service groups",

@@ -96,7 +96,7 @@ export function gesendeteWochen(sentLog: SentLog): Set<string> {
  */
 export function offenePlaetze(
   weeks: readonly Week[],
-  services: Service[],
+  services: readonly Service[],
   sentLog: SentLog,
   me: Person,
   zeiten: MeetingTimes,
@@ -148,7 +148,7 @@ export function offenePlaetze(
  */
 export function platzAuswahl(
   weeks: readonly Week[],
-  services: Service[],
+  services: readonly Service[],
   key: string,
 ): MeetingSlotSelection | null {
   const teile = schluesselTeile(key)

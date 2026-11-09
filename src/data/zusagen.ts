@@ -68,7 +68,7 @@ export interface ZusagePlatz {
  */
 export function zusagenDerWoche(args: {
   week: Week
-  services: Service[]
+  services: readonly Service[]
   confirmations: ConfirmationMap
   sentLog: SentLog
   persoenlich: PersoenlichLog

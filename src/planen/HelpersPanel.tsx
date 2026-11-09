@@ -1,4 +1,5 @@
 import { useApp } from '../app/context'
+import { useDienste } from '../app/useDienste'
 import { mtab } from '../data/helpers'
 import { auswahlFuer } from '../data/plaetze'
 import { helferKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
@@ -13,10 +14,11 @@ import { useZusage } from './useZusage'
 /**
  * Die Hilfsdienste beim Planen (T121, Entwurf `GPlanen`): eine Karte, je Platz
  * eine Zeile — wer, für welchen Dienst, und wie seine Zusage steht. Je Dienst
- * so viele Plätze, wie eingestellt sind.
+ * so viele Plätze, wie eingestellt sind; die Dienste alphabetisch (`useDienste`).
  */
 export function HelpersPanel({ meeting }: { meeting: Meeting }) {
   const { state, dispatch } = useApp()
+  const dienste = useDienste()
   const { t, tu } = useT()
   const zusage = useZusage()
   const tab = mtab(state.tab)
@@ -38,7 +40,7 @@ export function HelpersPanel({ meeting }: { meeting: Meeting }) {
         <h2 className="prog-abschnitt-name">{t.hilfsdienste}</h2>
       </div>
       <div className="plan-plaetze">
-        {state.services.map((service) =>
+        {dienste.map((service) =>
           Array.from({ length: service.count }, (_, pos) => {
             const slot = meeting.helpers[service.key]?.[pos]
             const name = slot?.name ?? ''

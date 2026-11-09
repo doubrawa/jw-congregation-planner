@@ -14,7 +14,7 @@ import type { Meeting, Service } from '../types'
  * ohne sie meldete der Planen-Kopf „alles zugeteilt", während die halbe Klasse
  * noch offen wäre. Ist keine eingerichtet, gibt es sie schlicht nicht.
  */
-export function countOpenSlots(meeting: Meeting, services: Service[]): number {
+export function countOpenSlots(meeting: Meeting, services: readonly Service[]): number {
   let count = 0
   for (const platz of allePlaetze(meeting, services)) if (!platz.slot?.name && !leerVorOrt(meeting, platz)) count++
   return count
@@ -40,7 +40,7 @@ export interface OpenSlot {
  * assignmentsInMeeting: Rolle bevorzugt (App-Sprache), sonst Titel
  * (Programmsprache); Hilfsdienste je Dienst gebündelt mit Anzahl.
  */
-export function openSlotLabels(meeting: Meeting, services: Service[]): OpenSlot[] {
+export function openSlotLabels(meeting: Meeting, services: readonly Service[]): OpenSlot[] {
   const out: OpenSlot[] = []
   // Derselbe Durchlauf, den `countOpenSlots` zählt — sonst stünde im
   // Planen-Kopf eine höhere Zahl, als das Banner darunter auflistet. Ebenso
