@@ -10,13 +10,12 @@ import type { AppAction } from './context'
  * Liste nie auseinanderlaufen.
  *
  * Eine Absage legt die Meldung „Verhinderung gemeldet" in den Zustand, als
- * `local`: Daran erkennt `persist`, dass sie über `notify_planners` an alle zu
- * verteilen ist, die planen (Admin und Planer) — die Zeile ist der Auslöser,
- * sie muss also bleiben. Wer plant, bekommt sie danach aus der Datenbank
- * selbst wieder. Ein Verkündiger nicht; bei ihm stand sie bis zum 1.10.2026
- * trotzdem als „Neu" in der eigenen Glocke, ein Text für die Planenden, und war
- * nach dem nächsten Laden wieder fort. Seine Rückmeldung ist der Toast
- * („wer plant, erfährt es").
+ * `local` — das Echo dessen, was alle bekommen, die planen (die Function
+ * `substitute` schreibt ihnen die Zeile, Aufruf 'absage'). Wer plant, bekommt
+ * sie danach aus der Datenbank selbst wieder. Ein Verkündiger nicht; bei ihm
+ * stand sie bis zum 1.10.2026 trotzdem als „Neu" in der eigenen Glocke, ein
+ * Text für die Planenden, und war nach dem nächsten Laden wieder fort. Seine
+ * Rückmeldung ist der Toast („wer plant, erfährt es").
  *
  * Verkündiger erzeugen lokal nur diese eine Sorte — „Holen", die andere Quelle
  * lokaler Zeilen, ist Sache derer, die planen. Deshalb genügt `local`.
@@ -34,7 +33,7 @@ export function sichtbareMitteilungen(notifs: readonly Notification[], zuteilen:
  * Zuordnung ihrerseits `mitteilungs-titel.test.ts` an den Erzeugern.
  */
 export const AN_DIE_PLANER: ReadonlySet<string> = new Set([
-  'Verhinderung gemeldet', // eine Absage (Reducer → `notify_planners`)
+  'Verhinderung gemeldet', // eine Absage (`substitute`, Aufruf 'absage')
   'Programm importiert', // der Import einer Woche
   'Unbestätigte Zuteilungen (nicht erreichbar)', // send-reminders
   'Ersatz gefunden', // substitute — geht auch an die Ursprungsperson
@@ -77,6 +76,12 @@ export function handlungZu(
 export interface ZielLage {
   /** Darf zuteilen — Admin oder Planer (4.10.2026): Beide bekommen die Meldungen an die Planer. */
   readonly zuteilen: boolean
+  /**
+   * Plant die Treffpunkte einer Gruppe, ohne zuzuteilen — ihr Aufseher oder
+   * Gehilfe (`treffpunktGruppe`). Er bekommt die Absage eines ihrer Leiter
+   * (`substitute`, Aufruf 'absage') und teilt dort neu zu.
+   */
+  readonly gruppe?: boolean
   readonly weeks: readonly Week[]
   readonly myTasks: readonly MyTask[]
 }
@@ -92,6 +97,8 @@ export interface ZielLage {
  * 2. Eine Meldung an die Planer → ins Planen, in die Woche ihrer Aufgabe,
  *    soweit sie eine nennt (die Absage seit dem 4.10.2026). Vor der eigenen
  *    Aufgabe gefragt: Sagt ein Planer selbst ab, sucht er als Planer Ersatz.
+ *    Ebenso, wer eine Gruppe leitet, bei der Absage eines Treffpunkts — nur
+ *    die bekommt er, und nur dort plant er.
  * 3. Die eigene Aufgabe → „Meine Aufgaben" mit ihrem Blatt (bestätigen,
  *    absagen).
  * 4. Eine Aufgabe, die nicht (mehr) die eigene ist → ihre Woche im Programm,
@@ -106,7 +113,8 @@ export interface ZielLage {
 export function mitteilungsZiel(n: Notification, lage: ZielLage): AppAction[] {
   if (n.title === ERSATZ_GESUCHT) return [{ type: 'navigate', screen: 'freie', abschnitt: 'einspringen' }]
   const teile = n.taskId ? schluesselTeile(n.taskId) : null
-  if (lage.zuteilen && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)
+  const planer = lage.zuteilen || (lage.gruppe === true && teile?.art === 'fs')
+  if (planer && AN_DIE_PLANER.has(n.title)) return wocheZeigen('planen', teile, lage.weeks)
   if (n.taskId && lage.myTasks.some((t) => t.id === n.taskId)) {
     return [{ type: 'navigate', screen: 'aufgaben' }, { type: 'openMyTask', id: n.taskId }]
   }

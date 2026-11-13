@@ -28,6 +28,7 @@ import {
   filterWert,
   jsonRes,
   likeMuster,
+  nurSpalten,
   ohneFragment,
   passtAufMuster,
   schreibZugriff,
@@ -169,6 +170,8 @@ let kaputt: ReadonlySet<string>
 /** Die Dienste der Versammlung (`services`) und die Push-Abos — ein Fall stellt sie um. */
 let dienste: typeof SERVICES
 let abos: typeof SUBS
+/** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
+let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 
 const { writesTo, zeilenIn } = schreibZugriff(() => writes)
 
@@ -227,7 +230,11 @@ const fakeFetch = async (
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : abos)
   if (path.startsWith('services')) return jsonRes(fremd ? [] : dienste)
   if (path.startsWith('groups')) return jsonRes(fremd ? [] : GROUPS)
-  if (path.startsWith('congregations')) return jsonRes(fremd ? [] : CONGREGATIONS)
+  // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte nach
+  // einem Wechsel der Regelzeit still der alte Tag.
+  if (path.startsWith('congregations')) {
+    return jsonRes(fremd ? [] : nurSpalten(CONGREGATIONS.map((c) => ({ ...c, zeiten_ab: zeitenAb })), path))
+  }
   /*
    * **Die Wochen-Filter werden ausgewertet, nicht überlesen.**
    *
@@ -311,6 +318,7 @@ beforeEach(() => {
   kaputt = new Set()
   dienste = SERVICES
   abos = SUBS
+  zeitenAb = []
   resetPush()
 })
 
@@ -950,6 +958,25 @@ describe('Vergangenes wird nicht mehr gemeldet', () => {
     woche = mitSonntag()
     const res = (await (await plan()).json()) as { aufgaben: number }
     expect(res.aufgaben).toBe(4)
+  })
+
+  it('nach einem Wechsel der Regelzeit zählt der Tag dieser Woche (13.11.2026)', async () => {
+    // Seit dieser Woche am Freitag: Am Donnerstag ist die Zusammenkunft unter
+    // der Woche noch nicht gewesen — nach dem alten Dienstag wäre sie es (zwei
+    // Fälle darüber), und ihre Zuteilungen fielen aus der Nachricht.
+    zeitenAb = [{ ab: WOCHE, tab: 'mid', wd: 5, time: '19:30' }]
+    vi.setSystemTime(new Date('2026-09-10T08:00:00Z'))
+    woche = mitSonntag()
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    expect(res.aufgaben).toBe(4)
+  })
+
+  it('Gegenprobe: Ein Wechsel erst ab der nächsten Woche lässt diese beim Dienstag', async () => {
+    zeitenAb = [{ ab: '2026-09-14', tab: 'mid', wd: 5, time: '19:30' }]
+    vi.setSystemTime(new Date('2026-09-10T08:00:00Z'))
+    woche = mitSonntag()
+    const res = (await (await plan()).json()) as { aufgaben: number }
+    expect(res.aufgaben).toBe(1)
   })
 
   it('ein Treffpunkt ist an seinem eigenen Tag vorbei', async () => {

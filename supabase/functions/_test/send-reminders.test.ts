@@ -186,6 +186,8 @@ let dienste: typeof SERVICES
 let persons: typeof PERSONS
 /** Erinnerungs-Einstellungen der Versammlung — je Test überschreibbar. */
 let reminders: { first: number; last: number; repeat: boolean }
+/** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
+let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 /** Trolleys (T121) und ihre Termine, wie sie in der Datenbank stehen. */
 let trolleys: { id: string; name: string }[]
 let trolleyTermine: { trolley_id: string; datum: string; von: string; bis: string; person_id: string; partner_id: string | null }[]
@@ -256,11 +258,13 @@ const fakeFetch = async (
       ...(kaputteVersammlung
         ? [{ id: KAPUTT, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: true }]
         : []),
-      { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
+      { id: CONG, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', zeiten_ab: zeitenAb, reminder_first: reminders.first, reminder_last: reminders.last, reminder_repeat: reminders.repeat },
       ...(zweiteVersammlung
         ? [{ id: ZWEITE, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', reminder_first: 7, reminder_last: 1, reminder_repeat: true }]
         : []),
-    ])
+    // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte nach
+    // einem Wechsel still der alte Tag — hier fiele es auf.
+    ].map((zeile) => nurSpalten([zeile], path)[0]))
   }
   if (path.startsWith('reminder_log')) {
     // Wie die Datenbank: die Versammlung wird ausgewertet, und mehr als
@@ -380,6 +384,7 @@ beforeEach(() => {
   members = [...MEMBERS]
   persons = [...PERSONS]
   reminders = { first: 7, last: 1, repeat: true }
+  zeitenAb = []
   trolleys = []
   trolleyTermine = []
   bescheidGegeben = []
@@ -944,6 +949,45 @@ describe('send-reminders: abweichender Termin (Gedächtnismahl)', () => {
 
   it('Gegenprobe ohne eigenen Termin: dann gilt wieder der Dienstag', async () => {
     vi.setSystemTime(new Date('2026-09-07T09:00:00Z'))
+    expect((await live()).notifications).toBeGreaterThan(0)
+  })
+})
+
+describe('send-reminders: die Regelzeit wechselt zu einem Montag (13.11.2026)', () => {
+  // Die Versammlung trifft sich ab einer Woche an einem anderen Tag
+  // (`congregations.zeiten_ab`). Erinnert wird am Tag vor der Zusammenkunft —
+  // also vor dem Tag, der **in dieser Woche** gilt. Unterschieden wird wie beim
+  // Gedächtnismahl an der Glocke: Die gibt es nur an den Haupttagen.
+  const MONTAG = '2026-09-07T09:00:00Z' // der Tag vor dem bisherigen Dienstag
+  const FREITAG = '2026-09-11T09:00:00Z' // der Tag vor dem neuen Samstag
+
+  it('ab dieser Woche am Samstag: Haupttag ist der Freitag, nicht mehr der Montag', async () => {
+    zeitenAb = [{ ab: WEEK_START, tab: 'mid', wd: 6, time: '19:30' }]
+    vi.setSystemTime(new Date(FREITAG))
+    expect((await live()).notifications).toBeGreaterThan(0)
+    writes = []
+    vi.setSystemTime(new Date(MONTAG))
+    expect((await live()).notifications).toBe(0)
+  })
+
+  it('der Text nennt den neuen Termin', async () => {
+    zeitenAb = [{ ab: WEEK_START, tab: 'mid', wd: 6, time: '19:30' }]
+    vi.setSystemTime(new Date(FREITAG))
+    expect(previewFor(await run(), U_MAX)?.body).toContain('Samstag, 12. September · 19:30')
+  })
+
+  it('Gegenprobe: Ein Wechsel erst ab der nächsten Woche lässt diese beim Dienstag', async () => {
+    zeitenAb = [{ ab: '2026-09-14', tab: 'mid', wd: 6, time: '19:30' }]
+    vi.setSystemTime(new Date(MONTAG))
+    expect((await live()).notifications).toBeGreaterThan(0)
+    writes = []
+    vi.setSystemTime(new Date(FREITAG))
+    expect((await live()).notifications).toBe(0)
+  })
+
+  it('Gegenprobe: Der Wechsel der anderen Zusammenkunft verschiebt diese nicht', async () => {
+    zeitenAb = [{ ab: WEEK_START, tab: 'we', wd: 6, time: '19:30' }]
+    vi.setSystemTime(new Date(MONTAG))
     expect((await live()).notifications).toBeGreaterThan(0)
   })
 })

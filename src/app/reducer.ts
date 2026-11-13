@@ -327,6 +327,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'setFamily':
       return personen(state, action)
     case 'changeServiceCount':
+    case 'renameService':
     case 'removeService':
     case 'addService':
     case 'addGroup':

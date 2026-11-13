@@ -10911,7 +10911,8 @@ die beiden Trigger samt Funktionen, dann `members.planner` und
 `persons.planner_vorgemerkt`; `schema.sql` ohne den Übergang. Eine Sicherung
 mit den alten Namen — alle bis zum 8. November, auch die aus dem Übergang mit
 beiden — spielt `zurueckspielen.mjs` unter den neuen zurück (`UMBENANNT`,
-`alteNamenUebernehmen`; die Rückspielprobe ebenso): Sonst hielte es `planner`
+`aufHeutigeSpalten` — bis zum 13. November `alteNamenUebernehmen`; die
+Rückspielprobe ebenso): Sonst hielte es `planner`
 für eine fremde, gefüllte Spalte und bräche ab, und mit ihr ginge das Recht
 verloren. Gemessen an der Sicherung vom 8. November: alle Tabellen gleich.
 Die Übergangsprobe prüft jetzt die ganze Kette — ein Bestand von vor E4
@@ -10929,6 +10930,279 @@ Laufzeit-Messung in der CI grün.
 
 Danach offen: die Mitgliedsrechte-Probe (fährt der Betreiber) — mit den
 Testern melden sich zum ersten Mal andere an.
+
+## Aufgenommen am 13. November 2026 — Durchsicht der ganzen App (T175–T184)
+
+Am 13. November ging die ganze App noch einmal durch (Betreiber: „schau dir
+die ganze app nochmal an … abläufe, die UI und alles andere"): gelesen, per
+Laufzeit-Messung gemessen (720 Läufe ohne Befund) und im Browser durchgespielt.
+Kein kritischer Fehler; acht Befunde (Nr. 1–8), acht Vorschläge zu Abläufen
+(V1–V8) und fünf Ideen für Neues.
+
+Beauftragt (Betreiber: „1-4, 6, 7 fixen. zusammenkunftszeiten sollten auch im
+vorraus änderbar sein"): Nr. 1, 3, 4, 6 und 7 sind **T175–T179** und
+umgesetzt. Nr. 2 ist herausgenommen („sollten wir zusammen klären") und steht
+mit V1, V4, V8 und der Zahl am App-Symbol als **T180–T184** offen in der
+Liste.
+
+**Nicht beauftragt** und deshalb keine Aufgabe: Nr. 5 (wer beim Verkleinern
+eines Dienstes am wegfallenden Platz stand, verliert die Aufgabe ohne Meldung
+und bleibt in den Daten stehen), Nr. 8 (die Woche 28.12.–3.1. braucht bei
+320 px drei Zeilen in der Überschrift), V2 (Automatik und „Plan senden" für
+mehrere Wochen auf einmal), V3 (nach dem Zuteilen zum nächsten offenen Platz
+springen), V5 (wird eine Zusammenkunft nach „Plan senden" verlegt oder abgesagt,
+die Eingeteilten benachrichtigen), V6 (den Saal auf dem Start erklären), V7
+(unter „Freie Plätze" „für …" vor den Namen), dazu die Ideen „Zuletzt geändert
+von" je Woche, wiederkehrende Abwesenheit, Aufgaben als Kalenderdatei und
+Verknüpfungen am App-Symbol.
+
+**Stand:** T175–T179 sind umgesetzt und geprüft (alle Proben, Lint,
+Typprüfung, Build, Laufzeit-Messung; im Browser auf der Entwicklerseite),
+danach durch `/simplify` und `/code-review max` gegangen (zehn Befunde, acht
+behoben, zwei entschieden — siehe T176 und T180) und am 13. November
+committet, aber **noch nicht gepusht und damit nicht ausgerollt**. Der Push
+bringt zwei Migrationen
+(`20261113100000_tagebuch-umbenennen.sql`, `20261113110000_zeiten-ab.sql`) und
+die Functions in die Produktion — geändert sind `substitute`, `send-plan`,
+`send-reminders` und `tauschen`, dazu die geteilten Module (`planung.ts`,
+`zuteilungen.ts`, `push.ts`), über die auch die übrigen neu hinausgehen. Bis
+dahin scheitern
+`scripts/wochen-importieren.mjs` und `scripts/wochenplanung-importieren.mjs`
+aus diesem Stand an der Spalte `zeiten_ab`, die es dort noch nicht gibt.
+
+### T175 · Eine Absage erreicht die, die planen — per Push, und beim Treffpunkt auch die Gruppe 🔧 ✅ umgesetzt (13. November 2026)
+
+**Befund (Nr. 1):** „Der Planer erfährt es sofort und gibt die Aufgabe jemand
+anderem", sagt das Blatt beim Absagen. Geschrieben wurde aber nur eine Zeile
+in die Glocke von Admin und Planern (`notify_planners`), ohne Push — erfahren
+hat es, wer zufällig die App öffnete. Und wer als Gruppenaufseher den
+Treffpunkt seiner Gruppe geplant hatte, bekam gar nichts.
+
+**Umgesetzt:** Die Absage meldet jetzt die Edge Function `substitute` (Aufruf
+`absage`, `supabase/functions/substitute/absage.ts`):
+
+- **Wer es erfährt:** Admin und Planer; bei einem Gruppentreffpunkt dazu
+  Aufseher und Gehilfe dieser Gruppe. Ihr Tipp auf die Mitteilung führt beim
+  Treffpunkt ins Planen (`ZielLage.gruppe`).
+- **Push** bei Programmpunkten, dem Ratgeber und Treffpunkten — mit Aufgabe,
+  Termin, Name und der Nachricht an den Planer, in der Sprache des Geräts.
+  Bei einem Hilfsdienst sucht die App selbst Ersatz, dort bleibt es bei der
+  Zeile in der Glocke. Der Absagende bekommt nichts.
+- **Wer melden darf:** nur, wer an dem Platz steht (geprüft an der Woche in
+  der Datenbank), nicht für Vergangenes, nicht für eine ausgefallene
+  Zusammenkunft. Die Nachricht ist auf 200 Zeichen begrenzt.
+- Die App ruft sie aus `persist.ts` (`declineTask` → `absageMelden`); ihr
+  eigenes Verteilen der Absage entfällt. `notify_planners` bleibt für Geräte
+  mit altem Stand.
+
+**Geprüft:** `supabase/functions/_test/substitute-absage.test.ts` (wer es
+erfährt, auf welchem Weg, was nicht gehen darf; je Regel eine Sabotage),
+dazu `persist.test.ts`, `data-save.test.ts`, `mitteilungen.test.ts`. Nicht im
+Browser: Die Entwicklerseite hat keine Datenbank. **Am echten Gerät noch nicht
+gesehen** — nach dem Ausrollen einmal absagen und den Push beim Planer ansehen.
+
+### T176 · Zusammenkunftszeiten mit Stichtag — auch im Voraus 🏗 ✅ umgesetzt (13. November 2026)
+
+**Befund (Nr. 3):** Wochentag und Uhrzeit einer Zusammenkunft galten sofort
+und für jede Woche zugleich. Eine Änderung datierte auch die vergangenen
+Wochen um (die Auswertung zählte sie am neuen Tag), und ein Wechsel zum
+Jahresanfang ließ sich nicht vorbereiten. Das Blatt schrieb beim ersten Tipp.
+Betreiber: „zusammenkunftszeiten sollten auch im vorraus änderbar sein".
+
+**Umgesetzt:**
+
+- **Modell:** Je Zusammenkunft eine Grundzeit und ihre Wechsel
+  (`MeetingTime.spaeter`, je Wechsel der Montag der ersten Woche, Wochentag,
+  Uhrzeit). In der Datenbank die neue Spalte `congregations.zeiten_ab`
+  (jsonb); die vier bisherigen Spalten sind die Zeit vor dem ersten Wechsel.
+  Der Stichtag ist die **Woche**, kein Kalendertag — das Programm kennt nur
+  Wochen.
+- **Eine Stelle fragt:** `zeitDerWoche` (`_shared/planung.ts`) — die App über
+  `regelzeit`/`meetingOffset`/`meetingTime`, die Functions über
+  `terminDerWoche` (Tag und Uhrzeit samt Abweichung der Woche in einem), die
+  Wartungsskripte direkt. Erinnerungen, „Plan senden", Einspringen, Absagen
+  und Tauschen rechnen damit je Woche; ebenso Countdown, Zeitleiste,
+  Abwesenheiten, Druck, Auswertung und die Anwesenheit.
+- **Blatt** (Einstellungen → „Unter der Woche" / „Am Wochenende"): Wochentag,
+  Uhrzeit und „Gilt ab der Woche" (die laufende und die 51 danach). Erst
+  „Übernehmen" trägt ein, „Abbrechen" verwirft. Die Wochen davor bleiben, wie
+  sie sind — auch bei „ab dieser Woche". Darunter stehen die geplanten
+  Änderungen, jede lässt sich streichen (mit Rückfrage).
+- **Zeile der Einstellungen:** rechts, was in der laufenden Woche gilt;
+  darunter der nächste Wechsel („ab Do., 7. Januar · 19:30").
+- **Endzeiten** der schon geholten Wochen wandern je Woche mit; eine neu
+  geholte Woche bekommt ihr Ende aus der Uhrzeit, die in ihr gilt.
+- **Wache:** `tests/zeit-je-woche.test.ts` lässt niemanden die Grundzeit
+  direkt lesen (`zeiten[tab].wd`) — so stand der Fehler an vier Stellen, als
+  der Wechsel dazukam.
+
+**Geprüft:** `src/data/zeit-wechsel.test.ts` (Rechenregeln, Spalten,
+Endzeiten, Jahreswechsel), `EinstellungenScreen.test.tsx` (Blatt und Zeilen),
+je Function eine Probe mit Wechsel samt Gegenprobe (sieben Stellen, jede mit
+Sabotage rot), Laden und Speichern. Im Browser auf der Entwicklerseite:
+eintragen, streichen, die Wirkung im Programm (diese Woche Sonntag 10:00,
+nächste Samstag 18:00, das Ende wandert mit), 320 px bei Stufe 1,45 auf
+Russisch, Desktop auf Arabisch.
+
+**Nicht enthalten:** Wer schon benachrichtigt ist, erfährt die Änderung nicht
+von selbst — alte Mitteilungen nennen weiter den alten Termin (das Blatt sagt
+es). Das wäre V5. Und zurück in die Vergangenheit lässt sich kein Wechsel
+eintragen: Fällt ein falsch eingetragener Tag erst in der Woche danach auf,
+behält die vergangene Woche ihn (Review, Befund 2). **Entschieden am
+13. November** (Betreiber: „nein, nicht vergangene woche anbieten"): Das Blatt
+bietet nur die laufende und künftige Wochen an.
+
+**Aus `/simplify` und dem Review vom selben Tag:** Tag und Uhrzeit einer Woche
+holen die Functions an einer Stelle (`terminDerWoche`, vorher sieben
+Abschriften aus drei Aufrufen). Eine Sicherung von vor dem 13. November kennt
+die Spalte `zeiten_ab` nicht und meint „keine Wechsel":
+`versammlung-auf-sicherung.mjs` hätte beim Zurücksetzen auf den Stand vor der
+Beta die Grundzeit zurückgeholt und einen in der Beta eingetragenen Wechsel
+stehen lassen — `aufHeutigeSpalten` in `zurueckspielen.mjs` gibt der alten
+Sicherung jetzt die leere Liste mit (`SEITHER`), gegen PGlite gemessen samt
+Gegenprobe.
+
+### T177 · Eine umbenannte Person wird von „Plan senden" nicht noch einmal gemeldet 🔧 ✅ umgesetzt (13. November 2026)
+
+**Befund (Nr. 4, per Probe belegt):** Das Versand-Tagebuch (`assignment_log`)
+hängt an Platz und Name. Nach einer Umbenennung galten gesendete, noch
+unbestätigte Plätze als ungesendet — das nächste „Plan senden" hätte sie ein
+zweites Mal gemeldet (vorher 0, nachher 1 zu senden), und „weiß Bescheid" war
+weg.
+
+**Umgesetzt:** In der Datenbank zieht ein Trigger an `persons` das Tagebuch
+nach (`tagebuch_umbenennen`, Migration `20261113100000`): Die Einträge der
+Person — über ihre Id, ohne Id über den alten Namen — tragen danach den neuen
+Namen. Doppelte eigene Einträge zu einem Platz fallen dabei zusammen (der
+jüngste bleibt), und ein Eintrag, der dort schon unter dem neuen Namen stand,
+weicht dem ihren. In der App wandern
+`sentLog` und der Haken „persönlich Bescheid gegeben" im selben Schritt mit
+(`tagebuchUmbenannt`), ohne Nachladen.
+
+**Geprüft:** `supabase/tagebuch-umbenennen.test.ts` gegen PGlite (acht Fälle,
+auch die Namensvetterin einer anderen Versammlung und Einträge ohne Id),
+`src/app/umbenennen-tagebuch.test.ts`.
+
+**Gilt ab dem Ausrollen:** Wer davor umbenannt wurde, steht im Tagebuch
+weiter unter dem alten Namen.
+
+### T178 · Ein Hilfsdienst lässt sich umbenennen ⚡ ✅ umgesetzt (13. November 2026)
+
+**Befund (Nr. 6):** Einen Dienst umbenennen ging nur über Entfernen und neu
+Anlegen — das kostete seine Plätze in allen Wochen und alle Freigaben, bei
+Saal- und Zoom-Ordner auch das Recht, Anwesende einzutragen (es hängt an den
+Schlüsseln `saal` und `zoom`).
+
+**Umgesetzt:** Das Blatt des Dienstes hat ein Feld „Name". Übernommen wird
+beim Schließen, wie bei den Gruppen — beide Blätter teilen sich das Feld
+(`useNamensFeld`); ein leerer oder schon vergebener Name wird mit Hinweis
+abgewiesen. Der Schlüssel bleibt — damit Plätze, Freigaben
+und Rechte —, geschrieben wird nur die Spalte `name` (`renameService`). Die
+Listen sortieren sich nach dem neuen Namen.
+
+**Geprüft:** `HilfsdienstBlatt.test.tsx`, `reducer.test.ts`, `persist.test.ts`;
+im Browser umbenannt und einen vergebenen Namen versucht.
+
+### T179 · Eine Push-Meldung wird gekürzt, statt gar nicht anzukommen ⚡ ✅ umgesetzt (13. November 2026)
+
+**Befund (Nr. 7, gerechnet):** Die Sammelmeldung „nicht erreichbar" an die
+Planer zählt alle Namen auf. Über rund 4 KB lehnt der Push-Dienst ab — dann
+käme gar nichts, und das droht ab etwa 40 Einträgen, also gerade zum Livegang
+mit wenigen Konten.
+
+**Umgesetzt:** `pushNutzlast` (`_shared/push.ts`) hält jede Meldung unter
+3000 Bytes: gekürzt wird der Text am letzten „ · " und mit „ …" beendet;
+Titel, Ziel und Kennung bleiben ganz. Die Glocke führt weiter die ganze Liste.
+
+**Geprüft:** `_test/push.test.ts` (auch mehrbytige Schrift). Nicht gegen einen
+echten Push-Dienst gemessen.
+
+### T180 · Die offene App lädt nicht nach 🔧 ☐ offen — gemeinsam klären
+
+**Befund (Nr. 2):** Neu geladen wird nur beim Start, nach einem Push-Tipp,
+beim Öffnen der Mitteilungen, nach „Plan senden" und bei einem
+Schreibkonflikt (`store.tsx`). Wer die App im Hintergrund offen lässt, sieht
+den alten Stand: neue Aufgaben, Zusagen, Abwesenheiten, auch die Zahl an der
+Glocke. Einen Knopf „Aktualisieren" gibt es nicht.
+
+**Warum offen:** Es berührt eine Entscheidung vom 25. September („Laden je
+Konto einmal") — damals lud die App bei jedem Fokus sichtbar neu, weil
+`auth-js` bei jedem Tab-Wechsel `SIGNED_IN` meldet. Sie trägt gegen das
+sichtbare Neuladen; ein stilles, gedrosseltes Nachladen fehlt seither.
+Betreiber am 13. November: „sollten wir zusammen klären" — und auf Nachfrage:
+„ja erst besprechen". Umgesetzt wird nichts davon ohne dieses Gespräch.
+
+**Zu klären:** wann nachgeladen wird (Rückkehr in die App, höchstens alle
+paar Minuten; ein Knopf oder eine Geste; laufend über Realtime), was dabei
+nicht geschehen darf (ein offenes Blatt schließen, Getipptes verwerfen, die
+Ansicht springen lassen, einen Schreibkonflikt auslösen) und was mit dem
+Stand geschieht, der noch auf dem Weg zur Datenbank ist.
+
+**Dazu aus dem Review vom 13. November (Befund 3):** Ein veralteter Stand
+schreibt auch. Die Zusammenkunftszeiten gehen als Ganzes hinaus (Grundzeit und
+Wechsel beider Zusammenkünfte) — ändert ein Admin eine Zeit, dessen App seit
+Tagen offen liegt, überschreibt er still den Wechsel, den ein anderer
+inzwischen geplant hat. Für die Grundzeit galt das schon immer.
+
+### T181 · Abwesenheit eintragen: die eigenen Aufgaben in der Zeit zeigen und die Absage anbieten 🔧 ☐ offen
+
+**Vorschlag (V1; Betreiber: „klingt gut"):** Wer eine Abwesenheit einträgt,
+liest heute nur „Bestehende Zuteilungen sehen die Planer als Konflikt" — der
+Planer muss es selbst bemerken. Besser: gleich die eigenen Zuteilungen
+zeigen, die in den Zeitraum fallen, und die Absage dort anbieten (ein Tipp je
+Aufgabe oder alle zusammen). Seit T175 erfährt der Planer die Absage per Push.
+
+**Zu klären beim Umsetzen:** ob das auch gilt, wenn der Admin die Abwesenheit
+für jemand anderen einträgt; ob Hilfsdienste gleich „Ersatz gesucht"
+auslösen.
+
+### T182 · Wer etwas nicht mehr macht: seine künftigen Plätze werden frei 🏗 ☐ offen — wichtig
+
+**Vorschlag (V4), vom Betreiber erweitert:** „V4 ist wichtig, vor allem, was
+passiert, wenn eine person einen bestimmten dienst oder aufgabe nicht mehr
+macht, wie z.b. mikrodienst. dann sollten die nun ‚falsch' besetzten plätze
+frei werden und müssen neu verplant werden."
+
+Heute: Wird eine Person entfernt, bleiben ihre Zuteilungen als Text in den
+Wochen stehen und sehen besetzt aus. Nimmt der Admin ihr einen Bereich (etwa
+die Mikrofone), bleibt sie in den schon geplanten Wochen an diesen Plätzen
+stehen — sichtbar erst als Konflikt beim Planen, wenn überhaupt.
+
+**Gewünscht:** In beiden Fällen werden die **künftigen** Plätze frei, die
+nicht mehr passen, und der Planer sieht, dass neu zu verplanen ist.
+Vergangenes bleibt, wie es war.
+
+**Zu klären beim Umsetzen:** ob vor dem Leeren gefragt wird („3 Plätze werden
+frei") oder danach gemeldet; ob der Betroffene eine Mitteilung bekommt, wenn
+der Plan schon gesendet war (heute meldet „Plan senden" den Entzug); was mit
+Plätzen geschieht, die nur über den Namen geführt sind; und ob dasselbe für
+Rolle und Geschlecht gilt (wer kein Ältester mehr ist, steht noch als
+Vorsitzender da).
+
+### T183 · Betriebszustand für den Admin in der App 🔧 ☐ offen — ansehen
+
+**Vorschlag (V8; Betreiber: „schauen wir uns mal an"):** Wann der letzte
+Erinnerungslauf war und was er verschickt hat, Push-Fehler, die
+Fehlermeldungen von den Geräten (T171), der Stand der Sicherung — das alles
+ist heute nur per Skript oder Log sichtbar. Eine Karte für den Admin in den
+Einstellungen könnte es zeigen.
+
+**Erst ansehen:** was davon in der Datenbank steht und per RLS lesbar wäre
+(`reminder_log`, `geraete_fehler` liest bisher nur das Skript mit dem
+Dienstschlüssel), und was ein Admin damit anfangen kann.
+
+### T184 · Zahl am App-Symbol für offene Bestätigungen 🔧 ☐ offen
+
+**Idee (Betreiber: „das finde ich auch gut"):** Am Symbol der installierten
+App steht, wie viele Zuteilungen noch auf eine Antwort warten
+(`navigator.setAppBadge`). Sie müsste auch stimmen, wenn die App zu ist — der
+Service Worker setzt sie dann beim Push, die App beim Öffnen und nach jeder
+Zusage.
+
+**Vorher messen:** was Android (Chrome) und iOS (installierte Web-App) davon
+anzeigen — iOS zeigt die Zahl nur mit erlaubten Mitteilungen, Android je nach
+Startbildschirm nur einen Punkt. Hängt mit T180 zusammen: Eine Zahl, die erst
+beim nächsten Start nachzieht, wäre schlechter als keine.
 
 ## Was bewusst offen bleibt
 
@@ -10957,7 +11231,7 @@ Testern melden sich zum ersten Mal andere an.
 
 ## Fortschritt
 
-Stand 7. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 13. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -10969,10 +11243,18 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 10. Oktober ☑ · 12. Oktober ☑ · 16. Oktober ☑☑☑☑ · 18. Oktober ☑☑☑☑☑ ·
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
-1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑
+1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
+13. November ☑☑☑☑☑☐☐☐☐☐
 
-**Alle 173 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
-„kein Mangel" zurückgewiesen. Als letzte kam am 7. November abends **T170**:
+**179 der 184 Aufgaben sind abgearbeitet** — erledigt oder mit Begründung als
+„kein Mangel" zurückgewiesen. Offen sind fünf vom 13. November (**T180–T184**,
+aus der Durchsicht der ganzen App: das Nachladen der offenen App, die
+Abwesenheit mit Absage, frei werdende Plätze, der Betriebszustand für den
+Admin, die Zahl am App-Symbol). **T175–T179** vom selben Tag sind umgesetzt,
+geprüft und committet, aber noch nicht gepusht und damit nicht ausgerollt. Am
+8. November
+kam **T174** dazu (E4, umgesetzt und ausgerollt). Davor als letzte am
+7. November abends **T170**:
 Ausrollen über die CI, ohne Staging — ein Push auf `main` spielt neue
 Migrationen und geänderte Functions vor dem Frontend in die Produktion ein und
 prüft danach lesend; abgenommen mit einer absichtlich roten Probe, die
@@ -11453,6 +11735,10 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
+**Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
+und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, fünf offen.
+Neu in der Tabelle stehen T180–T184 und das Ausrollen von T175–T179.
+
 **Stand 8. November 2026, alles Offene an einer Stelle** (gemessen am Abend:
 174 Köpfe, keiner offen — dazu kamen am Tag der Neuaufbau zum Echtbetrieb, die
 Abwesenheiten aus NWS und T174 (E4), umgesetzt und ausgerollt; keine PR, kein
@@ -11478,6 +11764,12 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
+| **T175–T179** | pushen und damit ausrollen | Am 13. November umgesetzt, geprüft und committet, aber nicht gepusht. Der Push spielt zwei Migrationen (`tagebuch-umbenennen`, `zeiten-ab`) und die Functions in die Produktion. Danach am echten Gerät: einmal absagen und den Push beim Planer ansehen (T175) — die Entwicklerseite hat keine Datenbank. |
+| **T180** | Die offene App lädt nicht nach | **Gemeinsam klären** (Betreiber, 13. November). Berührt die Entscheidung vom 25. September („Laden je Konto einmal"); zu klären ist, wann still nachgeladen wird und was dabei nicht geschehen darf. |
+| **T181** | Abwesenheit eintragen zeigt die eigenen Aufgaben und bietet die Absage an | Aufgenommen am 13. November (V1, Betreiber: „klingt gut"), nicht begonnen. |
+| **T182** | Wer etwas nicht mehr macht: seine künftigen Plätze werden frei | **Wichtig** (Betreiber, 13. November) — eine entfernte Person oder ein genommener Bereich (etwa Mikrofone) lässt die geplanten Plätze heute besetzt aussehen. Aufgenommen, nicht begonnen. |
+| **T183** | Betriebszustand für den Admin in der App | Aufgenommen am 13. November (V8, Betreiber: „schauen wir uns mal an") — erst ansehen, was sich zeigen ließe. |
+| **T184** | Zahl am App-Symbol für offene Bestätigungen | Aufgenommen am 13. November (Betreiber: „das finde ich auch gut"), nicht begonnen; vorher messen, was Android und iOS anzeigen. |
 | **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
 | **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan liest der Betreiber zum Livegang ein, nach dem Zurücksetzen (XML, Planung › Vortragsplan): Das Zurücksetzen vom 8. November hat `vortraege` geleert, die Sicherung vor der Beta hat keinen, und was während der Beta eingelesen wird, nimmt das Zurücksetzen wieder mit |

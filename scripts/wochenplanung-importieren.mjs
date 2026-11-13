@@ -904,7 +904,9 @@ export async function main(argv = process.argv.slice(2)) {
   //    Zeilen: Der feste Studienleiter steht in den Bereichen (`priv`), und wann
   //    er fehlt, sagen die Abwesenheiten und die Zeiten der Versammlung.
   const tabellen = exporte ? null : ladeTabellen(datenDir, TABELLEN)
-  const versammlung = await versammlungHolen(rest, arg, 'id,mid_wd,mid_time,we_wd,we_time')
+  // Mit den Wechseln der Regelzeit (`zeiten_ab`): Ohne sie gälte nach einem
+  // Wechsel der alte Tag, und jede Woche danach bekäme eine Abweichung.
+  const versammlung = await versammlungHolen(rest, arg, 'id,mid_wd,mid_time,we_wd,we_time,zeiten_ab')
   const cong = versammlung.id
   // Die Abwesenheiten seitenweise (`alleZeilen`): Über 1000 Zeilen schnitte
   // PostgREST still ab, und der feste Leiter käme in eine Woche, in der er fehlt.
@@ -970,7 +972,7 @@ export async function main(argv = process.argv.slice(2)) {
   // verfallen (siehe `wocheSchreiben`). Wie weit zurück, ebenso (T125), und
   // wer das Wachtturm-Studium leitet.
   appCodeBereit()
-  const [{ changedSlotKeys }, { festenWtLeiterEintragen }, helpers, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus }, { gleicherInhalt }, bearbeiten, { setAnlass }] =
+  const [{ changedSlotKeys }, { festenWtLeiterEintragen }, helpers, { aufbewahrtAb, VERTEILUNG_WOCHEN }, zeilen, { zeitenAus, zeitDerWoche }, { gleicherInhalt }, bearbeiten, { setAnlass }] =
     await Promise.all([
       import('../src/data/planung/zuteilen.ts'),
       import('../src/data/planung/automatik.ts'),
@@ -1043,11 +1045,12 @@ export async function main(argv = process.argv.slice(2)) {
     const vorher = structuredClone({ ...zeile.data, start: montag })
     let data = kreisaufseher && !art ? setAnlass([zeile.data], 0, 'co')[0] : zeile.data
     // Der Tag folgt NWS: verlegt, wo NWS die Zusammenkunft an einem anderen Tag
-    // hält (in der Woche des Kreisaufsehers am Dienstag), sonst der Rhythmus.
+    // hält (in der Woche des Kreisaufsehers am Dienstag), sonst der Rhythmus —
+    // der dieser Woche, denn die Regelzeit kann zu einem Montag wechseln.
     const tag = tageMitte.get(montag)
     if (tag) {
       const wd = new Date(`${tag}T12:00:00Z`).getUTCDay()
-      const soll = wd === zeiten.mid.wd ? undefined : wd
+      const soll = wd === zeitDerWoche(zeiten.mid, montag).wd ? undefined : wd
       if (data.dev?.mid?.wd !== soll) data = bearbeiten.setAbweichung([data], 0, 'mid', { wd: soll })[0]
     }
     const angeglichen = ablaufAngleichen(data, roh.mid.ablauf, app)

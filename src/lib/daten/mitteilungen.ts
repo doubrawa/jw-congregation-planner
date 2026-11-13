@@ -122,16 +122,18 @@ export async function loadNotifications(
  * Mitteilung an die Planer der Versammlung (`notify_planners`, security
  * definer): je Planer eine eigene Zeile → eigener Gelesen-/Lösch-Status.
  * Erinnerungen erzeugt die Edge Function selbst; Client-Mitteilungen sind
- * Import, „Plan gesendet" und Verhinderung.
+ * Import und „Plan gesendet". Eine Verhinderung meldet die Function
+ * `substitute` (`absageMelden` in `daten/zusagen.ts`) — sie braucht einen Push.
  *
  * Die Empfänger bestimmt die Datenbank, nicht der Client. Ein Verkündiger
  * sieht in `members` nur die eigene Zeile (`members_select`) — wer die Planer
- * aus `state.members` herausfilterte, bekäme für jede Verhinderung eine leere
- * Liste und schriebe still nichts.
+ * aus `state.members` herausfilterte, bekäme eine leere Liste und schriebe
+ * still nichts.
  *
- * `taskKey`: die Aufgabe, um die es geht (die Absage) — daran findet ein Tipp
- * in der Glocke ihre Woche. Ohne ihn geht der Aufruf mit drei Parametern
- * hinaus; so verträgt er auch eine Datenbank, die den vierten noch nicht kennt.
+ * `taskKey`: die Aufgabe, um die es geht, wo die Mitteilung eine nennt — daran
+ * findet ein Tipp in der Glocke ihre Woche. Ohne ihn geht der Aufruf mit drei
+ * Parametern hinaus; so verträgt er auch eine Datenbank, die den vierten noch
+ * nicht kennt.
  */
 export function notifyPlanners(type: NotificationType, title: string, body: string, taskKey?: string): void {
   if (!supabase) return

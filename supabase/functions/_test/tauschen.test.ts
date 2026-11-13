@@ -23,7 +23,7 @@ import { type Lage, type TauschPerson, type TauschWoche, tauschAngebote, tauschA
 import { TITEL_ABGELEHNT, TITEL_ANGEFRAGT, TITEL_GETAUSCHT } from '../tauschen/texte.ts'
 import { TITEL_GESUCHT } from '../substitute/texte.ts'
 import { reset as resetPush, sent as sentPush } from './web-push.stub'
-import { filterWert, jsonRes, likeMuster, ohneFragment, passtAufMuster } from './attrappe.ts'
+import { filterWert, jsonRes, likeMuster, nurSpalten, ohneFragment, passtAufMuster } from './attrappe.ts'
 
 /* ---- Fixture ------------------------------------------------------------- */
 
@@ -146,6 +146,13 @@ describe('Regeln: wann zwei Plätze getauscht werden dürfen', () => {
     expect(tauschPruefen(lage({ heute: '2026-09-14' }), A, B, 'p-simon')).toEqual({ ok: false, fehler: 'past' })
   })
 
+  it('nach einem Wechsel der Regelzeit rechnet jede Woche mit ihrem Tag (13.11.2026)', () => {
+    // Ab der zweiten Woche am Samstag: Simons Platz bleibt am Sonntag, dem
+    // 13., der von Jonas rückt auf Samstag, den 19.
+    const zeiten = { ...STANDARD_ZEITEN, we: { ...STANDARD_ZEITEN.we, spaeter: [{ ab: W2, wd: 6, time: '18:00' }] } }
+    expect(tauschPruefen(lage({ zeiten }), A, B, 'p-simon')).toMatchObject({ ok: true, a: { tag: '2026-09-13' }, b: { tag: '2026-09-19' } })
+  })
+
   it('beide müssen den Dienst können', () => {
     const ohne = (pid: string) => new Map(PERSONEN.map((p) => [p.id, p.id === pid ? { ...p, priv: {} } : p]))
     expect(tauschPruefen(lage({ personen: ohne('p-simon') }), A, B, 'p-simon')).toEqual({ ok: false, fehler: 'not-qualified' })
@@ -250,6 +257,8 @@ let bestand: Map<string, TauschWoche>
 let anfragen: Anfrage[]
 let geschrieben: { method: string; path: string; body: unknown }[]
 let naechsteId: number
+/** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
+let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 /** Die Datenbank weist das Schreiben der beiden Wochen ab — ein anderer war schneller. */
 let wochenAbweisen: boolean
 /** Abwesenheiten, wie `absences` sie liefert. */
@@ -343,7 +352,11 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   }
   if (path.startsWith('services')) return jsonRes(SERVICES)
   if (path.startsWith('persons')) return jsonRes(PERSONEN)
-  if (path.startsWith('congregations')) return jsonRes([{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }])
+  // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte nach
+  // einem Wechsel der Regelzeit still der alte Tag.
+  if (path.startsWith('congregations')) {
+    return jsonRes(nurSpalten([{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', zeiten_ab: zeitenAb }], path))
+  }
   if (path.startsWith('absences')) return jsonRes(abwesenheiten)
   if (path.startsWith('assignment_log')) {
     const muster = likeMuster(path, 'task_key')
@@ -387,6 +400,7 @@ beforeEach(() => {
   abwesenheiten = []
   anfrageAbweisen = false
   netzWeg = false
+  zeitenAb = []
   resetPush()
 })
 
@@ -567,6 +581,16 @@ describe('Function: direkt — mit jemandem ohne Konto (30.10.2026)', () => {
       }),
     ])
     expect(sentPush).toEqual([])
+  })
+
+  it('nach einem Wechsel der Regelzeit nennt die Meldung den Termin der jeweiligen Woche (13.11.2026)', async () => {
+    // Ab der zweiten Woche am Donnerstag um halb acht: Der Sonntag der ersten
+    // Woche bleibt, der Dienstag der zweiten wird zum Donnerstag.
+    zeitenAb = [{ ab: W2, tab: 'mid', wd: 4, time: '19:30' }]
+    await ruf({ aktion: 'direkt', gibtAb: A, nimmt: C })
+    expect(glocke()[0]?.body).toBe(
+      `Mikrofone · Sonntag, 13. September · 10:00 · ${alsFreitext('Lena Hoffmann')} · Donnerstag, 17. September · 19:30 · ${alsFreitext('Simon Krüger')}`,
+    )
   })
 
   it('wer ein Konto hat, sagt selbst zu: mit Jonas tauscht niemand an ihm vorbei', async () => {

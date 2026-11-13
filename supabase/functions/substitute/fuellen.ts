@@ -29,7 +29,15 @@ import { json, type Rest, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { HINDERNIS_STATUS, stehtImDienst, uebernahmeHindernis } from '../_shared/freie-plaetze.ts'
-import { istAusgefallenFuer, personDisplayName, terminTag, versatzMitAbweichung, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
+import {
+  istAusgefallenFuer,
+  personDisplayName,
+  terminDerWoche,
+  terminTag,
+  ZEITEN_SPALTEN,
+  zeitenAus,
+  type ZeitenRow,
+} from '../_shared/planung.ts'
 import type { ServiceRow, Week } from '../_shared/zuteilungen.ts'
 
 interface Person {
@@ -74,7 +82,7 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
     rest.get<Person[]>(
       `persons?select=id,fn,ln,priv&congregation_id=eq.${wert(cong)}&id=eq.${wert(caller.person_id)}`,
     ),
-    rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
+    rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${wert(cong)}`),
     rest.get<Absence[]>(
       `absences?select=from_date,to_date&congregation_id=eq.${wert(cong)}&person_id=eq.${wert(caller.person_id)}`,
     ),
@@ -100,8 +108,7 @@ export async function platzFuellen(rest: Rest, userId: string, taskKey: string, 
   const person = persons[0]
   if (!person) return json({ error: 'not-qualified' }, 403)
   const name = personDisplayName(person.fn, person.ln)
-  const zeiten = zeitenAus(congRows[0])
-  const tag = terminTag(row.start, versatzMitAbweichung(row.data.dev, teile.tab, zeiten[teile.tab].wd))
+  const tag = terminTag(row.start, terminDerWoche(zeitenAus(congRows[0]), teile.tab, row.start, row.data.dev).versatz)
   // Dieselbe Regel wie `offenePlaetze` im Client (`uebernahmeHindernis`).
   const hindernis = uebernahmeHindernis({
     svc,

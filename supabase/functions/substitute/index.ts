@@ -1,7 +1,7 @@
 // =============================================================================
-// Supabase Edge Function: substitute — Ersatz für Hilfsdienste
+// Supabase Edge Function: substitute — Ersatz für Hilfsdienste, Absagen melden
 // =============================================================================
-// Drei Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
+// Fünf Aktionen (Aufruf mit Nutzer-JWT, supabase.functions.invoke):
 //
 //   { action: 'seek', congregationId, taskKey }
 //     Nach „Ich kann nicht" bei einem Hilfsdienst: benachrichtigt alle
@@ -28,7 +28,13 @@
 //     setzt seine Zusage; keine Mitteilung (Betreiber). `heute` ist der
 //     Kalendertag des Geräts — was davor liegt, ist vorbei.
 //
-// Alle vier Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
+//   { action: 'absage', taskKey, nachricht?, heute? }  (seit 13.11.2026, `absage.ts`)
+//     Eine Absage denen melden, die planen: Zeile in der Glocke von Admin und
+//     Planern — bei einem Gruppentreffpunkt auch von Aufseher und Gehilfe —,
+//     dazu ein Push, wo jemand neu zuteilen muss (nicht bei Hilfsdiensten).
+//     Melden darf nur, wer an dem Platz steht.
+//
+// Alle fünf Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
 // 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche
 // Aufgaben gar nicht erst an — hier landet nur, wer den Ausfall noch nicht
 // gesehen hat.
@@ -55,10 +61,10 @@ import {
   heuteUtc,
   istAusgefallenFuer,
   personDisplayName,
+  terminDerWoche,
   terminTag,
   terminText,
-  versatzMitAbweichung,
-  zeitMitAbweichung,
+  ZEITEN_SPALTEN,
   zeitenAus,
   type ZeitenRow,
 } from '../_shared/planung.ts'
@@ -67,6 +73,7 @@ import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { uebersetzerFuer } from '../_shared/zuteilungen.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 import { platzFuellen } from './fuellen.ts'
+import { absageMelden } from './absage.ts'
 import { HINDERNIS_STATUS, stehtImDienst, uebernahmeHindernis } from '../_shared/freie-plaetze.ts'
 
 declare const Deno: {
@@ -292,8 +299,10 @@ Deno.serve(async (req: Request) => {
        */
       congregationId?: string
       taskKey?: string
-      /** Bei 'fill' und 'take': der Kalendertag des Geräts („YYYY-MM-DD"), siehe `heuteUtc`. */
+      /** Bei 'fill', 'take' und 'absage': der Kalendertag des Geräts („YYYY-MM-DD"), siehe `heuteUtc`. */
       heute?: string
+      /** Bei 'absage': was der Absagende dem Planer dazuschreibt, frei und freiwillig. */
+      nachricht?: unknown
     } | null
     // „Heute" ist der Tag des Geräts, soweit glaubhaft (für 'fill' und 'take'):
     // In UTC wäre zwischen Mitternacht und 02:00 noch der Vortag, und eine
@@ -302,6 +311,16 @@ Deno.serve(async (req: Request) => {
     // Einen freien Platz selbst übernehmen — ein eigener Weg mit eigenen Regeln
     // (`fuellen.ts`): kein Ersatzgesuch, aber ein gesendeter Plan.
     if (payload?.action === 'fill') return await platzFuellen(rest, userId, String(payload.taskKey ?? ''), heute)
+    // Eine Absage melden — für jeden Platz, nicht nur Hilfsdienste (`absage.ts`).
+    if (payload?.action === 'absage') {
+      const anfrage = {
+        taskKey: String(payload.taskKey ?? ''),
+        nachricht: typeof payload.nachricht === 'string' ? payload.nachricht : '',
+        heute,
+        appUrl: APP_URL,
+      }
+      return await absageMelden(rest, userId, anfrage, pushTo)
+    }
     const parts = parseKey(payload?.taskKey ?? '')
     if (
       !parts ||
@@ -333,7 +352,7 @@ Deno.serve(async (req: Request) => {
       rest.get<Sub[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
-      rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
+      rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${wert(cong)}`),
     ])
     const week = weekRows[0]?.data
     const meeting = week?.[parts.tab]
@@ -352,8 +371,7 @@ Deno.serve(async (req: Request) => {
     // Wochentag und Uhrzeit dieser einen Zusammenkunft — einmal gerechnet und
     // zweimal gebraucht: für die Abwesenheitsprüfung (welcher Kalendertag?)
     // und für den Termin im Nachrichtentext (welcher Tag steht da?).
-    const zusammenkunftszeiten = zeitenAus(congRows[0])
-    const versatz = versatzMitAbweichung(week.dev, parts.tab, zusammenkunftszeiten[parts.tab].wd)
+    const { versatz, zeit } = terminDerWoche(zeitenAus(congRows[0]), parts.tab, parts.woche, week.dev)
     /*
      * **Der Termin, nicht die Wochenspanne.**
      *
@@ -370,12 +388,7 @@ Deno.serve(async (req: Request) => {
      * `send-plan` rechnen: der Tag aus Wochenstart und Versatz, eine
      * Abweichung vor dem Rhythmus.
      */
-    const date = terminText(
-      weekRows[0]?.start ?? '',
-      versatz,
-      meeting.date,
-      zeitMitAbweichung(week.dev, parts.tab, zusammenkunftszeiten[parts.tab].time),
-    )
+    const date = terminText(weekRows[0]?.start ?? '', versatz, meeting.date, zeit)
     // Kalendertag dieser Zusammenkunft — Grundlage der Abwesenheitsprüfung.
     // Ohne ISO-Startdatum (Vorlagenwochen) bleibt sie aus, statt zu raten.
     const tagISO = terminTag(weekRows[0]?.start ?? '', versatz)

@@ -86,7 +86,7 @@ import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { alleZeilen, alsSkript, argumente, personDisplayName, restKlient, zugangsdaten } from './gemeinsam.mjs'
 import { AUSGENOMMEN, konten, REPO, schemaFingerabdruck, tabellenAusSchema } from './sicherung.mjs'
-import { alteNamenUebernehmen, aufgeschobene, fremdschluessel, pkFilter, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
+import { aufHeutigeSpalten, aufgeschobene, fremdschluessel, pkFilter, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
 
 /**
  * Tabellen, die so bleiben, wie sie sind — je mit Grund. Sie gehören zum
@@ -132,7 +132,9 @@ export const gleich = isDeepStrictEqual
  * Was an einer Zeile abweicht: die Spalten der Sicherung, deren Wert in der
  * Datenbank ein anderer ist — ohne `ohne` und ohne `VON_DER_DATENBANK`.
  * Spalten, die die Sicherung nicht trägt (seither angelegt), bleiben, wie sie
- * sind.
+ * sind — bis auf die, die mit gesicherten eine Einheit bilden: Die gibt
+ * `aufHeutigeSpalten` der Sicherung vorher mit (`SEITHER`, die Wechsel der
+ * Zusammenkunftszeit).
  */
 export function abweichend(soll, ist, ohne = []) {
   const out = {}
@@ -479,11 +481,12 @@ export async function main(argv = process.argv.slice(2)) {
     console.error('Aufruf: node scripts/versammlung-auf-sicherung.mjs <sicherung.json> --cong <id> [--wirklich]')
     process.exit(2)
   }
-  const sicherung = alteNamenUebernehmen(JSON.parse(fs.readFileSync(datei, 'utf8')))
+  const sicherung = aufHeutigeSpalten(JSON.parse(fs.readFileSync(datei, 'utf8')))
   const schema = fs.readFileSync(path.join(REPO, 'supabase', 'schema.sql'), 'utf8')
   if (sicherung.schema_sha256 && sicherung.schema_sha256 !== schemaFingerabdruck(schema)) {
     console.log('! Die Sicherung stammt von einem anderen Stand von schema.sql als dem hier.')
-    console.log('  Geschrieben werden nur ihre Spalten; was seither dazukam, bleibt, wie es ist.\n')
+    console.log('  Geschrieben werden nur ihre Spalten; was seither dazukam, bleibt, wie es ist —')
+    console.log('  außer den Wechseln der Zusammenkunftszeit: Sie gehen mit der Grundzeit zurück.\n')
   }
 
   const { url, key } = await zugangsdaten()

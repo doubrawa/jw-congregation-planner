@@ -9,7 +9,7 @@ import type { Absage, ConfirmationMap, TaskStatus } from '../../data/types'
 import { supabase } from '../supabase'
 import { mitverfolgen } from '../schreiben-unterwegs'
 import { fehlerAntwort } from '../function-antwort'
-import { konfliktMelden, run, zeilenRun } from './schreibweg'
+import { konfliktMelden, run, schreibfehler, zeilenRun } from './schreibweg'
 import { ladungJetzt, standDerFunctionUebernehmen } from './wochen'
 
 export interface ConfirmationRow {
@@ -64,6 +64,38 @@ export function absageFromRow(r: AbsageRow): Absage {
 export function substituteSeek(taskKey: string): void {
   if (!supabase) return
   void run(supabase.functions.invoke('substitute', { body: { action: 'seek', taskKey } }))
+}
+
+/** Absagen, die nur ein veralteter Stand erklärt: Der Platz ist nicht mehr der eigene oder fällt aus. */
+const ABSAGE_VERALTET: ReadonlySet<string> = new Set(['not-assigned', 'slot-not-found', 'meeting-cancelled', 'past'])
+
+/**
+ * **Eine Absage denen melden, die planen** (Edge Function `substitute`, Aufruf
+ * 'absage'): eine Zeile in ihrer Glocke und — wo neu zuzuteilen ist — ein Push.
+ * Bei einem Gruppentreffpunkt erfahren es auch Aufseher und Gehilfe der Gruppe.
+ *
+ * Über die Function, nicht über `notify_planners`: Ein Push geht nur mit dem
+ * privaten VAPID-Schlüssel hinaus, und wer die Gruppe leitet, weiß die App des
+ * Absagenden nicht zuverlässig. `nachricht` ist, was er dem Planer dazuschreibt.
+ *
+ * Weist die Function ab, weil der Platz nicht mehr der eigene ist, wird
+ * nachgeladen (`konfliktMelder`) — ein „konnte nicht gespeichert werden"
+ * erklärte nichts, und die Zusage scheitert dann ohnehin an derselben Lage.
+ */
+export function absageMelden(taskKey: string, nachricht: string | undefined): void {
+  if (!supabase) return
+  const heute = isoDay(new Date())
+  mitverfolgen(
+    supabase.functions
+      .invoke('substitute', { body: { action: 'absage', taskKey, nachricht: nachricht ?? '', heute } })
+      .then(async ({ error }) => {
+        if (!error) return
+        console.error('[substitute/absage]', error.message)
+        const grund = (await fehlerAntwort(error))?.error
+        if (grund !== undefined && ABSAGE_VERALTET.has(grund)) konfliktMelden()
+        else schreibfehler(error)
+      }),
+  )
 }
 
 /**

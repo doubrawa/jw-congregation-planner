@@ -79,8 +79,12 @@ import {
   zugangsdaten,
 } from './gemeinsam.mjs'
 
-/** Was die Einordnung von der Versammlung braucht — Zeiten und Klasse kommen aus dieser Zeile. */
-const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_time,we_wd,we_time'
+/**
+ * Was die Einordnung von der Versammlung braucht — Zeiten und Klasse kommen aus
+ * dieser Zeile. Die Zeiten samt ihren Wechseln (`zeiten_ab`): Welche Uhrzeit
+ * eine neue Woche bekommt, hängt an ihrem Montag.
+ */
+const VERSAMMLUNG_SPALTEN = 'id,name,cong_lang,prog_langs,aux_class,mid_wd,mid_time,we_wd,we_time,zeiten_ab'
 
 /** Eine Woche in Millisekunden — der Abstand zweier Montage. */
 const WOCHE_MS = 7 * 864e5

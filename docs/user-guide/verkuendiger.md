@@ -417,8 +417,9 @@ zeigt, wie es danach weitergeht:
   selbst einen Ersatz und benachrichtigt alle, die für diesen Dienst
   eingetragen und an dem Tag nicht abwesend sind. Du musst niemanden
   persönlich anrufen.
-- Bei **Programmpunkten** und Treffpunkten erfährt es der Planer sofort
-  und teilt neu zu.
+- Bei **Programmpunkten** und Treffpunkten erfährt es der Planer sofort –
+  als Mitteilung aufs Gerät – und teilt neu zu. Bei einem Treffpunkt deiner
+  Gruppe erfahren es auch dein Gruppenaufseher und sein Gehilfe.
 
 Freiwillig kannst du zwei Dinge mitgeben: eine **Nachricht an den Planer** (sie
 steht in seiner Mitteilung, etwa „bin an dem Tag verreist") und **den Tag als

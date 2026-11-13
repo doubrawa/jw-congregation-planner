@@ -57,10 +57,11 @@ import {
   kurzeZeit,
   personDisplayName,
   tageBisTermin,
+  terminDerWoche,
   terminText,
-  versatzMitAbweichung,
+  ZEITEN_SPALTEN,
   zeitenAus,
-  zeitMitAbweichung,
+  type ZeitenRow,
 } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import { dueKind, type Rhythmus } from '../_shared/erinnerung.ts'
@@ -270,17 +271,13 @@ Deno.serve(async (req: Request) => {
     const todayISO = new Date(todayUTC).toISOString().slice(0, 10)
 
     const congs = await klient.get<
-      {
+      (ZeitenRow & {
         id: string
-        mid_wd: number
-        mid_time: string
-        we_wd: number
-        we_time: string
         reminder_first: number
         reminder_last: number
         reminder_repeat: boolean
-      }[]
-    >('congregations?select=id,mid_wd,mid_time,we_wd,we_time,reminder_first,reminder_last,reminder_repeat')
+      })[]
+    >(`congregations?select=id,${ZEITEN_SPALTEN},reminder_first,reminder_last,reminder_repeat`)
 
     let sent = 0
     let expired = 0
@@ -481,9 +478,10 @@ Deno.serve(async (req: Request) => {
           if (istAusgefallenFuer(week.dev, tab)) continue
           // Verlegter Tag/Uhrzeit schlagen den Rhythmus aus den Einstellungen:
           // sonst erinnert der Versand am regulären Abend, während Anzeige und
-          // Abwesenheitsprüfung den echten nennen.
-          const offset = versatzMitAbweichung(week.dev, tab, zeiten[tab].wd)
-          const zeit = zeitMitAbweichung(week.dev, tab, zeiten[tab].time)
+          // Abwesenheitsprüfung den echten nennen. Der Rhythmus selbst ist der
+          // dieser Woche: Nach einem Wechsel der Zusammenkunftszeit gilt ab
+          // seinem Montag der neue Tag (`terminDerWoche`).
+          const { versatz: offset, zeit } = terminDerWoche(zeiten, tab, start, week.dev)
           const days = tageBisTermin(start, offset, todayUTC)
           if (days === null) continue
           const kind = dueKind(rem, days)

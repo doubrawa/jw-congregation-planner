@@ -90,6 +90,7 @@ vi.mock('../lib/daten/wochen', async (importActual) => ({
 }))
 vi.mock('../lib/daten/zusagen', async (importActual) => ({
   ...(await importActual<typeof import('../lib/daten/zusagen')>()),
+  absageMelden: vi.fn(),
   deleteConfirmationRows: vi.fn(),
   saveConfirmation: vi.fn(),
   substituteSeek: vi.fn(),
@@ -128,6 +129,7 @@ import {
 import { persoenlichBescheid, sendPlanEntzug } from '../lib/daten/versand'
 import { saveAnwesenheit, saveFsWeek, saveVortraege, saveWeek } from '../lib/daten/wochen'
 import {
+  absageMelden,
   deleteConfirmationRows,
   gesuchAblehnen,
   saveConfirmation,
@@ -1528,6 +1530,12 @@ describe('Abwesenheiten / Dienste / Gruppen', () => {
     const mehr = { ...erster!, count: erster!.count + 1 }
     persist(st(), st({ services: [mehr, ...rest] }), { type: 'changeServiceCount', key: mehr.key, delta: 1 })
     expect(saveService).toHaveBeenCalledWith('c1', mehr, 0, { eintrag: erster, position: 0 })
+    // Umbenennen: dieselbe Zeile, mit dem Stand davor — hinaus geht nur der Name.
+    vi.clearAllMocks()
+    const umbenannt = { ...erster!, name: 'Empfang' }
+    persist(st(), st({ services: [umbenannt, ...rest] }), { type: 'renameService', key: umbenannt.key, name: 'Empfang' })
+    expect(saveService).toHaveBeenCalledWith('c1', umbenannt, 0, { eintrag: erster, position: 0 })
+    expect(deleteServiceRow).not.toHaveBeenCalled()
     persist(st(), st(), { type: 'removeService', key: 'x' })
     expect(deleteServiceRow).toHaveBeenCalledWith('c1', 'x')
   })
@@ -1966,24 +1974,48 @@ describe('Mitteilungs-Fanout', () => {
   }
   /** Wie sie aus der Datenbank kommt: ohne Kennzeichen. */
   const geladen = { id: 'n2', type: 'verhindert' as const, title: 'Verhinderung gemeldet', text: 'B', at: '2026-09-14T10:00:00Z', read: false }
+  /** Was beim Holen eines Programms entsteht — die Sorte, die über `notify_planners` geht. */
+  const importiert = { ...hier, type: 'import' as const, title: 'Programm importiert', taskId: undefined }
 
   it('eine hier entstandene Mitteilung geht an die Planer — die Empfänger sucht die Datenbank', () => {
     /*
       Bis zum 24.9.2026 filterte persist die Planer aus `next.members`, und dem
-      Fixture lag ein Planer bei. In Wirklichkeit sieht ein Verkündiger per RLS
-      nur die eigene Zeile: Die Liste war leer, und keine Verhinderung hat je
-      einen Planer erreicht. Deshalb hier ausdrücklich **ohne** Mitglieder —
-      genau der Stand, den ein Verkündiger hat.
+      Fixture lag ein Planer bei. In Wirklichkeit sieht, wer nicht Admin ist,
+      per RLS nur die eigene Zeile: Die Liste war leer, und keine Mitteilung hat
+      je einen Planer erreicht. Deshalb hier ausdrücklich **ohne** Mitglieder.
+      Ohne Aufgabe geht sie ohne Schlüssel.
     */
-    persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', id: 'x' })
-    // Mit dem Schlüssel: Ein Tipp in der Glocke des Planers führt in die Woche (4.10.2026).
-    expect(notifyPlanners).toHaveBeenCalledWith('verhindert', 'Verhinderung gemeldet', 'B', '2026-09-14|mid|ratgeber')
+    persist(st({ notifs: [] }), st({ notifs: [importiert], members: [] }), { type: 'autoAssign' })
+    expect(notifyPlanners).toHaveBeenCalledWith('import', 'Programm importiert', 'B', undefined)
   })
 
-  it('eine Mitteilung ohne Aufgabe geht ohne Schlüssel', () => {
-    const importiert = { ...hier, type: 'import' as const, title: 'Programm importiert', taskId: undefined }
-    persist(st({ notifs: [] }), st({ notifs: [importiert] }), { type: 'autoAssign' })
-    expect(notifyPlanners).toHaveBeenCalledWith('import', 'Programm importiert', 'B', undefined)
+  /*
+   * **Die Absage meldet die Function** (13.11.2026), nicht `notify_planners`:
+   * Wer plant, soll es per Push erfahren, und bei einem Gruppentreffpunkt auch,
+   * wer die Gruppe leitet — beides kann nur der Server. Ginge die Zeile
+   * zusätzlich über die Datenbank-Routine, stünde die Absage zweimal in jeder
+   * Glocke.
+   */
+  it('eine Absage geht über die Function — mit dem Schlüssel und der Nachricht, und nur einmal', () => {
+    const key = '2026-09-14|mid|ratgeber'
+    persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', id: key, nachricht: 'bin verreist' })
+    expect(absageMelden).toHaveBeenCalledTimes(1)
+    expect(absageMelden).toHaveBeenCalledWith(key, 'bin verreist')
+    expect(notifyPlanners).not.toHaveBeenCalled()
+  })
+
+  it('auch ohne Nachricht, und für jede Art von Platz — Hilfsdienst, Programmpunkt, Treffpunkt', () => {
+    for (const key of ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|i1|0', 'fs|2026-09-07|r1']) {
+      vi.mocked(absageMelden).mockClear()
+      persist(st(), st(), { type: 'declineTask', id: key })
+      expect(absageMelden).toHaveBeenCalledWith(key, undefined)
+    }
+  })
+
+  it('nur das Absagen meldet — Bestätigen und Einspringen nicht', () => {
+    persist(st(), st(), { type: 'confirmTask', id: '2026-09-07|mid|part|i1|0' })
+    persist(st(), st(), { type: 'takeSubstitute', key: '2026-09-07|mid|helper|mik|0' })
+    expect(absageMelden).not.toHaveBeenCalled()
   })
 
   it('Laden aus der Datenbank verteilt NICHTS', () => {
@@ -2011,7 +2043,7 @@ describe('Mitteilungs-Fanout', () => {
   it('unabhaengig von der Aktion — das Kennzeichen entscheidet', () => {
     // Genau das ist der Gewinn: wer kuenftig eine Aktion mit Mitteilung
     // ergaenzt, muss an keiner zweiten Stelle etwas eintragen.
-    persist(st({ notifs: [] }), st({ notifs: [hier] }), { type: 'autoAssign' })
+    persist(st({ notifs: [] }), st({ notifs: [importiert] }), { type: 'showToast', text: 'x' })
     expect(notifyPlanners).toHaveBeenCalledTimes(1)
   })
 })

@@ -127,8 +127,10 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
       }
     case 'declineTask': {
       const task = state.myTasks.find((t) => t.id === action.id)
-      // Kanonisch deutsch in die Mitteilung — beide Hälften, denn dort steht
-      // kein Übersetzer dazwischen (die Glocke übersetzt beim Anzeigen).
+      // Das Echo in der eigenen Glocke — zu sehen nur bei dem, der plant
+      // (`sichtbareMitteilungen`). Allen, die planen, schreibt die Function
+      // dieselbe Zeile (`substitute/absage.ts`, ausgelöst in `persist`).
+      // Kanonisch deutsch, beide Hälften: Die Glocke übersetzt beim Anzeigen.
       const bezeichnung = task ? aufgabenBezeichnung(task) : ''
       const notif = makeNotif(
         'verhindert',

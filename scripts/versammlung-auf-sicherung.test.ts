@@ -7,7 +7,7 @@ import { leerePostgres } from './pglite-postgres.mjs'
 import { fahre } from './schema-attrappe'
 import { AUSGENOMMEN, REPO, schemaFingerabdruck, tabellenAusSchema } from './sicherung.mjs'
 import { BLEIBEN, gleich, main, namensSchluessel, zuruecksetzbare, zuruecksetzen } from './versammlung-auf-sicherung.mjs'
-import { fremdschluessel } from './zurueckspielen.mjs'
+import { aufHeutigeSpalten, fremdschluessel } from './zurueckspielen.mjs'
 
 /**
  * **Eine Beta in der echten Versammlung, danach zurück auf die Sicherung.**
@@ -264,6 +264,40 @@ describe('versammlung-auf-sicherung — eine Beta in der echten Versammlung, dan
     expect(erg.verknuepft).toBe(0)
     expect(erg.abweichungen).toEqual([])
     expect(versammlung(await alles(db), C, () => true)).toEqual(versammlung(vorZweitem, C, () => true))
+  })
+})
+
+describe('versammlung-auf-sicherung — eine Sicherung von vor den Zeitwechseln (13.11.2026)', () => {
+  // Die Sicherung „vor der Beta" stammt vom 8. November: Die Spalte
+  // `congregations.zeiten_ab` gab es da noch nicht. Trägt in der Beta jemand
+  // einen Wechsel der Zusammenkunftszeit ein, muss er mit der Grundzeit
+  // zurückgehen — sonst gälte danach die Grundzeit von damals und der Wechsel
+  // von heute.
+  const WECHSEL = [{ ab: '2099-01-05', tab: 'mid', wd: 3, time: '19:30' }]
+  let db: PGlite
+  let alt: Sicherung
+  const versammlungsZeile = async (): Promise<Zeile> => (await alles(db)).congregations!.find((z) => z.id === C)!
+  const lauf = (sicherung: Sicherung) => zuruecksetzen({ zugriff: pgliteZugriff(db), schema: SCHEMA, sicherung, cong: C, trocken: false })
+
+  beforeAll(async () => {
+    db = await leerePostgres([SCHEMA])
+    await db.exec(AUFBAU)
+    const heutige = await sichern(db)
+    // Wie am 8. November gesichert: ohne die Spalte.
+    const ohneSpalte = heutige.tabellen.congregations!.map((z) => Object.fromEntries(Object.entries(z).filter(([s]) => s !== 'zeiten_ab')))
+    alt = { ...heutige, tabellen: { ...heutige.tabellen, congregations: ohneSpalte } }
+    await db.query('update public.congregations set mid_wd = 4, zeiten_ab = $1::jsonb where id = $2', [JSON.stringify(WECHSEL), C])
+  }, 120_000)
+
+  it('Gegenprobe: Die Sicherung, wie sie in der Datei steht, ließe den Wechsel stehen — nur die Grundzeit ginge zurück', async () => {
+    await lauf(alt)
+    expect(await versammlungsZeile()).toMatchObject({ mid_wd: 2, zeiten_ab: WECHSEL })
+  })
+
+  it('so, wie das Skript sie liest (`aufHeutigeSpalten`), geht der Wechsel mit zurück', async () => {
+    const erg = await lauf(aufHeutigeSpalten(alt) as Sicherung)
+    expect(await versammlungsZeile()).toMatchObject({ mid_wd: 2, zeiten_ab: [] })
+    expect(erg.abweichungen).toEqual([])
   })
 })
 

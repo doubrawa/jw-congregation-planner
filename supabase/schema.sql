@@ -92,6 +92,20 @@ create table if not exists public.congregations (
   we_wd         smallint not null default 0 check (we_wd between 0 and 6),
   we_time       time not null default '10:00',
 
+  -- Wechsel der Regelzeit (13.11.2026): `[{ "ab": "2027-01-04", "tab": "mid",
+  -- "wd": 4, "time": "19:00" }]`. Ab der Woche mit diesem Montag gilt für die
+  -- Zusammenkunft (`mid`/`we`) die neue Zeit, bis zum nächsten Wechsel; die
+  -- vier Spalten darüber sind die Grundzeit davor. Ohne das galt eine Zeit für
+  -- jede Woche zugleich: Ein Wechsel zum Jahresanfang ließ sich nicht
+  -- vorbereiten, und jede Änderung datierte die vergangenen Wochen um.
+  --
+  -- Eine Liste in einer Spalte statt einer Tabelle: Gelesen wird sie immer
+  -- ganz und immer zusammen mit der Grundzeit (`zeitenAus` in
+  -- `_shared/planung.ts`, die App wie die Functions), und sie hat in Jahren
+  -- eine Handvoll Einträge. Den Inhalt prüft, wer liest — ein Eintrag, der
+  -- sich nicht lesen lässt, zählt nicht.
+  zeiten_ab     jsonb not null default '[]'::jsonb check (jsonb_typeof(zeiten_ab) = 'array'),
+
   -- Erinnerungen (Einstellungen → ERINNERUNGEN). Eigene Spalten statt eines
   -- JSONB-Beutels: die Grenzen sind damit zugesagt, nicht nur im Eingabefeld
   -- geprüft. `first` = Tage vorher, `last` = letzte Erinnerung (0 = am Tag).
@@ -885,6 +899,66 @@ create table if not exists public.assignment_log (
 -- Woche ab (T121, Phase 5g) — wann, steht hier (`persoenlich_bescheid` unten).
 alter table public.assignment_log
   add column if not exists persoenlich_at timestamptz;
+
+-- Das Tagebuch folgt einer Umbenennung (13.11.2026). Sein Schlüssel ist Platz
+-- UND Name — „Plan senden", die Erinnerungen, der Haken „persönlich Bescheid
+-- gesagt" und die App fragen alle so. Wurde jemand umbenannt, stand er danach
+-- unter dem alten Namen im Tagebuch: Jeder seiner gemeldeten, noch
+-- unbestätigten Plätze galt wieder als ungemeldet, und das nächste „Plan
+-- senden" schickte ihm dieselbe Nachricht noch einmal. Die Woche zieht den
+-- neuen Namen mit (`renameInWeeks` in der App); das Tagebuch schreibt kein
+-- Konto, also zieht es hier nach — für jeden Weg, der eine Person umbenennt,
+-- auch für die Wartungsskripte.
+--
+-- Zeilen ohne Person, die den alten Namen tragen, gehören ihr: Namen sind je
+-- Versammlung eindeutig (`persons_name_eindeutig`), und jeder Leser ordnet sie
+-- über den Namen zu. Vor dem Umbenennen fällt weg, was sonst an der
+-- Eindeutigkeit (Platz, Name) scheiterte — eine zweite eigene Zeile zum selben
+-- Platz (die jüngste bleibt) und die Zeile eines früheren Namensvetters, der an
+-- diesem Platz schon unter dem neuen Namen stand.
+create or replace function public.tagebuch_umbenennen()
+returns trigger
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  alt text := btrim(old.fn || ' ' || old.ln);
+  neu text := btrim(new.fn || ' ' || new.ln);
+begin
+  if neu = alt or neu = '' or alt = '' then
+    return new;
+  end if;
+  delete from public.assignment_log weg
+   using public.assignment_log bleibt
+   where weg.congregation_id = new.congregation_id
+     and (weg.person_id = new.id or (weg.person_id is null and weg.name = alt))
+     and bleibt.congregation_id = weg.congregation_id
+     and bleibt.task_key = weg.task_key
+     and (bleibt.person_id = new.id or (bleibt.person_id is null and bleibt.name = alt))
+     and (bleibt.sent_at, bleibt.id) > (weg.sent_at, weg.id);
+  delete from public.assignment_log weg
+   using public.assignment_log eigene
+   where weg.congregation_id = new.congregation_id
+     and weg.name = neu
+     and weg.person_id is distinct from new.id
+     and eigene.congregation_id = weg.congregation_id
+     and eigene.task_key = weg.task_key
+     and (eigene.person_id = new.id or (eigene.person_id is null and eigene.name = alt));
+  update public.assignment_log
+     set name = neu, person_id = new.id
+   where congregation_id = new.congregation_id
+     and (person_id = new.id or (person_id is null and name = alt));
+  return new;
+end;
+$$;
+
+revoke all on function public.tagebuch_umbenennen() from public;
+revoke all on function public.tagebuch_umbenennen() from anon, authenticated;
+
+drop trigger if exists persons_tagebuch_umbenennen on public.persons;
+create trigger persons_tagebuch_umbenennen
+  after update of fn, ln on public.persons
+  for each row execute function public.tagebuch_umbenennen();
 
 -- Anmelde-Links (T121, Phase 8): Ein Kennwort gibt es nicht mehr. Wer in die
 -- App soll, bekommt vom Admin einen Link — per Nachricht oder auf einem Zettel mit

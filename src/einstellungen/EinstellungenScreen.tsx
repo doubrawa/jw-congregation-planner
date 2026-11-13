@@ -10,7 +10,7 @@ import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { EinstellZeile } from './EinstellZeile'
 import { ErinnerungenInhalt } from './ErinnerungenInhalt'
-import { erinnerungKurz, werPlant, zusammenkunftText } from './einstellungen-anzeige'
+import { erinnerungKurz, naechsterWechselText, werPlant, zusammenkunftJetzt } from './einstellungen-anzeige'
 import { GruppenInhalt } from './GruppenInhalt'
 import { HilfsdiensteInhalt } from './HilfsdiensteInhalt'
 import { SprachenInhalt } from './SprachenInhalt'
@@ -120,7 +120,7 @@ function EinstellungenDesktop() {
   useLangNames(state.lang)
   const kurz: Record<Abschnitt, string> = {
     versammlung: [state.congregation.name, sprachenListe(state.congLang, state.progLangs, state.lang)].filter(Boolean).join(' · '),
-    zusammenkuenfte: `${zusammenkunftText(state.congregation.times.mid, state.lang)} · ${zusammenkunftText(state.congregation.times.we, state.lang)}`,
+    zusammenkuenfte: `${zusammenkunftJetzt(state.congregation.times, 'mid', state.lang)} · ${zusammenkunftJetzt(state.congregation.times, 'we', state.lang)}`,
     hilfsdienste: fill(t.diensteN, { n: state.services.length }),
     gruppen: `${fill(t.gruppenN, { n: state.groups.length })} · ${fill(t.trolleysN, { n: state.trolleys.length })}`,
     erinnerungen: erinnerungKurz(state.reminders, t, state.lang),
@@ -205,9 +205,9 @@ function VersammlungKarte({ onSprachen, mitTitel = true }: { onSprachen?: () => 
 }
 
 /**
- * **Zusammenkünfte**: wann sie sind (je ein Blatt), die zusätzliche Klasse —
- * und am Handy die Hilfsdienste als Unteransicht; am Desktop sind sie ein
- * eigener Abschnitt.
+ * **Zusammenkünfte**: wann sie sind (je ein Blatt, auch im Voraus — „Gilt ab
+ * der Woche"), die zusätzliche Klasse — und am Handy die Hilfsdienste als
+ * Unteransicht; am Desktop sind sie ein eigener Abschnitt.
  *
  * `mitTitel`: Am Desktop steht der Titel schon über dem Abschnitt.
  */
@@ -222,11 +222,14 @@ function ZusammenkuenfteKarte({ onHilfsdienste, mitTitel = true }: { onHilfsdien
   return (
     <section className="karte einst-karte">
       {mitTitel && <h2 className="abschnitt-titel karte-titel">{t.navZusammenkuenfte}</h2>}
+      {/* Rechts, was in der laufenden Woche gilt; darunter der nächste Wechsel,
+          wenn einer eingetragen ist („ab Do., 7. Januar · 19:30"). */}
       {zeilen.map(([welche, name]) => (
         <EinstellZeile
           key={welche}
           name={name}
-          wert={zusammenkunftText(state.congregation.times[welche], state.lang)}
+          unter={naechsterWechselText(state.congregation.times[welche], t, state.lang)}
+          wert={zusammenkunftJetzt(state.congregation.times, welche, state.lang)}
           onTipp={() => setBlatt(welche)}
         />
       ))}

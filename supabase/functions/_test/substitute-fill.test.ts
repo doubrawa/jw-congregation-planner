@@ -14,7 +14,7 @@ import type { Rest } from '../_shared/rest.ts'
 import { helferKey, punktKey, ratgeberKey } from '../_shared/aufgaben-schluessel.ts'
 import type { HelperEntry, Week } from '../_shared/zuteilungen.ts'
 import { platzFuellen } from '../substitute/fuellen.ts'
-import { filterWert, likeMuster, passtAufMuster } from './attrappe.ts'
+import { filterWert, likeMuster, nurSpalten, passtAufMuster } from './attrappe.ts'
 
 const CONG = 'cong-1'
 const MONTAG = '2026-09-07' // Dienstag 8.9., Sonntag 13.9.
@@ -87,6 +87,8 @@ let konkurrent: (() => void) | null
 let aussetzer: number
 /** Läuft einmal nach einem Aussetzer — ein anderer schreibt genau zwischen erstem und zweitem Versuch. */
 let zwischendurch: (() => void) | null
+/** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
+let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 
 const kopie = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 
@@ -113,7 +115,9 @@ const rest: Rest = {
     } else if (path.startsWith('persons')) {
       rows = PERSONS.filter((p) => p.id === filterWert(path, 'id'))
     } else if (path.startsWith('congregations')) {
-      rows = [{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }]
+      // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte
+      // nach einem Wechsel der Regelzeit still der alte Tag.
+      rows = nurSpalten([{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00', zeiten_ab: zeitenAb }], path)
     } else if (path.startsWith('absences')) {
       rows = abwesend.filter((a) => a.person_id === filterWert(path, 'person_id'))
     } else if (path.startsWith('assignment_log')) {
@@ -164,9 +168,10 @@ beforeEach(() => {
   konkurrent = null
   aussetzer = 0
   zwischendurch = null
+  zeitenAb = []
 })
 
-const fuellen = (taskKey: string, wer = U_ICH, heute = HEUTE) => platzFuellen(rest, wer, taskKey, heute)
+const fuellen =(taskKey: string, wer = U_ICH, heute = HEUTE) => platzFuellen(rest, wer, taskKey, heute)
 const antwort = async (res: Response) => ({ status: res.status, body: await res.json() })
 const geschrieben = () => aufrufe.filter((a) => a.method !== 'GET')
 
@@ -330,6 +335,18 @@ describe('fill: was abgewiesen wird — und dann nichts schreibt', () => {
     expect(await antwort(await fuellen(K_MIK, U_ICH, '2026-09-09'))).toEqual({ status: 409, body: { error: 'past' } })
     expect(geschrieben()).toEqual([])
     expect((await fuellen(K_MIK, U_ICH, '2026-09-08')).status).toBe(200)
+  })
+
+  it('nach einem Wechsel der Regelzeit zählt der Tag dieser Woche (13.11.2026)', async () => {
+    // Seit dieser Woche am Donnerstag: Am Mittwoch lässt sich der Platz noch
+    // übernehmen — nach dem alten Dienstag wäre er vorbei (Fall darüber).
+    zeitenAb = [{ ab: MONTAG, tab: 'mid', wd: 4, time: '19:30' }]
+    expect((await fuellen(K_MIK, U_ICH, '2026-09-09')).status).toBe(200)
+  })
+
+  it('Gegenprobe: Ein Wechsel erst ab der nächsten Woche lässt diese beim Dienstag', async () => {
+    zeitenAb = [{ ab: '2026-09-14', tab: 'mid', wd: 4, time: '19:30' }]
+    expect(await antwort(await fuellen(K_MIK, U_ICH, '2026-09-09'))).toEqual({ status: 409, body: { error: 'past' } })
   })
 
   it('an dem Tag abwesend → 409', async () => {

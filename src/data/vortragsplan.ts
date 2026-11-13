@@ -35,7 +35,7 @@ import {
   ROLE_GUEST_SPEAKER,
   ROLE_OWN_SPEAKER,
 } from './helpers'
-import { isoDay, meetingDate, montagVon, tagNach, versatzAbMontag } from './meeting-dates'
+import { isoDay, meetingDate, montagVon, regelzeit, tagNach, versatzAbMontag } from './meeting-dates'
 import { editTalkTheme, openingSongNr, setOpeningSong, TALK_PLACEHOLDER } from './meeting-edit'
 import { assignSlot } from './planung/zuteilen'
 import type { MeetingTimes, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -240,7 +240,7 @@ export function vortragsplanVorschau(plan: Vortragsplan, k: VorschauKontext): Vo
   // in derselben Woche liegen.
   const tagDer = (woche: string): string => {
     const week = angelegt.get(woche)
-    return week ? isoDay(meetingDate(week, 'we', k.zeiten)) : tagNach(woche, versatzAbMontag(k.zeiten.we.wd))
+    return week ? isoDay(meetingDate(week, 'we', k.zeiten)) : tagNach(woche, versatzAbMontag(regelzeit(k.zeiten, 'we', woche).wd))
   }
   const wochen = new Set(ausDatei.keys())
   if (plan.von && plan.bis) {

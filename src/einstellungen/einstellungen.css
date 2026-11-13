@@ -89,6 +89,18 @@
   padding-block: 2px 12px;
 }
 
+/* Im Blatt einer Zusammenkunftszeit: die Wechsel, die noch bevorstehen — die
+   Marke, darunter je Wechsel eine Zeile mit ✕. Die erste trägt keine Linie,
+   sie stünde wie ein Strich unter der Marke. */
+.zeit-geplant {
+  display: flex;
+  flex-direction: column;
+}
+
+.zeit-geplant > .einst-zeile:first-of-type {
+  border-block-start-color: transparent;
+}
+
 /* Der Schalter „Zusätzliche Klasse" steht zwischen den Zeilen und trägt ihre Linie. */
 .einst-schalter {
   border-block-start: 1px solid var(--linie);

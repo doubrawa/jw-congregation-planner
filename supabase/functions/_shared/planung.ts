@@ -192,10 +192,48 @@ export function taskDateText(date: string | undefined): string {
 export interface MeetingTime {
   wd: number
   time: string
+  /** Was ab einer späteren Woche gilt (`ZeitWechsel`), nach `ab` aufsteigend. */
+  spaeter?: readonly ZeitWechsel[]
 }
 
-/** Beide Regeltermine — die Spalten `mid_wd/mid_time/we_wd/we_time`. */
+/**
+ * **Ein Wechsel der Regelzeit**: Ab der Woche mit diesem Montag gilt für die
+ * Zusammenkunft ein anderer Wochentag oder eine andere Uhrzeit.
+ *
+ * Bis zum 13.11.2026 kannte die Versammlung je Zusammenkunft genau eine Zeit,
+ * und die galt für jede Woche zugleich — eine Änderung datierte auch die
+ * vergangenen Wochen um, und ein Wechsel zum Jahresanfang ließ sich nicht
+ * vorbereiten: Entweder zeigten die Wochen davor schon die neue Zeit oder die
+ * danach noch die alte. Jetzt gilt die Grundzeit (`wd`, `time`), bis ein
+ * Wechsel sie ablöst, und der bis zum nächsten.
+ */
+export interface ZeitWechsel {
+  /** Der Montag der ersten Woche, in der es gilt (`Week.start`). */
+  ab: string
+  wd: number
+  time: string
+}
+
+/** Beide Regeltermine — die Spalten `mid_wd/mid_time/we_wd/we_time`, die Wechsel aus `zeiten_ab`. */
 export type MeetingTimes = Record<'mid' | 'we', MeetingTime>
+
+/**
+ * **Wochentag und Uhrzeit, die in dieser Woche gelten** — die eine Stelle, an
+ * der App und Functions es fragen. Der jüngste Wechsel, dessen Montag nicht
+ * nach dem der Woche liegt; ohne einen solchen die Grundzeit.
+ *
+ * Ohne Woche (ein Aufrufer, der keine kennt) gilt die Grundzeit.
+ */
+export function zeitDerWoche(zeit: MeetingTime, woche: string | undefined): { wd: number; time: string } {
+  let gilt: { wd: number; time: string } = zeit
+  if (woche) {
+    for (const wechsel of zeit.spaeter ?? []) {
+      if (wechsel.ab > woche) break
+      gilt = wechsel
+    }
+  }
+  return { wd: gilt.wd, time: gilt.time }
+}
 
 /**
  * Wochentag (0 = Sonntag … 6 = Samstag) → Tage nach Montag.
@@ -224,12 +262,66 @@ export const STANDARD_ZEITEN: MeetingTimes = {
   we: { wd: 0, time: '10:00' },
 }
 
-/** Die vier Spalten der Regeltermine, wie PostgREST sie liefert. */
+/** Die Spalten der Regeltermine, wie PostgREST sie liefert (`ZEITEN_SPALTEN`). */
 export interface ZeitenRow {
   mid_wd: number
   mid_time: string
   we_wd: number
   we_time: string
+  /**
+   * Die Wechsel beider Zusammenkünfte: `[{ ab, tab, wd, time }]` (jsonb).
+   * Fehlt sie — ein Aufrufer, der die Spalte nicht liest —, gilt die Grundzeit
+   * für jede Woche.
+   */
+  zeiten_ab?: unknown
+}
+
+/**
+ * Was eine Abfrage an `congregations` nennen muss, damit `zeitenAus` die Zeit
+ * jeder Woche kennt. Als eine Konstante: Wer die Wechsel nicht mitliest,
+ * rechnet nach einem Wechsel mit dem falschen Tag — und nichts schlägt fehl.
+ */
+export const ZEITEN_SPALTEN = 'mid_wd,mid_time,we_wd,we_time,zeiten_ab'
+
+/** Die Wechsel einer Zusammenkunft aus der Spalte — nur, was sich lesen lässt, nach `ab` geordnet. */
+function wechselAus(roh: unknown, tab: 'mid' | 'we'): ZeitWechsel[] {
+  if (!Array.isArray(roh)) return []
+  // Je Montag einer: Der spätere Eintrag derselben Woche gilt.
+  const jeWoche = new Map<string, ZeitWechsel>()
+  for (const eintrag of roh as unknown[]) {
+    if (!eintrag || typeof eintrag !== 'object') continue
+    const { ab, tab: welche, wd, time } = eintrag as Record<string, unknown>
+    if (welche !== tab || typeof ab !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(ab)) continue
+    if (typeof wd !== 'number' || !Number.isInteger(wd) || wd < 0 || wd > 6) continue
+    if (typeof time !== 'string' || !/^\d{2}:\d{2}/.test(time)) continue
+    jeWoche.set(ab, { ab, wd, time: time.slice(0, 5) })
+  }
+  return [...jeWoche.values()].sort((a, b) => a.ab.localeCompare(b.ab))
+}
+
+/** Ein Wechsel, wie er in `zeiten_ab` steht: mit der Zusammenkunft, für die er gilt. */
+export interface ZeitWechselZeile extends ZeitWechsel {
+  tab: 'mid' | 'we'
+}
+
+/**
+ * Werte → Spalten, das Gegenstück zu `zeitenAus`: die Grundzeit in ihre vier
+ * Spalten, die Wechsel beider Zusammenkünfte nach `zeiten_ab`.
+ *
+ * **Immer alle fünf.** Grundzeit und Wechsel ergeben nur zusammen, was in
+ * einer Woche gilt — wer die eine ohne die anderen schriebe, setzte den Stand
+ * eines zweiten Admins halb zurück.
+ */
+export function zeitenSpalten(zeiten: MeetingTimes): Omit<ZeitenRow, 'zeiten_ab'> & { zeiten_ab: ZeitWechselZeile[] } {
+  return {
+    mid_wd: zeiten.mid.wd,
+    mid_time: zeiten.mid.time,
+    we_wd: zeiten.we.wd,
+    we_time: zeiten.we.time,
+    zeiten_ab: (['mid', 'we'] as const).flatMap((tab) =>
+      (zeiten[tab].spaeter ?? []).map(({ ab, wd, time }) => ({ ab, tab, wd, time })),
+    ),
+  }
 }
 
 /**
@@ -251,15 +343,21 @@ export interface ZeitenRow {
  */
 export function zeitenAus(row: ZeitenRow | undefined): MeetingTimes {
   if (!row) return STANDARD_ZEITEN
+  // Ohne Wechsel bleibt das Feld weg: So sieht eine Versammlung aus, die nie
+  // einen hatte, und so vergleicht sie sich mit dem Stand davor.
+  const mit = (zeit: { wd: number; time: string }, tab: 'mid' | 'we'): MeetingTime => {
+    const spaeter = wechselAus(row.zeiten_ab, tab)
+    return spaeter.length > 0 ? { ...zeit, spaeter } : zeit
+  }
   return {
-    mid: {
-      wd: kurzerTag(row.mid_wd, STANDARD_ZEITEN.mid.wd),
-      time: kurzeZeit(row.mid_time, STANDARD_ZEITEN.mid.time),
-    },
-    we: {
-      wd: kurzerTag(row.we_wd, STANDARD_ZEITEN.we.wd),
-      time: kurzeZeit(row.we_time, STANDARD_ZEITEN.we.time),
-    },
+    mid: mit(
+      { wd: kurzerTag(row.mid_wd, STANDARD_ZEITEN.mid.wd), time: kurzeZeit(row.mid_time, STANDARD_ZEITEN.mid.time) },
+      'mid',
+    ),
+    we: mit(
+      { wd: kurzerTag(row.we_wd, STANDARD_ZEITEN.we.wd), time: kurzeZeit(row.we_time, STANDARD_ZEITEN.we.time) },
+      'we',
+    ),
   }
 }
 
@@ -475,4 +573,25 @@ export function zeitMitAbweichung(
   regel: string,
 ): string {
   return abweichungFuer(dev, tab)?.time ?? regel
+}
+
+/**
+ * **Tag und Uhrzeit einer Zusammenkunft in ihrer Woche**: die Abweichung der
+ * Woche vor dem Rhythmus — und der Rhythmus ist der, der in dieser Woche gilt
+ * (`zeitDerWoche`). Das Gegenstück zu `meetingOffset` und `meetingTime` im
+ * Client, für die Functions die eine Stelle dafür.
+ *
+ * Bis zum 13.11.2026 holte jede Function Versatz und Uhrzeit einzeln und gab
+ * die Regelzeit selbst mit (`zeiten[tab].wd`). Seit die Regelzeit zu einem
+ * Montag wechseln kann, hinge an jedem dieser Aufrufe, ob er die Woche nennt —
+ * hier nennt sie einer.
+ */
+export function terminDerWoche(
+  zeiten: MeetingTimes,
+  tab: 'mid' | 'we',
+  woche: string,
+  dev: Abweichungen | undefined,
+): { versatz: number; zeit: string } {
+  const regel = zeitDerWoche(zeiten[tab], woche)
+  return { versatz: versatzMitAbweichung(dev, tab, regel.wd), zeit: zeitMitAbweichung(dev, tab, regel.time) }
 }

@@ -1,6 +1,6 @@
 import { useApp } from '../app/context'
 import { handlungZu, mitteilungsZiel } from '../app/mitteilungen'
-import { rechteVon } from '../data/rechte'
+import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { Notification } from '../data/types'
 import { NOTIF_TEXT_KEY, NOTIF_TITLE_KEY } from '../i18n/ui'
 import { useT } from '../i18n/useT'
@@ -35,7 +35,8 @@ export function Mitteilung({ notif }: { notif: Notification }) {
   }
   const oeffnen = () => {
     gelesen()
-    const lage = { zuteilen: rechteVon(state).zuteilen, weeks: state.weeks, myTasks: state.myTasks }
+    const rechte = rechteVon(state)
+    const lage = { zuteilen: rechte.zuteilen, gruppe: treffpunktGruppe(rechte) !== null, weeks: state.weeks, myTasks: state.myTasks }
     for (const aktion of mitteilungsZiel(notif, lage)) dispatch(aktion)
   }
 

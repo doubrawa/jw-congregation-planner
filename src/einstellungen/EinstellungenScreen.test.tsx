@@ -150,11 +150,44 @@ describe('Wann die Zusammenkünfte sind', () => {
     return blatt(name)!
   }
 
-  it('je Zusammenkunft ein Blatt mit Wochentag und Uhrzeit', () => {
+  /** Donnerstag, 12. November 2026 — die laufende Woche beginnt am Montag, dem 9. */
+  const LAUFEND = '2026-11-09'
+  const NUR_GRUNDZEIT = { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } }
+  /** Ab Januar am Donnerstag um halb acht — eingetragen, aber noch nicht in Kraft. */
+  const MIT_WECHSEL = {
+    mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2027-01-04', wd: 4, time: '19:30' }] },
+    we: { wd: 0, time: '10:00' },
+  }
+  const mit = (times: AppState['congregation']['times']) => ({ congregation: { name: 'N', hall: 'S', times } })
+  const knopf = (wo: HTMLElement, text: string) => [...wo.querySelectorAll('button')].find((b) => b.textContent === text)!
+  const waehle = (wo: HTMLElement, marke: string, value: string) => fireEvent.change(feld(wo, marke), { target: { value } })
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 12, 9))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('je Zusammenkunft ein Blatt mit Wochentag, Uhrzeit und der Woche, ab der es gilt', () => {
     const { container } = zeige()
     const mitte = oeffne(container, t.unterDerWoche)
     expect(feld(mitte, t.a11yWeekday).value).toBe('2')
     expect(feld(mitte, t.a11yTime).value).toBe('19:00')
+    // Vorgewählt ist die laufende Woche — wie bisher „ab sofort".
+    expect(feld(mitte, t.zeitGiltAbWoche).value).toBe(LAUFEND)
+  })
+
+  it('zur Wahl stehen die laufende Woche und die 51 danach — keine davor, keine zweimal', () => {
+    const { container } = zeige()
+    const optionen = [...feld(oeffne(container, t.unterDerWoche), t.zeitGiltAbWoche).querySelectorAll('option')]
+    expect(optionen).toHaveLength(52)
+    expect(optionen[0]!.textContent).toBe(zahlBinden('9.–15. November · Aktuelle Woche'))
+    expect(optionen[1]!.textContent).toBe(zahlBinden('16.–22. November'))
+    // Über den Jahreswechsel nennt die Spanne beide Jahre. `Intl` setzt dort
+    // schmale Leerzeichen um den Strich — verglichen wird mit gewöhnlichen.
+    expect(optionen.find((o) => o.value === '2026-12-28')?.textContent?.replace(/\s/gu, ' ')).toBe('28. Dezember 2026 – 3. Januar 2027')
+    expect(optionen.at(-1)!.value).toBe('2027-11-01')
+    expect(new Set(optionen.map((o) => o.textContent)).size).toBe(52)
   })
 
   it('die Tage stehen in der Sprache des Lesers ab Montag, gespeichert wird die Zahl', () => {
@@ -166,25 +199,131 @@ describe('Wann die Zusammenkünfte sind', () => {
     expect(optionen.map((o) => o.value)).toEqual(['1', '2', '3', '4', '5', '6', '0'])
   })
 
-  it('ein neuer Tag der Wochenmitte lässt das Wochenende unangetastet', () => {
-    // Beide Termine stehen in EINEM Feld (`times`) — wird der Rest nicht
-    // mitgeschrieben, ist er weg.
+  it('beim Wählen gilt noch nichts — Tag, Uhrzeit und Woche gehören zusammen', () => {
+    // Bis zum 13.11.2026 schrieb jeder Tipp sofort: Der neue Wochentag stand
+    // schon für die laufende Woche da, bevor die Woche gewählt war.
     const { container, dispatch } = zeige()
-    fireEvent.change(feld(oeffne(container, t.unterDerWoche), t.a11yWeekday), { target: { value: '4' } })
-    expect(patches(dispatch)).toEqual([{ times: { mid: { wd: 4, time: '19:00' }, we: { wd: 0, time: '10:00' } } }])
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.a11yWeekday, '4')
+    waehle(mitte, t.a11yTime, '19:30')
+    waehle(mitte, t.zeitGiltAbWoche, '2027-01-04')
+    expect(patches(dispatch)).toEqual([])
   })
 
-  it('und eine neue Uhrzeit am Wochenende die Wochenmitte ebenso', () => {
+  it('„Übernehmen" ab der laufenden Woche: Die Grundzeit bleibt — die Wochen davor fanden so statt', () => {
     const { container, dispatch } = zeige()
-    fireEvent.change(feld(oeffne(container, t.amWochenende), t.a11yTime), { target: { value: '09:30' } })
-    expect(patches(dispatch)).toEqual([{ times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '09:30' } } }])
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.a11yWeekday, '4')
+    fireEvent.click(knopf(mitte, t.uebernehmenBtn))
+    // Beide Termine stehen in EINEM Feld (`times`) — wird das Wochenende nicht
+    // mitgeschrieben, ist es weg.
+    expect(patches(dispatch)).toEqual([
+      { times: { mid: { wd: 2, time: '19:00', spaeter: [{ ab: LAUFEND, wd: 4, time: '19:00' }] }, we: { wd: 0, time: '10:00' } } },
+    ])
+    expect(blatt(t.unterDerWoche)).toBeNull()
+  })
+
+  it('im Voraus: Der Wechsel steht an seiner Woche, bis dahin gilt die alte Zeit', () => {
+    const { container, dispatch } = zeige()
+    const ende = oeffne(container, t.amWochenende)
+    waehle(ende, t.a11yWeekday, '6')
+    waehle(ende, t.a11yTime, '18:00')
+    waehle(ende, t.zeitGiltAbWoche, '2027-01-04')
+    fireEvent.click(knopf(ende, t.uebernehmenBtn))
+    expect(patches(dispatch)).toEqual([
+      { times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00', spaeter: [{ ab: '2027-01-04', wd: 6, time: '18:00' }] } } },
+    ])
+  })
+
+  it('„Abbrechen" verwirft die Wahl', () => {
+    const { container, dispatch } = zeige()
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.a11yWeekday, '4')
+    fireEvent.click(knopf(mitte, t.abbrechen))
+    expect(patches(dispatch)).toEqual([])
+    expect(blatt(t.unterDerWoche)).toBeNull()
   })
 
   it('eine krumme Bestandszeit bleibt wählbar — sonst spränge sie beim Öffnen um', () => {
-    const { container } = zeige({
-      congregation: { name: 'N', hall: 'S', times: { mid: { wd: 2, time: '19:20' }, we: { wd: 0, time: '10:00' } } },
-    })
+    const { container } = zeige(mit({ mid: { wd: 2, time: '19:20' }, we: { wd: 0, time: '10:00' } }))
     expect(feld(oeffne(container, t.unterDerWoche), t.a11yTime).value).toBe('19:20')
+  })
+
+  it('die Zeile nennt, was diese Woche gilt — nach einem Wechsel nicht mehr die Grundzeit', () => {
+    // Seit Oktober am Mittwoch: Die Grundzeit (Dienstag) gilt nur für die Wochen davor.
+    const { container } = zeige(
+      mit({ mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2026-10-05', wd: 3, time: '19:00' }] }, we: { wd: 0, time: '10:00' } }),
+    )
+    expect(wert(container, t.unterDerWoche)).toBe('Mittwoch 19:00')
+    // Er gilt schon — „geplant" ist daran nichts mehr.
+    expect(zeile(container, t.unterDerWoche)?.querySelector('.klein-text')).toBeNull()
+    expect(feld(oeffne(container, t.unterDerWoche), t.a11yWeekday).value).toBe('3')
+  })
+
+  it('ein geplanter Wechsel steht unter der Zeile — mit dem ersten Tag nach dem neuen Rhythmus', () => {
+    const { container } = zeige(mit(MIT_WECHSEL))
+    expect(wert(container, t.unterDerWoche)).toBe('Dienstag 19:00')
+    // Die Woche beginnt am Montag, dem 4. Januar; der erste Donnerstag ist der 7.
+    expect(zeile(container, t.unterDerWoche)?.querySelector('.klein-text')?.textContent).toBe(zahlBinden('ab Do., 7. Januar · 19:30'))
+    // Gegenprobe: ohne Wechsel steht nichts darunter.
+    expect(zeile(container, t.amWochenende)?.querySelector('.klein-text')).toBeNull()
+  })
+
+  it('im Blatt stehen die geplanten Wechsel — ohne einen fehlt der Abschnitt', () => {
+    const { container } = zeige(mit(MIT_WECHSEL))
+    const mitte = oeffne(container, t.unterDerWoche)
+    const geplant = mitte.querySelector('.zeit-geplant')!
+    expect(geplant.querySelector('.feld-marke')?.textContent).toBe(t.zeitGeplanteWechsel)
+    expect([...geplant.querySelectorAll('.einst-zeile')].map((z) => z.firstElementChild?.textContent)).toEqual([
+      zahlBinden('ab Do., 7. Januar · 19:30'),
+    ])
+    fireEvent.click(knopf(mitte, t.abbrechen))
+    expect(oeffne(container, t.amWochenende).querySelector('.zeit-geplant')).toBeNull()
+  })
+
+  it('ein geplanter Wechsel lässt sich streichen — nach der Rückfrage, und das gilt gleich', () => {
+    const { container, dispatch } = zeige(mit(MIT_WECHSEL))
+    const weg = oeffne(container, t.unterDerWoche).querySelector<HTMLButtonElement>('.zeit-geplant .entfernen')!
+    // Vorgelesen wird, welcher gemeint ist — es können mehrere untereinander stehen.
+    expect(weg.getAttribute('aria-label')).toBe(`${zahlBinden('ab Do., 7. Januar · 19:30')}: ${t.a11yRemove}`)
+    fireEvent.click(weg)
+    expect(weg.textContent).toBe(t.entfernenSicher)
+    expect(patches(dispatch)).toEqual([])
+    bestaetigen(weg)
+    // Ohne Wechsel fehlt `spaeter` ganz — ein leeres Feld zählte beim Speichern als Änderung.
+    expect(patches(dispatch)).toEqual([{ times: NUR_GRUNDZEIT }])
+  })
+
+  it('die Woche eines geplanten Wechsels gewählt: Die Felder zeigen ihn, und „Übernehmen" ersetzt ihn', () => {
+    const { container, dispatch } = zeige(mit(MIT_WECHSEL))
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.zeitGiltAbWoche, '2027-01-04')
+    expect(feld(mitte, t.a11yWeekday).value).toBe('4')
+    expect(feld(mitte, t.a11yTime).value).toBe('19:30')
+    waehle(mitte, t.a11yTime, '19:00')
+    fireEvent.click(knopf(mitte, t.uebernehmenBtn))
+    expect(patches(dispatch)).toEqual([
+      { times: { mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2027-01-04', wd: 4, time: '19:00' }] }, we: { wd: 0, time: '10:00' } } },
+    ])
+  })
+
+  it('was schon gewählt ist, bleibt stehen, wenn danach die Woche wechselt', () => {
+    const { container } = zeige(mit(MIT_WECHSEL))
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.a11yWeekday, '5')
+    waehle(mitte, t.zeitGiltAbWoche, '2027-01-04')
+    expect(feld(mitte, t.a11yWeekday).value).toBe('5')
+  })
+
+  it('heute schon ändern nimmt den für Januar geplanten Wechsel nicht zurück', () => {
+    const { container, dispatch } = zeige(mit(MIT_WECHSEL))
+    const mitte = oeffne(container, t.unterDerWoche)
+    waehle(mitte, t.a11yTime, '19:15')
+    fireEvent.click(knopf(mitte, t.uebernehmenBtn))
+    expect(patches(dispatch)[0].times.mid.spaeter).toEqual([
+      { ab: LAUFEND, wd: 2, time: '19:15' },
+      { ab: '2027-01-04', wd: 4, time: '19:30' },
+    ])
   })
 })
 

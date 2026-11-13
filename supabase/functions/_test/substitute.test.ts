@@ -19,7 +19,7 @@ import { reset as resetPush, sent as sentPush } from './web-push.stub'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { makeTr } from '../../../src/i18n/translate'
 import { dict, NOTIF_TITLE_KEY, loadOverlay } from '../../../src/i18n/ui'
-import { erfuelltVergleiche, filterWert, jsonRes, MAX_ROWS, ohneFragment, schreibZugriff } from './attrappe.ts'
+import { erfuelltVergleiche, filterWert, jsonRes, MAX_ROWS, nurSpalten, ohneFragment, schreibZugriff } from './attrappe.ts'
 import { parseGoAbschnitt, parseGoTarget } from '../../../src/app/deeplink'
 import { TITEL_GESUCHT } from '../substitute/texte.ts'
 
@@ -143,6 +143,8 @@ let versandLog: string[]
 let absences: { person_id: string | null; from_date: string; to_date: string }[]
 /** Tabellen, deren Lesen scheitert (PostgREST antwortet 500). */
 let kaputt: ReadonlySet<string>
+/** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
+let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 
 /** Alle schreibenden REST-Aufrufe (PATCH/POST/DELETE) dieses Testlaufs. */
 const { writesTo } = schreibZugriff(() => writes)
@@ -198,7 +200,9 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
   if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
   if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
-  if (path.startsWith('congregations')) return jsonRes(CONGREGATIONS)
+  // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte nach
+  // einem Wechsel der Regelzeit still der alte Tag.
+  if (path.startsWith('congregations')) return jsonRes(nurSpalten(CONGREGATIONS.map((c) => ({ ...c, zeiten_ab: zeitenAb })), path))
   if (path.startsWith('absences')) {
     // Wie die Datenbank: nur, was die Datumsfilter durchlassen, und höchstens
     // `MAX_ROWS` Zeilen.
@@ -276,6 +280,7 @@ beforeEach(() => {
   versandLog = []
   absences = [...ABSENCES]
   kaputt = new Set()
+  zeitenAb = []
   resetPush()
 })
 
@@ -860,6 +865,15 @@ describe('substitute: take prüft, was die App beim Anbieten prüft', () => {
     expect(res.status).toBe(409)
     await expect(res.json()).resolves.toEqual({ error: 'past' })
     expect(writes).toEqual([])
+  })
+
+  it('nach einem Wechsel der Regelzeit zählt der Tag dieser Woche (13.11.2026)', async () => {
+    // Seit dieser Woche am Donnerstag: Am Mittwoch ist die Zusammenkunft noch
+    // nicht vorbei — nach dem alten Dienstag wäre sie es (Fall darüber).
+    zeitenAb = [{ ab: WI, tab: 'mid', wd: 4, time: '19:30' }]
+    vi.setSystemTime(new Date('2026-09-09T10:00:00Z'))
+    const res = await call(take({ heute: '2026-09-09' }))
+    expect(res.status).toBe(200)
   })
 
   it('ein zweiter Aufruf nach dem eigenen Übernehmen: nichts zu tun — über die Id, nicht den Namen', async () => {

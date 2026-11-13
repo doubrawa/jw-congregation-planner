@@ -65,9 +65,9 @@ import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_sh
 import {
   heuteUtc,
   personDisplayName,
+  terminDerWoche,
   terminText,
-  versatzMitAbweichung,
-  zeitMitAbweichung,
+  ZEITEN_SPALTEN,
   zeitenAus,
   type ZeitenRow,
 } from '../_shared/planung.ts'
@@ -178,7 +178,7 @@ async function lesen(k: Aufrufer, wochen: string[] | { ab: string }): Promise<Ge
     rest.get<TauschWoche[]>(`weeks?select=start,data,updated_at&congregation_id=eq.${c}&${wochenFilter}`),
     rest.get<ServiceRow[]>(`services?select=key,name,count,groups&congregation_id=eq.${c}`),
     rest.get<TauschPerson[]>(`persons?select=id,fn,ln,priv&congregation_id=eq.${c}`),
-    rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${c}`),
+    rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${c}`),
     rest.get<{ person_id: string | null; from_date: string; to_date: string }[]>(
       `absences?select=person_id,from_date,to_date&congregation_id=eq.${c}&to_date=gte.${wert(k.heute)}`,
     ),
@@ -212,9 +212,8 @@ async function lesen(k: Aufrufer, wochen: string[] | { ab: string }): Promise<Ge
 /** Der Termin eines Platzes, wie ihn „Ersatz gesucht" nennt: Tag und Uhrzeit, eine Abweichung vor dem Rhythmus. */
 function termin(lage: Lage, p: { woche: string; tab: Tab }): string {
   const woche = lage.wochen.get(p.woche)!
-  const zeit = lage.zeiten[p.tab]
-  const versatz = versatzMitAbweichung(woche.data.dev, p.tab, zeit.wd)
-  return terminText(woche.start, versatz, woche.data[p.tab]?.date, zeitMitAbweichung(woche.data.dev, p.tab, zeit.time))
+  const { versatz, zeit } = terminDerWoche(lage.zeiten, p.tab, woche.start, woche.data.dev)
+  return terminText(woche.start, versatz, woche.data[p.tab]?.date, zeit)
 }
 
 /** Der Name des Dienstes, wie die Versammlung ihn führt. */

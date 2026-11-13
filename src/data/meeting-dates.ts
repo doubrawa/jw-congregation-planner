@@ -7,6 +7,7 @@
  * `week.start` ist der Montag der Woche (nur bei jw.org-importierten Wochen
  * gesetzt); Demo-/Vorlagen-Wochen haben keins → kein Countdown.
  */
+import { zeitDerWoche } from '../../supabase/functions/_shared/planung.ts'
 import { abweichung, istAusgefallen, MEETING_TABS } from './helpers'
 import type { MeetingKey, MeetingTimes, Week } from './types'
 
@@ -63,7 +64,9 @@ export function fromIso(iso: string): Date {
  *  1. eine **Abweichung** dieser Woche (`week.dev`, T30) — der Planer hat den
  *     Tag ausdrücklich verlegt, etwa weil sich mehrere Versammlungen einen
  *     Saal teilen und eine davon Dienstwoche hat;
- *  2. der Rhythmus der Versammlung (Einstellungen).
+ *  2. der Rhythmus der Versammlung (Einstellungen) — **der dieser Woche**
+ *     (`regelzeit`): Wechselt die Versammlung zum Jahresanfang den Tag, gilt
+ *     davor der alte und danach der neue.
  *
  * Dazwischen stand eine dritte: der Wochentag, den das `date`-Feld der
  * Zusammenkunft **anzeigt**. Sie galt Alt-Datensätzen, die das Gedächtnismahl
@@ -77,7 +80,7 @@ export function fromIso(iso: string): Date {
  */
 export function meetingOffset(week: Week, tab: MeetingKey, zeiten: MeetingTimes): number {
   // `?? `, nicht `||`: der Sonntag ist die 0.
-  return versatzAbMontag(abweichung(week, tab)?.wd ?? zeiten[tab].wd)
+  return versatzAbMontag(abweichung(week, tab)?.wd ?? regelzeit(zeiten, tab, week.start).wd)
 }
 
 /**
@@ -85,7 +88,20 @@ export function meetingOffset(week: Week, tab: MeetingKey, zeiten: MeetingTimes)
  * Rangfolge wie beim Tag.
  */
 export function meetingTime(week: Week, tab: MeetingKey, zeiten: MeetingTimes): string {
-  return abweichung(week, tab)?.time ?? zeiten[tab].time
+  return abweichung(week, tab)?.time ?? regelzeit(zeiten, tab, week.start).time
+}
+
+/**
+ * **Der Rhythmus der Versammlung in dieser Woche**: Wochentag und Uhrzeit der
+ * Zusammenkunft, ohne Abweichung der Woche.
+ *
+ * `zeiten[tab].wd` allein ist nur die Grundzeit — was vor dem ersten Wechsel
+ * gilt (`MeetingTime.spaeter`). Wer den Tag einer Woche braucht, fragt hier
+ * oder über `meetingOffset`/`meetingTime`; die Functions fragen dieselbe
+ * Funktion (`zeitDerWoche`). `tests/zeit-je-woche.test.ts` hält das fest.
+ */
+export function regelzeit(zeiten: MeetingTimes, tab: MeetingKey, woche: string | undefined): { wd: number; time: string } {
+  return zeitDerWoche(zeiten[tab], woche)
 }
 
 /**

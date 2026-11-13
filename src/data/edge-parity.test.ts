@@ -9,6 +9,7 @@ import {
   SKIP_ROLE as EDGE_SKIP,
   taskDateText as edgeDate,
   terminText as edgeTermin,
+  terminDerWoche as edgeTerminDerWoche,
   versatzMitAbweichung as edgeVersatz,
   zeitenAus as edgeZeitenAus,
   zeitMitAbweichung as edgeZeit,
@@ -368,6 +369,28 @@ describe('Sonderwochen: Verlegung und Ausfall (T30)', () => {
     // Edge — dieselben Eingaben, eigene Fassung
     expect(edgeVersatz(w.dev, 'mid', 2)).toBe(tag)
     expect(edgeZeit(w.dev, 'mid', '19:00')).toBe(zeit)
+    // … und so, wie die Functions fragen: Tag und Uhrzeit der Woche in einem.
+    expect(edgeTerminDerWoche(zeiten, 'mid', w.start, w.dev)).toEqual({ versatz: tag, zeit })
+  })
+
+  it('nach einem Wechsel der Regelzeit nennen beide Seiten den Tag der Woche — samt Abweichung (13.11.2026)', () => {
+    // Ab der Woche vom 7. September am Donnerstag um halb acht.
+    const zeiten = {
+      mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2026-09-07', wd: 4, time: '19:30' }] },
+      we: { wd: 0, time: '10:00' },
+    }
+    const wechselFaelle: Array<[string, Week, number, string]> = [
+      ['die Woche davor', { ...woche(undefined, ''), start: '2026-08-31' }, 1, '19:00'],
+      ['die Woche des Wechsels', woche(undefined, ''), 3, '19:30'],
+      // Weicht nur die Uhrzeit ab, kommt der Tag aus dem neuen Rhythmus — und umgekehrt.
+      ['nur die Uhrzeit weicht ab', woche({ time: '18:00' }, ''), 3, '18:00'],
+      ['nur der Tag weicht ab', woche({ wd: 2 }, ''), 1, '19:30'],
+    ]
+    for (const [name, w, tag, zeit] of wechselFaelle) {
+      expect(meetingOffset(w, 'mid', zeiten), name).toBe(tag)
+      expect(meetingTime(w, 'mid', zeiten), name).toBe(zeit)
+      expect(edgeTerminDerWoche(zeiten, 'mid', w.start, w.dev), name).toEqual({ versatz: tag, zeit })
+    }
   })
 
   /*

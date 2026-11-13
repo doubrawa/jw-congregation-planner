@@ -71,6 +71,7 @@ const OHNE_DATENBANK: Record<string, [() => unknown, unknown]> = {
   notifyPlanners: [() => mitteilungen.notifyPlanners('verhindert', 'T', 'B'), undefined],
   persoenlichBescheid: [() => versand.persoenlichBescheid('k1', 'Name', true), undefined],
   substituteSeek: [() => zusagen.substituteSeek('k1'), undefined],
+  absageMelden: [() => zusagen.absageMelden('k1', 'bin verreist'), undefined],
   substituteTake: [() => zusagen.substituteTake('k1'), undefined],
   platzFuellen: [() => zusagen.platzFuellen('k1'), undefined],
   substituteWithdraw: [() => zusagen.substituteWithdraw('k1'), undefined],

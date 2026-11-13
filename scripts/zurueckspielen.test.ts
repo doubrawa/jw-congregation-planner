@@ -4,7 +4,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ATTRAPPE_URL, type Aufruf, befunde, fahre, tabelleVon } from './schema-attrappe'
 import { AUSGENOMMEN, REPO, tabellenAusSchema } from './sicherung.mjs'
-import { alteNamenUebernehmen, aufgeschobene, fremdeSpalten, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
+import { aufHeutigeSpalten, aufgeschobene, fremdeSpalten, fremdschluessel, main, pkFilter, zeileTeilen } from './zurueckspielen.mjs'
 
 /**
  * **Geprüft wird, ob alles wieder dasteht — und in einer Reihenfolge, die die
@@ -169,23 +169,45 @@ describe('fremdeSpalten', () => {
   })
 })
 
-describe('alteNamenUebernehmen — umbenannte Spalten (E4: planner → admin)', () => {
+describe('aufHeutigeSpalten — umbenannte Spalten (E4: planner → admin)', () => {
   const mit = (members: unknown[], persons: unknown[] = []) => ({ erstellt: '', tabellen: { members, persons, weeks: [{ id: 'w' }] } })
 
   it('eine Sicherung von vor E4: Das Recht steht danach unter seinem heutigen Namen', () => {
-    const s = alteNamenUebernehmen(mit([{ user_id: U1, planner: true }], [{ id: P1, planner_vorgemerkt: true }]))
+    const s = aufHeutigeSpalten(mit([{ user_id: U1, planner: true }], [{ id: P1, planner_vorgemerkt: true }]))
     expect(s.tabellen.members).toEqual([{ user_id: U1, admin: true }])
     expect(s.tabellen.persons).toEqual([{ id: P1, admin_vorgemerkt: true }])
   })
 
   it('eine aus dem Übergang trägt beide: Es gilt der heutige, der alte fällt weg', () => {
-    const s = alteNamenUebernehmen(mit([{ user_id: U1, admin: true, planner: true }]))
+    const s = aufHeutigeSpalten(mit([{ user_id: U1, admin: true, planner: true }]))
     expect(s.tabellen.members).toEqual([{ user_id: U1, admin: true }])
   })
 
   it('eine von heute bleibt, wie sie ist — andere Tabellen ebenso', () => {
     const heute = mit([{ user_id: U1, admin: false }], [{ id: P1, admin_vorgemerkt: false }])
-    expect(alteNamenUebernehmen(heute)).toEqual(heute)
+    expect(aufHeutigeSpalten(heute)).toEqual(heute)
+  })
+})
+
+describe('aufHeutigeSpalten — Spalten, die mit gesicherten eine Einheit bilden (13.11.2026)', () => {
+  // Wann eine Zusammenkunft ist, sagen die Grundzeit (vier Spalten) und die
+  // Wechsel ab einer Woche (`zeiten_ab`) zusammen. Eine Sicherung von davor
+  // kennt nur die Grundzeit und meint damit „für jede Woche".
+  const mit = (congregations: Record<string, unknown>[]) => ({ erstellt: '', tabellen: { congregations, weeks: [{ id: 'w' }] } })
+  const GRUNDZEIT = { id: C, mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }
+
+  it('eine Sicherung von vor den Zeitwechseln trägt danach die leere Liste — „keine Wechsel"', () => {
+    expect(aufHeutigeSpalten(mit([GRUNDZEIT])).tabellen.congregations).toEqual([{ ...GRUNDZEIT, zeiten_ab: [] }])
+  })
+
+  it('eine von heute behält ihre Wechsel', () => {
+    const heute = mit([{ ...GRUNDZEIT, zeiten_ab: [{ ab: '2027-01-04', tab: 'mid', wd: 4, time: '19:30' }] }])
+    expect(aufHeutigeSpalten(heute)).toEqual(heute)
+  })
+
+  it('jede Zeile bekommt ihre eigene Liste', () => {
+    const [a, b] = aufHeutigeSpalten(mit([GRUNDZEIT, { ...GRUNDZEIT, id: 'c2' }])).tabellen.congregations as Array<{ zeiten_ab: unknown[] }>
+    expect(a!.zeiten_ab).not.toBe(b!.zeiten_ab)
   })
 })
 

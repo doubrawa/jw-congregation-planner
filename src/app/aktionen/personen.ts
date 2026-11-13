@@ -7,6 +7,7 @@ import { kontoGehtMit } from '../eigene-person'
 import { fsDropPersonPid, fsRenameLeader } from '../../data/fs'
 import { aemterBeenden, displayName, linkFamily, neuWennGeaendert, unlinkFamily } from '../../data/helpers'
 import { dropPersonPid, renameInWeeks } from '../../data/namensbindung'
+import { tagebuchUmbenannt } from '../../data/planung/schluessel'
 import type { AppAction, AppState } from '../context'
 import { toastKey } from './gemeinsam'
 
@@ -153,6 +154,11 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
           // ebenfalls als Text — ohne dies stünde dort weiter der alte Name,
           // während die Zusammenkünfte längst den neuen zeigen.
           next.fsWeeks = fsRenameLeader(state.fsWeeks, action.id, oldName, newName)
+          // Das Versand-Tagebuch führt Platz und Name: Unter dem alten Namen
+          // gälte, was der Person gemeldet ist, wieder als ungemeldet, und
+          // „Plan senden" zeigte auf sie (`tagebuchUmbenannt`).
+          next.sentLog = tagebuchUmbenannt(state.sentLog, oldName, newName)
+          next.persoenlich = tagebuchUmbenannt(state.persoenlich, oldName, newName)
         }
       }
       // Admin-Recht in verknüpfte Konten spiegeln (members.admin = Quelle der

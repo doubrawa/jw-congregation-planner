@@ -828,6 +828,33 @@ describe('Dienste', () => {
     expect(reducer(mid, { type: 'changeServiceCount', key: 'x', delta: 1 }).services[0]!.count).toBe(4)
   })
 
+  /*
+   * Umbenennen ging bis zum 13.11.2026 nur über Entfernen und neu Anlegen —
+   * und damit gingen die Plätze des Dienstes in allen Wochen, jede Freigabe und
+   * beim Saal- und Zoom-Ordner das Recht, Anwesende einzutragen. Alles das
+   * hängt am Schlüssel; der Name ist nur, wie man den Dienst liest.
+   */
+  it('renameService ändert nur den Namen — Schlüssel, Plätze, Freigaben und Zusagen bleiben', () => {
+    const s = makeState()
+    const dienst = s.services[0]!
+    // Positivkontrolle: Der Dienst ist in den Wochen wirklich besetzt.
+    expect(s.weeks.some((w) => (w.mid.helpers[dienst.key] ?? []).some((p) => p.name))).toBe(true)
+    const next = reducer(s, { type: 'renameService', key: dienst.key, name: '  Empfang ' })
+    expect(next.services[0]).toEqual({ ...dienst, name: 'Empfang' })
+    expect(next.services.slice(1)).toEqual(s.services.slice(1))
+    expect(next.weeks).toBe(s.weeks)
+    expect(next.persons).toBe(s.persons)
+    expect(next.confirmations).toBe(s.confirmations)
+  })
+
+  it('renameService ohne Namen, mit demselben Namen oder für einen unbekannten Dienst lässt alles, wie es ist', () => {
+    const s = makeState()
+    const dienst = s.services[0]!
+    expect(reducer(s, { type: 'renameService', key: dienst.key, name: '   ' })).toBe(s)
+    expect(reducer(s, { type: 'renameService', key: dienst.key, name: dienst.name })).toBe(s)
+    expect(reducer(s, { type: 'renameService', key: 'gibt-es-nicht', name: 'Empfang' })).toBe(s)
+  })
+
   it('updateGroup mit neuem Namen zieht ihn durch die geplante Reinigung', () => {
     const grundwoche = makeState().weeks[0]!
     const woche = { ...grundwoche, mid: { ...grundwoche.mid, helpers: { rein: [{ name: 'Gruppe 1' }] } } }

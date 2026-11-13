@@ -24,27 +24,34 @@ export interface SubstituteTexte {
   gesucht: string
   /** Jemand ist eingesprungen (an Ursprungsperson + Planer). */
   gefunden: string
+  /**
+   * Jemand hat eine Zuteilung abgesagt (an alle, die planen — `absage.ts`).
+   * Je Sprache der Wortlaut, den die Glocke für dieselbe Meldung zeigt
+   * (`notifVerhindert` im Wörterbuch der App).
+   */
+  abgesagt: string
 }
 
 /** Kanonisch deutsch — zugleich der Schlüssel, unter dem die Glocke übersetzt. */
 export const TITEL_GESUCHT = 'Ersatz gesucht'
 export const TITEL_GEFUNDEN = 'Ersatz gefunden'
+export const TITEL_ABGESAGT = 'Verhinderung gemeldet'
 
-const DE: SubstituteTexte = { gesucht: TITEL_GESUCHT, gefunden: TITEL_GEFUNDEN }
+const DE: SubstituteTexte = { gesucht: TITEL_GESUCHT, gefunden: TITEL_GEFUNDEN, abgesagt: TITEL_ABGESAGT }
 
 const TEXTE: Record<string, SubstituteTexte> = {
   de: DE,
-  en: { gesucht: 'Substitute needed', gefunden: 'Substitute found' },
-  es: { gesucht: 'Se busca sustituto', gefunden: 'Sustituto encontrado' },
-  fr: { gesucht: 'Remplaçant recherché', gefunden: 'Remplaçant trouvé' },
-  it: { gesucht: 'Cercasi sostituto', gefunden: 'Sostituto trovato' },
-  pl: { gesucht: 'Szukamy zastępstwa', gefunden: 'Znaleziono zastępstwo' },
-  ru: { gesucht: 'Нужна замена', gefunden: 'Замена найдена' },
-  uk: { gesucht: 'Потрібна заміна', gefunden: 'Заміну знайдено' },
-  ro: { gesucht: 'Se caută înlocuitor', gefunden: 'Înlocuitor găsit' },
-  tr: { gesucht: 'Yerine biri aranıyor', gefunden: 'Yerine biri bulundu' },
-  ar: { gesucht: 'مطلوب بديل', gefunden: 'تم إيجاد بديل' },
-  fa: { gesucht: 'به جایگزین نیاز است', gefunden: 'جایگزین پیدا شد' },
+  en: { gesucht: 'Substitute needed', gefunden: 'Substitute found', abgesagt: 'Assignment declined' },
+  es: { gesucht: 'Se busca sustituto', gefunden: 'Sustituto encontrado', abgesagt: 'No puede asistir' },
+  fr: { gesucht: 'Remplaçant recherché', gefunden: 'Remplaçant trouvé', abgesagt: 'Empêchement signalé' },
+  it: { gesucht: 'Cercasi sostituto', gefunden: 'Sostituto trovato', abgesagt: 'Impedimento segnalato' },
+  pl: { gesucht: 'Szukamy zastępstwa', gefunden: 'Znaleziono zastępstwo', abgesagt: 'Zgłoszono przeszkodę' },
+  ru: { gesucht: 'Нужна замена', gefunden: 'Замена найдена', abgesagt: 'Не сможет выполнить задание' },
+  uk: { gesucht: 'Потрібна заміна', gefunden: 'Заміну знайдено', abgesagt: 'Не зможе виконати завдання' },
+  ro: { gesucht: 'Se caută înlocuitor', gefunden: 'Înlocuitor găsit', abgesagt: 'Indisponibilitate raportată' },
+  tr: { gesucht: 'Yerine biri aranıyor', gefunden: 'Yerine biri bulundu', abgesagt: 'Mazeret bildirildi' },
+  ar: { gesucht: 'مطلوب بديل', gefunden: 'تم إيجاد بديل', abgesagt: 'تم الإبلاغ عن تعذّر الحضور' },
+  fa: { gesucht: 'به جایگزین نیاز است', gefunden: 'جایگزین پیدا شد', abgesagt: 'انصراف از وظیفه' },
 }
 
 /** Texte für eine Sprache; unbekannte Codes fallen auf Deutsch zurück. */

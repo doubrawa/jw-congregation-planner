@@ -24,6 +24,7 @@ import {
   TITEL_SCHLUSSVORTRAG,
 } from './helpers'
 import { abweichung } from './helpers'
+import { regelzeit } from './meeting-dates'
 import type { Abweichung, Dienstwoche, Meeting, MeetingKey, MeetingTimes, PartItem, Week } from './types'
 import { nurZiffern, zahl, zahlErsetzen } from './ziffern'
 
@@ -79,8 +80,9 @@ function minuten(zeit: string): number | null {
 }
 
 /**
- * Zieht die Endzeiten aller Wochen nach, wenn die Versammlung ihre
- * Zusammenkunftszeit ändert.
+ * Zieht die Endzeiten nach, wenn die Versammlung ihre Zusammenkunftszeit
+ * ändert — in jeder Woche, deren Uhrzeit sich dadurch bewegt: bei einem
+ * Wechsel ab einem Montag die Wochen ab dort, sonst alle.
  *
  * `end` steht in den Wochendaten und wurde bisher nur beim Import gerechnet.
  * Die **Start**zeit dagegen holt `meetingTime()` bei jeder Anzeige frisch aus
@@ -99,20 +101,14 @@ function minuten(zeit: string): number | null {
  * die Wochen, die dem Rhythmus folgen — und genau dort klaffte es.
  */
 export function endenNachziehen(weeks: Week[], alt: MeetingTimes, neu: MeetingTimes): Week[] {
-  // Eine unlesbare Uhrzeit gibt es hier nicht mehr — beide Seiten sind Werte.
-  // Bis hierher waren es zwei Anzeigetexte, aus denen die Uhrzeiten der
-  // Stellung nach gelesen wurden: die erste gehörte zur Wochenmitte, die zweite
-  // zum Wochenende. Fehlte in einem der Texte eine, rutschte die Zuordnung —
-  // aus „Di abends · So 10:00" wurde für die Wochenmitte 10:00, und die
-  // Verschiebung lag um Stunden daneben.
-  const delta: Record<MeetingKey, number> = { mid: 0, we: 0 }
-  for (const tab of MEETING_TABS) {
-    const a = minuten(alt[tab].time)
-    const n = minuten(neu[tab].time)
-    if (a === null || n === null) return weeks
-    delta[tab] = n - a
+  // **Je Woche gefragt** (`regelzeit`): Ein Wechsel ab einem Montag verschiebt
+  // die Wochen ab dort — die davor behalten Anfang und Ende. Eine unlesbare
+  // Uhrzeit lässt die Woche, wie sie ist.
+  const delta = (week: Week, tab: MeetingKey): number => {
+    const a = minuten(regelzeit(alt, tab, week.start).time)
+    const n = minuten(regelzeit(neu, tab, week.start).time)
+    return a === null || n === null ? 0 : n - a
   }
-  if (delta.mid === 0 && delta.we === 0) return weeks
 
   let geaendert = false
   const next = weeks.map((week) => {
@@ -126,9 +122,10 @@ export function endenNachziehen(weeks: Week[], alt: MeetingTimes, neu: MeetingTi
     // angefasst hat, und lädt dem Nutzer die Ansicht neu.
     let kopie: Week | null = null
     for (const tab of MEETING_TABS) {
-      if (delta[tab] === 0) continue
       if (abweichung(week, tab)?.time) continue
-      const ende = shiftEnd(week[tab].end, delta[tab])
+      const um = delta(week, tab)
+      if (um === 0) continue
+      const ende = shiftEnd(week[tab].end, um)
       if (ende === week[tab].end) continue
       kopie = { ...(kopie ?? week), [tab]: { ...week[tab], end: ende } }
       geaendert = true

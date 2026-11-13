@@ -68,7 +68,7 @@
 import { CORS, json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
 import { schluesselTeile, wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
-import { heuteUtc, type MeetingTimes, personDisplayName, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
+import { heuteUtc, type MeetingTimes, personDisplayName, ZEITEN_SPALTEN, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import {
   type Eintrag,
@@ -497,7 +497,7 @@ interface GeleseneWoche {
 async function wocheLesen(cong: string, weekStart: string): Promise<GeleseneWoche | null> {
   const praefixe = wochenPraefixe(weekStart)
   const [congRows, weekRows, fsRows, confs, services, log] = await Promise.all([
-    rest.get<ZeitenRow[]>(`congregations?select=mid_wd,mid_time,we_wd,we_time&id=eq.${wert(cong)}`),
+    rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${wert(cong)}`),
     rest.get<{ start: string; data: Week }[]>(
       `weeks?select=start,data&congregation_id=eq.${wert(cong)}&start=eq.${wert(weekStart)}`,
     ),

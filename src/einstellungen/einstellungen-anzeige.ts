@@ -1,10 +1,23 @@
 import type { AppState } from '../app/context'
-import { zeitspanne } from '../components/datum-anzeige'
+import { gebundenesDatum, zeitspanne } from '../components/datum-anzeige'
 import { fsGruppeEntfernen } from '../data/fs'
 import { isQualified, personCompare, reinigungsGruppen, serviceQualKey } from '../data/helpers'
-import { wirktAb } from '../data/meeting-dates'
+import { fromIso, regelzeit, tagNach, versatzAbMontag, wirktAb } from '../data/meeting-dates'
 import { rechteDerPerson } from '../data/rechte'
-import type { Group, Lang, MeetingTime, Member, Person, Reminders, Service, Trolley } from '../data/types'
+import type {
+  Group,
+  Lang,
+  MeetingKey,
+  MeetingTime,
+  MeetingTimes,
+  Member,
+  Person,
+  Reminders,
+  Service,
+  Trolley,
+  ZeitWechsel,
+} from '../data/types'
+import { kommendeWechsel } from '../data/zeit-wechsel'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { wochentagNameAusWd } from '../planen/wochentage'
@@ -21,6 +34,32 @@ import { wochentagNameAusWd } from '../planen/wochentage'
  */
 export function zusammenkunftText(zeit: Pick<MeetingTime, 'wd' | 'time'>, lang: Lang): string {
   return `${wochentagNameAusWd(zeit.wd, lang)} ${zeit.time}`
+}
+
+/**
+ * Wann die Zusammenkunft **in der laufenden Woche** ist — was die Zeile der
+ * Einstellungen nennt. Nicht die Grundzeit (`zeiten[tab]`): Die gilt nur bis
+ * zum ersten Wechsel (`MeetingTime.spaeter`).
+ */
+export function zusammenkunftJetzt(zeiten: MeetingTimes, tab: MeetingKey, lang: Lang): string {
+  return zusammenkunftText(regelzeit(zeiten, tab, wirktAb()), lang)
+}
+
+/**
+ * Ein bevorstehender Wechsel der Regelzeit in einer Zeile: „ab Do., 7. Januar ·
+ * 19:30". Genannt wird der **erste Tag**, an dem die Zusammenkunft nach dem
+ * neuen Rhythmus stattfindet — der Montag seiner Woche (`ZeitWechsel.ab`)
+ * sagte dem Leser nichts, und der Wochentag ist meist das, was wechselt.
+ */
+export function wechselText(wechsel: ZeitWechsel, t: Pick<Dict, 'wpAbDatum'>, lang: Lang): string {
+  const ersterTag = fromIso(tagNach(wechsel.ab, versatzAbMontag(wechsel.wd)))
+  return `${fill(t.wpAbDatum, { datum: gebundenesDatum(ersterTag, lang, 'kurzerWochentag') })} · ${wechsel.time}`
+}
+
+/** Der nächste bevorstehende Wechsel als Text — unter der Zeile der Einstellungen; ohne einen `undefined`. */
+export function naechsterWechselText(zeit: MeetingTime, t: Pick<Dict, 'wpAbDatum'>, lang: Lang): string | undefined {
+  const [naechster] = kommendeWechsel(zeit, wirktAb())
+  return naechster && wechselText(naechster, t, lang)
 }
 
 type ErinnerungsTexte = Pick<Dict, 'remVorher' | 'remAmTagKurz' | 'remKurz'>

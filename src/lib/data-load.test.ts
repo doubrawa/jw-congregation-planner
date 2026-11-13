@@ -513,6 +513,26 @@ describe('loadCongregationData', () => {
     expect(ohne.data.congregation).toEqual({ name: '', hall: '', times: STANDARD_ZEITEN })
     expect([ohne.data.reminders, ohne.data.congLang, ohne.data.progLangs, ohne.data.auxClass]).toEqual([STANDARD_ERINNERUNGEN, 'de', [], false])
   })
+
+  it('die Wechsel der Regelzeit kommen mit — je Zusammenkunft, und ihre Spalte steht in der Abfrage (13.11.2026)', async () => {
+    const zeile = {
+      name: 'Versammlung Muster', hall: 'Saal A', mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00',
+      zeiten_ab: [{ ab: '2027-01-04', tab: 'mid', wd: 4, time: '19:30' }],
+      reminder_first: 7, reminder_last: 1, reminder_repeat: true, cong_lang: 'de', prog_langs: [], aux_class: false,
+    }
+    seedResponses({ congregations: [{ data: zeile, error: null }] })
+    const res = await loadCongregationData('u1')
+    if (!res.ok) throw new Error('nicht geladen')
+    expect(res.data.congregation.times).toEqual({
+      mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2027-01-04', wd: 4, time: '19:30' }] },
+      we: { wd: 0, time: '10:00' },
+    })
+    // Ohne die Spalte in der Abfrage käme sie im Betrieb nie an — die Attrappe
+    // hier gibt die ganze Zeile zurück, gleich was verlangt wird.
+    const verlangt = store.filter.filter(([t, m]) => t === 'congregations' && m === 'select').map(([, , spalten]) => String(spalten))
+    expect(verlangt).toHaveLength(1)
+    expect(verlangt[0]!.split(', ')).toContain('zeiten_ab')
+  })
 })
 
 /**

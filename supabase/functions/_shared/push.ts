@@ -33,6 +33,52 @@ const PUSH_PARALLEL = 10
  */
 export const PUSH_FRIST_MS = 10_000
 
+/**
+ * Wie viele Bytes die Nutzlast eines Push höchstens hat.
+ *
+ * Ein Push-Dienst nimmt verschlüsselt höchstens 4096 Bytes an und weist alles
+ * darüber ab — die Meldung käme dann gar nicht, und zwar bei jedem Empfänger.
+ * Erreichbar ist das mit der Sammelmeldung „nicht erreichbar" an die Planer,
+ * die je Person eine Zeile führt: Haben erst wenige ein Konto, sind es Dutzende.
+ * Die Grenze lässt Platz für Verschlüsselung und Kopf.
+ */
+export const PUSH_NUTZLAST_BYTES = 3000
+
+/** Woran man eine gekürzte Meldung erkennt. Die ganze steht in der Glocke. */
+const GEKUERZT = ' …'
+
+const bytes = (text: string): number => new TextEncoder().encode(text).length
+
+/**
+ * Die Nutzlast einer Zustellung, wie der Service Worker sie liest
+ * (`public/sw.js`) — höchstens `PUSH_NUTZLAST_BYTES` groß.
+ *
+ * Gekürzt wird nur der Rumpf, und zwar an einer Grenze zwischen zwei Einträgen
+ * („ · "), solange dabei nicht mehr als die Hälfte verloren geht: Ein halber
+ * Name sagt nichts. Gezählt wird in Bytes der fertigen Nutzlast, nicht in
+ * Zeichen — kyrillische und arabische Schrift braucht zwei Bytes je Zeichen,
+ * und Anführungszeichen wachsen beim Verpacken.
+ */
+export function pushNutzlast({ titel, body, url, tag }: Pick<Zustellung, 'titel' | 'body' | 'url' | 'tag'>): string {
+  const verpackt = (rumpf: string): string => JSON.stringify({ title: titel, body: rumpf, url, ...(tag ? { tag } : {}) })
+  const ganz = verpackt(body)
+  if (bytes(ganz) <= PUSH_NUTZLAST_BYTES) return ganz
+  // Nach Zeichen teilen, nicht nach Code-Einheiten: Ein halbes Zeichenpaar
+  // wäre kein gültiger Text mehr.
+  const zeichen = [...body]
+  let passt = 0
+  for (let von = 0, bis = zeichen.length; von <= bis; ) {
+    const mitte = (von + bis) >> 1
+    if (bytes(verpackt(zeichen.slice(0, mitte).join('') + GEKUERZT)) <= PUSH_NUTZLAST_BYTES) {
+      passt = mitte
+      von = mitte + 1
+    } else bis = mitte - 1
+  }
+  const kurz = zeichen.slice(0, passt).join('')
+  const grenze = kurz.lastIndexOf(' · ')
+  return verpackt((grenze > kurz.length / 2 ? kurz.slice(0, grenze) : kurz).trimEnd() + GEKUERZT)
+}
+
 /** Ein Push-Abo, so wie es in `push_subscriptions` steht. */
 export interface PushAbo {
   id: string
@@ -105,12 +151,13 @@ export async function zustellen(
   const erg: PushErgebnis = { gesendet: 0, abgelaufen: 0, fehlgeschlagen: 0 }
   for (let i = 0; i < zustellungen.length; i += PUSH_PARALLEL) {
     const ergebnisse = await Promise.all(
-      zustellungen.slice(i, i + PUSH_PARALLEL).map(async ({ abo, titel, body, url, tag }) => {
+      zustellungen.slice(i, i + PUSH_PARALLEL).map(async (zustellung) => {
+        const { abo } = zustellung
         try {
           await mitFrist(
             webpush.sendNotification(
               { endpoint: abo.endpoint, keys: { p256dh: abo.p256dh, auth: abo.auth } },
-              JSON.stringify({ title: titel, body, url, ...(tag ? { tag } : {}) }),
+              pushNutzlast(zustellung),
               { TTL: 24 * 3600 },
             ),
             PUSH_FRIST_MS,

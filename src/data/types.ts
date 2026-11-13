@@ -1,5 +1,8 @@
 import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
+import type { ZeitWechsel } from '../../supabase/functions/_shared/planung.ts'
 import type { SectionKind } from './constants'
+
+export type { ZeitWechsel }
 /**
  * Datenmodell — abgeleitet aus dem Design-Handoff (State-Referenz der
  * Prototyp-Logikklasse, siehe docs/design-handoff/README.md → "State").
@@ -229,6 +232,20 @@ export interface TrolleyTermin {
 export interface MeetingTime {
   wd: number
   time: string
+  /**
+   * **Was ab einer späteren Woche gilt** (13.11.2026), nach `ab` aufsteigend:
+   * Ab dem Montag eines Wechsels gilt er, bis zum nächsten. `wd` und `time`
+   * darüber sind die Grundzeit — was vor dem ersten Wechsel gilt.
+   *
+   * Bis dahin hatte eine Zusammenkunft genau eine Zeit für jede Woche zugleich:
+   * Ein Wechsel zum Jahresanfang ließ sich nicht vorbereiten, und jede Änderung
+   * datierte auch die vergangenen Wochen um.
+   *
+   * **Nie direkt lesen**, wo es um eine Woche geht: `regelzeit`,
+   * `meetingOffset` und `meetingTime` (meeting-dates.ts) fragen für die Woche.
+   * Fehlt das Feld, gab es nie einen Wechsel.
+   */
+  spaeter?: readonly ZeitWechsel[]
 }
 
 /**

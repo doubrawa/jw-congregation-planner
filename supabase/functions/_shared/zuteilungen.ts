@@ -17,10 +17,9 @@ import {
   type MeetingTimes,
   rolleMitHerkunft,
   SKIP_ROLE,
+  terminDerWoche,
   terminText,
   terminVorbei,
-  versatzMitAbweichung,
-  zeitMitAbweichung,
   zuteilungsLabel,
   type Abweichungen,
 } from './planung.ts'
@@ -366,10 +365,9 @@ export function offeneDerWoche(
     if (!meeting) continue
     // Entfällt die Zusammenkunft, gibt es nichts mitzuteilen (T30).
     if (istAusgefallenFuer(week.dev, tab)) continue
-    const offset = versatzMitAbweichung(week.dev, tab, zeiten[tab].wd)
+    const { versatz: offset, zeit } = terminDerWoche(zeiten, tab, weekStart, week.dev)
     // Vorbei ist sie am Tag danach — und dann braucht es keine Nachricht mehr.
     if (terminVorbei(weekStart, offset, heuteUTC)) continue
-    const zeit = zeitMitAbweichung(week.dev, tab, zeiten[tab].time)
     // Der Termin trägt die Verlegung bereits in sich: steht sie zur Planzeit
     // fest, nennt die Nachricht von vornherein den richtigen Tag.
     const datum = terminText(weekStart, offset, meeting.date, zeit)

@@ -102,6 +102,7 @@ vi.mock('../lib/daten/wochen', async (importActual) => ({
 }))
 vi.mock('../lib/daten/zusagen', async (importActual) => ({
   ...(await importActual<typeof import('../lib/daten/zusagen')>()),
+  absageMelden: vi.fn(),
   deleteConfirmationRows: vi.fn(),
   saveConfirmation: vi.fn(),
   substituteSeek: vi.fn(),
@@ -201,6 +202,7 @@ function folge(s: AppState): AppAction[] {
     { type: 'updatePerson', id: person.id, patch: { fn: person.fn } },
     { type: 'updateCongregation', patch: { hall: CONGREGATION.hall } },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },
+    { type: 'renameService', key: svc.key, name: svc.name }, // heißt schon so
     { type: 'updateGroup', id: grp.id, patch: { overseerId: grp.overseerId } },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: regel.time } },
     { type: 'fsClear', onlyGroup: null },

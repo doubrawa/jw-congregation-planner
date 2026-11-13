@@ -39,6 +39,7 @@ import {
 import { persoenlichBescheid, sendPlanEntzug } from '../lib/daten/versand'
 import { saveFsWeek, saveVortraege, saveAnwesenheit, saveWeek } from '../lib/daten/wochen'
 import {
+  absageMelden,
   deleteConfirmationRows,
   gesuchAblehnen,
   saveConfirmation,
@@ -1067,7 +1068,10 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       if (pos >= 0) saveService(congId, action.service, pos)
       break
     }
-    case 'changeServiceCount': {
+    case 'changeServiceCount':
+    case 'renameService': {
+      // Nur die geänderte Spalte geht hinaus (`zeileSchreiben`): Platzzahl und
+      // Name pflegen zwei Bedienelemente, womöglich an zwei Geräten.
       const idx = next.services.findIndex((s) => s.key === action.key)
       const svc = next.services[idx]
       if (svc) saveService(congId, svc, idx, zeilenstandIn(prev.services, (s) => s.key === action.key))
@@ -1146,6 +1150,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       saveConfirmation(congId, userId, action.id, 'verhindert')
       // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
       if (helperKeyParts(action.id)) substituteSeek(action.id)
+      // Wer plant, erfährt es — in der Glocke und, wo neu zuzuteilen ist, per
+      // Push. Empfänger und Wortlaut bestimmt die Function (`absageMelden`).
+      absageMelden(action.id, action.nachricht)
       break
     case 'takeSubstitute':
       // Nicht clientseitig speichern (Wochen/Bestätigungen sind planer-only) —
@@ -1200,10 +1207,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   }
 
   /*
-   * Eine hier entstandene Mitteilung (Import, „Plan gesendet", Verhinderung)
-   * an die Planer der Versammlung schicken — je Empfänger eine eigene Zeile mit
-   * eigenem Gelesen-/Lösch-Status. Erinnerungen erzeugt die Edge Function
-   * selbst (adressiert an die betroffene Person).
+   * Eine hier entstandene Mitteilung (Import, „Plan gesendet") an die Planer
+   * der Versammlung schicken — je Empfänger eine eigene Zeile mit eigenem
+   * Gelesen-/Lösch-Status. Erinnerungen erzeugt die Edge Function selbst
+   * (adressiert an die betroffene Person), und die Absage ebenso
+   * (`absageMelden` oben): Sie braucht einen Push, und bei einem
+   * Gruppentreffpunkt erfährt es auch, wer die Gruppe leitet.
    *
    * Erkannt am `local`-Kennzeichen, das der Reducer beim Erzeugen setzt — nicht
    * daran, dass die Liste länger geworden ist. Auf `hydrate` träfe das nämlich
@@ -1214,17 +1223,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    *
    * **Die Empfänger sucht die Datenbank** (`notify_planners`), nicht der
    * Client. Ein Verkündiger sieht in `members` nur die eigene Zeile (RLS);
-   * `next.members` enthält für ihn keinen einzigen Planer. Bis zum 24.9.2026
-   * stand hier `members.filter((m) => m.admin)` — für jede Verhinderung eine
-   * leere Empfängerliste, und der Schreiber brach über ihr still ab. Kein
-   * Planer hat je eine Verhinderung erhalten; dem Test-Fixture lag ein Planer
-   * bei, deshalb blieb es grün.
-   *
-   * Der Aufgaben-Schlüssel geht seit dem 4.10.2026 mit: Ein Tipp auf die
-   * Absage führt den Planer in ihre Woche (`mitteilungsZiel`).
+   * `next.members` enthält für ihn keinen einzigen Planer.
    */
   const neu = next.notifs[0]
-  if (neu?.local && neu !== prev.notifs[0]) notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)
+  if (neu?.local && neu !== prev.notifs[0] && neu.type !== 'verhindert') {
+    notifyPlanners(neu.type, neu.title, neu.text, neu.taskId)
+  }
 
   /*
    * **Wem ein Platz genommen wurde, von dem er wusste, erfährt es** — sobald

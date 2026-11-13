@@ -505,6 +505,13 @@ export const DE = {
     einstellungen: 'Einstellungen', versammlungCard: 'Versammlung', saal: 'Königreichssaal',
     // Einstellungen (T121, Phase 6c): Zeilen und Abschnitte.
     unterDerWoche: 'Unter der Woche', amWochenende: 'Am Wochenende',
+    // Blatt einer Zusammenkunftszeit (13.11.2026): ab welcher Woche Tag und
+    // Uhrzeit gelten — zur Wahl stehen Wochenspannen („9.–15. November") —, was
+    // das für die Wochen davor heißt, und darunter die Wechsel, die noch
+    // bevorstehen („ab Do., 7. Januar · 19:30", `wpAbDatum`).
+    zeitGiltAbWoche: 'Gilt ab der Woche',
+    zeitGiltAbHinweis: 'Die Wochen davor bleiben, wie sie sind. Bereits gesendete Mitteilungen nennen weiter den alten Termin.',
+    zeitGeplanteWechsel: 'Geplante Änderungen',
     auxKurz: 'Für die Schulungsaufgaben',
     gruppenTitel: 'Gruppen', gruppenN: 'Gruppen: {n}', diensteN: 'Dienste: {n}',
     gruppenUndTrolleys: 'Gruppen und Trolleys', trolleysN: 'Trolleys: {n}',

@@ -33,7 +33,7 @@ import path from 'node:path'
 import { alsSkript } from './gemeinsam.mjs'
 import { leerePostgres } from './pglite-postgres.mjs'
 import { REPO, tabellenAusSchema } from './sicherung.mjs'
-import { alteNamenUebernehmen, aufgeschobene, fremdschluessel, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
+import { aufHeutigeSpalten, aufgeschobene, fremdschluessel, spaltenAbgleich, zeileTeilen } from './zurueckspielen.mjs'
 
 export async function main(argv = process.argv.slice(2)) {
   const datei = argv.find((a) => !a.startsWith('--'))
@@ -42,7 +42,7 @@ export async function main(argv = process.argv.slice(2)) {
     process.exit(2)
   }
 
-  const sicherung = alteNamenUebernehmen(JSON.parse(fs.readFileSync(datei, 'utf8')))
+  const sicherung = aufHeutigeSpalten(JSON.parse(fs.readFileSync(datei, 'utf8')))
   const schema = fs.readFileSync(path.join(REPO, 'supabase', 'schema.sql'), 'utf8')
 
   const db = await leerePostgres([schema])

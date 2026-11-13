@@ -600,7 +600,12 @@ Beim Durchgehen der Zusammenkunft fällt er von selbst auf.
 
 Verkündiger können eine Zuteilung in ihren Aufgaben absagen. Du bekommst dann
 eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
-**rot**. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
+**rot**. Bei einem Programmpunkt oder Treffpunkt kommt sie auch als
+**Push aufs Gerät**, wenn du Push-Benachrichtigungen eingeschaltet hast – mit
+Aufgabe, Termin, Name und dem, was der Absagende dir dazugeschrieben hat. Sagt
+jemand die Leitung eines **Treffpunkts seiner Gruppe** ab, erfahren es außer
+Admins und Planern auch der Gruppenaufseher und sein Gehilfe: Sie teilen dort
+die Leiter zu. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
 abgesagten Aufgabe** – bei einem Treffpunkt im Predigtdienst. Auch die übrigen
 Mitteilungen an dich als Planer („Programm importiert", „Unbestätigte
 Zuteilungen", „Ersatz gefunden", „Getauscht") führen ins Planen; in den Mitteilungen (Glocke
@@ -613,8 +618,10 @@ benachrichtigt alle, die für diesen Dienst eingetragen und an dem Tag nicht
 abwesend sind, dass ein Ersatz gesucht wird; am Platz steht so lange
 „Ersatz gesucht". Springt jemand ein, trägt sich die
 Person selbst ein, die Bestätigung ist gleich gesetzt (der Punkt wird voll), und
-du bekommst die Mitteilung „Ersatz gefunden". Du musst dich nur kümmern, wenn
-sich niemand meldet. Nimmt der Absagende die Absage zurück („Doch
+du bekommst die Mitteilung „Ersatz gefunden". Die Absage selbst steht dort nur
+in deiner Glocke, ohne Push – zu tun gibt es für dich noch nichts. Du musst
+dich nur kümmern, wenn sich niemand meldet. Nimmt der Absagende die Absage
+zurück („Doch
 bestätigen"), verschwindet das Gesuch bei allen wieder.
 
 Bei **Programmpunkten** gibt es keine automatische Suche — dort teilst du neu
@@ -1605,8 +1612,10 @@ ist.
 ### Zusammenkünfte
 
 - **Unter der Woche** und **Am Wochenende** – Wochentag und Uhrzeit der beiden
-  Zusammenkünfte. Ein Tipp öffnet ein Blatt mit **Wochentag** und **Uhrzeit**
-  (in Viertelstunden); beides gilt sofort.
+  Zusammenkünfte; rechts steht, was in dieser Woche gilt. Ein Tipp öffnet ein
+  Blatt mit **Wochentag**, **Uhrzeit** (in Viertelstunden) und **Gilt ab der
+  Woche**. Erst **Übernehmen** trägt die Änderung ein, **Abbrechen** verwirft
+  sie.
 - **Zusätzliche Klasse** („Für die Schulungsaufgaben") – der Schalter für einen
   zweiten Raum, in dem die Schulungsaufgaben parallel laufen. Er gilt für alle
   Wochen; was er bewirkt, steht unter
@@ -1616,12 +1625,28 @@ ist.
 
 Das Arbeitsheft kennt nur die Woche. Tag und Uhrzeit jeder Zusammenkunft kommen
 von hier – im Programm, in „Meine Aufgaben", auf dem S‑89‑Formular und in den
-Erinnerungen. Eine Änderung gilt deshalb für alle Wochen zugleich, auch für die
-schon geplanten, und das Ende der Zusammenkunft rückt um dieselbe Zeit mit. Nur
-eine Woche mit eigenem Termin behält ihn – eine verlegte Zusammenkunft oder das
-Gedächtnismahl. Weicht nur eine einzelne Woche ab, stellst du das unter
-**Woche einrichten** ein, nicht hier (siehe
+Erinnerungen. Eine Änderung gilt **ab der Woche, die du wählst**: Vorgewählt
+ist die laufende, du kannst aber auch eine spätere nehmen, bis zu einem Jahr
+voraus – so trägst du einen Wechsel zum Jahresanfang schon im Herbst ein. Die
+Wochen davor bleiben, wie sie sind; sie haben am alten Tag stattgefunden, und
+so zählt sie die Auswertung. Ab dem Wechsel zeigt jede Woche den neuen Tag,
+auch die schon geplanten, und das Ende der Zusammenkunft rückt um dieselbe
+Zeit mit. Nur eine Woche mit eigenem Termin behält ihn – eine verlegte
+Zusammenkunft oder das Gedächtnismahl. Weicht nur eine einzelne Woche ab,
+stellst du das unter **Woche einrichten** ein, nicht hier (siehe
 [Sonderwoche: verlegen oder absagen](#sonderwoche-verlegen-oder-absagen)).
+
+Ein Wechsel, der noch bevorsteht, steht unter der Zeile – mit dem ersten Tag
+nach dem neuen Rhythmus, etwa „ab Do., 7. Januar · 19:30" – und im Blatt unter
+**Geplante Änderungen**. Dort streichst du ihn mit **✕** wieder (der erste
+Tipp fragt nach); dann gilt ab seiner Woche wieder, was davor galt. Wählst du
+im Blatt die Woche eines geplanten Wechsels, zeigen die Felder ihn, und
+**Übernehmen** ersetzt ihn.
+
+> **Sag es an:** Wer seine Zuteilung schon mitgeteilt bekommen hat, erfährt
+> den neuen Termin nicht von selbst. In „Meine Aufgaben" und in den
+> Erinnerungen steht er richtig; die Mitteilung von damals nennt aber weiter
+> den alten.
 
 ### Hilfsdienste
 
@@ -1674,6 +1699,14 @@ Gruppe **Hilfsdienste** – bei einem neuen Dienst zunächst überall aus.
 der Reinigung **Gruppen-Rotation** mit der Zahl der Gruppen, die reinigen
 („Gruppen: 4"). Darunter:
 
+- Das Feld **Name** – hier benennst du den Dienst um. Übernommen wird der
+  neue Name, wenn du das Blatt schließt. Seine Plätze in allen Wochen, die
+  Freigaben bei den Personen und – bei Saal- und Zoom-Ordner – das Recht, die
+  Anwesenden einzutragen, bleiben dabei, wie sie sind; in den Listen rückt er
+  an seine neue Stelle im Alphabet. Ein leeres Feld oder ein Name, den schon
+  ein anderer Dienst trägt, wird nicht übernommen („Name nicht geändert: …
+  gibt es schon"). Entfernen und neu anlegen brauchst du dafür nicht – das
+  kostete Plätze und Freigaben.
 - **Alle Personen mit je einem Schalter**, sortiert wie die Personenliste,
   darüber ein Suchfeld. Hier gibst du in einem Zug frei, wer den Dienst
   übernehmen darf. Es ist derselbe Schalter wie bei der Person, nur von der
@@ -1824,7 +1857,9 @@ keine Push-Benachrichtigungen bekommt, wird dir und den anderen Admins und
 Planern gemeldet, damit ihr ihn persönlich erinnert.
 
 Darunter steht unter **Sofort gemeldet**, was ohne jede Einstellung gleich
-hinausgeht: eine **Absage** an die Admins und Planer; bei einem Hilfsdienst
+hinausgeht: eine **Absage** an die Admins und Planer (bei einem Treffpunkt
+einer Gruppe auch an ihren Aufseher und Gehilfen, siehe
+[Wenn jemand absagt](#wenn-jemand-absagt)); bei einem Hilfsdienst
 zusätzlich **Ersatz gesucht** an alle mit diesem Aufgabenbereich, die an dem
 Tag nicht abwesend sind; **Zuteilung zurückgezogen** an die Person, wenn du
 ihr einen Platz nimmst, von dem sie schon weiß (zugesagt oder gesendet); und **Trolley-Termin

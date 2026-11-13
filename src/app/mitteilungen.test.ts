@@ -89,6 +89,27 @@ describe('mitteilungsZiel — ein Tipp führt dorthin, wo die Mitteilung herkomm
     ])
   })
 
+  /*
+   * Seit dem 13.11.2026 bekommt die Absage eines Gruppentreffpunkts auch, wer
+   * die Gruppe leitet (`substitute`, Aufruf 'absage') — er hat den Leiter
+   * zugeteilt und teilt neu zu. Im Programm könnte er nur zusehen.
+   */
+  it('… wer eine Gruppe leitet, landet bei der Absage eines Treffpunkts im Planen — bei allem anderen nicht', () => {
+    const aufseher = lage({ gruppe: true })
+    expect(mitteilungsZiel(zeile({ taskId: TREFFPUNKT }), aufseher)).toEqual([
+      { type: 'navigate', screen: 'planen', woche: { wi: 1, tab: 'fs' } },
+      { type: 'setFsBereich', bereich: 'treffpunkte' },
+    ])
+    // Gegenproben: Eine Zusammenkunft plant er nicht, und ohne Gruppe bleibt es beim Ansehen.
+    expect(mitteilungsZiel(zeile({ taskId: PUNKT }), aufseher)).toEqual([
+      { type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'mid' } },
+    ])
+    expect(mitteilungsZiel(zeile({ taskId: TREFFPUNKT }), lage())).toEqual([
+      { type: 'navigate', screen: 'programm', woche: { wi: 1, tab: 'fs' } },
+      { type: 'setFsBereich', bereich: 'treffpunkte' },
+    ])
+  })
+
   it('… eine Schicht aus der Zeit vor den Trolleys: wie ohne Schlüssel', () => {
     // Die Glocke hält ihre Zeilen 30 Tage; der Schlüssel führt nirgends mehr hin.
     // Der Planer landet bei den Zusammenkünften, jeder andere in seinen Aufgaben.

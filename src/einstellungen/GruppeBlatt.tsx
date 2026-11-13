@@ -1,15 +1,15 @@
-import { useId, useState } from 'react'
+import { useId } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { BlattFeld } from '../bausteine/BlattFeld'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
-import { useUebernehmen } from '../components/useUebernehmen'
 import { amtBesetzen, amtKandidaten, type GruppenAmt, personCompare, personLabel } from '../data/helpers'
 import type { Group } from '../data/types'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
-import { gruppenFolgen, doppelterName, zusammenkunftText, type GruppenFolge } from './einstellungen-anzeige'
+import { gruppenFolgen, zusammenkunftText, type GruppenFolge } from './einstellungen-anzeige'
+import { useNamensFeld } from './useNamensFeld'
 
 /** Der Satz zu jeder Folge des Entfernens. */
 const FOLGE_TEXT = {
@@ -25,13 +25,10 @@ const FOLGE_TEXT = {
  * viele zu ihr gehören. Darunter steht, was mit ihr verloren ginge, und
  * „Gruppe entfernen" (zwei Tipps, wie jedes Löschen).
  *
- * **Der Name gilt beim Schließen**, wie bei der Person — auch, wenn das Blatt
- * einfach verschwindet (`useUebernehmen`): Ein halb getippter Name stünde sonst
- * schon in den Plänen. Leer oder doppelt bleibt der alte, und ein
- * Hinweis sagt warum — die geplante Reinigung kennt die Gruppe nur beim Namen
- * (`gruppeInWochenUmbenennen`). Im Feld steht der Name, wie man ihn liest
- * (`tu`); wer ihn nicht anfasst, lässt den kanonischen stehen — „Gruppe 1"
- * bleibt übersetzbar.
+ * **Der Name gilt beim Schließen**, wie bei der Person (`useNamensFeld`): Ein
+ * halb getippter Name stünde sonst schon in den Plänen. Leer oder doppelt
+ * bleibt der alte, und ein Hinweis sagt warum — die geplante Reinigung kennt
+ * die Gruppe nur beim Namen (`gruppeInWochenUmbenennen`).
  *
  * Aufseher nur aus Ältesten und Dienstamtgehilfen, Gehilfe jeder Bruder, der
  * Verkündiger ist — beides aus den Mitgliedern der Gruppe (`amtKandidaten`),
@@ -40,25 +37,12 @@ const FOLGE_TEXT = {
 export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () => void }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const gelesen = tu(gruppe.name)
-  const [name, setName] = useState(gelesen)
-  const fehlerId = useId()
   const wahlHinweisId = useId()
   const update = (patch: Partial<Pick<Group, 'name' | 'overseerId' | 'assistantId'>>) =>
     dispatch({ type: 'updateGroup', id: gruppe.id, patch })
-  const leer = name.trim() === ''
-  const dublette = doppelterName(state.groups, gruppe.id, name, tu)
-  // Was beim Schließen statt des neuen Namens gilt — und schon am Feld steht.
-  const fehler = leer ? t.toastNameLeer : dublette ? fill(t.toastNameNichtGeaendert, { name: tu(dublette.name) }) : null
-
-  const blatt = useUebernehmen(() => {
-    const neu = name.trim()
-    if (neu === gelesen) return
-    if (fehler) dispatch({ type: 'showToast', text: fehler })
-    else update({ name: neu })
-  })
+  const namensFeld = useNamensFeld(gruppe, state.groups, (name) => update({ name }))
   const schliessen = () => {
-    blatt.uebernehmen()
+    namensFeld.uebernehmen()
     onClose()
   }
 
@@ -88,24 +72,7 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
   return createPortal(
     <Sheet variante="lang" label={t.gruppeLbl} title={t.gruppeLbl} onClose={schliessen}>
       <div className="sheet-inhalt blatt-felder">
-        <BlattFeld marke={t.nameLbl}>
-          <input
-            className="feld"
-            type="text"
-            dir="auto"
-            autoComplete="off"
-            value={name}
-            aria-invalid={fehler ? true : undefined}
-            aria-describedby={fehler ? fehlerId : undefined}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </BlattFeld>
-        {fehler && (
-          /* `dir="auto"`: Der Hinweis nennt den Namen der anderen Gruppe — frei getippt. */
-          <p id={fehlerId} className="feld-fehler" role="alert" dir="auto">
-            {fehler}
-          </p>
-        )}
+        {namensFeld.feld}
         <BlattFeld marke={t.aufseherLbl}>{wahl('overseerId')}</BlattFeld>
         <BlattFeld marke={t.gehilfeLbl}>{wahl('assistantId')}</BlattFeld>
         {/* Warum jemand fehlt — und bei einer neuen Gruppe, warum niemand da ist. */}
@@ -147,7 +114,7 @@ export function GruppeBlatt({ gruppe, onClose }: { gruppe: Group; onClose: () =>
           className="knopf-umriss knopf-entfernen"
           text={t.gruppeEntfernen}
           onEntfernen={() => {
-            blatt.verwerfen()
+            namensFeld.verwerfen()
             dispatch({ type: 'removeGroup', id: gruppe.id })
             onClose()
           }}

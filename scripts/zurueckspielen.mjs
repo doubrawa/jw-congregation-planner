@@ -166,8 +166,30 @@ export const UMBENANNT = {
   persons: { planner_vorgemerkt: 'admin_vorgemerkt' },
 }
 
-/** Die Sicherung mit den heutigen Spaltennamen (`UMBENANNT`); die Datei bleibt, wie sie ist. */
-export function alteNamenUebernehmen(sicherung, umbenannt = UMBENANNT) {
+/**
+ * **Spalten, die seit einer älteren Sicherung dazukamen und mit gesicherten
+ * eine Einheit bilden** — je Tabelle, was eine Sicherung von davor für sie
+ * meint. Für jede andere neue Spalte gilt: Sie bekommt beim Zurückspielen ihre
+ * Vorgabe und bleibt beim Zurücksetzen einer Versammlung, wie sie ist
+ * (`versammlung-auf-sicherung.mjs`). Für diese wäre das falsch.
+ *
+ * `congregations.zeiten_ab` (13.11.2026): Wann eine Zusammenkunft ist, ergibt
+ * sich aus der Grundzeit (vier Spalten) **und** den Wechseln ab einer Woche.
+ * Eine Sicherung von davor kennt nur die Grundzeit — und meint „für jede
+ * Woche". Bliebe die Spalte beim Zurücksetzen stehen, gälte nach der Rückkehr
+ * zum Stand vor der Beta weiter ein Wechsel, den dort jemand ausprobiert hat:
+ * die Grundzeit von damals, der Wechsel von heute.
+ */
+export const SEITHER = {
+  congregations: { zeiten_ab: [] },
+}
+
+/**
+ * Die Sicherung mit den heutigen Spalten: umbenannte unter ihrem heutigen
+ * Namen (`UMBENANNT`), fehlende aus `SEITHER` mit dem, was die Sicherung für
+ * sie meint. Die Datei bleibt, wie sie ist.
+ */
+export function aufHeutigeSpalten(sicherung, umbenannt = UMBENANNT, seither = SEITHER) {
   const tabellen = { ...sicherung.tabellen }
   for (const [t, namen] of Object.entries(umbenannt)) {
     if (!tabellen[t]) continue
@@ -179,6 +201,14 @@ export function alteNamenUebernehmen(sicherung, umbenannt = UMBENANNT) {
         delete neu[alt]
       }
       return neu
+    })
+  }
+  for (const [t, spalten] of Object.entries(seither)) {
+    if (!tabellen[t]) continue
+    tabellen[t] = tabellen[t].map((zeile) => {
+      const fehlend = Object.entries(spalten).filter(([spalte]) => !(spalte in zeile))
+      // Je Zeile ein eigener Wert — eine geteilte Liste änderte sich für alle.
+      return fehlend.length ? { ...zeile, ...structuredClone(Object.fromEntries(fehlend)) } : zeile
     })
   }
   return { ...sicherung, tabellen }
@@ -294,7 +324,7 @@ export async function main(argv = process.argv.slice(2)) {
     console.error('Aufruf: node scripts/zurueckspielen.mjs <sicherung.json> (--ziel-url <url> | --hierher) [--trocken]')
     process.exit(2)
   }
-  const sicherung = alteNamenUebernehmen(JSON.parse(fs.readFileSync(datei, 'utf8')))
+  const sicherung = aufHeutigeSpalten(JSON.parse(fs.readFileSync(datei, 'utf8')))
 
   /*
    * **Das Ziel muss gesagt werden.** Ein Lauf ohne Ziel nähme das Projekt aus

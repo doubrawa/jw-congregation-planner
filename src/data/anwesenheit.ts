@@ -18,7 +18,7 @@
  */
 
 import { gehoertZuKennung, istAusgefallen, MEETING_TABS } from './helpers'
-import { fromIso, isoDay, meetingDate, meetingTime, versatzAbMontag } from './meeting-dates'
+import { fromIso, isoDay, meetingDate, meetingTime, regelzeit, versatzAbMontag } from './meeting-dates'
 import type { MeetingKey, MeetingTimes, Week } from './types'
 import { monatsErster } from './weitere-plaene'
 
@@ -143,7 +143,7 @@ function tagDer(a: Anwesenheit, wochen: ReadonlyMap<string, Week>, zeiten: Meeti
   const week = wochen.get(a.woche)
   if (week) return isoDay(meetingDate(week, a.tab, zeiten))
   const tag = fromIso(a.woche)
-  tag.setDate(tag.getDate() + versatzAbMontag(zeiten[a.tab].wd))
+  tag.setDate(tag.getDate() + versatzAbMontag(regelzeit(zeiten, a.tab, a.woche).wd))
   return isoDay(tag)
 }
 

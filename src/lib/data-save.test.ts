@@ -56,6 +56,7 @@ import {
 import { erinnerungSenden, persoenlichBescheid, sendPlan, setEntzugMelder, sendPlanEntzug } from './daten/versand'
 import { saveFsWeek, saveWeek, saveAnwesenheit, saveVortraege } from './daten/wochen'
 import {
+  absageMelden,
   deleteConfirmationRows,
   gesuchAblehnen,
   saveConfirmation,
@@ -426,6 +427,29 @@ describe('Update-Schreiber', () => {
     expect(chain.update).not.toHaveBeenCalled()
   })
 
+  it('die Zusammenkunftszeiten gehen als Ganzes hinaus: Grundzeit und Wechsel (13.11.2026)', () => {
+    // Was in einer Woche gilt, ergibt sich aus beidem. Ginge die Grundzeit ohne
+    // die Wechsel hinaus, bliebe ein gestrichener Wechsel in der Datenbank
+    // stehen — und käme mit dem nächsten Laden zurück.
+    saveCongregationInfo('c1', {
+      times: {
+        mid: { wd: 2, time: '19:00', spaeter: [{ ab: '2027-01-04', wd: 4, time: '19:30' }] },
+        we: { wd: 0, time: '10:00' },
+      },
+    })
+    expect(chain.update).toHaveBeenCalledWith({
+      mid_wd: 2,
+      mid_time: '19:00',
+      we_wd: 0,
+      we_time: '10:00',
+      zeiten_ab: [{ ab: '2027-01-04', tab: 'mid', wd: 4, time: '19:30' }],
+    })
+    vi.clearAllMocks()
+    // Ohne Wechsel die leere Liste — nicht „nichts": Sonst bliebe der alte stehen.
+    saveCongregationInfo('c1', { times: STANDARD_ZEITEN })
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ zeiten_ab: [] }))
+  })
+
   it('saveMemberRow — beide Rechte in derselben Zeile', () => {
     saveMemberRow({ userId: 'u1', email: '', personId: 'p1', admin: true, zuteiler: false })
     expect(chain.from).toHaveBeenCalledWith('members')
@@ -661,6 +685,67 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     substituteTake('k1')
     await abwarten()
     expect(konflikt).toHaveBeenCalledWith(undefined)
+    setKonfliktMelder(null)
+  })
+
+  /*
+   * **Die Absage an alle, die planen** (13.11.2026) geht über dieselbe
+   * Function: Sie schreibt die Glocken und schickt den Push. Scheitert der
+   * Aufruf, hat niemand etwas erfahren — das darf nicht still bleiben.
+   */
+  it('die Absage nennt Platz, Nachricht und den Kalendertag des Geräts — und keine Versammlung', async () => {
+    chain.functions.invoke.mockClear()
+    absageMelden('k1', 'bin verreist')
+    absageMelden('k2', undefined)
+    await abwarten()
+    const heute = isoDay(new Date())
+    expect(chain.functions.invoke.mock.calls).toEqual([
+      ['substitute', { body: { action: 'absage', taskKey: 'k1', nachricht: 'bin verreist', heute } }],
+      ['substitute', { body: { action: 'absage', taskKey: 'k2', nachricht: '', heute } }],
+    ])
+  })
+
+  it.each(['not-assigned', 'slot-not-found', 'meeting-cancelled', 'past'])(
+    'weist der Server die Absage ab, weil der Platz nicht mehr der eigene ist (%s), wird nachgeladen — ohne Fehlermeldung',
+    async (grund) => {
+      const melder = vi.fn()
+      const konflikt = vi.fn()
+      setSchreibfehlerMelder(melder)
+      setKonfliktMelder(konflikt)
+      chain.functions.invoke.mockReturnValueOnce(abgewiesen(grund))
+      absageMelden('k1', '')
+      await abwarten()
+      expect(konflikt).toHaveBeenCalledTimes(1)
+      expect(melder).not.toHaveBeenCalled()
+      setKonfliktMelder(null)
+    },
+  )
+
+  it('scheitert die Absage am Netz oder am Server, wird es gemeldet — wer plant, hat nichts erfahren', async () => {
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'Failed to fetch' } }))
+    absageMelden('k1', '')
+    await abwarten()
+    chain.functions.invoke.mockReturnValueOnce(abgewiesen('server-error'))
+    absageMelden('k1', '')
+    await abwarten()
+    expect(melder).toHaveBeenCalledTimes(2)
+    expect(konflikt).not.toHaveBeenCalled()
+    setKonfliktMelder(null)
+  })
+
+  it('geht die Absage durch, bleibt es still', async () => {
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    absageMelden('k1', '')
+    await abwarten()
+    expect(melder).not.toHaveBeenCalled()
+    expect(konflikt).not.toHaveBeenCalled()
     setKonfliktMelder(null)
   })
 

@@ -19,7 +19,13 @@
 
 import { helferKey, schluesselTeile, type Tab } from '../_shared/aufgaben-schluessel.ts'
 import { angebotsBereich } from '../_shared/freie-plaetze.ts'
-import { istAusgefallenFuer, type MeetingTimes, personDisplayName, terminTag, versatzMitAbweichung } from '../_shared/planung.ts'
+import {
+  istAusgefallenFuer,
+  type MeetingTimes,
+  personDisplayName,
+  terminDerWoche,
+  terminTag,
+} from '../_shared/planung.ts'
 import { pendingOfMeeting, type ServiceRow, type Week } from '../_shared/zuteilungen.ts'
 
 export interface TauschPerson {
@@ -93,7 +99,7 @@ export type TauschUrteil = { ok: true; a: TauschPlatz; b: TauschPlatz; bis: stri
  * Exportiert für die Mitgliedsrechte-Probe: Sie wählt ihre Wochen mit derselben Rechnung wie die Function.
  */
 export function tagDerZusammenkunft(woche: TauschWoche, tab: Tab, zeiten: MeetingTimes): string | null {
-  return terminTag(woche.start, versatzMitAbweichung(woche.data.dev, tab, zeiten[tab].wd))
+  return terminTag(woche.start, terminDerWoche(zeiten, tab, woche.start, woche.data.dev).versatz)
 }
 
 /** Hat die Person in dieser Zusammenkunft schon etwas — Id vor Name, wie überall? */

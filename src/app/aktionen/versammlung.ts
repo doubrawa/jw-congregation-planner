@@ -24,6 +24,7 @@ type VersammlungAktion = Extract<
   {
     type:
       | 'changeServiceCount'
+      | 'renameService'
       | 'removeService'
       | 'addService'
       | 'addGroup'
@@ -51,6 +52,15 @@ export function versammlung(state: AppState, action: VersammlungAktion): AppStat
             : s,
         ),
       }
+    case 'renameService': {
+      // Nur der Name: Plätze, Freigaben und Zusagen hängen am Schlüssel und
+      // bleiben. Ohne Namen bleibt der alte — das Blatt sagt es vorher
+      // (`HilfsdienstBlatt`), wie bei Gruppe und Person.
+      const name = action.name.trim()
+      const dienst = state.services.find((s) => s.key === action.key)
+      if (!dienst || !name || name === dienst.name) return state
+      return { ...state, services: state.services.map((s) => (s === dienst ? { ...s, name } : s)) }
+    }
     case 'removeService': {
       // Ein Dienst hinterlässt drei Spuren, und keine räumt sich selbst auf:
       // den Aufgabenbereich bei jeder Person, die Platzreihe in jeder Woche und

@@ -3,6 +3,7 @@
  * Predigtdienstgruppen — ihre Zeilen, Umformer und Schreiber.
  */
 
+import { zeitenSpalten } from '../../../supabase/functions/_shared/planung.ts'
 import type { Congregation, Group, Reminders, Service } from '../../data/types'
 import { supabase } from '../supabase'
 import { run, zeileSchreiben, type Zeilenstand } from './schreibweg'
@@ -43,7 +44,7 @@ export interface GroupRow {
  */
 export const CONG_SPALTEN = [
   'name', 'hall',
-  'mid_wd', 'mid_time', 'we_wd', 'we_time',
+  'mid_wd', 'mid_time', 'we_wd', 'we_time', 'zeiten_ab',
   'reminder_first', 'reminder_last', 'reminder_repeat',
   'cong_lang', 'prog_langs', 'aux_class',
 ] as const satisfies ReadonlyArray<keyof CongregationRow>
@@ -59,6 +60,8 @@ export interface CongregationRow {
   mid_time: string
   we_wd: number
   we_time: string
+  /** Die Wechsel der Regelzeit, `[{ ab, tab, wd, time }]` — gelesen von `zeitenAus`. */
+  zeiten_ab: unknown
   reminder_first: number
   reminder_last: number
   reminder_repeat: boolean
@@ -168,16 +171,15 @@ export function deleteGroupRow(id: string): void {
  * überschrieben sich zwei Admins, die zugleich Verschiedenes einstellen, still:
  * Wer den Saal umbenennt, schriebe mit seinem älteren Stand die
  * Zusammenkunftszeit zurück, die der andere eben geändert hat. Die Zeiten
- * bleiben eine Einheit — sie werden zusammen eingestellt.
+ * bleiben eine Einheit — die Grundzeit beider Zusammenkünfte samt ihren
+ * Wechseln (`zeitenSpalten`): Was in welcher Woche gilt, ergibt sich aus beidem.
  */
 export function saveCongregationInfo(congregationId: string, info: Partial<Congregation>): void {
   if (!supabase) return
   const spalten = {
     ...(info.name !== undefined ? { name: info.name } : {}),
     ...(info.hall !== undefined ? { hall: info.hall } : {}),
-    ...(info.times
-      ? { mid_wd: info.times.mid.wd, mid_time: info.times.mid.time, we_wd: info.times.we.wd, we_time: info.times.we.time }
-      : {}),
+    ...(info.times ? zeitenSpalten(info.times) : {}),
   }
   if (Object.keys(spalten).length === 0) return
   void run(supabase.from('congregations').update(spalten).eq('id', congregationId))

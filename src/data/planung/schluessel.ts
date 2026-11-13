@@ -37,6 +37,33 @@ export function sentKey(taskKey: string, name: string): string {
 }
 
 /**
+ * **Das Tagebuch nach einer Umbenennung**: Was unter dem alten Namen stand,
+ * steht unter dem neuen.
+ *
+ * Der Name ist Teil des Schlüssels — ohne das gälte jeder gemeldete, noch
+ * unbestätigte Platz der Person nach der Umbenennung wieder als ungemeldet, und
+ * „Plan senden" zeigte auf sie. In der Datenbank zieht ein Trigger an `persons`
+ * dasselbe nach (`tagebuch_umbenennen` in schema.sql); hier folgt der offene
+ * Zustand, damit er bis zum nächsten Laden nichts anderes sagt.
+ *
+ * Ein Platz-Schlüssel enthält kein Leerzeichen, ein Name schon: Geteilt wird
+ * deshalb am ersten. Stand am selben Platz schon etwas unter dem neuen Namen,
+ * gilt der Eintrag der umbenannten Person, wie in der Datenbank.
+ */
+export function tagebuchUmbenannt<T>(log: Record<string, T>, alt: string, neu: string): Record<string, T> {
+  if (!alt || !neu || alt === neu) return log
+  const umbenannt: Array<[string, T]> = []
+  const rest: Array<[string, T]> = []
+  for (const eintrag of Object.entries(log)) {
+    const trenner = eintrag[0].indexOf(' ')
+    if (trenner > 0 && eintrag[0].slice(trenner + 1) === alt) {
+      umbenannt.push([sentKey(eintrag[0].slice(0, trenner), neu), eintrag[1]])
+    } else rest.push(eintrag)
+  }
+  return umbenannt.length === 0 ? log : Object.fromEntries([...rest, ...umbenannt])
+}
+
+/**
  * Woche und Zusammenkunft eines task_key — jeder beginnt mit `<montag>|<tab>|…`,
  * gleich ob Programmpunkt, Ratgeber oder Hilfsdienst. null bei Fremdformaten
  * und bei Plätzen ohne Zusammenkunft (Treffpunkt).

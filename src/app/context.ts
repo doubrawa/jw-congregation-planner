@@ -531,6 +531,10 @@ export type AppAction =
   | { type: 'updatePerson'; id: string; patch: Partial<Person> } // speichert automatisch (debounced)
   | { type: 'removePerson'; id: string } // löst Gruppen-/Konto-/Code-Referenzen
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
+  // Ein Dienst behält seinen Schlüssel (`Service.key`) — an ihm hängen die Plätze
+  // der Wochen, die Freigaben und das Recht, Anwesende einzutragen. Der Name
+  // ist nur, wie man ihn liest.
+  | { type: 'renameService'; key: string; name: string }
   | { type: 'removeService'; key: string }
   | { type: 'addService'; service: Service }
   // Predigtdienstgruppen (nur Planer)

@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
-import { meetingDate, meetingTime, versatzAbMontag } from '../data/meeting-dates'
+import { meetingDate, meetingTime, regelzeit, versatzAbMontag, wirktAb } from '../data/meeting-dates'
 import { useT } from '../i18n/useT'
 import type { MeetingTab, Week } from '../data/types'
 import { datumsFormat } from './datum-anzeige'
@@ -58,14 +58,21 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
   return (
     <div className="meeting-tabs" role="group" aria-label={t.navZusammenkuenfte}>
       {MEETING_TABS.map((key) => {
-        // Verlegte Woche → ihr echter Tag (T30); sonst der Rhythmus, gezählt
-        // vom Montag, 1. Januar 2024 — örtlich zur Mittagszeit, damit keine
-        // Zeitzone den Wochentag verschiebt.
-        const datum = week
-          ? meetingDate(week, key, zeiten)
-          : new Date(2024, 0, 1 + versatzAbMontag(zeiten[key].wd), 12)
+        let datum: Date
+        let wann: string
+        if (week) {
+          // Verlegte Woche → ihr echter Tag (T30), sonst der Rhythmus dieser Woche.
+          datum = meetingDate(week, key, zeiten)
+          wann = `${tagZahl.format(datum)} · ${meetingTime(week, key, zeiten)}`
+        } else {
+          // Ohne Woche gilt, was heute gilt — nicht die Grundzeit von vor einem
+          // Wechsel. Der Wochentag gezählt vom Montag, 1. Januar 2024, örtlich
+          // zur Mittagszeit, damit keine Zeitzone ihn verschiebt.
+          const heute = regelzeit(zeiten, key, wirktAb())
+          datum = new Date(2024, 0, 1 + versatzAbMontag(heute.wd), 12)
+          wann = heute.time
+        }
         const name = tagName.format(datum)
-        const wann = week ? `${tagZahl.format(datum)} · ${meetingTime(week, key, zeiten)}` : zeiten[key].time
         const aus = istAusgefallen(week, key)
         return (
           <button

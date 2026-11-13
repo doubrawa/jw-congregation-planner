@@ -215,3 +215,99 @@ describe('Ein Gruppen-Dienst (Reinigung) — seine Gruppen', () => {
     expect(container.querySelector('.hd-fuss .klein-text')?.textContent).toBe(DE.hdEntfernenHinweisGruppen)
   })
 })
+
+/**
+ * **Umbenennen** (13.11.2026). Bis dahin hieß ein Dienst, wie er angelegt war;
+ * wer „Rundgangsordner" in „Rundgang" ändern wollte, musste ihn entfernen und
+ * neu anlegen — und verlor seine Plätze in allen Wochen und jede Freigabe.
+ * Der Name gilt beim Schließen, wie bei Gruppe und Person.
+ */
+describe('Umbenennen', () => {
+  const namensFeld = (c: HTMLElement) => c.querySelector('.hd-blatt .blatt-feld input') as HTMLInputElement
+  const umbenennungen = (dispatch: ReturnType<typeof vi.fn>) => dispatch.mock.calls.map((c) => c[0]).filter((a) => a.type === 'renameService')
+
+  it('im Feld steht der Name — ein neuer gilt mit „Fertig", genau für diesen Dienst', () => {
+    const { container, dispatch } = zeige()
+    expect(namensFeld(container).value).toBe('Rundgangsordner')
+    fireEvent.change(namensFeld(container), { target: { value: ' Rundgang ' } })
+    // Solange getippt wird, geht nichts hinaus: Ein halber Name stünde sonst schon im Plan.
+    expect(umbenennungen(dispatch)).toEqual([])
+    fireEvent.click(knopf(container, DE.fertig))
+    expect(umbenennungen(dispatch)).toEqual([{ type: 'renameService', key: 'rund', name: 'Rundgang' }])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'closeServiceSheet' })
+  })
+
+  it('wer den Namen nicht anfasst, benennt nicht um', () => {
+    const { container, dispatch } = zeige()
+    fireEvent.click(knopf(container, DE.fertig))
+    expect(umbenennungen(dispatch)).toEqual([])
+  })
+
+  it('verschwindet das Blatt einfach, gilt der getippte Name trotzdem', () => {
+    const { container, dispatch, unmount } = zeige()
+    fireEvent.change(namensFeld(container), { target: { value: 'Rundgang' } })
+    unmount()
+    expect(umbenennungen(dispatch)).toEqual([{ type: 'renameService', key: 'rund', name: 'Rundgang' }])
+  })
+
+  it('ohne Namen bleibt der alte — der Hinweis steht schon am Feld', () => {
+    const { container, dispatch } = zeige()
+    fireEvent.change(namensFeld(container), { target: { value: '   ' } })
+    expect(container.querySelector('.feld-fehler')?.textContent).toBe(DE.toastNameLeer)
+    expect(namensFeld(container).getAttribute('aria-invalid')).toBe('true')
+    fireEvent.click(knopf(container, DE.fertig))
+    expect(umbenennungen(dispatch)).toEqual([])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: DE.toastNameLeer })
+  })
+
+  it('einen Namen, den ein anderer Dienst schon trägt, nimmt es nicht — Groß und Klein zählen nicht', () => {
+    const { container, dispatch } = zeige()
+    const hinweis = fill(DE.toastNameNichtGeaendert, { name: 'Mikrofone' })
+    fireEvent.change(namensFeld(container), { target: { value: 'mikrofone' } })
+    expect(container.querySelector('.feld-fehler')?.textContent).toBe(hinweis)
+    fireEvent.click(knopf(container, DE.fertig))
+    expect(umbenennungen(dispatch)).toEqual([])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: hinweis })
+    // Gegenprobe: Der eigene Name in anderer Schreibweise ist keine Dublette.
+    const eigen = zeige()
+    fireEvent.change(namensFeld(eigen.container), { target: { value: 'RUNDGANGSORDNER' } })
+    expect(eigen.container.querySelector('.feld-fehler')).toBeNull()
+  })
+
+  it('Entfernen nimmt den halb getippten Namen mit — umbenannt wird nichts mehr', () => {
+    const { container, dispatch, unmount } = zeige()
+    fireEvent.change(namensFeld(container), { target: { value: 'Rundgang' } })
+    fireEvent.click(knopf(container, DE.hdEntfernen))
+    bestaetigen(knopf(container, DE.loeschenSicher))
+    unmount()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'removeService', key: 'rund' })
+    expect(umbenennungen(dispatch)).toEqual([])
+  })
+
+  it('hat ein anderer Admin den Dienst inzwischen umbenannt, schreibt ein unberührtes Feld den alten Namen nicht zurück', () => {
+    // Das Blatt steht offen, die App lädt nach: Der Dienst heißt jetzt anders.
+    // Ein Vergleich mit dem heutigen Namen hielte das unberührte Feld für eine
+    // Eingabe und nähme beim Schließen die Umbenennung des anderen zurück.
+    const dispatch = vi.fn()
+    const basis = demoZustand()
+    function Buehne({ dienste }: { dienste: Service[] }) {
+      const state: AppState = { ...basis, services: dienste, persons: PERSONEN }
+      const store = useStaticStore(state)
+      return (
+        <AppDispatchContext.Provider value={dispatch}>
+          <AppStoreContext.Provider value={store}>
+            <AppStateContext.Provider value={state}>
+              <HilfsdienstBlatt svcKey="rund" />
+            </AppStateContext.Provider>
+          </AppStoreContext.Provider>
+        </AppDispatchContext.Provider>
+      )
+    }
+    const { container, rerender } = render(<Buehne dienste={DIENSTE} />)
+    rerender(<Buehne dienste={DIENSTE.map((s) => (s.key === 'rund' ? { ...s, name: 'Rundgang' } : s))} />)
+    // Positivkontrolle: Der neue Name ist angekommen — im Kopf steht er.
+    expect(container.querySelector('.sheet-title')?.textContent).toBe('Rundgang')
+    fireEvent.click(knopf(container, DE.fertig))
+    expect(umbenennungen(dispatch)).toEqual([])
+  })
+})

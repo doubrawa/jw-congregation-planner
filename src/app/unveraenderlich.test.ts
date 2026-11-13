@@ -156,6 +156,7 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'setFamily', id: person.id, memberId: zweite.id, add: false },
     { type: 'changeServiceCount', key: svc.key, delta: 1 },
     { type: 'changeServiceCount', key: svc.key, delta: -1 },
+    { type: 'renameService', key: svc.key, name: 'Probedienst' },
     { type: 'addService', service: { key: 'probe', name: 'Probe', count: 2 } },
     { type: 'removeService', key: 'probe' },
     { type: 'addGroup', group: { id: 'g-probe', name: 'Probe', overseerId: '', assistantId: '' } },

@@ -38,6 +38,7 @@ import { memAusfallAbleiten, setAnlassTermin } from './anlass'
 import { syncAuxSlots } from './aux-class'
 import { genFsWeek } from './fs'
 import { besucheInNeueWoche } from './gruppenbesuche'
+import { regelzeit } from './meeting-dates'
 import { endeAusStartzeit } from './meeting-edit'
 import { festenWtLeiterEintragen } from './planung/automatik'
 import type { Absence, FsInstance, FsRule, Gruppenbesuch, MeetingTimes, Person, Week } from './types'
@@ -60,8 +61,9 @@ export interface NeueWocheKontext {
 export function neueWocheEinordnen(roh: Week, k: NeueWocheKontext): { week: Week; fsWeek: FsInstance[] } {
   const mitEnden: Week = {
     ...roh,
-    mid: { ...roh.mid, end: endeAusStartzeit(k.zeiten.mid.time, roh.mid.end) },
-    we: { ...roh.we, end: endeAusStartzeit(k.zeiten.we.time, roh.we.end) },
+    // Mit der Uhrzeit, die in dieser Woche gilt — nach einem Wechsel die neue.
+    mid: { ...roh.mid, end: endeAusStartzeit(regelzeit(k.zeiten, 'mid', roh.start).time, roh.mid.end) },
+    we: { ...roh.we, end: endeAusStartzeit(regelzeit(k.zeiten, 'we', roh.start).time, roh.we.end) },
   }
   let wochen = syncAuxSlots([mitEnden], k.auxClass)
   const mem = mitEnden.anlass?.art === 'mem' ? mitEnden.anlass.von : undefined

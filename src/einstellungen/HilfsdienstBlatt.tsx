@@ -3,15 +3,23 @@ import { useApp } from '../app/context'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
 import { Sheet } from '../components/Sheet'
 import { listName, personCompare, serviceQualKey } from '../data/helpers'
+import type { Service } from '../data/types'
 import { useT } from '../i18n/useT'
 import { KEIN_FILTER, passtOhneAuswahl } from '../personen/person-filter'
 import { BereichZeile, PrivToggle } from '../personen/PrivToggle'
 import { uebernehmenKoennen, uebernehmenText } from './einstellungen-anzeige'
+import { useNamensFeld } from './useNamensFeld'
 
 /**
- * **Ein Hilfsdienst** (T121, Phase 6c-2): wer ihn übernehmen darf, und
- * Entfernen. Eine Stelle in der Folge hat er nicht — die Listen ordnen nach dem
- * Namen (`useDienste`).
+ * **Ein Hilfsdienst** (T121, Phase 6c-2): sein Name, wer ihn übernehmen darf,
+ * und Entfernen. Eine Stelle in der Folge hat er nicht — die Listen ordnen nach
+ * dem Namen (`useDienste`).
+ *
+ * **Der Name gilt beim Schließen**, wie bei Gruppe und Person (`useNamensFeld`).
+ * Umbenennen lässt alles stehen: Plätze, Freigaben und Zusagen hängen am
+ * Schlüssel des Dienstes, nicht am Namen. Bis zum 13.11.2026 ging es nur über
+ * Entfernen und neu Anlegen — und damit gingen seine Plätze in allen Wochen
+ * und jede Freigabe.
  *
  * **Wer ihn übernehmen darf (T79):** alle Personen, je eine mit Schalter.
  * Wer einen Dienst übernehmen darf, entschied bis dahin allein das
@@ -34,21 +42,33 @@ import { uebernehmenKoennen, uebernehmenText } from './einstellungen-anzeige'
  * (`removeService`).
  */
 export function HilfsdienstBlatt({ svcKey }: { svcKey: string }) {
+  const { state } = useApp()
+  const service = state.services.find((s) => s.key === svcKey)
+  return service ? <Blatt key={service.key} service={service} /> : null
+}
+
+function Blatt({ service }: { service: Service }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const close = () => dispatch({ type: 'closeServiceSheet' })
+  const gelesen = tu(service.name)
+  // Eindeutig sein muss der Name unter den Diensten — erkannt am Schlüssel.
+  const alsEintrag = (s: Service) => ({ id: s.key, name: s.name })
+  const namensFeld = useNamensFeld(alsEintrag(service), state.services.map(alsEintrag), (name) =>
+    dispatch({ type: 'renameService', key: service.key, name }),
+  )
+  const close = () => {
+    namensFeld.uebernehmen()
+    dispatch({ type: 'closeServiceSheet' })
+  }
 
-  const service = state.services.find((s) => s.key === svcKey)
-  if (!service) return null
-
-  const name = tu(service.name)
   const art = service.groups ? t.gruppenRotation : t.eigenerBereich
   const sub = `${art} · ${uebernehmenText(t, service, uebernehmenKoennen(state, service))}`
 
   return (
-    <Sheet variante="lang" label={name} title={name} sub={sub} onClose={close}>
+    <Sheet variante="lang" label={gelesen} title={gelesen} sub={sub} onClose={close}>
       <div className="sheet-inhalt hd-blatt">
-        {service.groups ? <GruppenSchalter /> : <PersonenSchalter svcKey={svcKey} />}
+        {namensFeld.feld}
+        {service.groups ? <GruppenSchalter /> : <PersonenSchalter svcKey={service.key} />}
       </div>
       <div className="hd-fuss">
         {/* Ein Gruppen-Dienst hat keine Freigaben bei Personen — und lässt sich
@@ -61,7 +81,11 @@ export function HilfsdienstBlatt({ svcKey }: { svcKey: string }) {
           <EntfernenKnopf
             className="knopf-umriss knopf-entfernen"
             text={t.hdEntfernen}
-            onEntfernen={() => dispatch({ type: 'removeService', key: svcKey })}
+            onEntfernen={() => {
+              // Der Dienst geht — sein halb getippter Name mit ihm.
+              namensFeld.verwerfen()
+              dispatch({ type: 'removeService', key: service.key })
+            }}
           />
           <button type="button" className="knopf-haupt" onClick={close}>
             {t.fertig}
