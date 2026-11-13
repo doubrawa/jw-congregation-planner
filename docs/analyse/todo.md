@@ -10960,15 +10960,17 @@ Verknüpfungen am App-Symbol.
 Typprüfung, Build, Laufzeit-Messung; im Browser auf der Entwicklerseite),
 danach durch `/simplify` und `/code-review max` gegangen (zehn Befunde, acht
 behoben, zwei entschieden — siehe T176 und T180) und am 13. November
-committet, aber **noch nicht gepusht und damit nicht ausgerollt**. Der Push
-bringt zwei Migrationen
+committet (`114c485d`), **gepusht und ausgerollt** (Betreiber: „Ja, pushen").
+Der Lauf der CI hat zwei Migrationen
 (`20261113100000_tagebuch-umbenennen.sql`, `20261113110000_zeiten-ab.sql`) und
-die Functions in die Produktion — geändert sind `substitute`, `send-plan`,
-`send-reminders` und `tauschen`, dazu die geteilten Module (`planung.ts`,
-`zuteilungen.ts`, `push.ts`), über die auch die übrigen neu hinausgehen. Bis
-dahin scheitern
-`scripts/wochen-importieren.mjs` und `scripts/wochenplanung-importieren.mjs`
-aus diesem Stand an der Spalte `zeiten_ab`, die es dort noch nicht gibt.
+die Functions in die Produktion gebracht — geändert waren `substitute`,
+`send-plan`, `send-reminders` und `tauschen`, dazu die geteilten Module
+(`planung.ts`, `zuteilungen.ts`, `push.ts`), über die auch die übrigen neu
+hinausgingen — und danach das Frontend (`shell-114c485`). Nachgemessen mit
+`node scripts/ausrollen-pruefen.mjs`: alle 8 Migrationen eingespielt, der
+Katalog gleicht der Folge der Migrationen, alle 8 Functions aktiv, der
+Rauchtest besteht. Offen bleibt die eine Probe, die nur am echten Gerät geht
+(T175).
 
 ### T175 · Eine Absage erreicht die, die planen — per Push, und beim Treffpunkt auch die Gruppe 🔧 ✅ umgesetzt (13. November 2026)
 
@@ -10999,7 +11001,8 @@ Treffpunkt seiner Gruppe geplant hatte, bekam gar nichts.
 erfährt, auf welchem Weg, was nicht gehen darf; je Regel eine Sabotage),
 dazu `persist.test.ts`, `data-save.test.ts`, `mitteilungen.test.ts`. Nicht im
 Browser: Die Entwicklerseite hat keine Datenbank. **Am echten Gerät noch nicht
-gesehen** — nach dem Ausrollen einmal absagen und den Push beim Planer ansehen.
+gesehen** — ausgerollt ist seit dem 13. November; einmal absagen und den Push
+beim Planer ansehen.
 
 ### T176 · Zusammenkunftszeiten mit Stichtag — auch im Voraus 🏗 ✅ umgesetzt (13. November 2026)
 
@@ -11251,7 +11254,8 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 aus der Durchsicht der ganzen App: das Nachladen der offenen App, die
 Abwesenheit mit Absage, frei werdende Plätze, der Betriebszustand für den
 Admin, die Zahl am App-Symbol). **T175–T179** vom selben Tag sind umgesetzt,
-geprüft und committet, aber noch nicht gepusht und damit nicht ausgerollt. Am
+geprüft und ausgerollt (`114c485d`); offen ist dort nur der Blick auf den Push
+einer Absage am echten Gerät. Am
 8. November
 kam **T174** dazu (E4, umgesetzt und ausgerollt). Davor als letzte am
 7. November abends **T170**:
@@ -11737,7 +11741,9 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
 und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, fünf offen.
-Neu in der Tabelle stehen T180–T184 und das Ausrollen von T175–T179.
+Neu in der Tabelle stehen T180–T184 und die Probe von T175 am echten Gerät;
+T175–T179 sind seit demselben Tag ausgerollt (`114c485d`, mit
+`ausrollen-pruefen.mjs` nachgemessen).
 
 **Stand 8. November 2026, alles Offene an einer Stelle** (gemessen am Abend:
 174 Köpfe, keiner offen — dazu kamen am Tag der Neuaufbau zum Echtbetrieb, die
@@ -11764,7 +11770,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 
 | | Punkt | Warum offen |
 | --- | --- | --- |
-| **T175–T179** | pushen und damit ausrollen | Am 13. November umgesetzt, geprüft und committet, aber nicht gepusht. Der Push spielt zwei Migrationen (`tagebuch-umbenennen`, `zeiten-ab`) und die Functions in die Produktion. Danach am echten Gerät: einmal absagen und den Push beim Planer ansehen (T175) — die Entwicklerseite hat keine Datenbank. |
+| **T175** | Push der Absage am echten Gerät ansehen (Betreiber) | T175–T179 sind am 13. November ausgerollt (`114c485d`). Was bleibt: einmal absagen und den Push beim Planer ansehen — die Entwicklerseite hat keine Datenbank, und an echte Geräte geht nichts ohne den Betreiber. |
 | **T180** | Die offene App lädt nicht nach | **Gemeinsam klären** (Betreiber, 13. November). Berührt die Entscheidung vom 25. September („Laden je Konto einmal"); zu klären ist, wann still nachgeladen wird und was dabei nicht geschehen darf. |
 | **T181** | Abwesenheit eintragen zeigt die eigenen Aufgaben und bietet die Absage an | Aufgenommen am 13. November (V1, Betreiber: „klingt gut"), nicht begonnen. |
 | **T182** | Wer etwas nicht mehr macht: seine künftigen Plätze werden frei | **Wichtig** (Betreiber, 13. November) — eine entfernte Person oder ein genommener Bereich (etwa Mikrofone) lässt die geplanten Plätze heute besetzt aussehen. Aufgenommen, nicht begonnen. |
