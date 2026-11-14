@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { letztenStandZeigen, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
+import { letztenStandZeigen, letztesLadenBegann, loadAndHydrate, momentaufnahmeZeigen } from './hydrate'
 import { performLogout } from '../lib/abmelden'
 import { loadCongregationData, type CongregationData, type LoadResult } from '../lib/daten/laden'
 import { verfolgterFetch } from '../lib/schreiben-unterwegs'
@@ -235,6 +235,71 @@ describe('loadAndHydrate', () => {
     await loadAndHydrate(dispatch, 'u9', { silent: true })
     expect(actions).toEqual([{ type: 'nachladenGescheitert' }])
     expect(mockRead).not.toHaveBeenCalled()
+  })
+
+  /*
+   * **Ein Nachladen, um das niemand gebeten hat, sagt nichts, wenn es
+   * scheitert**: Die Rückkehr in die App lädt still nach
+   * (`useNachladenBeiRueckkehr`). „Daten konnten nicht geladen werden" nach
+   * jeder Rückkehr in ein Funkloch erklärte nichts; die nächste Rückkehr
+   * versucht es wieder.
+   */
+  it('ohne Hinweis gescheitert: der Bestand bleibt, und nichts wird gemeldet', async () => {
+    mockLoad.mockResolvedValue({ ok: false, reason: 'error' })
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u9', { silent: true, ohneHinweis: true })
+    expect(actions).toEqual([])
+    expect(mockRead).not.toHaveBeenCalled()
+  })
+
+  it('… auch beim zweiten Laden, wenn während des ersten etwas hinausging', async () => {
+    const sofort = verfolgterFetch(async () => new Response(null))
+    mockLoad
+      .mockImplementationOnce(async () => {
+        void sofort('https://db.test/rest/v1/confirmations', { method: 'POST' })
+        return { ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' }
+      })
+      .mockResolvedValue({ ok: false, reason: 'error' })
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u1', { silent: true, ohneHinweis: true })
+    expect(mockLoad).toHaveBeenCalledTimes(2)
+    expect(actions.map((a) => a.type)).toEqual(['hydrate'])
+  })
+
+  it('… geht es, kommen die Daten wie bei jedem stillen Laden', async () => {
+    mockLoad.mockResolvedValue({ ok: true, empty: false, data: emptyData, congregationId: 'c1', userId: 'u1' })
+    const { actions, dispatch } = collector()
+    await loadAndHydrate(dispatch, 'u1', { silent: true, ohneHinweis: true })
+    expect(actions).toEqual([expect.objectContaining({ type: 'hydrate', nachgeladen: true })])
+  })
+
+  /*
+   * **Wann das letzte Laden begann** — die Rückkehr lädt erst wieder, wenn das
+   * ein paar Minuten her ist. Gezählt wird der Beginn: Ein Laden, das noch
+   * läuft, zählt mit, und ein gescheitertes wird nicht bei jedem Zurückwechseln
+   * gleich wiederholt.
+   */
+  it('merkt sich, wann das letzte Laden begann — schon während es läuft, und auch, wenn es scheitert', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(2026, 10, 14, 12, 0))
+      let antworten = (): void => {}
+      mockLoad.mockImplementationOnce(
+        () =>
+          new Promise((weiter) => {
+            antworten = () => weiter({ ok: false, reason: 'error' })
+          }),
+      )
+      const laeuft = loadAndHydrate(collector().dispatch, 'u9', { silent: true, ohneHinweis: true })
+      expect(letztesLadenBegann()).toBe(new Date(2026, 10, 14, 12, 0).getTime())
+      vi.setSystemTime(new Date(2026, 10, 14, 12, 3))
+      await vi.waitFor(() => expect(mockLoad).toHaveBeenCalled())
+      antworten()
+      await laeuft
+      expect(letztesLadenBegann()).toBe(new Date(2026, 10, 14, 12, 0).getTime())
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('auch still: Ohne Mitgliedschaft gilt der alte Stand nicht weiter — abgemeldet', async () => {

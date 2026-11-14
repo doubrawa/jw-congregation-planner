@@ -197,6 +197,12 @@ kommenden Woche. Entfällt eine (Kongress, Gedächtnismahl), wird sie
 übersprungen. Sobald du selbst eine Woche oder einen Reiter wählst, bleibt es
 dabei – du wirst beim Hin- und Herwechseln nicht wieder umgesetzt.
 
+Liegt die App schon offen im Hintergrund oder in einem anderen Tab, holt sie
+beim Zurückkehren von selbst, was die anderen Planer inzwischen geändert haben,
+wenn sie zuletzt vor fünf Minuten oder länger geladen hat. Was du selbst
+gewählt hast, bleibt dabei stehen. Ist gerade ein Blatt offen oder schreibst
+du in ein Feld, wartet sie damit, bis du fertig bist.
+
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 
 Oben steht der **Stand der Woche**: drei Schritte auf einer Linie –

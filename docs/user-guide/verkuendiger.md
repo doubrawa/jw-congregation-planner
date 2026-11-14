@@ -339,6 +339,13 @@ nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen v
 je Aufgabe **Bestätigen** oder **Ich kann nicht**, unten **Alle bestätigen**.
 Mit **Später** legst du das Blatt weg; beim nächsten Öffnen liegt es wieder da.
 
+Liegt die App schon offen im Hintergrund, holt sie beim Zurückkehren den neuen
+Stand von selbst, wenn sie zuletzt vor fünf Minuten oder länger geladen hat –
+auch ohne dass du auf die Benachrichtigung tippst. Die neue Zuteilung steht
+dann unter **Meine Aufgaben** und bei der Glocke; das Blatt zum Bestätigen
+legt die App erst beim nächsten Start vor. Ist gerade ein Blatt offen oder
+schreibst du in ein Feld, wartet sie damit, bis du fertig bist.
+
 Weitere Nachrichten können dich erreichen:
 
 - **„Erinnerung: Zuteilung bestätigen"** – solange du nicht bestätigt hast,

@@ -67,6 +67,25 @@ interface Lage {
 const stapel: Lage[] = []
 let einhaengungen = 0
 
+/** Wer erfahren will, dass eine Ebene zugegangen ist (`nachDemSchliessen`). */
+const beimSchliessen = new Set<() => void>()
+
+/**
+ * **Liegt ein Blatt offen?** — ein `Sheet`, das Menü, der Film „Erste
+ * Schritte": jede Ebene über Bildschirm und Unteransicht. Für das Nachladen bei
+ * der Rückkehr (`useNachladenBeiRueckkehr`): Solange ein Blatt offen ist, wird
+ * darin womöglich getippt.
+ */
+export function blattOffen(): boolean {
+  return stapel.some((lage) => lage.rang === RANG.blatt)
+}
+
+/** `melden`, sobald eine Ebene zugegangen ist — gleich welche. Gibt die Abmeldung zurück. */
+export function nachDemSchliessen(melden: () => void): () => void {
+  beimSchliessen.add(melden)
+  return () => void beimSchliessen.delete(melden)
+}
+
 /*
  * **Die Buchführung über die eigenen Einträge.**
  *
@@ -326,6 +345,7 @@ export function useBackDismiss(active: boolean, onDismiss: () => void, ebene: Eb
         lage.waechter.destroy() // ohne Eintrag ist nichts abzuräumen
         lage.waechter = null
       } else if (!lage.verbraucht) austragen()
+      for (const melden of [...beimSchliessen]) melden()
     }
   }, [active, ebene])
 }

@@ -10944,10 +10944,11 @@ vorraus änderbar sein"): Nr. 1, 3, 4, 6 und 7 sind **T175–T179** und
 umgesetzt. Nr. 2 ist herausgenommen („sollten wir zusammen klären") und steht
 mit V1, V4, V8 und der Zahl am App-Symbol als **T180–T184** in der Liste.
 Am selben Abend umgesetzt (Betreiber: „wir machen mit der umsetzung der todos
-weiter"): T181, T182 und T184; T180 wartet auf das Gespräch. Am 14. November
-entschieden: T183 bleibt ohne Ansicht in der App (Betreiber: „nichts in der
-app"), und die Absagen aus einer Abwesenheit gehen als **ein** Push je Planer
-hinaus („ein push je planer") — umgesetzt am selben Tag.
+weiter"): T181, T182 und T184. Am 14. November entschieden: T183 bleibt ohne
+Ansicht in der App (Betreiber: „nichts in der app"), und die Absagen aus einer
+Abwesenheit gehen als **ein** Push je Planer hinaus („ein push je planer") —
+umgesetzt am selben Tag. Am selben Tag besprochen und umgesetzt: T180 (die
+offene App lädt bei der Rückkehr still nach, Betreiber: „Ja, so umsetzen").
 
 **Nicht beauftragt** und deshalb keine Aufgabe: Nr. 5 (wer beim Verkleinern
 eines Dienstes am wegfallenden Platz stand, verliert die Aufgabe ohne Meldung
@@ -11192,7 +11193,7 @@ Titel, Ziel und Kennung bleiben ganz. Die Glocke führt weiter die ganze Liste.
 **Geprüft:** `_test/push.test.ts` (auch mehrbytige Schrift). Nicht gegen einen
 echten Push-Dienst gemessen.
 
-### T180 · Die offene App lädt nicht nach 🔧 ☐ offen — gemeinsam klären
+### T180 · Die offene App lädt nicht nach 🔧 ✅ umgesetzt (14. November 2026)
 
 **Befund (Nr. 2):** Neu geladen wird nur beim Start, nach einem Push-Tipp,
 beim Öffnen der Mitteilungen, nach „Plan senden" und bei einem
@@ -11218,6 +11219,64 @@ schreibt auch. Die Zusammenkunftszeiten gehen als Ganzes hinaus (Grundzeit und
 Wechsel beider Zusammenkünfte) — ändert ein Admin eine Zeit, dessen App seit
 Tagen offen liegt, überschreibt er still den Wechsel, den ein anderer
 inzwischen geplant hat. Für die Grundzeit galt das schon immer.
+
+**Besprochen (14. November):** vier Wege — still nachladen bei der Rückkehr,
+ein Knopf oder eine Geste, ein Live-Abgleich (Realtime), ein Takt im
+Vordergrund. Empfohlen und vom Betreiber angenommen („Ja, so umsetzen"): der
+erste. Der stille Ladeweg war schon da und im Einsatz (Push-Tipp, Glocke,
+„Plan senden", Konflikt) und sichert fast alles: kein Startbild, eine selbst
+gewählte Woche bleibt, das Blatt beim Öffnen kommt nicht noch einmal, ein
+offener Platz meint dieselbe Woche, Wartendes geht vorher hinaus, und was
+während des Ladens gespeichert wird, lädt die App noch einmal nach. Das eine
+echte Risiko: Was **während** des Ladens getippt und noch nicht gespeichert
+ist, verwirft das Einspielen mit Absicht (`wartendesVerwerfen`) — im Blatt für
+Name oder Saal der Versammlung geht jeder Buchstabe sofort in den Zustand.
+Befund 3 bleibt ohne eigenen Schutz: Mit dem Nachladen bei der Rückkehr träfe
+er nur noch eine App, die die ganze Zeit im Vordergrund stand, bei einer
+Änderung, die etwa einmal im Jahr vorkommt. Kein Knopf, kein Live-Abgleich
+(rund zwei Dutzend Tabellen, und am Handy reißt die Verbindung im Hintergrund
+ohnehin ab), kein Takt (mitten in der Arbeit ist ein Nachladen am
+riskantesten).
+
+**Umgesetzt** (`useNachladenBeiRueckkehr`, in `AppShell`): Wird die Seite
+wieder sichtbar (am Handy aus einer anderen App, am Computer zurück in den
+Tab) oder bekommt das Fenster den Fokus zurück, und begann das letzte Laden
+vor mindestens fünf Minuten (`letztesLadenBegann` in `hydrate.ts` — der
+Beginn, nicht der Erfolg: Ein laufendes Laden zählt mit, ein gescheitertes
+wird nicht bei jedem Wechsel wiederholt), lädt die App still nach. Dieselbe
+Frist und dieselbe Rücksicht wie die Prüfung auf eine neue Fassung
+(`lib/version.ts`).
+
+- Nicht, solange ein Blatt offen ist (`blattOffen` in `useBackDismiss.ts`:
+  Sheet, Menü, Film) oder ein Feld zum Tippen den Fokus hat — dann holt sie es
+  nach, sobald das Blatt zu ist (`nachDemSchliessen`) oder das Feld verlassen.
+  Eine Unteransicht hält nichts auf: Ein Personen-Detail soll den frischen
+  Stand zeigen.
+- Nicht ohne Konto, nicht während die App noch lädt, nicht ohne Netz und nicht
+  über dem letzten Stand (dort lädt `store.tsx`, sobald das Netz zurück ist).
+- Scheitert es, sagt es nichts (`ohneHinweis`); die nächste Rückkehr versucht
+  es wieder.
+- Auf die Anmelde-Meldung von supabase-js hört es nicht — der Fehler vom
+  25. September kommt so nicht wieder.
+- Handbücher: Verkündiger unter „Wie du von einer Zuteilung erfährst" (das
+  Blatt zum Bestätigen kommt erst beim nächsten Start), Planer unter „Planen".
+
+**Geprüft:** `nachladen-bei-rueckkehr.test.tsx` (15 Fälle, mit dem echten
+Verlauf von jsdom für das offene Blatt) und vier Fälle in `hydrate.test.ts`;
+je Regel eine Sabotage, 18, alle rot. Suite, Typprüfung, Lint, Build und die
+Laufzeit-Messung (Kernsatz mit axe) grün; im Browser auf der Entwicklerseite
+die Rückkehr nachgestellt und ein Blatt geöffnet und geschlossen, ohne Fehler
+— das Nachladen selbst zeigt sie nicht (kein Konto, keine Datenbank).
+
+**Review** (Betreiber: „Ja, beides"): `/simplify` und `/code-review max`
+fanden im Verhalten nichts. Die neuen Kommentare trugen Datum und Verlauf —
+bereinigt; der zur Frist begründet sie jetzt selbst, statt eine Gleichheit mit
+`lib/version.ts` zu behaupten, die nichts hält. Verworfen: Wer in den
+Sekunden eines schon laufenden Nachladens tippt, verliert das Getippte —
+dasselbe Fenster hat jedes stille Laden, und nicht einzuspielen wäre
+schlimmer (die Stände der Wochen setzt schon das Lesen). Nicht bereinigt
+(Betreiber: „nein nicht nötig"): 54 Zeilen mit Datum oder Verlauf aus
+`114c485d` und `c330ddc2`.
 
 ### T181 · Abwesenheit eintragen: die eigenen Aufgaben in der Zeit zeigen und die Absage anbieten 🔧 ✅ umgesetzt (13. November 2026)
 
@@ -11444,15 +11503,16 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☐☑☑☑☑
+13. November ☑☑☑☑☑☑☑☑☑☑
 
-**183 der 184 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
-Begründung als „kein Mangel" zurückgewiesen. Offen ist eine vom 13. November:
-**T180** (das Nachladen der offenen App — erst gemeinsam klären). **T183** ist
-am 14. November entschieden: nichts in der App. **T181**, **T182** und **T184**
-vom 13. November sind samt der Sammel-Absage (ein Push je Planer) am
-14. November ausgerollt (`c330ddc2`); offen ist dort nur der Blick auf die
-Zahl am App-Symbol am echten Gerät. **T175–T179** sind ausgerollt
+**Alle 184 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+Begründung als „kein Mangel" zurückgewiesen. Als letzte am 14. November
+**T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
+umgesetzt und geprüft; das Ausrollen steht aus). **T183** ist am selben Tag entschieden:
+nichts in der App. **T181**, **T182** und **T184** vom 13. November sind samt
+der Sammel-Absage (ein Push je Planer) am 14. November ausgerollt
+(`c330ddc2`); offen ist dort nur der Blick auf die Zahl am App-Symbol am
+echten Gerät. **T175–T179** sind ausgerollt
 (`114c485d`); offen ist dort nur der Blick auf den Push einer Absage am echten
 Gerät. Am
 8. November
@@ -11939,12 +11999,13 @@ zurückgenommen und der Testlauf wiederholt wurde.
 ### Was offen ist und warum
 
 **Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
-und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, einer offen
-(T180; T183 ist am 14. November entschieden — nichts in der App — und aus der
-Tabelle). Neu in der Tabelle stehen T180 und die Proben von T175 und T184 am
-echten Gerät. T175–T179 sind seit dem 13. November ausgerollt (`114c485d`),
-T181, T182 und T184 samt der Sammel-Absage seit dem 14. November
-(`c330ddc2`) — beide mit `ausrollen-pruefen.mjs` nachgemessen.
+und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, keiner
+offen — T183 ist am 14. November entschieden (nichts in der App), T180 am
+selben Tag umgesetzt; das Ausrollen steht aus. Neu in der Tabelle stehen
+T180 (ausrollen und am echten Gerät ansehen) und die Proben von T175 und T184
+am echten Gerät. T175–T179 sind seit dem 13. November ausgerollt (`114c485d`), T181,
+T182 und T184 samt der Sammel-Absage seit dem 14. November (`c330ddc2`) —
+beide mit `ausrollen-pruefen.mjs` nachgemessen.
 
 **Stand 8. November 2026, alles Offene an einer Stelle** (gemessen am Abend:
 174 Köpfe, keiner offen — dazu kamen am Tag der Neuaufbau zum Echtbetrieb, die
@@ -11972,7 +12033,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T175** | Push der Absage am echten Gerät ansehen (Betreiber) | T175–T179 sind am 13. November ausgerollt (`114c485d`), die Sammel-Absage am 14. November (`c330ddc2`). Was bleibt: einmal absagen und den Push beim Planer ansehen, dazu einmal eine Abwesenheit mit zwei Aufgaben eintragen (ein Push für beide) — die Entwicklerseite hat keine Datenbank, und an echte Geräte geht nichts ohne den Betreiber. |
-| **T180** | Die offene App lädt nicht nach | **Gemeinsam klären** (Betreiber, 13. November). Berührt die Entscheidung vom 25. September („Laden je Konto einmal"); zu klären ist, wann still nachgeladen wird und was dabei nicht geschehen darf. |
+| **T180** | ausrollen, dann am echten Gerät ansehen (Betreiber) | Am 14. November besprochen und umgesetzt: Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. Geprüft (Suite, Typprüfung, Lint, Build, Laufzeit-Messung) und durch `/simplify` und `/code-review max` gegangen. Der Push bringt nur das Frontend — keine Migration, keine Function. Am echten Gerät: App im Hintergrund lassen, nach über fünf Minuten zurück, der neue Stand ist da. |
 | **T184** | Zahl am App-Symbol am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`c330ddc2`). Android (je nach Startbildschirm Zahl oder Punkt) und iPhone (nur mit erlaubten Mitteilungen) — die Entwicklerseite zeigt kein Symbol. |
 | **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
 | **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |

@@ -32,13 +32,35 @@ export interface LadeOptionen {
    * zweites Mal ein, mitten in die Ansicht, in der man schon war.
    */
   silent?: boolean | (() => boolean)
+  /**
+   * Scheitert ein stilles Laden, sagt es nichts — für das Nachladen, um das
+   * niemand gebeten hat (`useNachladenBeiRueckkehr`). „Daten konnten nicht
+   * geladen werden" nach jeder Rückkehr in ein Funkloch erklärte nichts, und
+   * die nächste Rückkehr versucht es ohnehin wieder.
+   */
+  ohneHinweis?: boolean
+}
+
+/** Wann das letzte Laden begann (ms seit 1970) — 0, solange keines lief. */
+let letztesLaden = 0
+
+/**
+ * **Wann das letzte Laden begann** — für das Nachladen bei der Rückkehr
+ * (`useNachladenBeiRueckkehr`): Es lädt erst wieder, wenn das ein paar Minuten
+ * her ist. Gezählt wird der Beginn, nicht der Erfolg: Ein Laden, das noch
+ * läuft, zählt mit, und ein gescheitertes versucht die App nicht bei jedem
+ * Zurückwechseln gleich wieder.
+ */
+export function letztesLadenBegann(): number {
+  return letztesLaden
 }
 
 export async function loadAndHydrate(
   dispatch: Dispatch<AppAction>,
   userId: string,
-  { silent = false }: LadeOptionen = {},
+  { silent = false, ohneHinweis = false }: LadeOptionen = {},
 ): Promise<void> {
+  letztesLaden = Date.now()
   // Einmal festgehalten, für beide Durchläufe unten: Der zweite gehört zur
   // selben Sitzung wie der erste, auch wenn dazwischen abgemeldet wurde.
   const meine = aktuelleSitzung()
@@ -62,10 +84,10 @@ export async function loadAndHydrate(
    * schriebe eine Änderung darin ihn mit dem neuen Stand — lautlos über das,
    * was ein anderer inzwischen gespeichert hat.
    */
-  if (await ladenUndEinspielen(dispatch, userId, meine, still)) {
+  if (await ladenUndEinspielen(dispatch, userId, meine, still, ohneHinweis)) {
     ausstehendesSchreiben()
     // Das zweite Laden ist eines mitten in der Sitzung — still, wie es heißt.
-    await ladenUndEinspielen(dispatch, userId, meine, () => true)
+    await ladenUndEinspielen(dispatch, userId, meine, () => true, ohneHinweis)
   }
 }
 
@@ -86,6 +108,7 @@ async function ladenUndEinspielen(
   userId: string,
   meine: number,
   still: () => boolean,
+  ohneHinweis: boolean,
 ): Promise<boolean> {
   // Was schon unterwegs ist — eben hinausgeschrieben oder vorher losgegangen —,
   // soll im geladenen Stand stehen. Bis zum 15.10.2026 wurde es nur losgeschickt,
@@ -117,9 +140,10 @@ async function ladenUndEinspielen(
     return false
   }
 
-  // Mitten in der Sitzung: Der Bestand bleibt, ein Hinweis sagt es (siehe oben).
+  // Mitten in der Sitzung: Der Bestand bleibt, ein Hinweis sagt es (siehe oben)
+  // — außer bei einem Laden, um das niemand gebeten hat (`ohneHinweis`).
   if (still()) {
-    dispatch({ type: 'nachladenGescheitert' })
+    if (!ohneHinweis) dispatch({ type: 'nachladenGescheitert' })
     return false
   }
   letztenStandZeigen(dispatch, userId)
