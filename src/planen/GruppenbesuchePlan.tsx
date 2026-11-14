@@ -20,7 +20,8 @@ import {
   besuchVorschlag,
   type BesuchsStand,
 } from '../data/gruppenbesuche'
-import { displayName, isQualified, personCompare } from '../data/helpers'
+import { displayName, personCompare } from '../data/helpers'
+import { leitetTreffpunkte } from '../data/planung/eignung'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import { zusageStatus } from '../data/planung/aufgaben'
 import type { Gruppenbesuch, Person } from '../data/types'
@@ -131,7 +132,7 @@ function ProblemListe({ liste }: { liste: readonly Problem[] }) {
 function useBesucher(): Person[] {
   const { state } = useApp()
   return useMemo(
-    () => state.persons.filter((p) => isQualified(p, 'treffpunkt')).sort((a, b) => personCompare(a, b, state.lang)),
+    () => state.persons.filter(leitetTreffpunkte).sort((a, b) => personCompare(a, b, state.lang)),
     [state.persons, state.lang],
   )
 }

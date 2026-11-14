@@ -61,6 +61,7 @@
 import { CORS, json, restKlient, wert } from '../_shared/rest.ts'
 import { wocheSchreiben } from '../_shared/woche-schreiben.ts'
 import { schluesselTeile, type Tab } from '../_shared/aufgaben-schluessel.ts'
+import { appZahlenLaden } from '../_shared/app-zahl.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   heuteUtc,
@@ -228,7 +229,7 @@ const nameVon = (p: TauschPerson): string => alsFreitext(personDisplayName(p.fn,
  * Schlüssel (`tag`): Zwei Anfragen verdrängen sich nicht.
  */
 async function benachrichtigen(
-  cong: string,
+  k: Aufrufer,
   konten: readonly (string | undefined)[],
   titel: string,
   pushTitel: (t: TauschTexte) => string,
@@ -240,12 +241,17 @@ async function benachrichtigen(
   await rest.send(
     'POST',
     'notifications',
-    ids.map((user_id) => ({ congregation_id: cong, user_id, type: 'zuteilung', title: titel, body, task_key: taskKey })),
+    ids.map((user_id) => ({ congregation_id: k.cong, user_id, type: 'zuteilung', title: titel, body, task_key: taskKey })),
   )
   if (!vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)) return
-  const subs = await rest.get<SubscriptionRow[]>(
-    `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}&user_id=in.${liste(ids)}`,
-  )
+  const [subs, zahlen] = await Promise.all([
+    rest.get<SubscriptionRow[]>(
+      `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(k.cong)}&user_id=in.${liste(ids)}`,
+    ),
+    // Die Zahl am App-Symbol (T184): Ein Tausch ändert, was beide zu bestätigen
+    // haben. Gezählt mit dem Kalendertag des Geräts, wie in der App.
+    appZahlenLaden(rest, k.cong, ids, heuteUtc(k.heute)),
+  ])
   const trFuer = uebersetzerFuer()
   const zustellungen: Zustellung[] = subs.map((s) => ({
     abo: s,
@@ -253,6 +259,7 @@ async function benachrichtigen(
     body: trFuer(s.lang)(body),
     url: ZIEL,
     tag: taskKey,
+    zahl: zahlen.get(s.user_id),
   }))
   await zustellen(zustellungen, abbestellerFuer(rest))
 }
@@ -353,7 +360,7 @@ async function anfragen(k: Aufrufer, gibtAb: string, nimmt: string): Promise<Res
   // „Simon fragt, ob du Mikrofone am 20. September übernimmst" — den eigenen
   // Tag kennt der Gefragte; die Karte in der App nennt beide.
   await benachrichtigen(
-    k.cong,
+    k,
     [partnerKonto],
     TITEL_ANGEFRAGT,
     (t) => t.angefragt,
@@ -382,7 +389,7 @@ async function ablehnen(k: Aufrufer, id: string): Promise<Response> {
     const teile = schluesselTeile(anfrage.nimmt)
     if (ich && teile?.art === 'helper' && lage.wochen.has(teile.woche)) {
       await benachrichtigen(
-        k.cong,
+        k,
         [anfrage.von_user],
         TITEL_ABGELEHNT,
         (t) => t.abgelehnt,
@@ -499,7 +506,7 @@ async function planerBenachrichtigen(
 ): Promise<void> {
   const planer = members.filter((m) => (m.admin || m.zuteiler) && !beteiligt.includes(m.user_id)).map((m) => m.user_id)
   await benachrichtigen(
-    k.cong,
+    k,
     planer,
     TITEL_GETAUSCHT,
     (t) => t.getauscht,
@@ -530,7 +537,7 @@ async function annehmen(k: Aufrufer, id: string): Promise<Response> {
 
   // Dem Fragenden: sein alter Platz und wer ihn jetzt hat (wie „Ersatz
   // gefunden"); den neuen sieht er unter seinen Aufgaben. Den Planern beide.
-  await benachrichtigen(k.cong, [anfrage.von_user], TITEL_GETAUSCHT, (t) => t.getauscht, `${dienst(lage, a.svc)} · ${termin(lage, a)} · ${nameVon(b.person)}`, b.key)
+  await benachrichtigen(k, [anfrage.von_user], TITEL_GETAUSCHT, (t) => t.getauscht, `${dienst(lage, a.svc)} · ${termin(lage, a)} · ${nameVon(b.person)}`, b.key)
   await planerBenachrichtigen(k, lage, members, a, b, [k.userId, anfrage.von_user])
   return json({ ok: true, wochen: staende })
 }

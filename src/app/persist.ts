@@ -1147,12 +1147,15 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
       }
       break
     case 'declineTask':
-      saveConfirmation(congId, userId, action.id, 'verhindert')
-      // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
-      if (helperKeyParts(action.id)) substituteSeek(action.id)
-      // Wer plant, erfährt es — in der Glocke und, wo neu zuzuteilen ist, per
-      // Push. Empfänger und Wortlaut bestimmt die Function (`absageMelden`).
-      absageMelden(action.id, action.nachricht)
+      for (const id of action.ids) {
+        saveConfirmation(congId, userId, id, 'verhindert')
+        // Hilfsdienst: automatisch Ersatz suchen (qualifizierte Personen anpingen).
+        if (helperKeyParts(id)) substituteSeek(id)
+      }
+      // Wer plant, erfährt es — in der Glocke je Aufgabe und, wo neu zuzuteilen
+      // ist, mit einem Push für alle. Empfänger und Wortlaut bestimmt die
+      // Function (`absageMelden`).
+      absageMelden(action.ids, action.nachricht)
       break
     case 'takeSubstitute':
       // Nicht clientseitig speichern (Wochen/Bestätigungen sind planer-only) —

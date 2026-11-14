@@ -2,8 +2,8 @@
  * Test-Ersatz für `npm:web-push` (Deno-Specifier, den Node/Vitest nicht auflösen
  * kann). Eingehängt über `test.alias` in vite.config.ts.
  *
- * Die Tests laufen ohne VAPID-Schlüssel, deshalb kehrt pushTo() in den Functions
- * ohnehin vorzeitig zurück und ruft hier nichts auf. `sent` ist trotzdem da,
+ * Die Tests laufen meist ohne VAPID-Schlüssel, deshalb kehrt der Versand in den
+ * Functions vorzeitig zurück und ruft hier nichts auf. `sent` ist trotzdem da,
  * damit ein Test belegen kann, dass ein abgelehnter Aufruf auch keinen Push
  * ausgelöst hat.
  */

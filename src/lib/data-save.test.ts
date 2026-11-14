@@ -693,16 +693,58 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
    * Function: Sie schreibt die Glocken und schickt den Push. Scheitert der
    * Aufruf, hat niemand etwas erfahren — das darf nicht still bleiben.
    */
-  it('die Absage nennt Platz, Nachricht und den Kalendertag des Geräts — und keine Versammlung', async () => {
+  it('die Absage nennt die Plätze, die Nachricht und den Kalendertag des Geräts — und keine Versammlung', async () => {
     chain.functions.invoke.mockClear()
-    absageMelden('k1', 'bin verreist')
-    absageMelden('k2', undefined)
+    absageMelden(['k1'], 'bin verreist')
+    absageMelden(['k2', 'k3'], undefined)
+    // Ohne Platz gibt es nichts zu melden.
+    absageMelden([], undefined)
     await abwarten()
     const heute = isoDay(new Date())
     expect(chain.functions.invoke.mock.calls).toEqual([
-      ['substitute', { body: { action: 'absage', taskKey: 'k1', nachricht: 'bin verreist', heute } }],
-      ['substitute', { body: { action: 'absage', taskKey: 'k2', nachricht: '', heute } }],
+      ['substitute', { body: { action: 'absage', taskKeys: ['k1'], nachricht: 'bin verreist', heute } }],
+      ['substitute', { body: { action: 'absage', taskKeys: ['k2', 'k3'], nachricht: '', heute } }],
     ])
+  })
+
+  /*
+   * **Ein Teil abgewiesen** (14.11.2026): Von mehreren Plätzen meldet die
+   * Function, was geht, und nennt den Rest (`abgewiesen`). Ist einer nicht
+   * mehr der eigene, zeigt der Bildschirm einen alten Stand — nachgeladen wird
+   * wie bei einem ganz abgewiesenen Aufruf.
+   */
+  const teilweise = (...gruende: string[]) =>
+    Promise.resolve({ data: { ok: true, gemeldet: 2, abgewiesen: gruende.map((error, i) => ({ taskKey: `k${i}`, error })) }, error: null })
+
+  it('weist die Function einen von mehreren ab, weil er nicht mehr der eigene ist, wird nachgeladen', async () => {
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    chain.functions.invoke.mockReturnValueOnce(teilweise('not-assigned'))
+    absageMelden(['k1', 'k2'], '')
+    await abwarten()
+    expect(konflikt).toHaveBeenCalledTimes(1)
+    expect(melder).not.toHaveBeenCalled()
+    setKonfliktMelder(null)
+  })
+
+  it('ein anderer Grund für einen Teil bleibt nicht still — wer plant, hat davon nichts erfahren', async () => {
+    const melder = vi.fn()
+    const konflikt = vi.fn()
+    setSchreibfehlerMelder(melder)
+    setKonfliktMelder(konflikt)
+    const protokoll = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      chain.functions.invoke.mockReturnValueOnce(teilweise('bad-request'))
+      absageMelden(['k1', 'k2'], '')
+      await abwarten()
+      expect(melder).toHaveBeenCalledTimes(1)
+      expect(konflikt).not.toHaveBeenCalled()
+    } finally {
+      protokoll.mockRestore()
+      setKonfliktMelder(null)
+    }
   })
 
   it.each(['not-assigned', 'slot-not-found', 'meeting-cancelled', 'past'])(
@@ -713,7 +755,7 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
       setSchreibfehlerMelder(melder)
       setKonfliktMelder(konflikt)
       chain.functions.invoke.mockReturnValueOnce(abgewiesen(grund))
-      absageMelden('k1', '')
+      absageMelden(['k1'], '')
       await abwarten()
       expect(konflikt).toHaveBeenCalledTimes(1)
       expect(melder).not.toHaveBeenCalled()
@@ -727,10 +769,10 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     setSchreibfehlerMelder(melder)
     setKonfliktMelder(konflikt)
     chain.functions.invoke.mockReturnValueOnce(Promise.resolve({ data: null, error: { message: 'Failed to fetch' } }))
-    absageMelden('k1', '')
+    absageMelden(['k1'], '')
     await abwarten()
     chain.functions.invoke.mockReturnValueOnce(abgewiesen('server-error'))
-    absageMelden('k1', '')
+    absageMelden(['k1'], '')
     await abwarten()
     expect(melder).toHaveBeenCalledTimes(2)
     expect(konflikt).not.toHaveBeenCalled()
@@ -742,7 +784,7 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     const konflikt = vi.fn()
     setSchreibfehlerMelder(melder)
     setKonfliktMelder(konflikt)
-    absageMelden('k1', '')
+    absageMelden(['k1'], '')
     await abwarten()
     expect(melder).not.toHaveBeenCalled()
     expect(konflikt).not.toHaveBeenCalled()

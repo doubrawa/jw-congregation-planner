@@ -7,6 +7,7 @@ import type { Service } from '../data/types'
 import { useT } from '../i18n/useT'
 import { KEIN_FILTER, passtOhneAuswahl } from '../personen/person-filter'
 import { BereichZeile, PrivToggle } from '../personen/PrivToggle'
+import { useAendernMitPlaetzen } from '../personen/useAendernMitPlaetzen'
 import { uebernehmenKoennen, uebernehmenText } from './einstellungen-anzeige'
 import { useNamensFeld } from './useNamensFeld'
 
@@ -96,10 +97,15 @@ function Blatt({ service }: { service: Service }) {
   )
 }
 
-/** Alle Personen, je eine mit dem Schalter ihres Bereichs für diesen Dienst — darüber die Suche. */
+/**
+ * Alle Personen, je eine mit dem Schalter ihres Bereichs für diesen Dienst —
+ * darüber die Suche. Steht jemand noch an künftigen Plätzen des Dienstes,
+ * fragt das Ausschalten erst (T182, `useAendernMitPlaetzen`).
+ */
 function PersonenSchalter({ svcKey }: { svcKey: string }) {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const { t } = useT()
+  const { aendern, blatt } = useAendernMitPlaetzen()
   const [suche, setSuche] = useState('')
   const qkey = serviceQualKey(svcKey)
   // Dieselbe Ordnung wie in der Personenliste — wer dort sucht, sucht hier gleich.
@@ -128,10 +134,11 @@ function PersonenSchalter({ svcKey }: { svcKey: string }) {
             qkey={qkey}
             label={listName(person)}
             person={person}
-            update={(patch) => dispatch({ type: 'updatePerson', id: person.id, patch })}
+            update={(patch) => aendern(person, patch)}
           />
         ))}
       </div>
+      {blatt}
     </>
   )
 }

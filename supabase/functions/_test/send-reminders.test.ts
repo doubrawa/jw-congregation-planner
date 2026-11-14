@@ -1104,6 +1104,28 @@ describe('send-reminders: Scharfbetrieb als Gegenprobe', () => {
 })
 
 /*
+ * **Die Zahl am App-Symbol** (T184): Die Erinnerung bringt mit, wie viele
+ * Zuteilungen der Empfänger noch beantworten muss — so bleibt die Zahl auch
+ * bei geschlossener App auf dem Stand.
+ */
+describe('send-reminders: die Zahl am App-Symbol (T184)', () => {
+  const zahl = () => (JSON.parse(sentPush[0]!.payload) as { zahl?: number }).zahl
+
+  it('Max hat Vorsitz und Leitung offen — die Erinnerung bringt 2 mit', async () => {
+    weeks = [{ start: WEEK_START, data: { mid: midMitRollen() } }]
+    await live()
+    expect(zahl()).toBe(2)
+  })
+
+  it('Gegenprobe: Was er zugesagt hat, zählt nicht mehr', async () => {
+    weeks = [{ start: WEEK_START, data: { mid: midMitRollen() } }]
+    confirmations = [{ task_key: `${WEEK_START}|mid|part|eroeffnung|0`, status: 'bestätigt' }]
+    await live()
+    expect(zahl()).toBe(1)
+  })
+})
+
+/*
  * **Trolley morgen** (T121, Phase 7): Am Vortag eines Trolley-Termins
  * erinnert die App beide — ohne Zusage, ohne Wiederholung, ohne Meldung an
  * die Planer. „Heute" ist Montag, 7. September; morgen der Dienstag.

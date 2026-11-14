@@ -1,9 +1,10 @@
 /**
  * Was mehrere Teile des Reducers brauchen: Toasts, Mitteilungen, das Abräumen
- * von Zusagen, die Kennungen der Wochen und der Sprung zur nächsten
- * Zusammenkunft. Keine Aktionen.
+ * von Zusagen, das Freigeben künftiger Plätze, die Kennungen der Wochen und
+ * der Sprung zur nächsten Zusammenkunft. Keine Aktionen.
  */
 
+import { plaetzeFreigeben } from '../../data/freiwerden'
 import { naechsteZusammenkunft } from '../../data/meeting-dates'
 import { dict, type Dict } from '../../i18n/ui'
 import { fill } from '../../i18n/useT'
@@ -66,6 +67,30 @@ export function dropConfirmations(map: ConfirmationMap, keys: string[]): Confirm
   const next = { ...map }
   for (const k of keys) delete next[k]
   return next
+}
+
+/**
+ * **Künftige Plätze einer Person freigeben** (T181, T182) — die Plätze `keys`,
+ * an denen sie noch steht (`plaetzeFreigeben`), samt ihren Zusagen, wie beim
+ * Entfernen im Blatt. `frei` zählt, was wirklich frei wurde; ohne die Person
+ * oder ohne einen solchen Platz bleiben die drei Teile dieselben.
+ *
+ * Für zwei Wege: `plaetzeFreigeben` (gemeldet wird es wie jedes Umteilen) und
+ * `removePerson` (gemeldet wird nichts, `OHNE_ENTZUG`). Zurück kommen die
+ * Teile, nicht ein ganzer Zustand: Der Fall im Reducer setzt sie sichtbar —
+ * daran lesen die Wachen ab, was eine Aktion schreibt (`readonly.test.ts`).
+ */
+export function mitFreienPlaetzen(
+  state: AppState,
+  personId: string,
+  keys: readonly string[],
+): Pick<AppState, 'weeks' | 'fsWeeks' | 'confirmations'> & { frei: number } {
+  const unveraendert = { weeks: state.weeks, fsWeeks: state.fsWeeks, confirmations: state.confirmations, frei: 0 }
+  const person = state.persons.find((p) => p.id === personId)
+  if (!person || keys.length === 0) return unveraendert
+  const { weeks, fsWeeks, frei } = plaetzeFreigeben(state, person, new Set(keys))
+  if (frei.length === 0) return unveraendert
+  return { weeks, fsWeeks, confirmations: dropConfirmations(state.confirmations, frei), frei: frei.length }
 }
 
 /**

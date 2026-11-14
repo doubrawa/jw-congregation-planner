@@ -11,18 +11,20 @@ import './aufgaben.css'
  * Planers.
  *
  * Stand dreimal ausgeschrieben da — Einspringen und freie Plätze unter „Meine
- * Aufgaben", Einspringen im Blatt beim Öffnen.
+ * Aufgaben", Einspringen im Blatt beim Öffnen. Dieselbe Zeile nennt auch die
+ * künftigen Aufgaben einer Person, bevor sie frei werden (T181, T182) — dort
+ * ohne „An diesem Tag schon".
  */
 export function AngebotText({
   titel,
   wann,
-  schonHeute,
+  schonHeute = [],
   hinweis,
 }: {
   /** Titel und Termin dürfen aus zwei Sprachen bestehen (`AufgabeText`, `AufgabeWann`). */
   titel: ReactNode
   wann: ReactNode
-  schonHeute: readonly MeetingAssignment[]
+  schonHeute?: readonly MeetingAssignment[]
   /** Eine Zeile darunter — beim Tauschen: „Ohne App-Konto — vorher persönlich absprechen". */
   hinweis?: string
 }) {

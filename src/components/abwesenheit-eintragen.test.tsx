@@ -195,6 +195,116 @@ describe('Abwesenheit eintragen', () => {
   })
 })
 
+/**
+ * **Was in die Zeit fällt** (T181, Betreiber: „klingt gut"): Die Aufgaben, die
+ * im gewählten Zeitraum liegen, stehen im Blatt, jede mit Schalter.
+ * Eingeschaltet sagt das Eintragen sie ab — für die eigene Person. Trägt der
+ * Admin für jemand anderen ein, gibt es sie frei (Betreiber: „Plätze
+ * freigeben").
+ */
+describe('Was in die Zeit fällt (T181)', () => {
+  const oeffne = () => fireEvent.click(knopf(document.body, t.abwEintragen)!)
+  const MIK_20 = '2026-10-19|mid|helper|mik|0'
+  const aufgabe = (id: string, tag: number, status: 'offen' | 'bestätigt' | 'verhindert' = 'offen') => ({
+    id, title: '', rolle: 'Mikrofone', date: `Dienstag, ${tag}. Oktober · 19:00`, at: Date.UTC(2026, 9, tag), status, s89: null,
+  })
+  const liste = () => [...(blatt()?.querySelectorAll('.abw-aufgaben .schalter-zeile') ?? [])]
+  const eintragen = () => fireEvent.click(knopf(blatt(), t.abwEintragen)!)
+
+  it('die eigenen Aufgaben im Zeitraum stehen da, eingeschaltet — die danach nicht', () => {
+    zeige('p-a', { myTasks: [aufgabe(MIK_20, 20), aufgabe('2026-10-26|mid|helper|mik|0', 27)] })
+    oeffne()
+    expect(liste()).toHaveLength(0)
+    tippe('Dienstag, 20. Oktober')
+    expect(liste()).toHaveLength(1)
+    expect(liste()[0]?.querySelector('[role="switch"]')?.getAttribute('aria-checked')).toBe('true')
+    expect(blatt()?.querySelector('.abw-aufgaben > .klein-text')?.textContent).toBe(t.abwAbsagenHinweis)
+  })
+
+  it('Eintragen sagt sie ab — wie im Absage-Blatt — und trägt die Abwesenheit ein', () => {
+    const { dispatch } = zeige('p-a', { myTasks: [aufgabe(MIK_20, 20)] })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    eintragen()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', ids: [MIK_20] })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'addAbsence', absence: expect.objectContaining({ personId: 'p-a', from: '2026-10-20' }) })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: fill(t.toastAbwAbgesagt, { n: 1 }) })
+  })
+
+  it('mehrere sagt es in einem Zug ab — wer plant, bekommt einen Push für alle, nicht je Aufgabe einen', () => {
+    const MIK_27 = '2026-10-26|mid|helper|mik|0'
+    const { dispatch } = zeige('p-a', { myTasks: [aufgabe(MIK_20, 20), aufgabe(MIK_27, 27)] })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Dienstag, 27. Oktober')
+    eintragen()
+    const absagen = dispatch.mock.calls.map((c) => c[0]).filter((a) => a.type === 'declineTask')
+    expect(absagen).toEqual([{ type: 'declineTask', ids: [MIK_20, MIK_27] }])
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: fill(t.toastAbwAbgesagt, { n: 2 }) })
+  })
+
+  /*
+   * Offline weist die App jede schreibende Aktion ab und sagt es
+   * (`store.tsx`). Eine Erfolgsmeldung danach — „Abgesagt: 1" — überdeckte
+   * den Hinweis und behauptete, was nirgends angekommen ist.
+   */
+  it('offline sagt das Blatt nichts ab und meldet keinen Erfolg — nur, dass es nicht geht', () => {
+    const { dispatch } = zeige('p-a', { myTasks: [aufgabe(MIK_20, 20)], staleAt: Date.UTC(2026, 9, 14) })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    eintragen()
+    expect(dispatch.mock.calls.map((c) => c[0])).toEqual([{ type: 'showToast', text: t.offlineReadOnly }])
+    // Das Blatt bleibt offen, samt Zeitraum.
+    expect(blatt()).not.toBeNull()
+  })
+
+  it('Gegenprobe: Ausgeschaltet bleibt sie, wie sie ist — die Abwesenheit kommt trotzdem', () => {
+    const { dispatch } = zeige('p-a', { myTasks: [aufgabe(MIK_20, 20)] })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    fireEvent.click(liste()[0]!.querySelector('[role="switch"]')!)
+    eintragen()
+    expect(dispatch.mock.calls.map((c) => c[0].type)).toEqual(['addAbsence'])
+  })
+
+  it('was schon abgesagt ist, kommt nicht noch einmal', () => {
+    zeige('p-a', { myTasks: [aufgabe(MIK_20, 20, 'verhindert')] })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    expect(blatt()?.querySelector('.abw-aufgaben')).toBeNull()
+  })
+
+  it('wer absagt, hat die Mitteilungen zur Aufgabe beantwortet', () => {
+    const notif = { id: 'n1', type: 'zuteilung', title: '', text: '', time: '', read: false, taskId: MIK_20 }
+    const { dispatch } = zeige('p-a', { myTasks: [aufgabe(MIK_20, 20)], notifs: [notif] as unknown as AppState['notifs'] })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    eintragen()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'mitteilungGelesen', id: 'n1' })
+  })
+
+  it('für eine ANDERE Person gibt der Admin die Plätze frei, statt abzusagen', () => {
+    const woche = {
+      range: '', book: '', start: '2026-10-19',
+      mid: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Berta Bein', pid: 'p-b' }] } },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    }
+    const { dispatch } = zeige('p-b', {
+      admin: true, persons: [ICH, BERTA], weeks: [woche], fsWeeks: [[]], confirmations: {},
+      services: [{ key: 'mik', name: 'Mikrofone', count: 1 }],
+      congregation: { name: 'Probe', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
+    })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    expect(liste()).toHaveLength(1)
+    expect(blatt()?.querySelector('.abw-aufgaben > .klein-text')?.textContent).toBe(t.abwFreigebenHinweis)
+    eintragen()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'plaetzeFreigeben', personId: 'p-b', keys: [MIK_20] })
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'declineTask')).toBe(false)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: fill(t.toastAbwFreigegeben, { n: 1 }) })
+  })
+})
+
 describe('Wer eintragen darf', () => {
   it('die eigene Person', () => {
     expect(knopf(zeige('p-a').container, t.abwEintragen)).toBeDefined()

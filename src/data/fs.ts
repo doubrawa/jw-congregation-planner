@@ -894,34 +894,42 @@ export function deriveMyFsTasks(
     for (const inst of week) {
       // Offen oder Freitext: gehört niemandem hier (`fsLeiterZuteilung`).
       if (!gehoertZuKennung(fsLeiterZuteilung(inst), personId, personName)) continue
-      const kennung = kennungen[wi] ?? ''
-      const key = fsKey(kennung, inst.id)
-      // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
-      // dann bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
-      const tag = fsTag(kennung, inst.wd)
-      tasks.push({
-        id: key,
-        // „Treffpunkt-Leiter" ist eine Rolle und gehört damit in die Sprache
-        // des Lesers. Als Titel lief sie durch `tp` — bei deutscher App und
-        // englischer Versammlungssprache stand dort Englisch.
-        title: '',
-        rolle: titel,
-        date: fsTerminText(tag, inst),
-        /*
-         * **Der Kalendertag, nicht der Zeitpunkt** — als UTC-Mitternacht, wie
-         * `meetingDateMs` ihn für die Zusammenkünfte liefert (siehe
-         * `MyTask.at`). `fsTag` gibt den örtlichen Mittag zurück; das ist für
-         * das Datum richtig und für diese Zahl die falsche Form: Der Countdown
-         * liest daraus den UTC-Tag, und Ortsmittag fällt östlich von UTC+12 auf
-         * den Vortag. Zwei Quellen, eine Kodierung.
-         */
-        at: tag ? kalendertagMs(tag) : null,
-        status: zusageStatus(confirmations, key),
-        s89: null,
-      })
+      tasks.push(treffpunktAufgabe(kennungen[wi] ?? '', inst, confirmations, titel))
     }
   })
   return tasks
+}
+
+/**
+ * **Die Leitung eines Treffpunkts als Aufgabe** — wie „Meine Aufgaben" sie
+ * zeigt, und ebenso jede Liste, die die Aufgaben einer anderen Person nennt
+ * (`nichtMehrPassend`).
+ */
+export function treffpunktAufgabe(kennung: string, inst: FsInstance, confirmations: ConfirmationMap, titel: string): MyTask {
+  const key = fsKey(kennung, inst.id)
+  // Ohne brauchbare Kennung (Vorlagen, Tests) gibt es keinen echten Termin —
+  // dann bleibt der Countdown aus, statt einen erfundenen Tag zu zeigen.
+  const tag = fsTag(kennung, inst.wd)
+  return {
+    id: key,
+    // „Treffpunkt-Leiter" ist eine Rolle und gehört damit in die Sprache
+    // des Lesers. Als Titel lief sie durch `tp` — bei deutscher App und
+    // englischer Versammlungssprache stand dort Englisch.
+    title: '',
+    rolle: titel,
+    date: fsTerminText(tag, inst),
+    /*
+     * **Der Kalendertag, nicht der Zeitpunkt** — als UTC-Mitternacht, wie
+     * `meetingDateMs` ihn für die Zusammenkünfte liefert (siehe
+     * `MyTask.at`). `fsTag` gibt den örtlichen Mittag zurück; das ist für
+     * das Datum richtig und für diese Zahl die falsche Form: Der Countdown
+     * liest daraus den UTC-Tag, und Ortsmittag fällt östlich von UTC+12 auf
+     * den Vortag. Zwei Quellen, eine Kodierung.
+     */
+    at: tag ? kalendertagMs(tag) : null,
+    status: zusageStatus(confirmations, key),
+    s89: null,
+  }
 }
 
 /**

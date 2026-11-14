@@ -529,7 +529,16 @@ export type AppAction =
   | { type: 'selectPerson'; id: string | null }
   | { type: 'addPerson'; person: Person } // öffnet direkt das Detail
   | { type: 'updatePerson'; id: string; patch: Partial<Person> } // speichert automatisch (debounced)
-  | { type: 'removePerson'; id: string } // löst Gruppen-/Konto-/Code-Referenzen
+  /**
+   * Löst Gruppen-, Konto- und Code-Referenzen. `freigeben`: diese künftigen
+   * Plätze der Person werden offen (T182) — sonst bleibt ihr Name dort stehen.
+   */
+  | { type: 'removePerson'; id: string; freigeben?: readonly string[] }
+  /**
+   * Künftige Plätze einer Person freigeben (T181, T182) — nur die, an denen sie
+   * noch steht (`plaetzeFreigeben`).
+   */
+  | { type: 'plaetzeFreigeben'; personId: string; keys: readonly string[] }
   | { type: 'changeServiceCount'; key: string; delta: 1 | -1 }
   // Ein Dienst behält seinen Schlüssel (`Service.key`) — an ihm hängen die Plätze
   // der Wochen, die Freigaben und das Recht, Anwesende einzutragen. Der Name
@@ -576,8 +585,12 @@ export type AppAction =
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'confirmAll' } // alle offenen eigenen Zuteilungen auf einmal (T121)
-  /** `nachricht`: freiwillig, für den Planer — steht in seiner Mitteilung (T121). */
-  | { type: 'declineTask'; id: string; nachricht?: string }
+  /**
+   * Absagen — eine Aufgabe (Absage-Blatt) oder alle in einer Abwesenheit
+   * (T181): Wer plant, bekommt je Empfänger einen Push für alle (`absageMelden`).
+   * `nachricht`: freiwillig, für den Planer — steht in seiner Mitteilung (T121).
+   */
+  | { type: 'declineTask'; ids: readonly string[]; nachricht?: string }
   | { type: 'openAbsage'; id: string } // Absage-Blatt öffnen
   | { type: 'closeAbsage' }
   // Tauschen (T153): Was die Function `tauschen` geschrieben hat, legt der
@@ -681,8 +694,13 @@ export type AppAction =
  *   getauscht, beide haben zugesagt, und Bescheid gab die Function `tauschen`.
  *   Ohne die Ausnahme verlor, wer eben getauscht hatte, die neue Zusage wieder,
  *   und beide bekamen „Zuteilung zurückgezogen".
+ * - `removePerson`: Wer entfernt wird, gehört nicht mehr zur Versammlung, und
+ *   sein Konto geht mit (`kontoGehtMit`). Gibt der Admin dabei seine künftigen
+ *   Plätze frei (T182), bekäme er sonst noch „Zuteilung zurückgezogen" für
+ *   jeden — als letzte Nachricht vor dem Ende seines Kontos. Die Zusagen
+ *   dieser Plätze räumt die Aktion selbst ab.
  */
-export const OHNE_ENTZUG: ReadonlySet<AppAction['type']> = new Set(['hydrate', 'getauscht'])
+export const OHNE_ENTZUG: ReadonlySet<AppAction['type']> = new Set(['hydrate', 'getauscht', 'removePerson'])
 
 export interface AppContextValue {
   state: AppState

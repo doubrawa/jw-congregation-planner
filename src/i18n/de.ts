@@ -316,6 +316,28 @@ export const DE = {
     abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt.',
     abwHinweisFuer: 'In dieser Zeit wird {name} nicht eingeteilt.',
     abwKonflikt: 'Bestehende Zuteilungen sehen die Planer als Konflikt.',
+    // Die eigenen Aufgaben im gewählten Zeitraum (T181): Eingeschaltet sagt das
+    // Eintragen sie ab — oder gibt sie frei, wenn der Admin für jemand anderen
+    // einträgt. `freigebenWort` steht nur im Namen der Schalter, für
+    // Vorleseprogramme. Die Zahlen stehen nach einem Doppelpunkt, ohne Numerus.
+    abwEingeteilt: 'In dieser Zeit eingeteilt',
+    abwAbsagenHinweis: 'Was eingeschaltet ist, sagst du mit dem Eintragen ab. Wer plant, erfährt es; beim Hilfsdienst sucht die App Ersatz.',
+    abwFreigebenHinweis: 'Was eingeschaltet ist, wird mit dem Eintragen freigegeben und neu verplant. Wer davon schon wusste, erfährt es.',
+    freigebenWort: 'Freigeben',
+    toastAbwAbgesagt: 'Abwesenheit eingetragen · Abgesagt: {n}',
+    toastAbwFreigegeben: 'Abwesenheit eingetragen · Freigegeben: {n}',
+    // Wer etwas nicht mehr macht (T182): Ändert der Admin Bereiche, Rolle oder
+    // Geschlecht einer Person oder entfernt er sie, und sie steht noch an
+    // künftigen Plätzen, die dann nicht mehr passen, fragt dieses Blatt. Der
+    // Name steht darüber; die Sätze kommen ohne ihn aus und damit ohne Genus.
+    freiTitel: 'Plätze freigeben?',
+    freiAendernIntro: 'Danach passen diese künftigen Plätze nicht mehr:',
+    freiEntfernenIntro: 'Noch eingeteilt an diesen künftigen Plätzen:',
+    freiHinweisAendern: 'Freigegeben sind sie wieder offen und werden neu verplant. Wer davon schon wusste, erfährt es. Vergangenes bleibt, wie es war.',
+    freiHinweisEntfernen: 'Freigegeben sind sie wieder offen und werden neu verplant, sonst bleibt der Name dort stehen. Vergangenes bleibt, wie es war.',
+    plaetzeFreigebenBtn: 'Plätze freigeben',
+    stehenLassenBtn: 'Stehen lassen',
+    toastPlaetzeFrei: 'Freigegebene Plätze: {n}',
     // Warnung im Planen: Für diesen Bereich sind an dem Tag weniger Leute da
     // als Plätze — Plätze, die offen bleiben MÜSSEN, anders als „offene
     // Zuteilungen", die nur noch nicht getan sind.

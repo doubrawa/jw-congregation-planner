@@ -38,7 +38,7 @@ describe('Verhinderung aus einer englischen App', () => {
     const s = englisch(leiter.lpid!)
     const task = s.myTasks.find((t) => t.id.startsWith('fs|'))!
     expect(task).toBeDefined()
-    const text = reducer(s, { type: 'declineTask', id: task.id }).notifs[0]!.text
+    const text = reducer(s, { type: 'declineTask', ids: [task.id] }).notifs[0]!.text
     expect(text).toContain(FS_LEITER)
     expect(text).not.toContain('conductor')
   })
@@ -54,7 +54,7 @@ describe('Nachricht an den Planer', () => {
     const leiter = demoZustand().fsWeeks.flat().find((i) => i.lpid)!
     const s = englisch(leiter.lpid!)
     const task = s.myTasks.find((t) => t.id.startsWith('fs|'))!
-    return reducer(s, { type: 'declineTask', id: task.id, nachricht }).notifs[0]!.text
+    return reducer(s, { type: 'declineTask', ids: [task.id], nachricht }).notifs[0]!.text
   }
 
   it('steht als letztes Atom da, als Freitext gekennzeichnet', () => {

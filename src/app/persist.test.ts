@@ -10,10 +10,12 @@ import {
   DEMO_PERSONS,
   DEMO_SERVICES,
 } from '../../tests/testdaten/testdaten'
+import { demoZustand } from '../../tests/testdaten/demo-start'
 import { syncAuxSlots } from '../data/aux-class'
 import { fsGruppeEntfernen, fsTaskKey, neueRegel } from '../data/fs'
+import { emptyQualifications } from '../data/helpers'
 import { sentKey } from '../data/planung/schluessel'
-import type { MyTask, Trolley, TrolleyTermin, Week } from '../data/types'
+import type { MyTask, Person, Trolley, TrolleyTermin, Week } from '../data/types'
 
 // Supabase truthy (Guard soll durchlassen) — kein echter Client/Netz.
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
@@ -1716,7 +1718,7 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
   it('confirmTask / declineTask schreiben den Status', () => {
     persist(st(), st(), { type: 'confirmTask', id: 'k1' })
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k1', 'bestätigt')
-    persist(st(), st(), { type: 'declineTask', id: 'k2' })
+    persist(st(), st(), { type: 'declineTask', ids: ['k2'] })
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k2', 'verhindert')
   })
 
@@ -1998,18 +2000,34 @@ describe('Mitteilungs-Fanout', () => {
    */
   it('eine Absage geht über die Function — mit dem Schlüssel und der Nachricht, und nur einmal', () => {
     const key = '2026-09-14|mid|ratgeber'
-    persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', id: key, nachricht: 'bin verreist' })
+    persist(st({ notifs: [] }), st({ notifs: [hier], members: [] }), { type: 'declineTask', ids: [key], nachricht: 'bin verreist' })
     expect(absageMelden).toHaveBeenCalledTimes(1)
-    expect(absageMelden).toHaveBeenCalledWith(key, 'bin verreist')
+    expect(absageMelden).toHaveBeenCalledWith([key], 'bin verreist')
     expect(notifyPlanners).not.toHaveBeenCalled()
   })
 
   it('auch ohne Nachricht, und für jede Art von Platz — Hilfsdienst, Programmpunkt, Treffpunkt', () => {
     for (const key of ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|i1|0', 'fs|2026-09-07|r1']) {
       vi.mocked(absageMelden).mockClear()
-      persist(st(), st(), { type: 'declineTask', id: key })
-      expect(absageMelden).toHaveBeenCalledWith(key, undefined)
+      persist(st(), st(), { type: 'declineTask', ids: [key] })
+      expect(absageMelden).toHaveBeenCalledWith([key], undefined)
     }
+  })
+
+  /*
+   * **Mehrere Absagen auf einmal** (Abwesenheit eintragen, T181): je Aufgabe
+   * die Zusage und beim Hilfsdienst die Ersatzsuche — gemeldet aber in einem
+   * Aufruf, damit wer plant einen Push für alle bekommt (Betreiber: „ein push
+   * je planer").
+   */
+  it('mehrere Absagen: je Aufgabe gespeichert, gemeldet in einem Aufruf', () => {
+    const keys = ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|i1|0', 'fs|2026-09-07|r1']
+    persist(st(), st(), { type: 'declineTask', ids: keys })
+    expect(vi.mocked(saveConfirmation).mock.calls).toEqual(keys.map((k) => ['c1', 'u1', k, 'verhindert']))
+    expect(substituteSeek).toHaveBeenCalledTimes(1)
+    expect(substituteSeek).toHaveBeenCalledWith(keys[0])
+    expect(absageMelden).toHaveBeenCalledTimes(1)
+    expect(absageMelden).toHaveBeenCalledWith(keys, undefined)
   })
 
   it('nur das Absagen meldet — Bestätigen und Einspringen nicht', () => {
@@ -2324,6 +2342,33 @@ describe('Entzug einer bestätigten Zusage: der Auslöser', () => {
 
     expect(sendPlanEntzug).not.toHaveBeenCalled()
   })
+
+  /** Der Bruder am Platz der Bibellesung, als Person — für die Wege über den Reducer (T182). */
+  const BERG: Person = { id: 'pA', fn: 'A.', ln: 'Berg', role: 'verkuendiger', priv: emptyQualifications() }
+  const mitPerson = (): AppState => ({ ...demoZustand(), ...mitWoche(wocheMitKlasse(), { persons: [BERG] }) })
+
+  it('Plätze freigeben (T181, T182) meldet es wie jedes Umteilen — wer zugesagt hatte, erfährt es', async () => {
+    const vorher = mitPerson()
+    const aktion = { type: 'plaetzeFreigeben', personId: BERG.id, keys: [SCHLUESSEL] } as const
+    persist(vorher, reducer(vorher, aktion), aktion)
+    await geschrieben()
+    expect(sendPlanEntzug).toHaveBeenCalledWith([expect.objectContaining({ key: SCHLUESSEL, name: 'A. Berg', pid: 'pA' })])
+  })
+
+  it('eine Person entfernen und ihre Plätze freigeben meldet niemandem etwas — sie geht, ihr Konto mit ihr (T182)', async () => {
+    const vorher = mitPerson()
+    const aktion = { type: 'removePerson', id: BERG.id, freigeben: [SCHLUESSEL] } as const
+    const nachher = reducer(vorher, aktion)
+    // Dass überhaupt etwas geschah: Der Platz ist frei.
+    const punkt = nachher.weeks[0]?.mid.sections[0]?.items[0]
+    expect(punkt && 'names' in punkt ? punkt.names[0]?.name : undefined).toBe('')
+    persist(vorher, nachher, aktion)
+    // Die Wochen gehen beim Entfernen gebündelt hinaus — erst danach käme ein Entzug.
+    ausstehendesSchreiben()
+    await geschrieben()
+    expect(saveWeek).toHaveBeenCalled()
+    expect(sendPlanEntzug).not.toHaveBeenCalled()
+  })
 })
 
 /**
@@ -2479,14 +2524,14 @@ describe('Jede dauerhafte Änderung hat einen Schreibweg', () => {
 describe('Absage: ein Hilfsdienst sucht Ersatz, ein Programmpunkt nicht', () => {
   it('Hilfsdienst: Status „verhindert" und die Ersatzsuche über die Function', () => {
     const key = '2026-09-07|mid|helper|mik|0'
-    persist(st(), st(), { type: 'declineTask', id: key })
+    persist(st(), st(), { type: 'declineTask', ids: [key] })
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', key, 'verhindert')
     expect(substituteSeek).toHaveBeenCalledWith(key)
   })
 
   it('Programmpunkt: nur der Status — keine Ersatzsuche', () => {
     const key = '2026-09-07|mid|part|i1|0'
-    persist(st(), st(), { type: 'declineTask', id: key })
+    persist(st(), st(), { type: 'declineTask', ids: [key] })
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', key, 'verhindert')
     expect(substituteSeek).not.toHaveBeenCalled()
   })

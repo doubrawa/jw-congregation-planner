@@ -69,31 +69,41 @@ export function substituteSeek(taskKey: string): void {
 /** Absagen, die nur ein veralteter Stand erklärt: Der Platz ist nicht mehr der eigene oder fällt aus. */
 const ABSAGE_VERALTET: ReadonlySet<string> = new Set(['not-assigned', 'slot-not-found', 'meeting-cancelled', 'past'])
 
+/** Die Gründe, aus denen die Function einzelne Plätze abgewiesen hat (`abgewiesen` in ihrer Antwort). */
+function abgewieseneGruende(antwort: unknown): (string | undefined)[] {
+  const abgewiesen = (antwort as { abgewiesen?: unknown } | null)?.abgewiesen
+  return Array.isArray(abgewiesen) ? abgewiesen.map((a) => (a as { error?: string } | null)?.error) : []
+}
+
 /**
- * **Eine Absage denen melden, die planen** (Edge Function `substitute`, Aufruf
- * 'absage'): eine Zeile in ihrer Glocke und — wo neu zuzuteilen ist — ein Push.
- * Bei einem Gruppentreffpunkt erfahren es auch Aufseher und Gehilfe der Gruppe.
+ * **Absagen denen melden, die planen** (Edge Function `substitute`, Aufruf
+ * 'absage'): je Aufgabe eine Zeile in ihrer Glocke und — wo neu zuzuteilen ist
+ * — ein Push je Empfänger für alle. Bei einem Gruppentreffpunkt erfahren es
+ * auch Aufseher und Gehilfe der Gruppe.
  *
  * Über die Function, nicht über `notify_planners`: Ein Push geht nur mit dem
  * privaten VAPID-Schlüssel hinaus, und wer die Gruppe leitet, weiß die App des
  * Absagenden nicht zuverlässig. `nachricht` ist, was er dem Planer dazuschreibt.
  *
- * Weist die Function ab, weil der Platz nicht mehr der eigene ist, wird
+ * Weist die Function ab, weil ein Platz nicht mehr der eigene ist, wird
  * nachgeladen (`konfliktMelder`) — ein „konnte nicht gespeichert werden"
  * erklärte nichts, und die Zusage scheitert dann ohnehin an derselben Lage.
+ * Das gilt auch, wenn nur einer von mehreren abgewiesen ist: Die übrigen sind
+ * gemeldet, aber der Bildschirm zeigt einen Stand, den es nicht mehr gibt.
  */
-export function absageMelden(taskKey: string, nachricht: string | undefined): void {
-  if (!supabase) return
+export function absageMelden(taskKeys: readonly string[], nachricht: string | undefined): void {
+  if (!supabase || taskKeys.length === 0) return
   const heute = isoDay(new Date())
   mitverfolgen(
     supabase.functions
-      .invoke('substitute', { body: { action: 'absage', taskKey, nachricht: nachricht ?? '', heute } })
-      .then(async ({ error }) => {
-        if (!error) return
-        console.error('[substitute/absage]', error.message)
-        const grund = (await fehlerAntwort(error))?.error
-        if (grund !== undefined && ABSAGE_VERALTET.has(grund)) konfliktMelden()
-        else schreibfehler(error)
+      .invoke('substitute', { body: { action: 'absage', taskKeys, nachricht: nachricht ?? '', heute } })
+      .then(async ({ data, error }) => {
+        if (error) console.error('[substitute/absage]', error.message)
+        // Abgewiesen ist der ganze Aufruf (Fehler) oder ein Teil der Plätze —
+        // die Gründe gelten gleich.
+        const gruende = error ? [(await fehlerAntwort(error))?.error] : abgewieseneGruende(data)
+        if (gruende.some((grund) => grund !== undefined && ABSAGE_VERALTET.has(grund))) konfliktMelden()
+        else if (gruende.length > 0) schreibfehler(error ?? { message: `[substitute/absage] abgewiesen: ${gruende.join(', ')}` })
       }),
   )
 }

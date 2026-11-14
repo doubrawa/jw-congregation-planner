@@ -1543,7 +1543,7 @@ describe('Bestätigungs-Flow', () => {
     const s = makeState({ dataStatus: 'ready', personId: null })
     const conf = reducer(s, { type: 'confirmTask', id: 'slot|key|1' })
     expect(conf.confirmations['slot|key|1']).toBe('bestätigt')
-    const dec = reducer(s, { type: 'declineTask', id: 'slot|key|2' })
+    const dec = reducer(s, { type: 'declineTask', ids: ['slot|key|2'] })
     expect(dec.confirmations['slot|key|2']).toBe('verhindert')
     expect(dec.notifs[0]!.type).toBe('verhindert')
     // Die Meldung an die Planer trägt den Schlüssel der Aufgabe — daran
@@ -1562,12 +1562,35 @@ describe('Bestätigungs-Flow', () => {
     */
     const ich = person('Simon Krüger')
     const s = makeState({ dataStatus: 'ready', personId: ich.id })
-    const dec = reducer(s, { type: 'declineTask', id: 'slot|key|2' })
+    const dec = reducer(s, { type: 'declineTask', ids: ['slot|key|2'] })
     const text = dec.notifs[0]!.text
 
     expect(text).toContain(alsFreitext(displayName(ich)))
     // Gegenprobe: unmarkiert stünde der Name nicht drin.
     expect(text.includes(` — ${displayName(ich)}`)).toBe(false)
+  })
+
+  /*
+   * **Mehrere auf einmal** — so sagt die Abwesenheit ab (T181): Jede Aufgabe
+   * gilt als verhindert, und jede hat ihre eigene Zeile, wie in den Glocken der
+   * Planer (`substitute/absage.ts`): Jede führt in ihre Woche.
+   */
+  it('mehrere Absagen: jede verhindert, jede mit eigener Zeile und eigenem Schlüssel', () => {
+    const s = makeState({ dataStatus: 'ready', personId: null, notifs: [] })
+    const ids = ['2026-09-07|mid|helper|mik|0', '2026-09-07|mid|part|i1|0', 'fs|2026-09-07|r1']
+    const dec = reducer(s, { type: 'declineTask', ids })
+    expect(ids.map((id) => dec.confirmations[id])).toEqual(['verhindert', 'verhindert', 'verhindert'])
+    expect(dec.notifs.map((n) => n.taskId)).toEqual(ids)
+    expect(dec.notifs.every((n) => n.type === 'verhindert' && n.local)).toBe(true)
+    // Der Toast fürs Ersatzgesuch gilt einem Hilfsdienst allein — mehrere
+    // nennt die Abwesenheit danach selbst.
+    expect(dec.toast?.text).toBe(t.toastVerhindert)
+    expect(reducer(s, { type: 'declineTask', ids: [ids[0]!] }).toast?.text).toBe(t.toastErsatzGesucht)
+  })
+
+  it('ohne Aufgabe ändert sich nichts', () => {
+    const s = makeState({ dataStatus: 'ready' })
+    expect(reducer(s, { type: 'declineTask', ids: [] })).toBe(s)
   })
 })
 
@@ -1973,7 +1996,7 @@ describe('Sprache', () => {
     expect(auf).toMatchObject({ absageId: 'x', myTaskId: null })
     expect(reducer(auf, { type: 'closeAbsage' }).absageId).toBeNull()
     expect(reducer(auf, { type: 'confirmTask', id: 'x' }).absageId).toBeNull()
-    expect(reducer(auf, { type: 'declineTask', id: 'x' }).absageId).toBeNull()
+    expect(reducer(auf, { type: 'declineTask', ids: ['x'] }).absageId).toBeNull()
   })
 
   it('Freigabe-Liste eines Hilfsdienstes: öffnen, schließen — und beim Löschen mit weg (T79)', () => {

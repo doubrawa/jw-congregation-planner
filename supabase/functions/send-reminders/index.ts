@@ -51,6 +51,7 @@
 
 import { json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
 import { wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
+import { appZahlenLaden } from '../_shared/app-zahl.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import {
   istAusgefallenFuer,
@@ -237,6 +238,8 @@ interface Push {
   title: string
   body: string
   url?: string // Deep-Link-Ziel (#go=…); Klick öffnet den passenden Screen
+  /** Die Zahl am App-Symbol (T184) — offene Zusagen des Empfängers (`appZahlenLaden`). */
+  zahl?: number
 }
 
 /** Ein Trolley-Termin, wie die Erinnerung ihn liest. */
@@ -326,6 +329,8 @@ Deno.serve(async (req: Request) => {
       // Umrechnung wie in `substitute`, `send-plan` und im Client.
       const zeiten = zeitenAus(cong)
       const [vonWoche, bisWoche] = wochenFenster(todayUTC, rem)
+      // Ab hier stehen die Pushes dieser Versammlung in der Schlange (siehe unten: die Zahl am App-Symbol).
+      const ersterPush = sendQueue.length
 
       const [sentToday, weeks, fsWeeks, members, persons, services, subs] = await Promise.all([
         // Wer heute schon benachrichtigt wurde ("userId|kind") → nicht erneut senden.
@@ -668,6 +673,19 @@ Deno.serve(async (req: Request) => {
           logRows.push({ congregation_id: cong.id, user_id: m.user_id, kind: 'planner' })
         }
       }
+
+      /*
+       * **Die Zahl am App-Symbol** (T184): Jeder Push dieses Laufs bringt sie
+       * mit — die offenen Zusagen des Empfängers über alle künftigen Wochen,
+       * nicht nur die im Fenster der Erinnerung. Der tägliche Lauf hält sie
+       * so auch bei geschlossener App ungefähr auf dem Stand.
+       */
+      // Ohne VAPID-Schlüssel geht ohnehin kein Push hinaus (unten) — dann nicht erst zählen.
+      const pushes = sendQueue.slice(ersterPush)
+      if (SEND_PUSH && VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && pushes.length > 0) {
+        const zahlen = await appZahlenLaden(klient, cong.id, pushes.map((q) => q.push.userId), todayUTC)
+        for (const { push } of pushes) push.zahl = zahlen.get(push.userId)
+      }
     }
 
     /*
@@ -711,6 +729,7 @@ Deno.serve(async (req: Request) => {
           titel: push.title,
           body: push.body,
           url: push.url ?? APP_URL,
+          zahl: push.zahl,
         })),
       )
       const erg = kannSenden

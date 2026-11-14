@@ -255,7 +255,7 @@ describe('Der Zustand wird nie an Ort und Stelle geändert', () => {
       const schritte: AppAction[] = [
         { type: 'openMyTask', id },
         { type: 'confirmTask', id },
-        { type: 'declineTask', id },
+        { type: 'declineTask', ids: [id] },
         { type: 'closeMyTask' },
       ]
       for (const action of schritte) {

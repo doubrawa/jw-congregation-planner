@@ -603,6 +603,9 @@ eine Mitteilung („Verhinderung gemeldet"), und der Punkt an der Zuteilung wird
 **rot**. Bei einem Programmpunkt oder Treffpunkt kommt sie auch als
 **Push aufs Gerät**, wenn du Push-Benachrichtigungen eingeschaltet hast – mit
 Aufgabe, Termin, Name und dem, was der Absagende dir dazugeschrieben hat. Sagt
+jemand **mehrere Aufgaben auf einmal** ab – beim Eintragen einer Abwesenheit –,
+kommt **ein** Push mit allen, vorn der Name; in der Glocke steht trotzdem jede
+Aufgabe für sich, und jede führt in ihre Woche. Sagt
 jemand die Leitung eines **Treffpunkts seiner Gruppe** ab, erfahren es außer
 Admins und Planern auch der Gruppenaufseher und sein Gehilfe: Sie teilen dort
 die Leiter zu. Ein Tipp auf die Mitteilung öffnet **Planen in der Woche der
@@ -1316,10 +1319,17 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
 - **Rechte** – siehe [Rechte](#rechte).
 
 Ganz unten steht **Person entfernen**. Der erste Tipp nennt die Folge, erst der
-zweite entfernt. Bereits geplante Zuteilungen bleiben als Text in den Wochen
-stehen. Hat die Person ein Konto, geht es mit: Ihr Gerät wird abgemeldet, und
+zweite entfernt. Vergangene Zuteilungen bleiben als Text in den Wochen stehen.
+Hat die Person ein Konto, geht es mit: Ihr Gerät wird abgemeldet, und
 anmelden geht erst wieder mit einem neuen Link. Nur dein eigenes Konto bleibt –
 es steht dann unter **Konten ohne Person**.
+
+Ist die Person noch für **künftige** Plätze eingeteilt, fragt statt der zwei
+Tipps ein Blatt: Es nennt diese Plätze (Zusammenkünfte und Treffpunkte) und
+bietet **Plätze freigeben** – sie werden offen und neu verplant – oder **Stehen
+lassen** – ihr Name bleibt dort als Text stehen, wie bisher. Beides entfernt
+die Person; **Abbrechen** lässt alles, wie es ist. Eine Nachricht bekommt sie
+dabei nicht mehr.
 
 ### Zeitleiste und Abwesenheiten
 
@@ -1358,6 +1368,14 @@ und kann sie dort ebenfalls pflegen – es ist dieselbe Angabe, nicht zwei.
 Trägst du für jemand anderen ein, nennt das Blatt die Person unter der
 Überschrift, damit klar ist, für wen es gilt.
 
+Ist die Person in der gewählten Zeit schon eingeteilt, stehen diese Aufgaben
+im Blatt unter **In dieser Zeit eingeteilt**, jede mit einem Schalter.
+Eingeschaltet – so stehen sie da – werden sie mit dem Eintragen **freigegeben**:
+Die Plätze sind wieder offen und werden neu verplant; wer schon davon wusste,
+bekommt „Zuteilung zurückgezogen". Was du ausschaltest, bleibt, wie es ist. Für
+die eigene Person sagt dasselbe Blatt die Aufgaben ab, statt sie freizugeben
+(siehe das Handbuch für Verkündiger).
+
 Abwesenheiten wirken sofort auf die Planung: Wer weg ist, lässt sich für diese
 Woche gar nicht erst zuteilen, die automatische Zuteilung übergeht ihn, und eine
 bereits bestehende Zuteilung erscheint unter **Zu klären**. Bei den Treffpunkten
@@ -1387,6 +1405,13 @@ Alles außer dem Namen gilt sofort. Der Name gilt erst, wenn du das Blatt
 schließt (**Fertig**) – beim Tippen entsteht so kein halber Name in den Plänen.
 Wird eine Person umbenannt, zieht die App den neuen Namen automatisch durch alle
 bereits geplanten Wochen.
+
+Geschlecht und Rolle entscheiden mit, wo jemand stehen kann: Plätze nur für
+Brüder, Gesprächsführer und -partner eines Schülerteils, der öffentliche
+Vortrag am Sonntag (nur Älteste und Dienstamtgehilfen). Passt die Person nach
+einer Änderung an künftige Plätze nicht mehr, fragt erst ein Blatt – wie beim
+Abschalten eines Aufgabenbereichs (siehe [Wer etwas nicht mehr
+macht](#wer-etwas-nicht-mehr-macht)).
 
 ### Aufgabenbereiche
 
@@ -1436,6 +1461,26 @@ Rollen in ihrer Folge.
   Rollen gehört genau einer Person; ist eine mehrfach vergeben, warnt die
   Personenliste (siehe
   [Warnung: feste Rolle mehrfach vergeben](#warnung-feste-rolle-mehrfach-vergeben)).
+
+### Wer etwas nicht mehr macht
+
+Schaltest du einen Bereich ab – bei der Person oder in der Liste eines
+Hilfsdienstes unter [Einstellungen](#7-einstellungen) –, und die Person ist
+für künftige Plätze dieses Bereichs schon eingeteilt, fragt die App vorher:
+Das Blatt **Plätze freigeben?** nennt diese Plätze, dann wählst du:
+
+- **Plätze freigeben** – der Bereich ist ab, und die Plätze sind wieder offen.
+  Sie erscheinen beim Planen als offen und werden neu verplant; wer davon schon
+  wusste (zugesagt oder per „Plan senden" benachrichtigt), bekommt „Zuteilung
+  zurückgezogen".
+- **Stehen lassen** – der Bereich ist ab, die schon geplanten Plätze behält die
+  Person, etwa weil sie den Dezember noch macht.
+- **Abbrechen** – nichts ändert sich.
+
+Was nicht mehr passt, entscheidet dieselbe Regel wie die Auswahl beim Zuteilen:
+der Bereich, die Rolle und das Geschlecht. Vergangenes bleibt, wie es war, und
+eine ausgefallene Zusammenkunft lässt die App unberührt. Wer einen Bereich
+dazubekommt, verliert nichts – dann kommt keine Frage.
 
 ### Rechte
 

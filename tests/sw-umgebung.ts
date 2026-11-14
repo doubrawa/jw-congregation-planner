@@ -117,6 +117,8 @@ export interface SwUmgebung {
   speicher: Map<string, FakeCache>
   /** Die Aufrufe von `showNotification`: [Titel, Optionen]. */
   meldungen: Array<[string, Record<string, unknown>]>
+  /** Was der Worker ans App-Symbol schrieb (T184): eine Zahl, `null` = geleert. */
+  zahlen: Array<number | null>
   /** Die Adressen, die der Worker aus dem Netz geholt hat. */
   geholt: string[]
   skipWaiting: () => void
@@ -138,6 +140,10 @@ export interface SwOptionen {
    * Bauschritt ausliefert (Stand-Kennung eingetragen).
    */
   quelle?: string
+  /** Ein Browser ohne Zahl am App-Symbol (Badging API) — dann darf der Worker nicht stolpern. */
+  ohneZahl?: boolean
+  /** Ein eigenes `navigator` statt des nachgebauten — für Browser, die es anders halten. */
+  navigator?: Record<string, unknown>
 }
 
 /**
@@ -147,6 +153,7 @@ export function ladeServiceWorker(opts: SwOptionen = {}): SwUmgebung {
   const scope = opts.scope ?? 'https://app.test/planner/'
   const speicher = new Map<string, FakeCache>()
   const meldungen: Array<[string, Record<string, unknown>]> = []
+  const zahlen: Array<number | null> = []
   const geholt: string[] = []
   const gesendet: unknown[] = []
   const geoeffnet: string[] = []
@@ -212,6 +219,20 @@ export function ladeServiceWorker(opts: SwOptionen = {}): SwUmgebung {
       skipWaitingGerufen = true
     },
     clients,
+    navigator:
+      opts.navigator ??
+      (opts.ohneZahl
+        ? {}
+        : {
+            setAppBadge: (n: number) => {
+              zahlen.push(n)
+              return Promise.resolve()
+            },
+            clearAppBadge: () => {
+              zahlen.push(null)
+              return Promise.resolve()
+            },
+          }),
     registration: {
       scope,
       showNotification: (titel: string, opt: Record<string, unknown>) => {
@@ -240,6 +261,7 @@ export function ladeServiceWorker(opts: SwOptionen = {}): SwUmgebung {
   return {
     speicher,
     meldungen,
+    zahlen,
     geholt,
     gesendet,
     geoeffnet,

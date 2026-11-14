@@ -100,7 +100,7 @@ function mitteilungen(): Notification[] {
     ...basis,
     myTasks: [{ id: '2026-09-07|mid|part|1|0|0', title: 'Bibellesung', date: 'Dienstag, 8. September · 19:00', s89: null, status: 'offen' }],
   }
-  const abgesagt = reducer(mitAufgabe, { type: 'declineTask', id: '2026-09-07|mid|part|1|0|0', nachricht: 'Xezavo Xilubo' }).notifs[0]!
+  const abgesagt = reducer(mitAufgabe, { type: 'declineTask', ids: ['2026-09-07|mid|part|1|0|0'], nachricht: 'Xezavo Xilubo' }).notifs[0]!
   return [
     zeile('plan', TITEL_ZUTEILUNG, zeilen.join(' · ')),
     zeile('entzug', TITEL_ENTZUG, zeilen[0]!),

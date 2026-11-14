@@ -190,7 +190,7 @@ describe('Das Absage-Blatt', () => {
     const { container, dispatch } = absagen()
     fireEvent.change(container.querySelector('input.feld')!, { target: { value: 'bin verreist' } })
     fireEvent.click(text(container, t.absagen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', id: task().id, nachricht: 'bin verreist' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', ids: [task().id], nachricht: 'bin verreist' })
   })
 
   /*

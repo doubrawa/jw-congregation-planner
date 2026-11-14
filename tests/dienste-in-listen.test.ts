@@ -24,6 +24,7 @@ const ERLAUBT: Readonly<Record<string, { n: number; warum: string }>> = {
   'src/app/aktionen/versammlung.ts': { n: 6, warum: 'ändert den Bestand: Plätze, Umbenennen (nachschlagen und ersetzen), Löschen, Anlegen, umbenannte Gruppe' },
   'src/app/aktionen/zuteilen.ts': { n: 4, warum: '„Automatisch" und geänderte Plätze — die Füllfolge bleibt die des Anlegens' },
   'src/app/aktionen/zusagen.ts': { n: 3, warum: 'Tausch, Doppelbelegung, Platz nachschlagen' },
+  'src/app/useKuenftigePlaetze.ts': { n: 1, warum: 'Bestand für die künftigen Plätze einer Person (`nichtMehrPassend`, T181/T182) — die Plätze stehen nach Termin' },
   'src/aufgaben/useSaal.ts': { n: 2, warum: 'zählt die Besetzung' },
   'src/auswertung/AuswertungScreen.tsx': { n: 1, warum: 'rechnet die Auswertung und schlägt Namen nach; die Tabelle bekommt useDienste' },
   'src/dashboard/PlanungsKarte.tsx': { n: 5, warum: 'zählt für die Planungs-Karte' },

@@ -658,6 +658,20 @@ describe('Function: anfragen', () => {
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/jonas'])
   })
 
+  it('der Push bringt die Zahl am App-Symbol mit: Jonas hat zwei Plätze ohne Antwort (T184)', async () => {
+    await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B })
+    // Dienstag 8.9. und Sonntag 20.9. — beide künftig, keiner zugesagt.
+    expect((JSON.parse(sentPush[0]!.payload) as { zahl?: number }).zahl).toBe(2)
+  })
+
+  it('…gezählt mit dem Kalendertag des Geräts, nicht mit dem UTC-Tag des Servers', async () => {
+    // Mittwoch, 9. September, 00:30 in Deutschland — beim Server noch Dienstag.
+    vi.setSystemTime(new Date('2026-09-08T22:30:00Z'))
+    await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B, heute: '2026-09-09' })
+    // Der Dienstag ist für Jonas vorbei, es bleibt der Sonntag, 20.9.
+    expect((JSON.parse(sentPush[0]!.payload) as { zahl?: number }).zahl).toBe(1)
+  })
+
   it('die eigene Person kommt aus dem Konto: Otto kann Simons Platz nicht anbieten', async () => {
     expect(await ruf({ aktion: 'anfragen', gibtAb: A, nimmt: B }, U_OTTO)).toEqual({ status: 403, body: { error: 'not-yours' } })
     expect(anfragen).toEqual([])

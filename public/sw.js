@@ -174,6 +174,26 @@ self.addEventListener('fetch', (event) => {
   // `/assets/` oben.
 })
 
+/**
+ * **Die Zahl am App-Symbol** (T184): wie viele Zuteilungen noch auf eine
+ * Antwort warten. Ist die App zu, kann nur der Worker sie setzen — mit der
+ * Zahl, die der Push mitbringt (`zahl`, `_shared/app-zahl.ts`). Ohne Zahl im
+ * Push bleibt sie, wie sie ist; 0 leert das Symbol. Ein Browser ohne diese
+ * Möglichkeit zeigt die Meldung trotzdem.
+ */
+function zahlSetzen(zahl) {
+  if (typeof zahl !== 'number') return Promise.resolve()
+  // Was das Symbol auch tut — die Meldung darf daran nicht scheitern. Ein
+  // Browser ohne diese Möglichkeit (oder mit nur einer Hälfte) wirft hier; das
+  // fängt dasselbe `catch` wie einen, der den Aufruf ablehnt.
+  try {
+    const nav = self.navigator
+    return Promise.resolve(zahl > 0 ? nav.setAppBadge(zahl) : nav.clearAppBadge()).catch(() => {})
+  } catch {
+    return Promise.resolve()
+  }
+}
+
 self.addEventListener('push', (event) => {
   let data = {}
   try {
@@ -181,33 +201,32 @@ self.addEventListener('push', (event) => {
   } catch {
     /* kein JSON-Payload → Standardtexte */
   }
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'Versammlung.app', {
-      body: data.body || '',
-      icon: 'icon-192.png',
-      // Android liest vom Badge nur den Alphakanal: nur Plätze und Pult, ohne
-      // Kachel — mit `icon-192.png` stand dort ein weißer Klotz (make-icons.mjs).
-      badge: 'badge-96.png',
-      /*
-       * **Gleiche Art ersetzt, statt zu stapeln** (V10). Ohne `tag` legt jede
-       * Erinnerung eine weitere Meldung auf den Sperrbildschirm; bei täglicher
-       * Wiederholung stehen dort nach einer Woche sieben Mal dieselbe Sache,
-       * und die eine neue Nachricht daneben geht darin unter.
-       *
-       * Der Titel ist die Art („Erinnerung", „Ersatz gesucht") und damit der
-       * natürliche Schlüssel. Der Absender darf ihn überschreiben, falls sich
-       * eine Sorte später feiner trennen soll — dann ohne diese Datei erneut
-       * anzufassen.
-       *
-       * `renotify` gehört dazu: Eine Ersetzung ohne es wäre lautlos, und vom
-       * neuen Inhalt bekäme der Leser nichts mit. Verloren geht dabei nichts —
-       * die Glocke in der App führt jede Zeile einzeln.
-       */
-      tag: data.tag || data.title || 'cp',
-      renotify: true,
-      data: { url: data.url || '.' },
-    }),
-  )
+  const meldung = self.registration.showNotification(data.title || 'Versammlung.app', {
+    body: data.body || '',
+    icon: 'icon-192.png',
+    // Android liest vom Badge nur den Alphakanal: nur Plätze und Pult, ohne
+    // Kachel — mit `icon-192.png` stand dort ein weißer Klotz (make-icons.mjs).
+    badge: 'badge-96.png',
+    /*
+     * **Gleiche Art ersetzt, statt zu stapeln** (V10). Ohne `tag` legt jede
+     * Erinnerung eine weitere Meldung auf den Sperrbildschirm; bei täglicher
+     * Wiederholung stehen dort nach einer Woche sieben Mal dieselbe Sache,
+     * und die eine neue Nachricht daneben geht darin unter.
+     *
+     * Der Titel ist die Art („Erinnerung", „Ersatz gesucht") und damit der
+     * natürliche Schlüssel. Der Absender darf ihn überschreiben, falls sich
+     * eine Sorte später feiner trennen soll — dann ohne diese Datei erneut
+     * anzufassen.
+     *
+     * `renotify` gehört dazu: Eine Ersetzung ohne es wäre lautlos, und vom
+     * neuen Inhalt bekäme der Leser nichts mit. Verloren geht dabei nichts —
+     * die Glocke in der App führt jede Zeile einzeln.
+     */
+    tag: data.tag || data.title || 'cp',
+    renotify: true,
+    data: { url: data.url || '.' },
+  })
+  event.waitUntil(Promise.all([meldung, zahlSetzen(data.zahl)]))
 })
 
 /**

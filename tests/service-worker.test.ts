@@ -330,6 +330,46 @@ describe('Service Worker: Benachrichtigungen (V10)', () => {
     expect(sw.meldungen[0]?.[0]).toBe('Versammlung.app')
   })
 
+  it('die Zahl am App-Symbol kommt mit dem Push — auch bei geschlossener App (T184)', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Neue Zuteilung', zahl: 3 }))
+    expect(sw.zahlen).toEqual([3])
+  })
+
+  it('0 leert das Symbol', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Zuteilung zurückgezogen', zahl: 0 }))
+    expect(sw.zahlen).toEqual([null])
+  })
+
+  it('Gegenprobe: ohne Zahl im Push bleibt sie, wie sie ist', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Ersatz gesucht' }))
+    expect(sw.zahlen).toEqual([])
+  })
+
+  it('ein Browser ohne Zahl am Symbol zeigt die Meldung trotzdem', async () => {
+    const sw = ladeServiceWorker({ ohneZahl: true })
+    await sw.feuere('push', push({ title: 'Neue Zuteilung', zahl: 3 }))
+    expect(sw.meldungen).toHaveLength(1)
+  })
+
+  it('…ebenso einer, der nur das Setzen kennt oder dabei wirft', async () => {
+    const nurSetzen = ladeServiceWorker({ navigator: { setAppBadge: () => Promise.resolve() } })
+    await nurSetzen.feuere('push', push({ title: 'Zuteilung zurückgezogen', zahl: 0 }))
+    expect(nurSetzen.meldungen).toHaveLength(1)
+    const wirft = ladeServiceWorker({
+      navigator: {
+        setAppBadge: () => {
+          throw new Error('nicht erlaubt')
+        },
+        clearAppBadge: () => Promise.resolve(),
+      },
+    })
+    await wirft.feuere('push', push({ title: 'Neue Zuteilung', zahl: 2 }))
+    expect(wirft.meldungen).toHaveLength(1)
+  })
+
   it('in der Statusleiste stehen die Sitzreihen, kein weißer Klotz', async () => {
     /*
       Android liest vom Badge nur den Alphakanal und färbt jede deckende Stelle

@@ -15,17 +15,13 @@
 import type { AppState } from '../app/context'
 import { diensteDerSprache } from '../app/useDienste'
 import { abwesenheitAm, istAbwesend, type AbsenceSet } from '../data/absence'
-import { ratgeberSlot, slotsOf } from '../data/aux-class'
 import { fsLeiterZuteilung, fsTag } from '../data/fs'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import {
   displayName,
   gehoertZu,
   idAufloeser,
-  isQualified,
-  isSong,
   istAusgefallen,
-  passtZumPaar,
   personCompare,
   reinigungsGruppen,
   ROLE_CIRCUIT,
@@ -34,6 +30,7 @@ import { lastFenster, workloadOf } from '../data/auslastung'
 import { meetingDate } from '../data/meeting-dates'
 import { platzDerAuswahl } from '../data/plaetze'
 import { rangfolgeFuer } from '../data/planung/automatik'
+import { passtAufPlatz } from '../data/planung/eignung'
 import { assignmentsInMeeting, zuletztImBereich } from '../data/planung/zuteilen'
 import type { Absence, MeetingAssignment, MeetingKey, Person, SlotSelection } from '../data/types'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
@@ -153,7 +150,7 @@ function fsKandidaten(
   // Mehrzahl der Vergleiche. Die Reihenfolge ist dieselbe: Sortieren einer
   // Teilmenge ist das Sortieren der ganzen Menge ohne die Weggelassenen.
   return state.persons
-    .filter((p) => isQualified(p, 'treffpunkt'))
+    .filter(passtAufPlatz(state, sel))
     .sort((a, b) => personCompare(a, b, state.lang))
     .map((p): Candidate => {
       const name = displayName(p)
@@ -206,7 +203,9 @@ function personenKandidaten(
   abwesend: AbsenceSet,
   t: Dict,
 ): Candidate[] {
-  const geschlechtOk = geschlechtsPruefung(state, sel)
+  // Wer überhaupt in Frage kommt — dieselbe Regel, nach der beim Ändern einer
+  // Person ihre künftigen Plätze frei werden (`passtAufPlatz`, T182).
+  const passt = passtAufPlatz(state, sel)
   // Die Punkte zählen über dasselbe Fenster, nach dem „Automatisch" sortiert
   // (`lastFenster`: nach Datum, nicht nach Position).
   const fenster = lastFenster(state.weeks, sel.wi)
@@ -214,16 +213,6 @@ function personenKandidaten(
   // Hinweise zum Tag einfach aus.
   const week = state.weeks[sel.wi]
   const meeting = week?.[sel.tab]
-  // Den öffentlichen Vortrag am Sonntag (Redner-Platz, T29) kann jeder Älteste
-  // und Dienstamtgehilfe halten (Betreiber, 4.10.2026): Eingeteilt wird er
-  // ohnehin von Hand, nie automatisch — ein eigener Aufgabenbereich wäre Pflege
-  // ohne Nutzen. Am Platz steht weiter `vortrag`; entschieden wird am
-  // Redner-Platz (`sel.guest` = `isSpeakerRole`). Die Plätze des Kreisaufsehers
-  // kommen hier nicht an (`kreisaufseherPlatz`).
-  const darf =
-    sel.kind === 'part' && sel.guest
-      ? (p: Person) => p.role === 'aeltester' || p.role === 'dienstamtgehilfe'
-      : (p: Person) => !sel.priv || isQualified(p, sel.priv)
   // Wen „Automatisch" hier nähme, in seiner Reihenfolge (T121, Phase 5d): Die
   // erste ist der Vorschlag, die übrigen stehen in derselben Ordnung darunter.
   const rang = new Map(
@@ -247,7 +236,7 @@ function personenKandidaten(
   // müssen nur die Qualifizierten. Alphabetisch, danach stabil nach Stufe und
   // Rang.
   return state.persons
-    .filter((p) => darf(p) && geschlechtOk(p))
+    .filter(passt)
     .sort((a, b) => personCompare(a, b, state.lang))
     .map((p): Candidate => {
       const name = displayName(p)
@@ -268,33 +257,4 @@ function personenKandidaten(
       }
     })
     .sort((a, b) => stufe(a) - stufe(b) || (rang.get(a.key) ?? 0) - (rang.get(b.key) ?? 0))
-}
-
-/**
- * Geschlechtsregeln der Schülerteile: der Platz selbst kann brüder-only sein
- * (Vortrag, Ratgeber), und ein Gesprächspartner muss zum Gesprächsführer
- * passen — zum Führer **desselben Raums**. Wurde er immer im Hauptsaal
- * gesucht, richtete sich die Zusätzliche Klasse nach dem falschen Platz; die
- * Auto-Zuteilung macht es richtig und begründet es ausdrücklich (planung/waehler.ts).
- *
- * Den Ratgeber fragte die Liste bis zum 16.10.2026 nicht: Eine Schwester mit
- * versehentlich gesetztem Bereich stand zur Wahl, obwohl der Platz `male` trägt.
- */
-function geschlechtsPruefung(
-  state: KandidatenDaten,
-  sel: Exclude<SlotSelection, { kind: 'fs' }>,
-): (p: Person) => boolean {
-  if (sel.kind === 'ratgeber') {
-    const meeting = state.weeks[sel.wi]?.[sel.tab]
-    const nurBrueder = meeting ? ratgeberSlot(meeting).male === true : false
-    return (p: Person) => !(nurBrueder && p.female)
-  }
-  if (sel.kind !== 'part') return () => true
-  const item = state.weeks[sel.wi]?.[sel.tab].sections[sel.si]?.items[sel.ii]
-  if (!item || isSong(item)) return () => true
-  const plaetze = slotsOf(item, sel.aux === true)
-  const platz = plaetze[sel.ni]
-  // Führer und Partner passen zueinander, gleich, wer zuerst dasteht.
-  const passt = passtZumPaar(plaetze, platz, state.persons)
-  return (p: Person) => !(platz?.male && p.female) && passt(p)
 }

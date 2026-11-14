@@ -369,6 +369,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'autoAssign':
     case 'clearAssignments':
     case 'vortragsplanUebernehmen':
+    case 'plaetzeFreigeben':
       return zuteilen(state, action)
     case 'fsAutoAssign':
     case 'fsClear':

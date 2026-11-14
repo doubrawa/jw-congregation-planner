@@ -59,8 +59,9 @@ const bytes = (text: string): number => new TextEncoder().encode(text).length
  * Zeichen — kyrillische und arabische Schrift braucht zwei Bytes je Zeichen,
  * und Anführungszeichen wachsen beim Verpacken.
  */
-export function pushNutzlast({ titel, body, url, tag }: Pick<Zustellung, 'titel' | 'body' | 'url' | 'tag'>): string {
-  const verpackt = (rumpf: string): string => JSON.stringify({ title: titel, body: rumpf, url, ...(tag ? { tag } : {}) })
+export function pushNutzlast({ titel, body, url, tag, zahl }: Pick<Zustellung, 'titel' | 'body' | 'url' | 'tag' | 'zahl'>): string {
+  const verpackt = (rumpf: string): string =>
+    JSON.stringify({ title: titel, body: rumpf, url, ...(tag ? { tag } : {}), ...(zahl !== undefined ? { zahl } : {}) })
   const ganz = verpackt(body)
   if (bytes(ganz) <= PUSH_NUTZLAST_BYTES) return ganz
   // Nach Zeichen teilen, nicht nach Code-Einheiten: Ein halbes Zeichenpaar
@@ -108,6 +109,12 @@ export interface Zustellung {
    * benennt (der Aufgabenschlüssel).
    */
   tag?: string
+  /**
+   * **Die Zahl am App-Symbol** (T184): wie viele Zuteilungen des Empfängers
+   * noch auf eine Antwort warten (`appZahlenLaden`). Der Service Worker setzt
+   * sie, auch wenn die App zu ist; ohne Angabe lässt er sie, wie sie ist.
+   */
+  zahl?: number
 }
 
 export interface PushErgebnis {

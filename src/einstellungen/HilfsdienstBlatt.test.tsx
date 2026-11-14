@@ -12,7 +12,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
-import type { Group, Person, Service } from '../data/types'
+import type { Group, Person, Service, Week } from '../data/types'
 import { fill } from '../i18n/useT'
 import { HilfsdienstBlatt } from './HilfsdienstBlatt'
 
@@ -103,6 +103,29 @@ describe('T79 — Freigabe-Liste eines Hilfsdienstes', () => {
       id: 'p-Berger',
       patch: { priv: expect.objectContaining({ 'svc:rund': false }) },
     })
+  })
+
+  it('steht jemand noch an künftigen Plätzen des Dienstes, fragt erst ein Blatt (T182)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 18, 9, 0))
+    try {
+      const leer = { date: '', end: '', sections: [], helpers: {} }
+      const woche: Week = {
+        range: '', book: '', start: '2026-11-23', mid: leer,
+        we: { ...leer, helpers: { rund: [{ name: 'Max Berger', pid: 'p-Berger' }] } },
+      }
+      const { container, dispatch } = zeige({ weeks: [woche], fsWeeks: [[]], confirmations: {} })
+      fireEvent.click(schalter(container).find((s) => s.getAttribute('aria-label')?.includes('Berger'))!)
+      const frage = document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${DE.freiTitel}"]`)
+      expect(dispatch).not.toHaveBeenCalled()
+      fireEvent.click([...frage!.querySelectorAll('button')].find((b) => b.textContent === DE.plaetzeFreigebenBtn)!)
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'updatePerson', id: 'p-Berger', patch: { priv: expect.objectContaining({ 'svc:rund': false }) },
+      })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'plaetzeFreigeben', personId: 'p-Berger', keys: ['2026-11-23|we|helper|rund|0'] })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('die Suche grenzt die Liste ein', () => {

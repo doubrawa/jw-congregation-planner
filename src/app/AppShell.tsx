@@ -43,6 +43,7 @@ import { eigenePerson, rolleUndGruppe } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
 import { loadAndHydrate } from './hydrate'
 import { sichtbareMitteilungen } from './mitteilungen'
+import { useAppSymbolZahl } from './useAppSymbolZahl'
 import { useKalendertag } from './useKalendertag'
 import { BEREICHS_ZEICHEN, bereichsTitel, hatPlanungsWahl, zumAnsehen, zumPlanen, zurueckInDerPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
@@ -81,6 +82,8 @@ export function AppShell() {
   // Der Kalendertag: Ob „Weitere Pläne" im Menü steht, hängt daran, ob ein Plan
   // noch läuft.
   const tag = useKalendertag()
+  // Die Zahl offener Zusagen am Symbol der installierten App (T184).
+  useAppSymbolZahl()
   // Das Menü als Schublade (Handy, Tablet hochkant) — am Desktop steht es fest.
   const [menuOpen, setMenuOpen] = useState(false)
   // Deep-Link aus einem Push-Klick (#go=<screen>): beim Start aus dem Hash, bei

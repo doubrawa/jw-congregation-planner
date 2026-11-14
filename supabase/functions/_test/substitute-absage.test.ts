@@ -1,5 +1,5 @@
 /*
- * Die Edge Function `substitute`, Aufruf 'absage' (`absage.ts`): eine Absage
+ * Die Edge Function `substitute`, Aufruf 'absage' (`absage.ts`): Absagen
  * denen melden, die planen (13.11.2026).
  *
  * „Der Planer erfährt es sofort", verspricht das Blatt beim Absagen. Bis dahin
@@ -9,6 +9,10 @@
  * darf: Die Function schreibt mit der Service-Role in fremde Glocken — im
  * Namen eines anderen absagen oder beliebige Leute anschreiben darf niemand.
  *
+ * Seit dem 14.11.2026 nimmt ein Aufruf mehrere Plätze — wer eine Abwesenheit
+ * einträgt, sagt alles darin zugleich ab. Die Glocke führt je Platz eine Zeile,
+ * der Push kommt je Empfänger einmal (Betreiber: „ein push je planer").
+ *
  * Der REST-Zugang ist eine Attrappe des `Rest`-Vertrags (`_shared/rest.ts`),
  * die Filter wirklich auswertet; das Zustellen fängt ein Mitschreiber ab.
  */
@@ -17,14 +21,18 @@ import { APP_LANGS } from '../../../src/i18n/langs'
 import { dict, loadOverlay, NOTIF_TITLE_KEY } from '../../../src/i18n/ui'
 import { fsKey, helferKey, punktKey } from '../_shared/aufgaben-schluessel.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
+import { makeTr } from '../_shared/i18n/translate.ts'
 import type { Rest } from '../_shared/rest.ts'
 import type { FsInstance, SubscriptionRow, Week } from '../_shared/zuteilungen.ts'
-import { absageMelden, NACHRICHT_MAX } from '../substitute/absage.ts'
+import { absageMelden, absageSchluessel, NACHRICHT_MAX, PLAETZE_MAX, type Sendung } from '../substitute/absage.ts'
 import { substituteTexte, TITEL_ABGESAGT } from '../substitute/texte.ts'
-import { filterWert, nurSpalten } from './attrappe.ts'
+import { erfuelltVergleiche, filterWert, nurSpalten } from './attrappe.ts'
 
 const CONG = 'cong-1'
 const MONTAG = '2026-09-07' // Dienstag 8.9., Samstag 12.9., Sonntag 13.9.
+const WOCHE_2 = '2026-09-14' // die Woche danach
+const ARCHIV = '2026-08-31' // davor — eine Absage für 7. und 14.9. liest sie nicht
+const SPAETER = '2026-09-21' // danach — ebenso wenig
 const HEUTE = '2026-09-07'
 const APP = 'https://app.test/'
 
@@ -66,6 +74,7 @@ const SUBS: SubscriptionRow[] = [U_ICH, U_ADMIN, U_PLANER, U_AUFSEHER, U_GEHILFE
 }))
 
 const K_LESUNG = punktKey(MONTAG, 'mid', 'k3', 0) // mein Programmpunkt
+const K_LESUNG_2 = punktKey(WOCHE_2, 'mid', 'k3', 0) // derselbe in der Woche danach
 const K_FREMD = punktKey(MONTAG, 'mid', 'k2', 0) // der eines anderen
 const K_OHNE_ID = punktKey(MONTAG, 'mid', 'k4', 0) // steht nur mit meinem Namen da (Altbestand)
 const K_VETTER = punktKey(MONTAG, 'mid', 'k5', 0) // ein fremder Name ohne Person-Id
@@ -74,11 +83,11 @@ const K_GRUPPE = fsKey(MONTAG, 'r1') // mein Treffpunkt der Gruppe 1
 const K_VERSAMMLUNG = fsKey(MONTAG, 'r2') // mein Versammlungstreffpunkt
 const K_GRUPPE_FREMD = fsKey(MONTAG, 'r3') // der Treffpunkt eines anderen
 
-function frischeWoche(): Week {
+function frischeWoche(start = MONTAG): Week {
   return {
-    start: MONTAG,
+    start,
     mid: {
-      date: '7.–13. September',
+      date: 'Platzhalter-Spanne',
       sections: [
         { label: 'SCHÄTZE AUS GOTTES WORT', items: [
           { iid: 'k2', title: 'Platzhalter-Thema', names: [{ name: 'Andere Person', pid: 'p-x', bereichsKey: 'vortrag' }] },
@@ -91,7 +100,7 @@ function frischeWoche(): Week {
       ],
       helpers: { mik: [{ name: 'Ich Selbst', pid: 'p-ich' }] },
     },
-    we: { date: '7.–13. September', sections: [], helpers: {} },
+    we: { date: 'Platzhalter-Spanne', sections: [], helpers: {} },
   } as Week
 }
 
@@ -112,10 +121,12 @@ interface Glockenzeile {
   task_key: string
 }
 
+/** Eine mitgeschriebene Sendung — `body` ist ihr Rumpf kanonisch deutsch, mit den Marken. */
 interface Push {
   an: string[]
   titel: (lang: string | null) => string
   body: string
+  rumpf: Sendung['rumpf']
   url: string
   tag?: string
 }
@@ -124,10 +135,24 @@ let woche: Week
 let glocken: Glockenzeile[]
 let pushes: Push[]
 let abfragen: string[]
+/** Die Wochen (`start`), die eine Abfrage geliefert hat. */
+let gelesen: string[]
 /** Die Glocke nimmt nichts an (Datenbank weg). */
 let glockeKaputt: boolean
 /** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
 let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
+
+/**
+ * Wie die Datenbank: nur die Wochen, die der Filter auf `start` durchlässt.
+ * Ganz ohne Filter keine — ein vergessener fiele sonst nicht auf, weil die
+ * Function die Wochen ohnehin nach ihrer Kennung nachschlägt.
+ */
+function wochenZeilen<D>(path: string, zeilen: { start: string; data: D }[]): Partial<{ start: string; data: D }>[] {
+  if (!/[?&]start=(eq|gte|lte)\./.test(path)) return []
+  const treffer = zeilen.filter((z) => erfuelltVergleiche(z, path, ['start']))
+  gelesen.push(...treffer.map((z) => z.start))
+  return nurSpalten(treffer, path)
+}
 
 const rest: Rest = {
   async get<T>(path: string): Promise<T> {
@@ -141,9 +166,15 @@ const rest: Rest = {
     } else if (path.startsWith('members')) {
       rows = MEMBERS
     } else if (path.startsWith('weeks')) {
-      rows = filterWert(path, 'start') === MONTAG ? [{ data: JSON.parse(JSON.stringify(woche)) as Week }] : []
+      const kopie = (w: Week): Week => JSON.parse(JSON.stringify(w)) as Week
+      rows = wochenZeilen(path, [
+        { start: ARCHIV, data: frischeWoche(ARCHIV) },
+        { start: MONTAG, data: kopie(woche) },
+        { start: WOCHE_2, data: frischeWoche(WOCHE_2) },
+        { start: SPAETER, data: frischeWoche(SPAETER) },
+      ])
     } else if (path.startsWith('fs_weeks')) {
-      rows = filterWert(path, 'start') === MONTAG ? [{ data: TREFFPUNKTE }] : []
+      rows = wochenZeilen(path, [{ start: MONTAG, data: TREFFPUNKTE }])
     } else if (path.startsWith('services')) {
       rows = SERVICES
     } else if (path.startsWith('persons')) {
@@ -182,8 +213,10 @@ const rest: Rest = {
   },
 }
 
-const zustellen = async (subs: SubscriptionRow[], titel: (lang: string | null) => string, body: string, url: string, tag?: string) => {
-  pushes.push({ an: subs.map((s) => s.user_id), titel, body, url, tag })
+const zustellen = async (sendungen: readonly Sendung[]) => {
+  for (const { subs, titel, rumpf, url, tag } of sendungen) {
+    pushes.push({ an: subs.map((s) => s.user_id), titel, body: rumpf((s) => s, 'de'), rumpf, url, tag })
+  }
 }
 
 beforeEach(() => {
@@ -191,12 +224,14 @@ beforeEach(() => {
   glocken = []
   pushes = []
   abfragen = []
+  gelesen = []
   glockeKaputt = false
   zeitenAb = []
 })
 
-const absagen = (taskKey: string, wer = U_ICH, nachricht = '', heute = HEUTE) =>
-  absageMelden(rest, wer, { taskKey, nachricht, heute, appUrl: APP }, zustellen)
+const absagenAlle = (taskKeys: string[], wer = U_ICH, nachricht = '', heute = HEUTE) =>
+  absageMelden(rest, wer, { taskKeys, nachricht, heute, appUrl: APP }, zustellen)
+const absagen = (taskKey: string, wer = U_ICH, nachricht = '', heute = HEUTE) => absagenAlle([taskKey], wer, nachricht, heute)
 const antwort = async (res: Response) => ({ status: res.status, body: await res.json() })
 const anWen = (): string[] => glocken.map((z) => z.user_id).sort()
 const ICH = alsFreitext('Ich Selbst')
@@ -283,6 +318,119 @@ describe('absage: ein Hilfsdienst', () => {
   })
 })
 
+/*
+ * **Mehrere Plätze in einem Aufruf** — so meldet die App die Absagen beim
+ * Eintragen einer Abwesenheit (T181). Die Glocke behält je Platz eine Zeile:
+ * Jede führt in ihre Woche, und dort teilt der Planer neu zu. Der Push dagegen
+ * kommt je Empfänger einmal.
+ */
+describe('absage: mehrere Plätze auf einmal', () => {
+  // In der Folge, in der die App sie schickt: nach dem Termin.
+  const ALLE = [K_LESUNG, K_MIK, K_GRUPPE, K_LESUNG_2]
+
+  it('je Platz eine Zeile in der Glocke, bei jedem, der von ihm erfährt', async () => {
+    expect(await antwort(await absagenAlle(ALLE))).toEqual({ status: 200, body: { ok: true, gemeldet: 4 } })
+    const zeilenJePlatz = (key: string) => glocken.filter((z) => z.task_key === key).map((z) => z.user_id).sort()
+    expect(zeilenJePlatz(K_LESUNG)).toEqual([U_ADMIN, U_PLANER].sort())
+    expect(zeilenJePlatz(K_MIK)).toEqual([U_ADMIN, U_PLANER].sort())
+    expect(zeilenJePlatz(K_GRUPPE)).toEqual([U_ADMIN, U_PLANER, U_AUFSEHER, U_GEHILFE].sort())
+    expect(zeilenJePlatz(K_LESUNG_2)).toEqual([U_ADMIN, U_PLANER].sort())
+    expect(glocken).toHaveLength(10)
+  })
+
+  it('aber je Empfänger nur ein Push — mit allen seinen Plätzen, der Name vorn', async () => {
+    await absagenAlle(ALLE)
+    expect(pushes).toHaveLength(2)
+    const anPlaner = pushes.find((p) => p.an.includes(U_ADMIN))!
+    expect([...anPlaner.an].sort()).toEqual([U_ADMIN, U_PLANER].sort())
+    // Ohne den Hilfsdienst: Dort sucht die App selbst Ersatz.
+    expect(anPlaner.body).toBe(
+      `${ICH} — Dienstag, 8. September · 19:00: Bibellesung · ` +
+        'Samstag, 12. September · 09:30 · Bei Familie A: Treffpunkt-Leiter · ' +
+        'Dienstag, 15. September · 19:00: Bibellesung',
+    )
+    expect(anPlaner.titel(null)).toBe(TITEL_ABGESAGT)
+    expect(anPlaner.url).toBe(`${APP}#go=mitteilungen`)
+    expect(anPlaner.tag).toBe(K_LESUNG)
+    // Die Gruppe erfährt nur von ihrem Treffpunkt — wie bei einer einzelnen Absage.
+    const anGruppe = pushes.find((p) => p.an.includes(U_AUFSEHER))!
+    expect([...anGruppe.an].sort()).toEqual([U_AUFSEHER, U_GEHILFE].sort())
+    expect(anGruppe.body).toBe(`Treffpunkt-Leiter · Samstag, 12. September · 09:30 · Bei Familie A · ${ICH}`)
+    expect(anGruppe.tag).toBe(K_GRUPPE)
+    expect(pushes.flatMap((p) => p.an)).not.toContain(U_ICH)
+  })
+
+  it('der Sammel-Push kommt in der Sprache des Geräts an — jeder Termin und jede Aufgabe für sich übersetzt', async () => {
+    await absagenAlle([K_LESUNG, K_LESUNG_2], U_ICH, 'bin verreist')
+    const rumpf = pushes[0]!.rumpf
+    expect(rumpf(makeTr('en'), 'en')).toBe(
+      'Ich Selbst — Tuesday, September 8 · 19:00: Bible Reading · Tuesday, September 15 · 19:00: Bible Reading · bin verreist',
+    )
+    // Deutsch ohne die unsichtbaren Marken um Name und Nachricht.
+    expect(rumpf(makeTr('de'), 'de')).toBe(
+      'Ich Selbst — Dienstag, 8. September · 19:00: Bibellesung · Dienstag, 15. September · 19:00: Bibellesung · bin verreist',
+    )
+  })
+
+  it('liest nur die Wochen der Plätze — weder davor noch danach', async () => {
+    await absagenAlle([K_LESUNG, K_LESUNG_2])
+    expect([...new Set(gelesen)].sort()).toEqual([MONTAG, WOCHE_2])
+  })
+
+  it('ein Platz, der nicht geht, fällt für sich heraus — die übrigen werden gemeldet, die Antwort nennt ihn', async () => {
+    const res = await absagenAlle([K_LESUNG, K_FREMD, 'quatsch'])
+    expect(await antwort(res)).toEqual({
+      status: 200,
+      body: {
+        ok: true,
+        gemeldet: 2,
+        abgewiesen: [
+          { taskKey: K_FREMD, error: 'not-assigned' },
+          { taskKey: 'quatsch', error: 'bad-request' },
+        ],
+      },
+    })
+    expect(new Set(glocken.map((z) => z.task_key))).toEqual(new Set([K_LESUNG]))
+    // Bleibt einer übrig, ist es die Meldung für einen.
+    expect(pushes[0]!.body).toBe(`Bibellesung · Dienstag, 8. September · 19:00 · ${ICH}`)
+  })
+
+  it('geht keiner, antwortet die Function mit dem Grund des ersten — und schreibt nichts', async () => {
+    expect(await antwort(await absagenAlle([K_FREMD, K_GRUPPE_FREMD]))).toEqual({ status: 403, body: { error: 'not-assigned' } })
+    expect(await antwort(await absagenAlle([K_LESUNG, K_LESUNG_2], U_ICH, '', '2026-09-30'))).toEqual({
+      status: 409,
+      body: { error: 'past' },
+    })
+    expect(glocken).toEqual([])
+    expect(pushes).toEqual([])
+  })
+
+  it('derselbe Platz zweimal zählt einmal', async () => {
+    await absagenAlle([K_LESUNG, K_LESUNG])
+    expect(glocken).toHaveLength(2)
+    expect(pushes[0]!.body).toBe(`Bibellesung · Dienstag, 8. September · 19:00 · ${ICH}`)
+  })
+
+  it(`mehr als ${PLAETZE_MAX} Plätze nimmt die Function nicht an`, async () => {
+    const zuViele = Array.from({ length: PLAETZE_MAX + 1 }, (_, i) => punktKey(MONTAG, 'mid', `k${i}`, 0))
+    expect((await absagenAlle(zuViele)).status).toBe(400)
+    expect(abfragen).toEqual([])
+    // Gegenprobe: genau so viele gehen durch die Prüfung.
+    expect((await absagenAlle(zuViele.slice(0, PLAETZE_MAX))).status).not.toBe(400)
+  })
+})
+
+describe('absage: welche Plätze ein Aufruf nennt', () => {
+  it('`taskKeys` — oder `taskKey` von einer App, die noch je Platz meldete', () => {
+    expect(absageSchluessel({ taskKeys: [K_LESUNG, K_MIK] })).toEqual([K_LESUNG, K_MIK])
+    expect(absageSchluessel({ taskKey: K_LESUNG })).toEqual([K_LESUNG])
+    // Was kein Text ist, ist kein Schlüssel.
+    expect(absageSchluessel({ taskKeys: [K_LESUNG, 7, null] })).toEqual([K_LESUNG])
+    expect(absageSchluessel({ taskKey: 7 })).toEqual([])
+    expect(absageSchluessel({})).toEqual([])
+  })
+})
+
 describe('absage: was nicht geht — und nichts schreibt', () => {
   const nichtsGeschehen = () => {
     expect(glocken).toEqual([])
@@ -303,10 +451,11 @@ describe('absage: was nicht geht — und nichts schreibt', () => {
     nichtsGeschehen()
   })
 
-  it('ein Schlüssel, der keiner ist, oder ein Platz, den es nicht gibt', async () => {
+  it('ein Schlüssel, der keiner ist, kein Schlüssel oder ein Platz, den es nicht gibt', async () => {
     expect((await absagen('quatsch')).status).toBe(400)
+    expect((await absagenAlle([])).status).toBe(400)
     expect(await antwort(await absagen(punktKey(MONTAG, 'mid', 'gibt-es-nicht', 0)))).toEqual({ status: 404, body: { error: 'slot-not-found' } })
-    expect(await antwort(await absagen(punktKey('2026-09-14', 'mid', 'k3', 0)))).toEqual({ status: 404, body: { error: 'slot-not-found' } })
+    expect(await antwort(await absagen(punktKey('2026-09-28', 'mid', 'k3', 0)))).toEqual({ status: 404, body: { error: 'slot-not-found' } })
     expect(await antwort(await absagen(fsKey(MONTAG, 'r9')))).toEqual({ status: 404, body: { error: 'slot-not-found' } })
     nichtsGeschehen()
   })
@@ -344,7 +493,7 @@ describe('absage: was nicht geht — und nichts schreibt', () => {
 
   it('die Versammlung kommt aus der eigenen Mitgliedszeile — jede Abfrage ist auf sie begrenzt', async () => {
     await absagen(K_GRUPPE)
-    await absagen(K_LESUNG)
+    await absagenAlle([K_LESUNG, K_LESUNG_2])
     const ohneGrenze = abfragen.filter((p) => !p.startsWith('members?select=person_id') && filterWert(p, 'congregation_id') !== CONG && filterWert(p, 'id') !== CONG)
     expect(ohneGrenze).toEqual([])
   })

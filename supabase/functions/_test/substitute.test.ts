@@ -78,7 +78,11 @@ const PERSONS = [
   { id: 'p-noacct', fn: 'Karl', ln: 'Onto', priv: QUAL },
 ]
 
-const SERVICES = [{ key: SVC, name: 'Mikrofone' }]
+/**
+ * `count`: So viele Plätze hat der Dienst — die Absage zählt sie auf
+ * (`pendingOfMeeting`), ohne ihn fände sie keinen. Der zweite ist frei („fill").
+ */
+const SERVICES = [{ key: SVC, name: 'Mikrofone', count: 2 }]
 
 const CONGREGATIONS = [{ mid_wd: 2, mid_time: '19:00:00', we_wd: 0, we_time: '10:00:00' }]
 
@@ -198,7 +202,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return jsonRes(fremd ? [] : MEMBERS)
   }
   if (path.startsWith('services')) return jsonRes(fremd ? [] : SERVICES)
-  if (path.startsWith('persons')) return jsonRes(fremd ? [] : PERSONS)
+  if (path.startsWith('persons')) {
+    // Fragt die Function nach einer Person, bekommt sie die — nicht den
+    // Namensvetter, der in der Liste vor ihr steht.
+    const id = filterWert(path, 'id')
+    return jsonRes(fremd ? [] : PERSONS.filter((p) => id === null || p.id === id))
+  }
   if (path.startsWith('push_subscriptions')) return jsonRes(fremd ? [] : SUBS)
   // Nur die verlangten Spalten: Fehlte `zeiten_ab` in der Abfrage, gälte nach
   // einem Wechsel der Regelzeit still der alte Tag.
@@ -219,7 +228,9 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     return jsonRes(rows)
   }
   if (path.startsWith('weeks')) {
-    const pos = /start=eq\.([\d-]+)/.exec(path)?.[1]
+    // Die eine Woche, wenn der Filter auf `start` sie durchlässt — ganz ohne
+    // Filter keine: Ein vergessener fiele sonst nicht auf.
+    const trifft = /[?&]start=(eq|gte|lte)\./.test(path) && erfuelltVergleiche({ start: WI }, path, ['start'])
     // Antwort steht mit dem Serialisieren fest; danach darf der Konkurrent den
     // Slot ändern. Genau dieses Zeitfenster — zwischen Lesen und Schreiben —
     // ist der Fall, den die Bedingung beim Schreiben abfangen muss.
@@ -228,8 +239,8 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     // sie aus dem Blob — der Tag der Zusammenkunft (und damit die
     // Abwesenheitsprüfung) hing dadurch an einem Feld, das jederzeit wegfallen
     // kann. Ohne die Spalte hier bliebe der Fehler unbemerkt.
-    const antwort = jsonRes(pos === WI ? [{ start: WI, data: week, updated_at: stand }] : []) // andere Woche → gibt es nicht
-    if (pos === WI && konkurrent) {
+    const antwort = jsonRes(trifft ? [{ start: WI, data: week, updated_at: stand }] : []) // andere Woche → gibt es nicht
+    if (trifft && konkurrent) {
       // Der Konkurrent schreibt — und rückt damit den Stand weiter, wie die
       // Datenbank bei jedem Schreiben.
       konkurrent()
@@ -242,7 +253,7 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
 }
 
 /**
- * Umgebung der Function. VAPID bewusst leer: pushTo() steigt dann früh aus, es
+ * Umgebung der Function. VAPID bewusst leer: pushen() steigt dann früh aus, es
  * geht in den meisten Blöcken um Autorisierung, nicht um den Versand. Auf
  * Modulebene, damit der Block zum Push-Ziel (T109) die Function einmal mit
  * Schlüsseln neu laden kann.
@@ -322,6 +333,38 @@ function savedSlotName(): string | null {
     | { data: { mid: { helpers: Record<string, { name?: string }[]> } } }
     | undefined
   return body?.data.mid.helpers[SVC]![0]?.name ?? null
+}
+
+/** Die Function neu laden — sie liest ihre Umgebung beim Laden (`Deno.serve` setzt `handler` neu). */
+async function neuLaden(): Promise<void> {
+  vi.resetModules()
+  await import('../substitute/index.ts')
+}
+
+/**
+ * Für die Fälle des umgebenden Blocks **mit** VAPID-Schlüsseln und diesen
+ * Abos: `pushen()` stellt dann wirklich zu (an den Stub). Danach wieder ohne —
+ * die übrigen Blöcke prüfen Rechte, nicht den Versand.
+ */
+function mitVersand(...abos: (typeof SUBS)[number][]): void {
+  beforeAll(async () => {
+    env.VAPID_PUBLIC_KEY = 'pub'
+    env.VAPID_PRIVATE_KEY = 'priv'
+    SUBS.push(...abos)
+    await neuLaden()
+  })
+  afterAll(async () => {
+    delete env.VAPID_PUBLIC_KEY
+    delete env.VAPID_PRIVATE_KEY
+    for (const abo of abos) SUBS.splice(SUBS.indexOf(abo), 1)
+    await neuLaden()
+  })
+}
+
+/** Was beim Gerät `endpoint` ankam — oder nichts. */
+function zustellungAn(endpoint: string): { title: string; body: string; url: string; tag?: string } | undefined {
+  const p = sentPush.find((s) => s.endpoint === endpoint)
+  return p ? (JSON.parse(p.payload) as { title: string; body: string; url: string; tag?: string }) : undefined
 }
 
 /* ---- Tests --------------------------------------------------------------- */
@@ -1027,26 +1070,8 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
   const ABO_ORIG = { user_id: U_ORIG, endpoint: 'https://push.test/orig', p256dh: 'k', auth: 'a' }
   const ziele = () => sentPush.map((p) => (JSON.parse(p.payload) as { url: string }).url)
 
-  async function neuLaden(): Promise<void> {
-    vi.resetModules()
-    await import('../substitute/index.ts') // ruft Deno.serve → setzt handler neu
-  }
-
-  beforeAll(async () => {
-    // Nur hier mit Schlüsseln: pushTo() stellt dann wirklich zu (an den Stub).
-    env.VAPID_PUBLIC_KEY = 'pub'
-    env.VAPID_PRIVATE_KEY = 'priv'
-    // Otto bekommt ein Abo, damit auch „Ersatz gefunden" einen Push erzeugt.
-    SUBS.push(ABO_ORIG)
-    await neuLaden()
-  })
-
-  afterAll(async () => {
-    delete env.VAPID_PUBLIC_KEY
-    delete env.VAPID_PRIVATE_KEY
-    SUBS.splice(SUBS.indexOf(ABO_ORIG), 1)
-    await neuLaden()
-  })
+  // Otto bekommt ein Abo, damit auch „Ersatz gefunden" einen Push erzeugt.
+  mitVersand(ABO_ORIG)
 
   it('„Ersatz gesucht" führt zum Bereich Einspringen auf „Freie Plätze"', async () => {
     // Der Push nennt noch „Meine Aufgaben", wo das Einspringen bis zum
@@ -1060,7 +1085,7 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
   })
 
   it('der Rumpf kommt in der Sprache des Geräts an, nicht kanonisch deutsch', async () => {
-    // Bis zum 26.9.2026 übersetzte pushTo() nur den Titel: Unter „Substitute
+    // Bis zum 26.9.2026 übersetzte der Versand nur den Titel: Unter „Substitute
     // needed" stand „Mikrofone · Dienstag, 8. September · 19:00". Die Glocke
     // übersetzt beim Anzeigen, der Push nicht mehr — dort zählt, was ankommt.
     const ABO_EN = { user_id: U_ME, endpoint: 'https://push.test/me-en', p256dh: 'k', auth: 'a', lang: 'en' }
@@ -1068,17 +1093,13 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
     try {
       const res = await call({ action: 'seek', congregationId: CONG, taskKey: KEY }, { auth: U_ORIG })
       expect(res.status).toBe(200)
-      const zustellung = (endpoint: string) => {
-        const p = sentPush.find((s) => s.endpoint === endpoint)
-        return p ? (JSON.parse(p.payload) as { title: string; body: string }) : undefined
-      }
-      expect(zustellung(ABO_EN.endpoint)).toMatchObject({
+      expect(zustellungAn(ABO_EN.endpoint)).toMatchObject({
         title: 'Substitute needed',
         body: 'Microphones · Tuesday, September 8 · 19:00 · Otto Riginal',
       })
       // Das Abo ohne Sprache bleibt deutsch — aber ohne die unsichtbaren
       // Freitext-Marken um den Namen.
-      expect(zustellung('https://push.test/me')?.body).toBe(`Mikrofone · ${TERMIN} · Otto Riginal`)
+      expect(zustellungAn('https://push.test/me')?.body).toBe(`Mikrofone · ${TERMIN} · Otto Riginal`)
     } finally {
       SUBS.splice(SUBS.indexOf(ABO_EN), 1)
     }
@@ -1091,6 +1112,67 @@ describe('substitute: der Klick auf „Ersatz gesucht" landet beim Einspringen',
     const [ziel] = ziele()
     expect(parseGoTarget(ziel!)).toBe('aufgaben')
     expect(parseGoAbschnitt(ziel!)).toBeNull()
+  })
+})
+
+/*
+ * **Mehrere Absagen, ein Push je Planer** (Betreiber, 14.11.2026). Wer eine
+ * Abwesenheit einträgt, sagt alles darin in einem Aufruf ab (`absage.ts`).
+ * Hier durch die echte index.ts: Der Versand (`pushen`) übersetzt die
+ * Sammelmeldung je Gerät, Termin und Aufgabe für sich.
+ */
+describe('substitute: mehrere Absagen, ein Push je Planer', () => {
+  const ABO_ADMIN = { user_id: U_ADMIN, endpoint: 'https://push.test/admin', p256dh: 'k', auth: 'a', lang: 'en' }
+  const ABO_ZUTEILER = { user_id: U_ZUTEILER, endpoint: 'https://push.test/zuteiler', p256dh: 'k', auth: 'a' }
+  const LESUNG = `${WI}|mid|part|k3|0`
+  const BESPRECHUNG = `${WI}|mid|part|k4|0`
+
+  mitVersand(ABO_ADMIN, ABO_ZUTEILER)
+
+  beforeEach(() => {
+    // Otto steht an zwei Programmpunkten und am Mikrofon.
+    week = {
+      start: WI,
+      mid: {
+        date: '7.–13. September',
+        sections: [
+          { label: 'SCHÄTZE AUS GOTTES WORT', items: [
+            { iid: 'k3', title: 'Bibellesung', names: [{ name: 'Otto Riginal', pid: 'p-orig', bereichsKey: 'bibellesung' }] },
+            { iid: 'k4', title: 'Platzhalter-Besprechung', names: [{ name: 'Otto Riginal', pid: 'p-orig', bereichsKey: 'besprechung' }] },
+          ] },
+        ],
+        helpers: { [SVC]: [{ name: 'Otto Riginal', pid: 'p-orig' }] },
+      },
+      we: { date: '7.–13. September', helpers: {} },
+    }
+  })
+
+  it('je Platz eine Zeile in der Glocke, je Gerät ein Push — in seiner Sprache, der Name vorn', async () => {
+    const res = await call({ action: 'absage', taskKeys: [LESUNG, BESPRECHUNG, KEY], heute: HEUTE }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ ok: true, gemeldet: 2 })
+    const zeilen = writesTo('notifications').flatMap((w) => w.body as { user_id: string; task_key: string }[])
+    expect(zeilen.map((z) => `${z.task_key} ${z.user_id}`).sort()).toEqual(
+      [LESUNG, BESPRECHUNG, KEY].flatMap((k) => [`${k} ${U_ADMIN}`, `${k} ${U_ZUTEILER}`]).sort(),
+    )
+    // Zwei Geräte, zwei Zustellungen — nicht je Platz eine. Der Hilfsdienst fehlt
+    // darin: Dort sucht die App selbst Ersatz.
+    expect(sentPush.map((p) => p.endpoint).sort()).toEqual([ABO_ADMIN.endpoint, ABO_ZUTEILER.endpoint].sort())
+    expect(zustellungAn(ABO_ADMIN.endpoint)).toMatchObject({
+      title: 'Assignment declined',
+      body: 'Otto Riginal — Tuesday, September 8 · 19:00: Bible Reading · Tuesday, September 8 · 19:00: Platzhalter-Besprechung',
+      tag: LESUNG,
+    })
+    expect(zustellungAn(ABO_ZUTEILER.endpoint)).toMatchObject({
+      title: 'Verhinderung gemeldet',
+      body: `Otto Riginal — ${TERMIN}: Bibellesung · ${TERMIN}: Platzhalter-Besprechung`,
+    })
+  })
+
+  it('eine ältere App meldet je Platz mit `taskKey` — das geht weiter', async () => {
+    const res = await call({ action: 'absage', taskKey: LESUNG, heute: HEUTE }, { auth: U_ORIG })
+    expect(res.status).toBe(200)
+    expect(zustellungAn(ABO_ZUTEILER.endpoint)?.body).toBe(`Bibellesung · ${TERMIN} · Otto Riginal`)
   })
 })
 

@@ -10,6 +10,7 @@ import type { Dict } from '../i18n/ui'
 import { useT } from '../i18n/useT'
 import { absageArt, aufgabeTag, type AbsageArt } from './aufgabe-anzeige'
 import { AufgabeTermin, AufgabeText } from './AufgabeText'
+import { useAlsBeantwortet } from './useAlsBeantwortet'
 import './aufgaben.css'
 
 /** Längste Nachricht an den Planer — sie steht in seiner Mitteilung und im Push. */
@@ -57,20 +58,8 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
   const art = absageArt(task.id)
   const spur = spurDanach(art, t)
   const tag = eintragbarerTag(task, state.personId, state.absences)
-
-  /*
-   * **Beantwortet ist gelesen** (16.10.2026): Wer hier absagt oder doch
-   * bestätigt, hat die Mitteilungen zu dieser Aufgabe beantwortet. „Ich kann
-   * nicht" in der Glocke öffnet nur dieses Blatt — die Mitteilung blieb danach
-   * „Neu", ohne dass es darunter noch etwas zu tun gab. Wer abbricht, hat
-   * nichts beantwortet; offline wird nichts gespeichert (wie in `Mitteilung`).
-   */
-  const mitteilungenGelesen = () => {
-    if (state.staleAt) return
-    for (const n of state.notifs) {
-      if (n.taskId === task.id && !n.read) dispatch({ type: 'mitteilungGelesen', id: n.id })
-    }
-  }
+  const alsBeantwortet = useAlsBeantwortet()
+  const mitteilungenGelesen = () => alsBeantwortet(task.id)
 
   const absagen = () => {
     if (abwesend && tag) {
@@ -82,7 +71,7 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
       })
     }
     mitteilungenGelesen()
-    dispatch({ type: 'declineTask', id: task.id, nachricht })
+    dispatch({ type: 'declineTask', ids: [task.id], nachricht })
   }
   const dochBestaetigen = () => {
     mitteilungenGelesen()

@@ -28,11 +28,12 @@
 //     setzt seine Zusage; keine Mitteilung (Betreiber). `heute` ist der
 //     Kalendertag des Geräts — was davor liegt, ist vorbei.
 //
-//   { action: 'absage', taskKey, nachricht?, heute? }  (seit 13.11.2026, `absage.ts`)
-//     Eine Absage denen melden, die planen: Zeile in der Glocke von Admin und
-//     Planern — bei einem Gruppentreffpunkt auch von Aufseher und Gehilfe —,
-//     dazu ein Push, wo jemand neu zuteilen muss (nicht bei Hilfsdiensten).
-//     Melden darf nur, wer an dem Platz steht.
+//   { action: 'absage', taskKeys, nachricht?, heute? }  (seit 13.11.2026, `absage.ts`)
+//     Absagen denen melden, die planen: je Platz eine Zeile in der Glocke von
+//     Admin und Planern — bei einem Gruppentreffpunkt auch von Aufseher und
+//     Gehilfe —, dazu je Empfänger ein Push mit allen Plätzen, bei denen er neu
+//     zuteilen muss (nicht bei Hilfsdiensten). Melden darf nur, wer an dem
+//     Platz steht.
 //
 // Alle fünf Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
 // 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche
@@ -70,10 +71,10 @@ import {
 } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
-import { uebersetzerFuer } from '../_shared/zuteilungen.ts'
+import { type SubscriptionRow, uebersetzerFuer } from '../_shared/zuteilungen.ts'
 import { substituteTexte, TITEL_GEFUNDEN, TITEL_GESUCHT } from './texte.ts'
 import { platzFuellen } from './fuellen.ts'
-import { absageMelden } from './absage.ts'
+import { absageMelden, absageSchluessel, type Sendung } from './absage.ts'
 import { HINDERNIS_STATUS, stehtImDienst, uebernahmeHindernis } from '../_shared/freie-plaetze.ts'
 
 declare const Deno: {
@@ -160,17 +161,6 @@ interface Member {
   /** Planer-Recht (4.10.2026): Er sucht Ersatz wie der Admin, also erfährt er „Ersatz gefunden". */
   zuteiler?: boolean
 }
-interface Sub {
-  /** Primärschlüssel — darüber wird ein abgelaufenes Abo abbestellt. */
-  id: string
-  user_id: string
-  endpoint: string
-  p256dh: string
-  auth: string
-  /** App-Sprache dieses Geraets; null = Deutsch. */
-  lang: string | null
-}
-
 const displayName = (p: Person): string => personDisplayName(p.fn, p.ln)
 
 /**
@@ -194,9 +184,9 @@ function parseKey(
 }
 
 /**
- * Push an eine Menge von Abos — Titel **und Rumpf** je **Gerätesprache**, nicht
- * je Nutzer: Die Sprache hängt am Abo. Der Anfragende wartet auf diesen
- * Versand, deshalb gebündelt statt nacheinander (das übernimmt `zustellen`).
+ * Push an Mengen von Abos — Titel **und Rumpf** je **Gerätesprache**, nicht je
+ * Nutzer: Die Sprache hängt am Abo. Der Anfragende wartet auf diesen Versand,
+ * deshalb alle Sendungen in einem Zug (das Bündeln übernimmt `zustellen`).
  *
  * **Der Rumpf ging bis zum 26.9.2026 kanonisch deutsch hinaus** — in jeder
  * Sprache „Mikrofone · Dienstag, 8. September · 19:00 · Name" unter einem
@@ -205,22 +195,18 @@ function parseKey(
  * `send-reminders` und `send-plan`. Die Glocke fiel nicht auf: Sie übersetzt
  * beim Anzeigen.
  */
-async function pushTo(
-  subs: Sub[],
-  titel: (lang: string | null) => string,
-  body: string,
-  url: string,
-  tag?: string,
-): Promise<void> {
+async function pushen(sendungen: readonly Sendung[]): Promise<void> {
   if (!vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)) return
   const trFuer = uebersetzerFuer()
-  const zustellungen: Zustellung[] = subs.map((s) => ({
-    abo: s,
-    titel: titel(s.lang),
-    body: trFuer(s.lang)(body),
-    url,
-    ...(tag ? { tag } : {}),
-  }))
+  const zustellungen: Zustellung[] = sendungen.flatMap(({ subs, titel, rumpf, url, tag }) =>
+    subs.map((s) => ({
+      abo: s,
+      titel: titel(s.lang),
+      body: rumpf(trFuer(s.lang), s.lang ?? 'de'),
+      url,
+      ...(tag ? { tag } : {}),
+    })),
+  )
   await zustellen(zustellungen, abbestellerFuer(rest))
 }
 
@@ -228,7 +214,7 @@ async function pushTo(
 async function notifyUsers(
   cong: string,
   userIds: string[],
-  subsByUser: Map<string, Sub[]>,
+  subsByUser: Map<string, SubscriptionRow[]>,
   /** Kanonisch deutscher Titel — Schluessel, unter dem die Glocke uebersetzt. */
   titel: string,
   /** Titel je Geraetesprache fuer den Push. */
@@ -268,7 +254,9 @@ async function notifyUsers(
       ...(taskKey ? { task_key: taskKey } : {}),
     })),
   )
-  await pushTo(ids.flatMap((u) => subsByUser.get(u) ?? []), pushTitel, body, url, pushTag)
+  await pushen([
+    { subs: ids.flatMap((u) => subsByUser.get(u) ?? []), titel: pushTitel, rumpf: (tr) => tr(body), url, tag: pushTag },
+  ])
 }
 
 Deno.serve(async (req: Request) => {
@@ -299,6 +287,8 @@ Deno.serve(async (req: Request) => {
        */
       congregationId?: string
       taskKey?: string
+      /** Bei 'absage': die abgesagten Plätze (`absageSchluessel`). */
+      taskKeys?: unknown
       /** Bei 'fill', 'take' und 'absage': der Kalendertag des Geräts („YYYY-MM-DD"), siehe `heuteUtc`. */
       heute?: string
       /** Bei 'absage': was der Absagende dem Planer dazuschreibt, frei und freiwillig. */
@@ -311,15 +301,15 @@ Deno.serve(async (req: Request) => {
     // Einen freien Platz selbst übernehmen — ein eigener Weg mit eigenen Regeln
     // (`fuellen.ts`): kein Ersatzgesuch, aber ein gesendeter Plan.
     if (payload?.action === 'fill') return await platzFuellen(rest, userId, String(payload.taskKey ?? ''), heute)
-    // Eine Absage melden — für jeden Platz, nicht nur Hilfsdienste (`absage.ts`).
+    // Absagen melden — für jeden Platz, nicht nur Hilfsdienste (`absage.ts`).
     if (payload?.action === 'absage') {
       const anfrage = {
-        taskKey: String(payload.taskKey ?? ''),
+        taskKeys: absageSchluessel(payload),
         nachricht: typeof payload.nachricht === 'string' ? payload.nachricht : '',
         heute,
         appUrl: APP_URL,
       }
-      return await absageMelden(rest, userId, anfrage, pushTo)
+      return await absageMelden(rest, userId, anfrage, pushen)
     }
     const parts = parseKey(payload?.taskKey ?? '')
     if (
@@ -349,7 +339,7 @@ Deno.serve(async (req: Request) => {
         `services?select=key,name,groups&congregation_id=eq.${wert(cong)}`,
       ),
       rest.get<Person[]>(`persons?select=id,fn,ln,priv&congregation_id=eq.${wert(cong)}`),
-      rest.get<Sub[]>(
+      rest.get<SubscriptionRow[]>(
         `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${wert(cong)}`,
       ),
       rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${wert(cong)}`),

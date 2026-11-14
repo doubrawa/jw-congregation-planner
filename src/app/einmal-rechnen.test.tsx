@@ -100,7 +100,7 @@ describe('Gespeichert ist, was auf dem Bildschirm steht', () => {
     // Hier fiel es bisher nicht auf: `notifyPlanners` schickt weder Id
     // noch Zeitstempel mit. Die Ungleichheit war trotzdem da — und die nächste
     // Mitteilung, die eine davon braucht, hätte sie geerbt.
-    const { gespeichert, gezeigt } = nachAktion({ type: 'declineTask', id: 'a1' })
+    const { gespeichert, gezeigt } = nachAktion({ type: 'declineTask', ids: ['a1'] })
     expect(gezeigt.notifs[0]?.id).toBe(gespeichert.notifs[0]?.id)
     expect(gezeigt.notifs[0]?.at).toBe(gespeichert.notifs[0]?.at)
   })

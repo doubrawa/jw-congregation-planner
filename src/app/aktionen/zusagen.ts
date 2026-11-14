@@ -126,31 +126,36 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
         toast: toastKey(state, 'toastBestaetigt'),
       }
     case 'declineTask': {
-      const task = state.myTasks.find((t) => t.id === action.id)
-      // Das Echo in der eigenen Glocke — zu sehen nur bei dem, der plant
-      // (`sichtbareMitteilungen`). Allen, die planen, schreibt die Function
-      // dieselbe Zeile (`substitute/absage.ts`, ausgelöst in `persist`).
-      // Kanonisch deutsch, beide Hälften: Die Glocke übersetzt beim Anzeigen.
-      const bezeichnung = task ? aufgabenBezeichnung(task) : ''
-      const notif = makeNotif(
-        'verhindert',
-        'Verhinderung gemeldet',
-        // Der Name als gekennzeichneter Freitext: Die Glocke übersetzt beim
-        // Anzeigen Atom für Atom, und ein Bruder namens „Markus 2" (die
-        // Schreibweise für Namensgleiche) stünde dort sonst als „Mark 2".
-        // Siehe `_shared/i18n/freitext.ts`.
-        `${bezeichnung} — ${alsFreitext(currentUserName(state))}${nachrichtAtom(action.nachricht)}`,
+      if (action.ids.length === 0) return state
+      // Der Name als gekennzeichneter Freitext: Die Glocke übersetzt beim
+      // Anzeigen Atom für Atom, und ein Bruder namens „Markus 2" (die
+      // Schreibweise für Namensgleiche) stünde dort sonst als „Mark 2".
+      // Siehe `_shared/i18n/freitext.ts`.
+      const wer = alsFreitext(currentUserName(state))
+      const zusatz = nachrichtAtom(action.nachricht)
+      // Das Echo in der eigenen Glocke, je Aufgabe eine Zeile — zu sehen nur
+      // bei dem, der plant (`sichtbareMitteilungen`). Allen, die planen,
+      // schreibt die Function dieselben Zeilen (`substitute/absage.ts`,
+      // ausgelöst in `persist`). Kanonisch deutsch, beide Hälften: Die Glocke
+      // übersetzt beim Anzeigen.
+      const echos = action.ids.map((id) => {
+        const task = state.myTasks.find((t) => t.id === id)
+        const bezeichnung = task ? aufgabenBezeichnung(task) : ''
         // Der Schlüssel der Aufgabe: Ein Tipp in der Glocke des Planers führt
         // in ihre Woche (`mitteilungsZiel`); ohne ihn landete er nirgends.
-        action.id,
-      )
-      // Bei Hilfsdiensten wird automatisch ein Ersatz gesucht (Ersatzgesuch) →
-      // eigener Toast; sonst nur die Verhinderungs-Meldung an den Planer.
-      const declineToast = helperKeyParts(action.id) ? 'toastErsatzGesucht' : 'toastVerhindert'
+        return makeNotif('verhindert', 'Verhinderung gemeldet', `${bezeichnung} — ${wer}${zusatz}`, id)
+      })
+      const confirmations = { ...state.confirmations }
+      for (const id of action.ids) confirmations[id] = 'verhindert'
+      // Bei einem Hilfsdienst wird automatisch ein Ersatz gesucht → eigener
+      // Toast; sonst nur die Meldung an den Planer. Mehrere sagt die
+      // Abwesenheit ab, und die nennt danach selbst, wie viele es waren.
+      const [einzige] = action.ids
+      const declineToast = action.ids.length === 1 && einzige && helperKeyParts(einzige) ? 'toastErsatzGesucht' : 'toastVerhindert'
       return {
         ...state,
-        confirmations: { ...state.confirmations, [action.id]: 'verhindert' },
-        notifs: [notif, ...state.notifs],
+        confirmations,
+        notifs: [...echos, ...state.notifs],
         myTaskId: null,
         absageId: null,
         toast: toastKey(state, declineToast),

@@ -1,7 +1,7 @@
 // =============================================================================
-// substitute, Aufruf 'absage': eine Absage denen melden, die planen
+// substitute, Aufruf 'absage': Absagen denen melden, die planen
 // =============================================================================
-//   { action: 'absage', taskKey, nachricht?, heute? }
+//   { action: 'absage', taskKeys, nachricht?, heute? }
 //
 // Wer eine Zuteilung absagt, verlässt sich darauf, dass jemand davon erfährt:
 // „Der Planer erfährt es sofort und gibt die Aufgabe jemand anderem", sagt das
@@ -21,6 +21,17 @@
 //  - **Wer melden darf:** nur, wer an dem Platz steht — geprüft an der Woche,
 //    nicht an der Zusage: Die schreibt die App im selben Augenblick, sie kann
 //    später ankommen als dieser Aufruf.
+//  - **Mehrere Plätze in einem Aufruf:** Wer eine Abwesenheit einträgt, sagt
+//    alles darin zugleich ab (T181). Die Glocke führt je Platz eine Zeile —
+//    jede führt in ihre Woche, und dort teilt der Planer neu zu. Der Push aber
+//    kommt je Empfänger **einmal**, mit allen seinen Plätzen (Betreiber,
+//    14.11.2026: „ein push je planer"): Eine Abwesenheit von drei Wochen sind
+//    leicht sechs Plätze, und sechs Anstöße für eine Nachricht sind fünf zu
+//    viel.
+//  - **Was nicht geht, fällt einzeln heraus** (`abgewiesen` in der Antwort):
+//    Ein Platz, der inzwischen einem anderen gehört oder vorbei ist, hält die
+//    übrigen nicht auf. Geht keiner, antwortet die Function mit dem Grund des
+//    ersten — wie bei einem einzelnen.
 //
 // Der Rumpf der Glocke bleibt, wie die App ihn bis dahin selbst baute:
 // „<Aufgabe> — <Name> · <Nachricht>", kanonisch deutsch, der Name und die
@@ -29,7 +40,7 @@
 // =============================================================================
 
 import { json, type Rest, wert } from '../_shared/rest.ts'
-import { schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
+import { type SchluesselTeile, schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { abosJeKonto } from '../_shared/konten.ts'
 import {
@@ -46,6 +57,7 @@ import {
   type FsInstance,
   pendingOfFsWeek,
   pendingOfMeeting,
+  rumpfVon,
   type ServiceRow,
   type SubscriptionRow,
   type Week,
@@ -54,6 +66,23 @@ import { substituteTexte, TITEL_ABGESAGT } from './texte.ts'
 
 /** So lang darf die Nachricht an den Planer sein — wie das Feld im Blatt (`AbsageBlatt`). */
 export const NACHRICHT_MAX = 200
+
+/**
+ * So viele Plätze nimmt ein Aufruf höchstens. Eine Abwesenheit über ein ganzes
+ * Jahr bringt weniger; ohne Grenze rechnete die Function für jeden noch so
+ * langen Rumpf.
+ */
+export const PLAETZE_MAX = 200
+
+/** Warum ein Platz nicht abzusagen ist — und der Status, wenn es keiner ist. */
+const ABWEISUNG = {
+  'bad-request': 400,
+  'not-assigned': 403,
+  'slot-not-found': 404,
+  'meeting-cancelled': 409,
+  past: 409,
+} as const
+type Abweisung = keyof typeof ABWEISUNG
 
 interface Mitglied {
   user_id: string
@@ -81,24 +110,58 @@ interface Platz {
   grp?: string
 }
 
-/** Wie `pushTo` in `index.ts` zustellt — hereingereicht, damit die Schlüssel dort bleiben. */
-type Zustellen = (
-  subs: SubscriptionRow[],
-  titel: (lang: string | null) => string,
-  body: string,
-  url: string,
-  tag?: string,
-) => Promise<void>
+/** Ein Platz, dessen Absage gemeldet wird — und wer davon erfährt. */
+interface Meldung {
+  taskKey: string
+  platz: Platz
+  /** Geht als Push hinaus (`perPush`). */
+  mitPush: boolean
+  empfaenger: string[]
+}
 
 /**
- * Die Nachricht als ein Atom: ohne „ · " darin, begrenzt, als Freitext
- * gekennzeichnet. Gekürzt wird nach Zeichen, nicht nach Code-Einheiten: Ein
- * halbes Zeichenpaar (ein Emoji an der Grenze) nimmt die Datenbank nicht an,
- * und die Meldung an alle, die planen, scheiterte an einem Zeichen.
+ * Eine Push-Meldung an eine Menge von Abos. Titel und Rumpf je Gerätesprache:
+ * `rumpf` bekommt den Übersetzer dieser Sprache (`tr`) und ihren Code.
  */
-function nachrichtAtom(nachricht: string): string {
-  const text = [...nachricht.trim().split(' · ').join(', ')].slice(0, NACHRICHT_MAX).join('')
-  return text ? ` · ${alsFreitext(text)}` : ''
+export interface Sendung {
+  subs: SubscriptionRow[]
+  titel: (lang: string | null) => string
+  rumpf: (tr: (s: string) => string, lang: string) => string
+  url: string
+  tag?: string
+}
+
+/** Wie `pushen` in `index.ts` zustellt — hereingereicht, damit die Schlüssel dort bleiben. */
+type Zustellen = (sendungen: readonly Sendung[]) => Promise<void>
+
+/**
+ * Geht die Absage dieses Platzes als Push hinaus? Bei einem Hilfsdienst nicht:
+ * Dort sucht die App selbst Ersatz (Aufruf 'seek'), und wer plant, bekommt
+ * „Ersatz gefunden" — seine Glocke führt die Absage trotzdem.
+ */
+function perPush(teile: SchluesselTeile): boolean {
+  return teile.art !== 'helper'
+}
+
+/**
+ * Die Plätze eines Aufrufs: `taskKeys` — oder `taskKey`, wie eine App ihn
+ * schickt, die noch je Platz meldete. Eine installierte App kann eine ältere
+ * Fassung im Cache haben; ihr Aufruf soll gehen, nicht an einem fehlenden Feld
+ * scheitern.
+ */
+export function absageSchluessel(rumpf: { taskKeys?: unknown; taskKey?: unknown }): string[] {
+  if (Array.isArray(rumpf.taskKeys)) return rumpf.taskKeys.filter((k): k is string => typeof k === 'string')
+  return typeof rumpf.taskKey === 'string' ? [rumpf.taskKey] : []
+}
+
+/**
+ * Die Nachricht als ein Atom: ohne „ · " darin, begrenzt. Gekürzt wird nach
+ * Zeichen, nicht nach Code-Einheiten: Ein halbes Zeichenpaar (ein Emoji an der
+ * Grenze) nimmt die Datenbank nicht an, und die Meldung an alle, die planen,
+ * scheiterte an einem Zeichen.
+ */
+function nachrichtText(nachricht: string): string {
+  return [...nachricht.trim().split(' · ').join(', ')].slice(0, NACHRICHT_MAX).join('')
 }
 
 /*
@@ -108,7 +171,7 @@ function nachrichtAtom(nachricht: string): string {
  */
 const OHNE_ZUSAGEN = new Map<string, string>()
 
-/** Der Platz in einer Zusammenkunft — oder die Antwort, warum es ihn nicht gibt. */
+/** Der Platz in einer Zusammenkunft — oder warum es ihn nicht gibt. */
 function programmPlatz(
   taskKey: string,
   woche: string,
@@ -116,13 +179,13 @@ function programmPlatz(
   week: Week | undefined,
   services: ServiceRow[],
   zeitenRow: ZeitenRow | undefined,
-): Platz | Response {
+): Platz | Abweisung {
   const meeting = week?.[tab]
-  if (!week || !meeting) return json({ error: 'slot-not-found' }, 404)
+  if (!week || !meeting) return 'slot-not-found'
   // Eine ausgefallene Zusammenkunft hat keine Plätze — und nichts abzusagen.
-  if (istAusgefallenFuer(week.dev, tab)) return json({ error: 'meeting-cancelled' }, 409)
+  if (istAusgefallenFuer(week.dev, tab)) return 'meeting-cancelled'
   const gefunden = pendingOfMeeting(woche, tab, meeting, services, OHNE_ZUSAGEN).find((p) => p.key === taskKey)
-  if (!gefunden) return json({ error: 'slot-not-found' }, 404)
+  if (!gefunden) return 'slot-not-found'
   const { versatz, zeit } = terminDerWoche(zeitenAus(zeitenRow), tab, woche, week.dev)
   return {
     name: gefunden.name,
@@ -133,10 +196,10 @@ function programmPlatz(
   }
 }
 
-/** Der Leiter-Platz eines Treffpunkts — oder die Antwort, warum es ihn nicht gibt. */
-function treffpunktPlatz(taskKey: string, woche: string, instId: string, insts: FsInstance[]): Platz | Response {
+/** Der Leiter-Platz eines Treffpunkts — oder warum es ihn nicht gibt. */
+function treffpunktPlatz(taskKey: string, woche: string, instId: string, insts: FsInstance[]): Platz | Abweisung {
   const gefunden = pendingOfFsWeek(woche, insts, OHNE_ZUSAGEN).find((p) => p.key === taskKey)
-  if (!gefunden) return json({ error: 'slot-not-found' }, 404)
+  if (!gefunden) return 'slot-not-found'
   return {
     name: gefunden.name,
     pid: gefunden.pid,
@@ -148,7 +211,73 @@ function treffpunktPlatz(taskKey: string, woche: string, instId: string, insts: 
 }
 
 /**
- * Die Absage des Aufrufers für `taskKey` melden.
+ * Die Wochen, die die Plätze `teile` berühren, als Filter auf `start`: von der
+ * ersten bis zur letzten. Eine Abwesenheit ist ein Zeitraum am Stück — was
+ * dazwischen liegt, gehört ohnehin dazu.
+ */
+function wochenSpanne(teile: readonly SchluesselTeile[]): string {
+  const wochen = teile.map((t) => t.woche).sort()
+  return `start=gte.${wert(wochen[0] ?? '')}&start=lte.${wert(wochen.at(-1) ?? '')}`
+}
+
+/**
+ * Der Rumpf eines Push — in der Sprache des Geräts (`tr`).
+ *
+ * Ein Platz: „<Aufgabe> · <Termin> · <Name>". Mehrere: vorn der Name, dahinter
+ * je Platz „<Termin>: <Aufgabe>" wie in jeder Nachricht mit mehreren Aufgaben
+ * (`rumpfVon`). Der Name steht vorn, weil `pushNutzlast` einen zu langen Rumpf
+ * hinten kürzt — wer abgesagt hat, darf dabei nicht verlorengehen. Die
+ * Nachricht steht in beiden Fällen am Ende.
+ */
+function pushRumpf(plaetze: readonly Platz[], name: string, nachricht: string): Sendung['rumpf'] {
+  const wer = alsFreitext(name)
+  const was = alsFreitext(nachricht)
+  const [einziger] = plaetze
+  if (einziger && plaetze.length === 1) {
+    const text = [einziger.label, einziger.datum, wer, was].filter(Boolean).join(' · ')
+    return (tr) => tr(text)
+  }
+  const eintraege = plaetze.map((p) => ({ datum: p.datum, label: p.label }))
+  return (tr, lang) => [`${tr(wer)} — ${rumpfVon(eintraege, tr, lang)}`, tr(was)].filter(Boolean).join(' · ')
+}
+
+/**
+ * Je Empfänger ein Push mit allen seinen Plätzen. Wer dieselben erfährt — die
+ * Planer untereinander —, bekommt dieselbe Sendung. Der Absagende selbst
+ * keine, und wer kein Gerät angemeldet hat, auch nicht.
+ */
+function sendungen(
+  meldungen: readonly Meldung[],
+  ich: string,
+  abos: ReadonlyMap<string, SubscriptionRow[]>,
+  inhalt: { name: string; nachricht: string; url: string },
+): Sendung[] {
+  const jeListe = new Map<string, { plaetze: Meldung[]; konten: string[] }>()
+  for (const konto of new Set(meldungen.flatMap((m) => m.empfaenger))) {
+    if (konto === ich) continue
+    const seine = meldungen.filter((m) => m.mitPush && m.empfaenger.includes(konto))
+    if (seine.length === 0) continue
+    const kennung = seine.map((m) => m.taskKey).join('\n')
+    const liste = jeListe.get(kennung) ?? { plaetze: seine, konten: [] }
+    liste.konten.push(konto)
+    jeListe.set(kennung, liste)
+  }
+  return [...jeListe.values()]
+    .map(({ plaetze, konten }) => ({
+      subs: konten.flatMap((k) => abos.get(k) ?? []),
+      titel: (lang: string | null) => substituteTexte(lang).abgesagt,
+      rumpf: pushRumpf(plaetze.map((m) => m.platz), inhalt.name, inhalt.nachricht),
+      // In die Mitteilungen: Von dort führt ein Tipp in die Woche der Absage.
+      url: inhalt.url,
+      // Je Absage eine eigene Meldung — zwei ersetzen einander nicht auf dem
+      // Sperrbildschirm (`Zustellung.tag`).
+      tag: plaetze[0]?.taskKey,
+    }))
+    .filter((s) => s.subs.length > 0)
+}
+
+/**
+ * Die Absagen des Aufrufers für `taskKeys` melden.
  *
  * `heute` ist der Kalendertag, an dem gefragt wird („YYYY-MM-DD", `heuteUtc`
  * in `index.ts`); `appUrl` die Adresse der App für den Push.
@@ -156,12 +285,13 @@ function treffpunktPlatz(taskKey: string, woche: string, instId: string, insts: 
 export async function absageMelden(
   rest: Rest,
   userId: string,
-  anfrage: { taskKey: string; nachricht: string; heute: string; appUrl: string },
+  anfrage: { taskKeys: readonly string[]; nachricht: string; heute: string; appUrl: string },
   zustellen: Zustellen,
 ): Promise<Response> {
-  const { taskKey, heute } = anfrage
-  const teile = schluesselTeile(taskKey)
-  if (!teile) return json({ error: 'bad-request' }, 400)
+  const { heute } = anfrage
+  const zerlegt = [...new Set(anfrage.taskKeys)].map((taskKey) => ({ taskKey, teile: schluesselTeile(taskKey) }))
+  const teileAller = zerlegt.flatMap(({ teile }) => (teile ? [teile] : []))
+  if (teileAller.length === 0 || zerlegt.length > PLAETZE_MAX) return json({ error: 'bad-request' }, 400)
 
   // Die Versammlung aus der eigenen Mitgliedszeile, nie aus dem Rumpf.
   const eigene = await rest.get<{ person_id: string | null; congregation_id: string }[]>(
@@ -172,28 +302,30 @@ export async function absageMelden(
   if (!caller.person_id) return json({ error: 'not-assigned' }, 403)
   const cong = caller.congregation_id
   const congEnc = wert(cong)
-  const wocheEnc = wert(teile.woche)
-  // Bei einem Hilfsdienst sucht die App selbst Ersatz: Dort bleibt es bei der
-  // Glocke, und die Abos braucht niemand.
-  const mitPush = teile.art !== 'helper'
+  const programm = teileAller.filter((t) => t.art !== 'fs')
+  const treffpunkte = teileAller.filter((t) => t.art === 'fs')
+  // Sind es nur Hilfsdienste, bleibt es bei der Glocke, und die Abos braucht niemand.
+  const abosNoetig = teileAller.some(perPush)
 
   const [weekRows, fsRows, services, persons, congRows, members, gruppen, subs] = await Promise.all([
-    teile.art === 'fs'
-      ? Promise.resolve([] as { data: Week }[])
-      : rest.get<{ data: Week }[]>(`weeks?select=data&congregation_id=eq.${congEnc}&start=eq.${wocheEnc}`),
-    teile.art === 'fs'
-      ? rest.get<{ data: FsInstance[] }[]>(`fs_weeks?select=data&congregation_id=eq.${congEnc}&start=eq.${wocheEnc}`)
-      : Promise.resolve([] as { data: FsInstance[] }[]),
+    programm.length > 0
+      ? rest.get<{ start: string; data: Week }[]>(`weeks?select=start,data&congregation_id=eq.${congEnc}&${wochenSpanne(programm)}`)
+      : Promise.resolve([] as { start: string; data: Week }[]),
+    treffpunkte.length > 0
+      ? rest.get<{ start: string; data: FsInstance[] }[]>(
+          `fs_weeks?select=start,data&congregation_id=eq.${congEnc}&${wochenSpanne(treffpunkte)}`,
+        )
+      : Promise.resolve([] as { start: string; data: FsInstance[] }[]),
     rest.get<ServiceRow[]>(`services?select=key,name,count,groups&congregation_id=eq.${congEnc}`),
     rest.get<{ id: string; fn: string; ln: string }[]>(
       `persons?select=id,fn,ln&congregation_id=eq.${congEnc}&id=eq.${wert(caller.person_id)}`,
     ),
     rest.get<ZeitenRow[]>(`congregations?select=${ZEITEN_SPALTEN}&id=eq.${congEnc}`),
     rest.get<Mitglied[]>(`members?select=user_id,person_id,admin,zuteiler&congregation_id=eq.${congEnc}`),
-    teile.art === 'fs'
+    treffpunkte.length > 0
       ? rest.get<Gruppe[]>(`groups?select=id,overseer_id,assistant_id&congregation_id=eq.${congEnc}`)
       : Promise.resolve([] as Gruppe[]),
-    mitPush
+    abosNoetig
       ? rest.get<SubscriptionRow[]>(
           `push_subscriptions?select=id,user_id,endpoint,p256dh,auth,lang&congregation_id=eq.${congEnc}`,
         )
@@ -203,32 +335,54 @@ export async function absageMelden(
   const person = persons[0]
   if (!person) return json({ error: 'not-assigned' }, 403)
   const name = personDisplayName(person.fn, person.ln)
-
-  const platz =
-    teile.art === 'fs'
-      ? treffpunktPlatz(taskKey, teile.woche, teile.instId, fsRows[0]?.data ?? [])
-      : programmPlatz(taskKey, teile.woche, teile.tab, weekRows[0]?.data, services, congRows[0])
-  if (platz instanceof Response) return platz
-
-  // Nur der eigene Platz: nach der Person-Id, ohne sie nach dem Namen — wie
-  // überall (`gehoertZuKennung` in der App). Sonst ließe sich im Namen eines
-  // anderen absagen, und alle, die planen, bekämen die Meldung.
-  const meiner = platz.pid ? platz.pid === person.id : platz.name === name
-  if (!meiner) return json({ error: 'not-assigned' }, 403)
-  if (platz.tag !== null && platz.tag < heute) return json({ error: 'past' }, 409)
+  const wochen = new Map(weekRows.map((r) => [r.start, r.data]))
+  const fsWochen = new Map(fsRows.map((r) => [r.start, r.data]))
 
   const planer = members.filter((m) => m.admin || m.zuteiler).map((m) => m.user_id)
-  const leitung = new Set(
-    gruppen.filter((g) => g.id === platz.grp).flatMap((g) => [g.overseer_id, g.assistant_id]).filter((id): id is string => Boolean(id)),
-  )
-  const gruppenLeitung = members.filter((m) => m.person_id !== null && leitung.has(m.person_id)).map((m) => m.user_id)
-  const empfaenger = [...new Set([...planer, ...gruppenLeitung])]
-  if (empfaenger.length === 0) return json({ ok: true, gemeldet: 0 })
+  /** Wer von einem Platz erfährt: wer plant — beim Gruppentreffpunkt auch, wer die Gruppe leitet. */
+  const empfaengerVon = (platz: Platz): string[] => {
+    const leitung = new Set(
+      gruppen
+        .filter((g) => g.id === platz.grp)
+        .flatMap((g) => [g.overseer_id, g.assistant_id])
+        .filter((id): id is string => Boolean(id)),
+    )
+    const gruppenLeitung = members.filter((m) => m.person_id !== null && leitung.has(m.person_id)).map((m) => m.user_id)
+    return [...new Set([...planer, ...gruppenLeitung])]
+  }
 
-  const zusatz = nachrichtAtom(anfrage.nachricht)
-  const geschrieben = await rest.zeilenSchreiben<{ id: string }>(
-    'POST',
-    'notifications?select=id',
+  /** Die Meldung zu `taskKey`, wenn der Platz abzusagen ist — sonst warum nicht. */
+  const meldungZu = (taskKey: string, teile: SchluesselTeile | null): Meldung | Abweisung => {
+    if (!teile) return 'bad-request'
+    const platz =
+      teile.art === 'fs'
+        ? treffpunktPlatz(taskKey, teile.woche, teile.instId, fsWochen.get(teile.woche) ?? [])
+        : programmPlatz(taskKey, teile.woche, teile.tab, wochen.get(teile.woche), services, congRows[0])
+    if (typeof platz === 'string') return platz
+    // Nur der eigene Platz: nach der Person-Id, ohne sie nach dem Namen — wie
+    // überall (`gehoertZuKennung` in der App). Sonst ließe sich im Namen eines
+    // anderen absagen, und alle, die planen, bekämen die Meldung.
+    const meiner = platz.pid ? platz.pid === person.id : platz.name === name
+    if (!meiner) return 'not-assigned'
+    if (platz.tag !== null && platz.tag < heute) return 'past'
+    return { taskKey, platz, mitPush: perPush(teile), empfaenger: empfaengerVon(platz) }
+  }
+
+  const meldungen: Meldung[] = []
+  const abgewiesen: { taskKey: string; error: Abweisung }[] = []
+  for (const { taskKey, teile } of zerlegt) {
+    const meldung = meldungZu(taskKey, teile)
+    if (typeof meldung === 'string') abgewiesen.push({ taskKey, error: meldung })
+    else meldungen.push(meldung)
+  }
+  const [ersteAbweisung] = abgewiesen
+  if (meldungen.length === 0 && ersteAbweisung) {
+    return json({ error: ersteAbweisung.error }, ABWEISUNG[ersteAbweisung.error])
+  }
+
+  const nachricht = nachrichtText(anfrage.nachricht)
+  const zusatz = nachricht ? ` · ${alsFreitext(nachricht)}` : ''
+  const zeilen = meldungen.flatMap(({ taskKey, platz, empfaenger }) =>
     empfaenger.map((user_id) => ({
       congregation_id: cong,
       user_id,
@@ -238,18 +392,21 @@ export async function absageMelden(
       task_key: taskKey,
     })),
   )
+  const ergebnis = {
+    ok: true,
+    gemeldet: new Set(zeilen.map((z) => z.user_id)).size,
+    ...(abgewiesen.length > 0 ? { abgewiesen } : {}),
+  }
+  if (zeilen.length === 0) return json(ergebnis)
+
+  const geschrieben = await rest.zeilenSchreiben<{ id: string }>('POST', 'notifications?select=id', zeilen)
   if (geschrieben === null) return json({ error: 'server-error' }, 500)
 
-  if (mitPush) {
-    const abos = abosJeKonto(subs)
-    await zustellen(
-      empfaenger.filter((u) => u !== userId).flatMap((u) => abos.get(u) ?? []),
-      (lang) => substituteTexte(lang).abgesagt,
-      // Mit dem Termin: Der Push steht für sich, die Glocke führt in die Woche.
-      `${[platz.label, platz.datum, alsFreitext(name)].filter(Boolean).join(' · ')}${zusatz}`,
-      `${anfrage.appUrl}#go=mitteilungen`,
-      taskKey, // je Platz eine eigene Meldung — zwei Absagen ersetzen einander nicht
-    )
-  }
-  return json({ ok: true, gemeldet: empfaenger.length })
+  const pushes = sendungen(meldungen, userId, abosJeKonto(subs), {
+    name,
+    nachricht,
+    url: `${anfrage.appUrl}#go=mitteilungen`,
+  })
+  if (pushes.length > 0) await zustellen(pushes)
+  return json(ergebnis)
 }

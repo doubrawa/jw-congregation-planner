@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../app/context'
 import { istAngemeldet, kontoGehtMit } from '../app/eigene-person'
+import { useKuenftigePlaetze } from '../app/useKuenftigePlaetze'
 import { Zeichen } from '../bausteine/Zeichen'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { EntfernenKnopf } from '../components/EntfernenKnopf'
@@ -12,6 +13,7 @@ import { ROLE_KEY } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { BereicheBlatt } from './BereicheBlatt'
 import { bereicheDerPerson, bereichsGruppen } from './bereiche'
+import { FreiwerdenBlatt } from './FreiwerdenBlatt'
 import { KontoCard } from './KontoCard'
 import { PersonBearbeitenBlatt } from './PersonBearbeitenBlatt'
 import { PersonTimeline } from './PersonTimeline'
@@ -30,8 +32,11 @@ import { RechteKarte } from './PrivToggle'
 export function PersonDetail({ person, spalte = false }: { person: Person; spalte?: boolean }) {
   const { state, dispatch } = useApp()
   const { t, tu } = useT()
-  const [blatt, setBlatt] = useState<'bearbeiten' | 'bereiche' | null>(null)
+  const [blatt, setBlatt] = useState<'bearbeiten' | 'bereiche' | 'entfernen' | null>(null)
   const update = (patch: Partial<Person>) => dispatch({ type: 'updatePerson', id: person.id, patch })
+  // Wo sie künftig noch eingeteilt ist — danach fragt das Entfernen (T182).
+  const kuenftig = useKuenftigePlaetze(person)
+  const kontoGeht = state.members.some((m) => kontoGehtMit(m, person.id, state.userId))
   const gruppe = state.groups.find((g) => g.id === person.grp)
   const unter = [gruppe ? tu(gruppe.name) : '', t[ROLE_KEY[person.role]]].filter(Boolean).join(' · ')
   // Angemeldet: der Ring voll in Minze; sonst gestrichelt — wie die Punkte der Liste.
@@ -70,19 +75,35 @@ export function PersonDetail({ person, spalte = false }: { person: Person; spalt
       <RechteKarte person={person} update={update} />
 
       {/* Zwei Tipps: Der erste nennt die Folge, erst der zweite entfernt. Hat
-          die Person ein Konto, geht es mit (21.10.2026) — das eigene nicht. */}
-      <EntfernenKnopf
-        className="knopf-leise knopf-entfernen person-entfernen"
-        text={t.persLoeschen}
-        frage={
-          fill(t.confirmPersonDel, { name: personLabel(person) }) +
-          (state.members.some((m) => kontoGehtMit(m, person.id, state.userId)) ? ` ${t.confirmPersonDelKonto}` : '')
-        }
-        onEntfernen={() => dispatch({ type: 'removePerson', id: person.id })}
-      />
+          die Person ein Konto, geht es mit (21.10.2026) — das eigene nicht.
+          Steht sie noch an künftigen Plätzen, fragt statt dessen ein Blatt,
+          was mit ihnen geschieht (T182) — dort steht auch das Konto. */}
+      {kuenftig.length === 0 ? (
+        <EntfernenKnopf
+          className="knopf-leise knopf-entfernen person-entfernen"
+          text={t.persLoeschen}
+          frage={fill(t.confirmPersonDel, { name: personLabel(person) }) + (kontoGeht ? ` ${t.confirmPersonDelKonto}` : '')}
+          onEntfernen={() => dispatch({ type: 'removePerson', id: person.id })}
+        />
+      ) : (
+        <button type="button" className="knopf-leise knopf-entfernen person-entfernen entfernen" onClick={() => setBlatt('entfernen')}>
+          {t.persLoeschen}
+        </button>
+      )}
 
       {blatt === 'bearbeiten' && <PersonBearbeitenBlatt person={person} onClose={() => setBlatt(null)} />}
       {blatt === 'bereiche' && <BereicheBlatt person={person} onClose={() => setBlatt(null)} />}
+      {blatt === 'entfernen' && (
+        <FreiwerdenBlatt
+          art="entfernen"
+          person={person}
+          plaetze={kuenftig}
+          mitKonto={kontoGeht}
+          onFreigeben={() => dispatch({ type: 'removePerson', id: person.id, freigeben: kuenftig.map((k) => k.key) })}
+          onStehenLassen={() => dispatch({ type: 'removePerson', id: person.id })}
+          onClose={() => setBlatt(null)}
+        />
+      )}
     </section>
   )
 }

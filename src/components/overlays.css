@@ -201,6 +201,42 @@
   padding-block-start: 14px;
 }
 
+/* Was in die gewählte Zeit fällt (T181): je Aufgabe ein Schalter. */
+.abw-aufgaben {
+  display: flex;
+  flex-direction: column;
+  padding-block-start: 18px;
+}
+
+/* ---- Künftige Plätze einer Person (T181, T182) ------------------------------ */
+
+.frei-intro {
+  padding-block-end: 10px;
+  color: var(--text2);
+}
+
+.frei-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.frei-zeile {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.frei-fuss {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block-start: 14px;
+}
+
 /* ---- S-89 ------------------------------------------------------------------- */
 
 .s89-eyebrow {

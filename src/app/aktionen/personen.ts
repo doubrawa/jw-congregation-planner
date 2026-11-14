@@ -9,7 +9,7 @@ import { aemterBeenden, displayName, linkFamily, neuWennGeaendert, unlinkFamily 
 import { dropPersonPid, renameInWeeks } from '../../data/namensbindung'
 import { tagebuchUmbenannt } from '../../data/planung/schluessel'
 import type { AppAction, AppState } from '../context'
-import { toastKey } from './gemeinsam'
+import { mitFreienPlaetzen, toastKey } from './gemeinsam'
 
 /**
  * Die Person `id` aus dem Zustand nehmen — samt allem, was auf sie zeigt:
@@ -118,8 +118,16 @@ export function personen(state: AppState, action: PersonenAktion): AppState {
         absences: state.absences.filter((a) => a.id !== action.id),
         toast: toastKey(state, 'toastAbwDel'),
       }
-    case 'removePerson':
-      return { ...ohnePerson(state, action.id), selectedPersonId: null, toast: toastKey(state, 'toastPersonDel') }
+    case 'removePerson': {
+      // Vorher ihre künftigen Plätze freigeben, wenn der Admin es gewählt hat
+      // (T182) — gemeldet wird es niemandem, sie geht (`OHNE_ENTZUG`).
+      const { weeks, fsWeeks, confirmations } = mitFreienPlaetzen(state, action.id, action.freigeben ?? [])
+      return {
+        ...ohnePerson({ ...state, weeks, fsWeeks, confirmations }, action.id),
+        selectedPersonId: null,
+        toast: toastKey(state, 'toastPersonDel'),
+      }
+    }
     case 'addPerson':
       return {
         ...state,

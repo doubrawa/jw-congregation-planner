@@ -67,6 +67,7 @@
 
 import { CORS, json, restKlient, wert, zeilenJePraefix } from '../_shared/rest.ts'
 import { schluesselTeile, wochenPraefixe } from '../_shared/aufgaben-schluessel.ts'
+import { appZahlenLaden } from '../_shared/app-zahl.ts'
 import { abbestellerFuer, vapidSetzen, type Zustellung, zustellen } from '../_shared/push.ts'
 import { heuteUtc, type MeetingTimes, personDisplayName, ZEITEN_SPALTEN, zeitenAus, type ZeitenRow } from '../_shared/planung.ts'
 import { abosJeKonto, kontoAufloeser } from '../_shared/konten.ts'
@@ -194,6 +195,8 @@ interface Nachricht {
 async function verschicken(
   cong: string,
   nachrichten: Nachricht[],
+  /** Der Kalendertag des Planers (`heuteUtc`) — mit ihm zählt auch die App die Zahl am Symbol. */
+  heuteUTC: number,
 ): Promise<{ personen: number; push: number }> {
   const notifRows = nachrichten.map((n) => ({
     congregation_id: cong,
@@ -208,9 +211,15 @@ async function verschicken(
 
   const kannSenden = vapidSetzen(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
   const uebersetzer = uebersetzerFuer()
+  // Die Zahl am App-Symbol (T184): Neue Zuteilungen heben sie, ein Entzug
+  // senkt sie — der Push bringt sie mit, auch wenn die App zu ist. Gezählt
+  // wird nur für Empfänger mit Push-Abo; die übrigen erreicht keine Zahl.
+  const mitAbo = nachrichten.filter((n) => n.empfaenger.subs.length > 0).map((n) => n.empfaenger.userId)
+  const zahlen = kannSenden ? await appZahlenLaden(rest, cong, mitAbo, heuteUTC) : new Map<string, number>()
   // Erst alle Texte bilden, dann in einem Zug zustellen.
   const zustellungen: Zustellung[] = []
   for (const n of nachrichten) {
+    const zahl = zahlen.get(n.empfaenger.userId)
     // Je Sprache ein eigener Text: Er steht fest, sobald die Nachricht das Gerät
     // erreicht. Wer Geräte in zwei Sprachen hat, bekommt auf jedem die passende.
     for (const [lang, subs] of nachSprache(n.empfaenger.subs)) {
@@ -218,7 +227,7 @@ async function verschicken(
       const tr = uebersetzer(lang)
       const titel = titelVon(n.art, lang)
       const body = rumpfVon(n.eintraege, tr, lang)
-      for (const abo of subs) zustellungen.push({ abo, titel, body, url: ZIEL })
+      for (const abo of subs) zustellungen.push({ abo, titel, body, url: ZIEL, zahl })
     }
   }
   // Ohne VAPID-Schlüssel bleibt es bei der Glocke — kein Grund abzubrechen.
@@ -241,12 +250,13 @@ async function versenden(
   kontoFuer: KontoFuer,
   empfaengerFuer: (uid: string) => Empfaenger,
   personIdFuer: (pid: string | undefined, name: string) => string | null,
+  heuteUTC: number,
 ): Promise<Response> {
   if (neu.length === 0) return json({ ok: true, personen: 0, aufgaben: 0, ohneKonto: [] })
 
   await bibelbuecherLaden()
   const { nachrichten, ohneKonto } = nachrichtenJePerson(neu, 'zuteilung', kontoFuer, empfaengerFuer)
-  const { push } = await verschicken(cong, nachrichten)
+  const { push } = await verschicken(cong, nachrichten, heuteUTC)
 
   // Tagebuch **nach** dem Versand — scheitert das Schreiben, wurde immerhin
   // gesendet (schlimmstenfalls eine Wiederholung, nie ein Ausfall). Auch die
@@ -350,7 +360,8 @@ async function erinnern(
   )
   const schonErinnert = new Set(heuteErinnert.map((r) => r.user_id))
   const ausgelassen = new Set<string>()
-  const offen = offeneDerWoche(weekStart, woche.week, [], woche.services, woche.conf, woche.zeiten, heuteUtc(clientTag))
+  const tagDesPlaners = heuteUtc(clientTag)
+  const offen = offeneDerWoche(weekStart, woche.week, [], woche.services, woche.conf, woche.zeiten, tagDesPlaners)
   const zuErinnern = offen.filter((p) => {
     if (!woche.schonGemeldet.has(tagebuchSchluessel(p.key, p.name))) return false
     const uid = kontoFuer(p.pid, p.name)
@@ -364,7 +375,7 @@ async function erinnern(
   if (nachrichten.length === 0) return json({ ok: true, personen: 0, push: 0, schonHeute: ausgelassen.size })
 
   await bibelbuecherLaden()
-  const { push } = await verschicken(cong, nachrichten)
+  const { push } = await verschicken(cong, nachrichten, tagDesPlaners)
   // Die Sperre **nach** dem Versand, wie beim Tagebuch: Scheitert das
   // Schreiben, wurde immerhin erinnert — schlimmstenfalls heute ein zweites Mal.
   await rest.insert(
@@ -389,6 +400,7 @@ async function jePersonMelden(
   meldungen: ReadonlyArray<EntzugRumpf & { name: string; art: keyof PlanTexte }>,
   kontoFuer: KontoFuer,
   empfaengerFuer: (uid: string) => Empfaenger,
+  heuteUTC: number,
 ): Promise<Response> {
   const jePerson = new Map<string, Nachricht>()
   const ohneKonto = new Set<string>()
@@ -409,7 +421,7 @@ async function jePersonMelden(
   if (jePerson.size === 0) return json({ ok: true, personen: 0, push: 0, ohneKonto: [...ohneKonto] })
 
   await bibelbuecherLaden()
-  const { personen, push } = await verschicken(cong, [...jePerson.values()])
+  const { personen, push } = await verschicken(cong, [...jePerson.values()], heuteUTC)
   return json({ ok: true, personen, push, ohneKonto: [...ohneKonto] })
 }
 
@@ -651,6 +663,7 @@ Deno.serve(async (req: Request) => {
         melden.map((e) => ({ ...e, art: 'entzug' as const })),
         kontoFuer,
         empfaengerFuer,
+        heuteUtc(payload.heute),
       )
     }
 
@@ -670,15 +683,8 @@ Deno.serve(async (req: Request) => {
 
     // Alle offenen, noch anstehenden Plätze der Woche — dieselbe Aufzählung, die
     // auch die Erinnerungen benutzt, samt der Ausschlüsse (`offeneDerWoche`).
-    const offen: OffenerPlatz[] = offeneDerWoche(
-      weekStart,
-      week,
-      fsInsts,
-      services,
-      conf,
-      zeiten,
-      heuteUtc(payload.heute),
-    )
+    const tagDesPlaners = heuteUtc(payload.heute)
+    const offen: OffenerPlatz[] = offeneDerWoche(weekStart, week, fsInsts, services, conf, zeiten, tagDesPlaners)
 
     // Der Gruppenaufseher sendet nur die Treffpunkte seiner Gruppe — erkannt
     // an der Gruppe des Treffpunkts in dieser Woche.
@@ -695,7 +701,7 @@ Deno.serve(async (req: Request) => {
     // Was schon gemeldet wurde, bleibt liegen. Sonst schickte ein zweiter Druck
     // nach einer kleinen Nachbesserung allen dieselbe Nachricht erneut.
     const neu = zuSenden.filter((p) => !schonGemeldet.has(tagebuchSchluessel(p.key, p.name)))
-    return await versenden(cong, neu, kontoFuer, empfaengerFuer, personIdFuer)
+    return await versenden(cong, neu, kontoFuer, empfaengerFuer, personIdFuer, tagDesPlaners)
   } catch (err) {
     // Nur in die Logs, nicht in die Antwort: die REST-Fehler tragen Pfad und
     // rohen PostgREST-Rumpf — beim Suchen nützlich und beim Angreifen genauso.

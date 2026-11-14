@@ -575,7 +575,14 @@ eingeteilt.
    Oben stehen **Von** und **Bis**; das hervorgehobene Ende setzt der nächste
    Tipp. Ein Tipp vor „Von" beginnt den Zeitraum neu.
 3. Optional einen **Grund** angeben (z. B. „Urlaub").
-4. Auf **Abwesenheit eintragen** tippen.
+4. Bist du in dieser Zeit schon eingeteilt, stehen deine Aufgaben darunter
+   unter **In dieser Zeit eingeteilt**, jede mit einem Schalter. Eingeschaltet –
+   so stehen sie da – sagst du sie mit dem Eintragen gleich ab, wie unter
+   [Wenn du nicht kannst](#wenn-du-nicht-kannst): Wer plant, erfährt es – mit
+   einer Nachricht für alle, nicht mit einer je Aufgabe –, und beim
+   Hilfsdienst sucht die App Ersatz. Was du doch wahrnehmen kannst, schaltest
+   du aus.
+5. Auf **Abwesenheit eintragen** tippen.
 
 Deine Zeiträume, die anstehen oder gerade laufen, stehen in der Karte und
 lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
@@ -757,6 +764,14 @@ nie per E‑Mail.**
 Ohne Push verpasst du nichts: Jede Nachricht steht auch in der App unter den
 **Mitteilungen** (Glocke oben rechts), und offene Zuteilungen legt dir die App
 beim Öffnen ohnehin vor. Push spart dir nur das Nachsehen.
+
+**Die Zahl am App-Symbol.** In der installierten App zeigt das Symbol auf dem
+Startbildschirm, wie viele Zuteilungen noch auf deine Antwort warten. Die App
+setzt sie beim Öffnen und nach jeder Antwort; ist sie zu, bringt eine
+Push-Nachricht die neue Zahl mit – etwa nach einer neuen Zuteilung oder einer
+Erinnerung. Ob und wie die Zahl erscheint, entscheidet dein Gerät: Manche
+Startbildschirme zeigen nur einen Punkt, und auf dem iPhone steht sie nur, wenn
+Benachrichtigungen für die App erlaubt sind.
 
 ---
 

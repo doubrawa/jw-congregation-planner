@@ -1,7 +1,8 @@
 /**
  * Plätze der Zusammenkünfte besetzen: von Hand (über dasselbe Blatt auch die
  * Leitung eines Treffpunkts), automatisch oder leeren, dazu den Vortragsplan
- * übernehmen. Wechselt ein Platz den Inhaber, verfällt seine Zusage.
+ * übernehmen und die künftigen Plätze einer Person freigeben. Wechselt ein
+ * Platz den Inhaber, verfällt seine Zusage.
  */
 
 import { abwesenheitenVon } from '../../data/absence'
@@ -12,7 +13,7 @@ import { autoAssignMeeting, clearAssignments, tabsImUmfang, type Umfang } from '
 import { assignSlot, changedSlotKeys } from '../../data/planung/zuteilen'
 import type { MeetingKey, Week } from '../../data/types'
 import type { AppAction, AppState } from '../context'
-import { dropConfirmations, toastKey } from './gemeinsam'
+import { dropConfirmations, mitFreienPlaetzen, toastKey } from './gemeinsam'
 
 /**
  * Schlüssel der Slots, die sich zwischen zwei Wochenständen geändert haben —
@@ -51,11 +52,19 @@ type ZuteilenAktion = Extract<
       | 'autoAssign'
       | 'clearAssignments'
       | 'vortragsplanUebernehmen'
+      | 'plaetzeFreigeben'
   }
 >
 
 export function zuteilen(state: AppState, action: ZuteilenAktion): AppState {
   switch (action.type) {
+    case 'plaetzeFreigeben': {
+      // Wer davon wusste, erfährt es wie bei jedem Entzug (`ohneEntzogene`,
+      // `persist.ts`).
+      const { weeks, fsWeeks, confirmations, frei } = mitFreienPlaetzen(state, action.personId, action.keys)
+      if (frei === 0) return state
+      return { ...state, weeks, fsWeeks, confirmations, toast: toastKey(state, 'toastPlaetzeFrei', { n: frei }) }
+    }
     case 'assign': {
       // Zuteilen bzw. Entfernen ("") (Prototyp: assignTo)
       const sel = state.slotSel

@@ -39,6 +39,7 @@ import {
 const SUPABASE_URL = 'https://test.supabase.co'
 const CONG = 'cong-1'
 const WOCHE = '2026-09-07' // Montag; mid = Di 8.9., we = So 13.9.
+const ARCHIV = '2026-08-31' // die Woche davor — vorbei, nie zu lesen
 const SVC = 'mikro'
 
 const U_PLANER = 'user-planer'
@@ -257,13 +258,24 @@ const fakeFetch = async (
     gelesen.push(path)
     return jsonRes(fremd ? [] : zurWoche(log))
   }
+  /*
+   * Die Wochen der Versammlung — die gesendete und eine aus dem Archiv davor.
+   * Die Filter (`eq`, `gte`) werden ausgewertet; ohne Filter kommt alles, wie
+   * aus der Datenbank. Fiele ein Wochenfilter weg, käme das Archiv mit.
+   */
+  const wochenMit = <T,>(eintraege: Array<{ start: string; data: T }>) => {
+    if (fremd) return []
+    const genau = filterWert(path, 'start')
+    const ab = filterWert(path, 'start', 'gte')
+    return eintraege.filter((w) => (genau === null || w.start === genau) && (ab === null || w.start >= ab))
+  }
   if (path.startsWith('fs_weeks')) {
-    const start = filterWert(path, 'start')
-    return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: fsWoche }] : [])
+    gelesen.push(path)
+    return jsonRes(wochenMit([{ start: ARCHIV, data: [] }, { start: WOCHE, data: fsWoche }]))
   }
   if (path.startsWith('weeks')) {
-    const start = filterWert(path, 'start')
-    return jsonRes(start === WOCHE && !fremd ? [{ start: WOCHE, data: woche }] : [])
+    gelesen.push(path)
+    return jsonRes(wochenMit([{ start: ARCHIV, data: frischeWoche() }, { start: WOCHE, data: woche }]))
   }
   if (path.startsWith('reminder_log')) {
     // Art und Tag werden ausgewertet: Die Sperre gilt je Tag, nicht für immer.
@@ -388,6 +400,56 @@ describe('Plan senden: jede eingeteilte Person erfährt von ihrer Aufgabe', () =
   it('und ein Push geht an die Geräte des Empfängers', async () => {
     await plan()
     expect(sentPush.map((p) => p.endpoint)).toEqual(['https://push.test/anna'])
+  })
+})
+
+/*
+ * **Die Zahl am App-Symbol** (T184): Der Push bringt mit, wie viele Zuteilungen
+ * der Empfänger noch beantworten muss — der Service Worker setzt sie, auch wenn
+ * die App zu ist. Gezählt wird alles Offene der Person, nicht nur, was diese
+ * Nachricht meldet.
+ */
+describe('Die Zahl am App-Symbol (T184)', () => {
+  const zahlAn = (endpunkt: string) =>
+    (JSON.parse(sentPush.find((p) => p.endpoint === endpunkt)!.payload) as { zahl?: number }).zahl
+
+  it('„Plan senden" bringt sie mit — Annas eine offene Zuteilung', async () => {
+    await plan()
+    expect(zahlAn('https://push.test/anna')).toBe(1)
+  })
+
+  it('zwei offene Zuteilungen — zwei', async () => {
+    const w = frischeWoche() as { mid: { sections: { items: unknown[] }[] } }
+    w.mid.sections[0]!.items.push(punkt('i3', 'Gebet', 'Anna Berg', 'p-anna'))
+    woche = w
+    await plan()
+    expect(zahlAn('https://push.test/anna')).toBe(2)
+  })
+
+  it('Gegenprobe: Was sie schon zugesagt hat, zählt nicht mit', async () => {
+    const w = frischeWoche() as { mid: { sections: { items: unknown[] }[] } }
+    w.mid.sections[0]!.items.push(punkt('i3', 'Gebet', 'Anna Berg', 'p-anna'))
+    woche = w
+    confirmations = [{ task_key: `${WOCHE}|mid|part|i3|0`, status: 'bestätigt' }]
+    await plan()
+    expect(zahlAn('https://push.test/anna')).toBe(1)
+  })
+
+  it('gezählt wird mit dem Kalendertag des Planers, wie in der App — nicht mit dem UTC-Tag des Servers', async () => {
+    // Mittwoch, 9. September, 00:30 in Deutschland — beim Server noch Dienstag.
+    vi.setSystemTime(new Date('2026-09-08T22:30:00Z'))
+    const w = frischeWoche() as { we: { sections: unknown[] } }
+    w.we.sections = [{ label: 'WACHTTURM-STUDIUM', items: [punkt('i-wt', 'Leser', 'Anna Berg', 'p-anna')] }]
+    woche = w
+    await ruf({ action: 'plan', weekStart: WOCHE, heute: '2026-09-09' })
+    // Die Bibellesung vom Dienstag ist für Anna vorbei, der Sonntag nicht.
+    expect(zahlAn('https://push.test/anna')).toBe(1)
+  })
+
+  it('ohne Push-Abo wird nicht gezählt — keine Zahl erreicht ihn', async () => {
+    abos = []
+    await plan()
+    expect(gelesen.filter((p) => p.includes('start=gte.'))).toEqual([])
   })
 })
 
@@ -531,7 +593,7 @@ describe('Eine ausgefallene Zusammenkunft wird nicht gemeldet (T30)', () => {
 /* ---- Wochenfilter -------------------------------------------------------- */
 
 /**
- * **Ein Druck holt eine Woche, nicht das ganze Archiv.**
+ * **Ein Druck holt die Woche, nie das ganze Archiv.**
  *
  * `confirmations` und `assignment_log` wurden hier ganz gelesen. Beide wachsen
  * mit jeder geplanten Woche (gut 35 Plätze, und das Tagebuch wird nie
@@ -543,6 +605,11 @@ describe('Eine ausgefallene Zusammenkunft wird nicht gemeldet (T30)', () => {
  * gilt ein längst bestätigter Platz als unbestätigt und die Nachricht geht ein
  * zweites Mal hinaus. Die Treffpunkte hängen daran besonders, weil ihr
  * Schlüssel als einziger **nicht** mit dem Montag beginnt (`fs|<Montag>|…`).
+ *
+ * Seit der Zahl am App-Symbol (T184) liest der Versand die Zusagen ein zweites
+ * Mal: die aller **künftigen** Wochen ab dem Montag dieser Woche, je Woche für
+ * sich (`appZahlenLaden`) — auch das nie das Archiv. Die Attrappe führt dafür
+ * eine Woche davor und gibt sie heraus, sobald ein Wochenfilter fehlt.
  */
 describe('Plan senden liest nur die Woche, die es sendet', () => {
   const ANDERE = '2026-09-14' // die Woche danach
@@ -557,10 +624,23 @@ describe('Plan senden liest nur die Woche, die es sendet', () => {
         expect(likeMuster(pfad, 'task_key'), `ohne Wochenfilter: ${pfad}`).toHaveLength(1)
       }
       // Und zusammen decken sie **beide** Schlüsselformen ab (T66): der Montag
-      // vorn für die Zusammenkünfte, `fs|` davor für die Treffpunkte.
-      const muster = pfade.flatMap((p) => likeMuster(p, 'task_key')).sort()
+      // vorn für die Zusammenkünfte, `fs|` davor für die Treffpunkte. Die Zahl
+      // am Symbol fragt hier dieselbe Woche noch einmal — jedes Muster zählt einmal.
+      const muster = [...new Set(pfade.flatMap((p) => likeMuster(p, 'task_key')))].sort()
       expect(muster, tabelle).toEqual([`${WOCHE}|*`, `fs|${WOCHE}|*`].sort())
     }
+  })
+
+  it('auch die Zahl am App-Symbol liest nie das Archiv — nur Wochen ab diesem Montag', async () => {
+    await plan()
+    const wochen = gelesen.filter((p) => /^(fs_)?weeks\?/.test(p))
+    // Die Gegenprobe zuerst: Die Zahl hat überhaupt Wochen gelesen.
+    expect(wochen.some((p) => p.includes('start=gte.'))).toBe(true)
+    for (const pfad of wochen) {
+      expect(filterWert(pfad, 'start') ?? filterWert(pfad, 'start', 'gte'), `ohne Wochenfilter: ${pfad}`).not.toBeNull()
+    }
+    const zusagen = gelesen.filter((p) => p.startsWith('confirmations')).flatMap((p) => likeMuster(p, 'task_key'))
+    expect(zusagen.filter((m) => m.includes(ARCHIV))).toEqual([])
   })
 
   it('eine Bestätigung der Nachbarwoche hält niemanden zurück', async () => {

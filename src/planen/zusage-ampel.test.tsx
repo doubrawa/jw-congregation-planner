@@ -183,7 +183,7 @@ describe('Die Ampel zeigt an allen Plätzen, was zugesagt ist', () => {
   it('sagt Anna das Mikrofon ab, wird genau dieser Platz rot', () => {
     let s = annaBestaetigtAlles(stand())
     const mikrofon = annasAufgaben(s).find((id) => id.includes('|helper|'))!
-    s = reducer(s, { type: 'declineTask', id: mikrofon })
+    s = reducer(s, { type: 'declineTask', ids: [mikrofon] })
     const c = zeige(s)
     expect(stufenVon(c, 'Anna Beispiel')).toEqual(['is-bestaetigt', 'is-bestaetigt', 'is-bestaetigt', 'is-verhindert'])
   })

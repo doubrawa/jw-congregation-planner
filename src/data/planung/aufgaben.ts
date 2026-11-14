@@ -125,14 +125,14 @@ export function deriveSubstituteReqs(
  *
  * `visit` bekommt den Platz selbst (Name, Id, Rolle): Wem er gehört,
  * entscheidet der Aufrufer mit `gehoertZuKennung` — nicht aus Name und Id
- * einzeln nachgebaut. Wer mehr wissen muss — welche Zusammenkunft, welche
- * Platzsorte —, findet es in `wo`.
+ * einzeln nachgebaut. Wer mehr wissen muss — welche Woche, welche
+ * Zusammenkunft, welche Platzsorte —, findet es in `wo`.
  */
 export function eachAssignedSlot(
   weeks: Week[],
   services: readonly Service[],
   zeiten: MeetingTimes,
-  visit: (slot: SlotAssignment, key: string, task: () => MyTask, wo: { tab: MeetingKey; platz: Platz }) => void,
+  visit: (slot: SlotAssignment, key: string, task: () => MyTask, wo: { wi: number; tab: MeetingKey; platz: Platz }) => void,
 ): void {
   weeks.forEach((week, wi) => {
     for (const tab of MEETING_TABS) {
@@ -181,7 +181,7 @@ export function eachAssignedSlot(
             ...(rolle ? { rolle } : {}),
             s89: buildS89ForSlot(weeks, sel, zeiten),
           }
-        }, { tab, platz })
+        }, { wi, tab, platz })
       }
     }
   })
