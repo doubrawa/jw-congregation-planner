@@ -11490,14 +11490,17 @@ niedrige, alle behoben (Betreiber: „Ja, alle vier"), in `5ba7d865`:
    (Migration `20261114110000_gesuch-beenden.sql`) — „Ersatz gesucht" blieb
    stehen, wenn der Planer einen abgesagten Hilfsdienst neu besetzte.
 
-**Offen, zur Entscheidung (Nr. 5, T180 × T184):** Ein Push erreicht die offene
-App nicht — der Worker zeigt die Meldung und setzt die Zahl am App-Symbol,
-die App lädt nicht nach, und liegt das letzte Laden keine fünf Minuten zurück,
-auch die Rückkehr nicht. Symbol und „Meine Aufgaben" laufen dann auseinander
-(das Symbol sagt 3, die Liste 2; sagt man zu, setzt die App 1). Vorschlag: Der
-Worker meldet jedem offenen Fenster den Push (`postMessage`, der Weg steht für
-den Push-Tipp schon), und die App lädt bei der nächsten Rückkehr ohne Frist
-nach. Das ist kein Live-Abgleich — die Entscheidung zu T180 bleibt.
+**Nr. 5 (T180 × T184), umgesetzt am selben Tag** (Betreiber: „mach 1 und 2"):
+Ein Push erreichte die offene App nicht — der Worker zeigte die Meldung und
+setzte die Zahl am App-Symbol, die App lud nicht nach, und lag das letzte
+Laden keine fünf Minuten zurück, auch die Rückkehr nicht. Symbol und „Meine
+Aufgaben" liefen dann auseinander (das Symbol sagte 3, die Liste 2; sagte man
+zu, setzte die App 1). Jetzt meldet der Worker jeden Push den offenen Fenstern
+(`fensternMelden` in `sw.js`), und kam einer seit dem letzten Laden, gilt die
+Frist nicht (`useNachladenBeiRueckkehr`): Ist die App sichtbar, lädt sie
+gleich, sonst bei der Rückkehr — nie unter einem offenen Blatt oder Feld. Kein
+Live-Abgleich, kein Takt; die Entscheidung zu T180 bleibt. Beide Handbücher
+sagen es.
 
 **Übersetzungen** (`cabe866c`): alle 32 seit `ad5e5464` neuen oder geänderten
 Schlüssel in allen zwölf Sprachen einzeln gelesen, dazu der Push-Titel der
@@ -11525,10 +11528,42 @@ Gepushte, sieben Befunde, keiner kritisch.
   Round-Trip, der Aufruf geht ohne Warten hinaus) und eine geteilte Liste für
   `in.(…)`-Filter (sie stünde in `_shared/rest.ts` und rollte damit alle
   Functions neu aus).
-- **Zur Entscheidung:** Ob gemeldet ist, liest die Sperre an Zeilen in den
-  Glocken ab — die kann jeder Planer löschen („Alle löschen"), und danach geht
-  derselbe Push wieder hinaus. Fest wäre ein Vermerk an der Absage selbst
-  (eine Spalte `absagen.gemeldet_am`, gesetzt von der Function).
+- **Umgesetzt am selben Tag** (Betreiber: „mach 1 und 2"): Ob gemeldet ist,
+  las die Sperre an Zeilen in den Glocken ab — die kann jeder Planer löschen
+  („Alle löschen"), und danach ging derselbe Push wieder hinaus. Jetzt steht
+  es an der Absage selbst: `absagen.gemeldet_am` (Migration
+  `20261114120000_absage-gemeldet.sql`), gesetzt von `substitute` gleich nach
+  den Zeilen in den Glocken, geleert vom Trigger, wo eine neue Absage beginnt.
+  Ohne Vermerk — Absagen von davor, ein gescheiterter Vermerk, eine Zusage,
+  die noch unterwegs ist — fragt die Function wie bisher die Glocken. Eine
+  Sicherung von davor trägt beim Zurückspielen `null` („unbekannt",
+  `SEITHER`).
+
+**Review der Umsetzung von Nr. 5 und `gemeldet_am`** (`/simplify`, dann
+`/code-review max`, Winkel nacheinander; Betreiber: „ja"):
+
+- **Behoben:** Datumsmarken in neuen Kommentaren und Probentiteln (neun
+  Stellen); Vermerk und Pushes gehen jetzt gleichzeitig hinaus statt
+  nacheinander. Der Kommentar an `alsGemeldetVermerken` versprach einen
+  Rückfall auf die Glocken, den es nach einem Überholen nicht gibt. Zwei
+  Lücken der Proben sind geschlossen: dass der Vermerk auch dann gilt, wenn
+  sich nur die Glocken nicht lesen lassen, und dass der Vermerk die
+  Versammlung im Filter trägt. Drei Sabotagen schlagen an.
+- **Hingenommen, alle selten:**
+  - Überholt der Aufruf die Zusage, fehlt der Vermerk auf Dauer, und ein
+    weiterer Aufruf meldete noch einmal. Steht dabei vom selben Platz noch
+    eine ältere, gemeldete Absage derselben Person, geht die neue gar nicht
+    hinaus.
+  - Zwei gleichzeitige Aufrufe melden beide. Die Wurzel wäre ein bedingtes
+    PATCH (`gemeldet_am=is.null`).
+  - Über die Glocken erkannte Absagen von vor dem Vermerk bekommen keinen.
+  - Ein Push während eines laufenden Ladens startet ein zweites. Endet das
+    ältere zuletzt, fehlt die Änderung bis zur nächsten Rückkehr nach der
+    Frist. Auch ein Push während des ersten Ladens wird erst bei der Rückkehr
+    nachgeholt.
+  - Der Tipp auf einen Push lädt oft zweimal (Rückkehr und Push-Tipp). Das
+    gab es schon, wenn das letzte Laden fünf Minuten zurücklag.
+  - Scheitert das Laden nach einem Push, gilt der Push als erledigt.
 
 **Ausgerollt** am 14. November (`f5e058a8`, Betreiber: „commit und push"),
 zusammen mit `cabe866c` und `5ba7d865`: Der Lauf der CI war grün — die zwei
@@ -12110,8 +12145,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | **T175** | Push der Absage am echten Gerät ansehen (Betreiber) | T175–T179 sind am 13. November ausgerollt (`114c485d`), die Sammel-Absage am 14. November (`c330ddc2`). Was bleibt: einmal absagen und den Push beim Planer ansehen, dazu einmal eine Abwesenheit mit zwei Aufgaben eintragen (ein Push für beide) — die Entwicklerseite hat keine Datenbank, und an echte Geräte geht nichts ohne den Betreiber. |
 | **T180** | Nachladen bei der Rückkehr am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`757b7098`): Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. App im Hintergrund lassen, nach über fünf Minuten zurück — was ein Planer inzwischen geändert hat, ist ohne Neustart da. Die Entwicklerseite zeigt es nicht (kein Konto, keine Datenbank). |
 | **T184** | Zahl am App-Symbol am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`c330ddc2`). Android (je nach Startbildschirm Zahl oder Punkt) und iPhone (nur mit erlaubten Mitteilungen) — die Entwicklerseite zeigt kein Symbol. |
-| **Review 14.11., Nr. 5** | Push erreicht die offene App nicht — Entscheidung (Betreiber) | Gefunden im vierten Gesamt-Review (Abschnitt vom 14. November): Nach einem Push laufen Zahl am App-Symbol und „Meine Aufgaben" bis zur nächsten Rückkehr nach Ablauf der fünf Minuten auseinander. Vorschlag: Der Worker meldet den Push jedem offenen Fenster, die App lädt bei der Rückkehr ohne Frist nach. |
-| **Absage-Sperre** | Vermerk „gemeldet" an der Absage statt in den Glocken — Entscheidung (Betreiber) | Seit dem 14. November meldet `substitute` eine Absage einmal; ob schon gemeldet ist, liest es an den Glocken-Zeilen ab. Leeren alle, die planen, ihre Glocke, geht derselbe Push wieder hinaus. Fest wäre `absagen.gemeldet_am` (neue Spalte, Migration, in der Sicherung `SEITHER`). |
+| **Review 14.11., Nr. 5 und Absage-Sperre** | ausrollen, dann am echten Gerät ansehen (Betreiber) | Am 14. November umgesetzt (Abschnitt vom 14. November): Ein Push hebt die Frist des Nachladens auf, und ob eine Absage gemeldet ist, steht an ihr (`absagen.gemeldet_am`). Am Gerät: App offen lassen, sich etwas zuteilen lassen — Liste und Zahl am Symbol stimmen gleich; eine Absage zweimal melden lassen — ein Push. |
 | **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
 | **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan liest der Betreiber zum Livegang ein, nach dem Zurücksetzen (XML, Planung › Vortragsplan): Das Zurücksetzen vom 8. November hat `vortraege` geleert, die Sicherung vor der Beta hat keinen, und was während der Beta eingelesen wird, nimmt das Zurücksetzen wieder mit |

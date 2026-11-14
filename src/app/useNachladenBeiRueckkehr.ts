@@ -45,6 +45,12 @@ function tippt(): boolean {
  *   am Computer zurück in den Tab), oder das Fenster bekommt den Fokus zurück
  *   (am Computer aus einem anderen Programm) — und das letzte Laden begann vor
  *   mindestens `NACHLADEN_NACH_MS`.
+ * - **Nach einem Push ohne Frist:** Der Worker meldet jeden
+ *   Push den offenen Fenstern (`fensternMelden` in `sw.js`). Kam einer seit dem
+ *   Beginn des letzten Ladens, hat sich etwas geändert, und die Frist gilt
+ *   nicht — sonst zeigte das Symbol eine Zahl, die „Meine Aufgaben" nicht
+ *   kennt. Ist die App beim Push sichtbar, lädt sie gleich; sonst bei der
+ *   Rückkehr. Ein Takt ist das nicht: Es lädt nur, wo ohnehin ein Push kam.
  * - **Wie:** still (`loadAndHydrate`): kein Startbild, das Blatt beim Öffnen
  *   kommt nicht noch einmal, eine selbst gewählte Woche bleibt. Scheitert es,
  *   sagt es nichts (`ohneHinweis`) — die nächste Rückkehr versucht es wieder.
@@ -66,15 +72,13 @@ export function useNachladenBeiRueckkehr(): void {
     if (!store) return
     /** Eine Rückkehr kam, als ein Blatt offen war oder ein Feld den Fokus hatte. */
     let faellig = false
+    /** Wann zuletzt ein Push kam, den der Worker gemeldet hat — 0: keiner. */
+    let pushUm = 0
     const versuchen = (): void => {
       const { userId, dataStatus, staleAt } = store.holen()
-      if (
-        !userId ||
-        dataStatus !== 'ready' ||
-        staleAt !== null ||
-        navigator.onLine === false ||
-        Date.now() - letztesLadenBegann() < NACHLADEN_NACH_MS
-      ) {
+      const begann = letztesLadenBegann()
+      const neuerStand = pushUm > begann || Date.now() - begann >= NACHLADEN_NACH_MS
+      if (!userId || dataStatus !== 'ready' || staleAt !== null || navigator.onLine === false || !neuerStand) {
         faellig = false
         return
       }
@@ -92,14 +96,24 @@ export function useNachladenBeiRueckkehr(): void {
     const nachholen = (): void => {
       if (faellig) setTimeout(versuchen, 0)
     }
+    const nachPush = (e: MessageEvent): void => {
+      if ((e.data as { type?: unknown } | null)?.type !== 'push') return
+      pushUm = Date.now()
+      zurueck()
+    }
+    const sw = navigator.serviceWorker
     document.addEventListener('visibilitychange', zurueck)
     window.addEventListener('focus', zurueck)
     document.addEventListener('focusout', nachholen)
+    sw?.addEventListener('message', nachPush)
+    // Ohne das stellt der Browser keine Nachricht des Workers zu (siehe `AppShell`).
+    sw?.startMessages?.()
     const abmelden = nachDemSchliessen(nachholen)
     return () => {
       document.removeEventListener('visibilitychange', zurueck)
       window.removeEventListener('focus', zurueck)
       document.removeEventListener('focusout', nachholen)
+      sw?.removeEventListener('message', nachPush)
       abmelden()
     }
   }, [store, dispatch])

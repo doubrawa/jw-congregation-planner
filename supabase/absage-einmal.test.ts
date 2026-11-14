@@ -78,6 +78,19 @@ async function absagenVon(person: string): Promise<Record<string, string>> {
 const zurueckdatieren = (person: string, platz: string) =>
   db.query(`update public.absagen set created_at = $3 where person_id = $1 and task_key = $2`, [person, platz, LANGE_HER])
 
+/** Die Absage als gemeldet vermerken — als Service-Role, wie die Function (`alsGemeldetVermerken`). */
+const alsGemeldet = (person: string, platz: string) =>
+  db.query(`update public.absagen set gemeldet_am = now() where person_id = $1 and task_key = $2`, [person, platz])
+
+/** Ist die Absage als gemeldet vermerkt? `undefined`: Es gibt sie nicht. */
+async function gemeldet(person: string, platz: string): Promise<boolean | undefined> {
+  const { rows } = await db.query(`select gemeldet_am is not null as ja from public.absagen where person_id = $1 and task_key = $2`, [
+    person,
+    platz,
+  ])
+  return rows[0] === undefined ? undefined : Boolean(rows[0].ja)
+}
+
 /** Eine Zeile in die Glocke — als Service-Role, wie die Function. */
 const glocke = (konto: string, titel: string, platz: string) =>
   db.query(
@@ -155,6 +168,53 @@ describe('Seit wann eine Absage gilt (`absagen.created_at`)', () => {
     // Später ist der Platz wieder bei ihr, und sie sagt wieder ab.
     await zusage(ANNA_KONTO, LESUNG, 'verhindert')
     expect((await absagenVon(ANNA))[LESUNG]).not.toBe(LANGE_HER)
+  })
+})
+
+/*
+ * **Ob gemeldet, steht an der Absage** (`absagen.gemeldet_am`): Die Function
+ * vermerkt es nach dem Melden. Eine neue Absage muss
+ * ungemeldet beginnen — sonst ginge sie nie hinaus; dieselbe noch einmal
+ * geschrieben muss es bleiben — sonst ginge sie zweimal hinaus.
+ */
+describe('Gemeldet (`absagen.gemeldet_am`)', () => {
+  it('eine neue Absage beginnt ungemeldet', async () => {
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    expect(await gemeldet(ANNA, LESUNG)).toBe(false)
+  })
+
+  it('dieselbe Absage noch einmal geschrieben bleibt gemeldet', async () => {
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    await alsGemeldet(ANNA, LESUNG)
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    expect(await gemeldet(ANNA, LESUNG)).toBe(true)
+  })
+
+  it('zurückgenommen und neu abgesagt ist wieder ungemeldet', async () => {
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    await alsGemeldet(ANNA, LESUNG)
+    await zusage(ANNA_KONTO, LESUNG, 'bestätigt')
+    expect(await gemeldet(ANNA, LESUNG)).toBeUndefined()
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    expect(await gemeldet(ANNA, LESUNG)).toBe(false)
+  })
+
+  it('der Platz war dazwischen bei einem anderen: Die neue Absage ist ungemeldet, obwohl die alte Zeile noch steht', async () => {
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    await alsGemeldet(ANNA, LESUNG)
+    await als(PLANER, () => db.query(`delete from public.confirmations where task_key = $1`, [LESUNG]))
+    expect(await gemeldet(ANNA, LESUNG)).toBe(true)
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    expect(await gemeldet(ANNA, LESUNG)).toBe(false)
+  })
+
+  it('kein Konto setzt es selbst — auch der Planer nicht', async () => {
+    await zusage(ANNA_KONTO, LESUNG, 'verhindert')
+    const { rows } = await als(PLANER, () =>
+      db.query(`update public.absagen set gemeldet_am = now() where task_key = $1 returning 1`, [LESUNG]),
+    )
+    expect(rows).toHaveLength(0)
+    expect(await gemeldet(ANNA, LESUNG)).toBe(false)
   })
 })
 

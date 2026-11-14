@@ -370,6 +370,20 @@ describe('Service Worker: Benachrichtigungen (V10)', () => {
     expect(wirft.meldungen).toHaveLength(1)
   })
 
+  it('ein offenes Fenster erfährt vom Push — die App lädt dann ohne Frist nach', async () => {
+    const sw = ladeServiceWorker({ fenster: [{}, {}] })
+    await sw.feuere('push', push({ title: 'Neue Zuteilung', zahl: 3 }))
+    expect(sw.gesendet).toEqual([{ type: 'push' }, { type: 'push' }])
+    expect(sw.meldungen).toHaveLength(1)
+  })
+
+  it('…und ohne offenes Fenster geht die Meldung wie bisher', async () => {
+    const sw = ladeServiceWorker()
+    await sw.feuere('push', push({ title: 'Neue Zuteilung', zahl: 3 }))
+    expect(sw.gesendet).toEqual([])
+    expect(sw.meldungen).toHaveLength(1)
+  })
+
   it('in der Statusleiste stehen die Sitzreihen, kein weißer Klotz', async () => {
     /*
       Android liest vom Badge nur den Alphakanal und färbt jede deckende Stelle

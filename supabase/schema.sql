@@ -481,7 +481,13 @@ create table if not exists public.absagen (
   person_id       uuid not null,
   task_key        text not null,
   woche           date not null,
+  -- Seit wann die jetzige Absage gilt (`absage_vermerken`).
   created_at      timestamptz not null default now(),
+  -- Wann die Function `substitute` (Aufruf 'absage') sie denen gemeldet hat,
+  -- die planen — NULL: noch nicht, oder unbekannt (älter als die Spalte). Daran
+  -- erkennt sie eine schon gemeldete Absage, auch wenn die Zeilen in den
+  -- Glocken längst gelöscht sind. Eine neue Absage beginnt ungemeldet.
+  gemeldet_am     timestamptz,
   primary key (congregation_id, task_key, person_id),
   -- Geht die Person, gehen ihre Absagen mit: Gezählt werden sie für sie.
   constraint absagen_person_fk foreign key (person_id, congregation_id)
@@ -2439,7 +2445,9 @@ revoke all on function public.woche_im_schluessel(text) from anon, authenticated
 -- denselben Push noch einmal. Eine neue Absage setzt die Zeit neu, auch wenn
 -- die Zeile noch von einer früheren steht (der Platz war dazwischen bei einem
 -- anderen und ist wieder bei ihr); dieselbe Absage noch einmal geschrieben —
--- von der App und einer älteren App zugleich — lässt sie stehen.
+-- von der App und einer älteren App zugleich — lässt sie stehen. Mit der Zeit
+-- geht der Vermerk der Function (`gemeldet_am`): Die neue Absage ist noch
+-- niemandem gemeldet.
 create or replace function public.absage_vermerken()
 returns trigger
 language plpgsql
@@ -2460,7 +2468,7 @@ begin
     insert into public.absagen (congregation_id, person_id, task_key, woche)
     values (new.congregation_id, person, new.task_key, woche::date)
     on conflict (congregation_id, task_key, person_id) do update
-      set created_at = now()
+      set created_at = now(), gemeldet_am = null
       where not (tg_op = 'UPDATE' and old.status = 'verhindert');
   elsif tg_op = 'UPDATE' and old.status = 'verhindert' then
     delete from public.absagen

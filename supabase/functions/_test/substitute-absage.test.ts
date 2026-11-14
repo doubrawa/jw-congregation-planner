@@ -146,10 +146,17 @@ let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
 let uhr: number
 /** Was die Datenbank in der Glocke führt — die geschriebenen Zeilen mit ihrer Zeit. */
 let glockeMitZeit: (Glockenzeile & { created_at: string })[]
-/** `absagen` (Trigger `absage_vermerken`): seit wann die Absage einer Person gilt. */
-let vermerkt: { task_key: string; person_id: string; created_at: string }[]
+/**
+ * `absagen` (Trigger `absage_vermerken`): seit wann die Absage einer Person
+ * gilt — und `gemeldet_am`, sobald die Function sie gemeldet hat.
+ */
+let vermerkt: { task_key: string; person_id: string; created_at: string; gemeldet_am?: string | null }[]
 /** `absagen` und die Glocke lassen sich nicht lesen. */
 let lesenKaputt: boolean
+/** Nur die Glocke lässt sich nicht lesen — `absagen` schon. */
+let glockeUnlesbar: boolean
+/** Der Vermerk „gemeldet" lässt sich nicht schreiben (Netz weg). */
+let vermerkenKaputt: boolean
 
 /** Die Werte eines `spalte=in.(…)`-Filters, dekodiert und ohne Anführungszeichen — `null` ohne Filter. */
 function inWerte(path: string, spalte: string): string[] | null {
@@ -210,7 +217,7 @@ const rest: Rest = {
       const keys = inWerte(path, 'task_key')
       rows = keys ? vermerkt.filter((a) => a.person_id === filterWert(path, 'person_id') && keys.includes(a.task_key)) : []
     } else if (path.startsWith('notifications')) {
-      if (lesenKaputt) throw new Error('notifications nicht lesbar')
+      if (lesenKaputt || glockeUnlesbar) throw new Error('notifications nicht lesbar')
       const keys = inWerte(path, 'task_key')
       const ab = filterWert(path, 'created_at', 'gte')
       rows = keys
@@ -227,8 +234,15 @@ const rest: Rest = {
   async upsert(path): Promise<boolean> {
     throw new Error(`absage schreibt nicht über upsert: ${path}`)
   },
-  async send(method, path): Promise<void> {
-    throw new Error(`absage schreibt nicht über send: ${method} ${path}`)
+  async send(method, path, body): Promise<void> {
+    // Nur den Vermerk an der Absage — und nur mit Versammlung, Person und Plätzen im Filter.
+    if (method !== 'PATCH' || !path.startsWith('absagen')) throw new Error(`absage schreibt nicht über send: ${method} ${path}`)
+    if (vermerkenKaputt) throw new Error('absagen nicht beschreibbar')
+    if (filterWert(path, 'congregation_id') !== CONG) throw new Error(`Vermerk ohne die eigene Versammlung: ${path}`)
+    const keys = inWerte(path, 'task_key') ?? []
+    for (const a of vermerkt) {
+      if (a.person_id === filterWert(path, 'person_id') && keys.includes(a.task_key)) Object.assign(a, body)
+    }
   },
   async patchZeilen(path): Promise<null> {
     throw new Error(`absage ändert keine Zeilen: ${path}`)
@@ -263,6 +277,8 @@ beforeEach(() => {
   glockeMitZeit = []
   vermerkt = []
   lesenKaputt = false
+  glockeUnlesbar = false
+  vermerkenKaputt = false
 })
 
 const absagenAlle = (taskKeys: string[], wer = U_ICH, nachricht = '', heute = HEUTE) =>
@@ -669,6 +685,63 @@ describe('absage: jede Absage geht einmal hinaus', () => {
     expect(abfragen.find((p) => p.startsWith('absagen'))).toContain('person_id=eq.p-ich')
   })
 
+  /*
+   * **Der Vermerk an der Absage** (`absagen.gemeldet_am`): Die Zeilen in den
+   * Glocken kann jeder Planer löschen, und nach acht Wochen räumt sie die
+   * Aufbewahrung. Hinge „schon gemeldet" allein an ihnen, ginge derselbe Push
+   * danach wieder hinaus.
+   */
+  it('haben alle, die planen, ihre Glocke geleert, geht dieselbe Absage trotzdem nicht noch einmal hinaus', async () => {
+    abgesagtVor(1)
+    await absagen(K_LESUNG)
+    expect(pushes).toHaveLength(1)
+    // „Alle löschen" bei Admin und Planer.
+    glockeMitZeit = []
+    uhr += 60 * 60e3
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({
+      status: 200,
+      body: { ok: true, gemeldet: 0, schonGemeldet: [K_LESUNG] },
+    })
+    expect(pushes).toHaveLength(1)
+  })
+
+  it('vermerkt wird an der eigenen Absage, zum Zeitpunkt der Meldung — nicht an der eines anderen am selben Platz', async () => {
+    abgesagtVor(1)
+    vermerkt.push({ task_key: K_LESUNG, person_id: 'p-x', created_at: vorMinuten(30) })
+    await absagen(K_LESUNG)
+    expect(vermerkt.find((a) => a.person_id === 'p-ich')?.gemeldet_am).toBe(new Date(uhr).toISOString())
+    expect(vermerkt.find((a) => a.person_id === 'p-x')?.gemeldet_am).toBeUndefined()
+  })
+
+  it('Gegenprobe: ohne Vermerk der Function (gemeldet, bevor es ihn gab) zählt weiter die Glocke seit Beginn der Absage', async () => {
+    abgesagtVor(30)
+    glockeMitZeit.push({
+      congregation_id: CONG, user_id: U_ADMIN, type: 'verhindert', title: TITEL_ABGESAGT,
+      body: `Bibellesung — ${ICH}`, task_key: K_LESUNG, created_at: vorMinuten(29),
+    })
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({
+      status: 200,
+      body: { ok: true, gemeldet: 0, schonGemeldet: [K_LESUNG] },
+    })
+    expect(pushes).toHaveLength(0)
+  })
+
+  it('scheitert der Vermerk, ist die Absage trotzdem gemeldet — und der nächste Aufruf findet sie in der Glocke', async () => {
+    abgesagtVor(1)
+    vermerkenKaputt = true
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      expect(await antwort(await absagen(K_LESUNG))).toEqual({ status: 200, body: { ok: true, gemeldet: 2 } })
+      expect(fehler).toHaveBeenCalledWith('substitute/absage: als gemeldet vermerken', 'absagen nicht beschreibbar')
+    } finally {
+      fehler.mockRestore()
+    }
+    expect(vermerkt[0]?.gemeldet_am).toBeUndefined()
+    uhr += 60e3
+    await absagen(K_LESUNG)
+    expect(pushes).toHaveLength(1)
+  })
+
   it('lässt sich nicht lesen, ob schon gemeldet ist, wird gemeldet — eine Meldung zu viel statt einer, die fehlt', async () => {
     abgesagtVor(1)
     await absagen(K_LESUNG)
@@ -682,5 +755,24 @@ describe('absage: jede Absage geht einmal hinaus', () => {
     } finally {
       fehler.mockRestore()
     }
+  })
+
+  it('lässt sich nur die Glocke nicht lesen, gilt der Vermerk an der Absage trotzdem — gemeldet wird nur, was nicht feststeht', async () => {
+    abgesagtVor(2)
+    await absagen(K_LESUNG)
+    abgesagtVor(0, K_LESUNG_2)
+    glockeUnlesbar = true
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      uhr += 60e3
+      expect(await antwort(await absagenAlle([K_LESUNG, K_LESUNG_2]))).toEqual({
+        status: 200,
+        body: { ok: true, gemeldet: 2, schonGemeldet: [K_LESUNG] },
+      })
+      expect(fehler).toHaveBeenCalledWith('substitute/absage: schon gemeldet?', 'notifications nicht lesbar')
+    } finally {
+      fehler.mockRestore()
+    }
+    expect(glocken.filter((z) => z.task_key === K_LESUNG)).toHaveLength(2)
   })
 })

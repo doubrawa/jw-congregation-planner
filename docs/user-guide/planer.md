@@ -199,9 +199,11 @@ dabei – du wirst beim Hin- und Herwechseln nicht wieder umgesetzt.
 
 Liegt die App schon offen im Hintergrund oder in einem anderen Tab, holt sie
 beim Zurückkehren von selbst, was die anderen Planer inzwischen geändert haben,
-wenn sie zuletzt vor fünf Minuten oder länger geladen hat. Was du selbst
-gewählt hast, bleibt dabei stehen. Ist gerade ein Blatt offen oder schreibst
-du in ein Feld, wartet sie damit, bis du fertig bist.
+wenn sie zuletzt vor fünf Minuten oder länger geladen hat. Kam inzwischen eine
+Push-Nachricht – etwa eine Absage –, holt sie es gleich beim Zurückkehren, und
+ist die App dabei gerade offen, sofort. Was du selbst gewählt hast, bleibt
+dabei stehen. Ist gerade ein Blatt offen oder schreibst du in ein Feld, wartet
+sie damit, bis du fertig bist.
 
 ![Planen‑Ansicht](screenshots/planer-planen-woche.png)
 

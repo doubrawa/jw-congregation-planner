@@ -209,6 +209,12 @@ describe('aufHeutigeSpalten — Spalten, die mit gesicherten eine Einheit bilden
     const [a, b] = aufHeutigeSpalten(mit([GRUNDZEIT, { ...GRUNDZEIT, id: 'c2' }])).tabellen.congregations as Array<{ zeiten_ab: unknown[] }>
     expect(a!.zeiten_ab).not.toBe(b!.zeiten_ab)
   })
+
+  it('eine Absage aus einer Sicherung ohne den Vermerk „gemeldet" ist danach „unbekannt" — nicht, was die Beta vermerkt hat', () => {
+    const absage = { congregation_id: C, person_id: P1, task_key: '2026-11-23|mid|part|k3|0', woche: '2026-11-23' }
+    const s = aufHeutigeSpalten({ erstellt: '', tabellen: { absagen: [absage] } })
+    expect(s.tabellen.absagen).toEqual([{ ...absage, gemeldet_am: null }])
+  })
 })
 
 describe('pkFilter', () => {

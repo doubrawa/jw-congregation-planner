@@ -35,6 +35,7 @@
 //  - **Jede Absage einmal** (`schonGemeldet`): Ruft jemand die Function für
 //    einen Platz noch einmal, den sie schon gemeldet hat, geht nichts mehr
 //    hinaus — sonst bekämen alle, die planen, denselben Push beliebig oft.
+//    Was gemeldet ist, steht an der Absage (`absagen.gemeldet_am`).
 //
 // Der Rumpf der Glocke bleibt, wie die App ihn bis dahin selbst baute:
 // „<Aufgabe> — <Name> · <Nachricht>", kanonisch deutsch, der Name und die
@@ -247,30 +248,37 @@ function zeitpunkt(text: string): number | null {
   return Number.isNaN(ms) ? null : ms
 }
 
+/** Der Filter auf die Absagen einer Person zu diesen Plätzen (`absagen`). */
+const absagenFilter = (cong: string, personId: string, keys: readonly string[]): string =>
+  `congregation_id=eq.${wert(cong)}&person_id=eq.${wert(personId)}&task_key=in.${inListe(keys)}`
+
 /**
- * **Welche dieser Absagen schon gemeldet sind** — die Plätze, zu denen seit
- * Beginn der jetzigen Absage eine Zeile „Verhinderung gemeldet" in einer Glocke
- * steht. Ohne diese Frage meldete jeder Aufruf aufs Neue: Ein Mitglied konnte
- * allen, die planen, für seinen Platz denselben Push beliebig oft schicken.
+ * **Welche dieser Absagen schon gemeldet sind.** Ohne diese Frage meldete jeder
+ * Aufruf aufs Neue: Ein Mitglied konnte allen, die planen, für seinen Platz
+ * denselben Push beliebig oft schicken.
  *
- * Seit wann die Absage gilt, vermerkt die Datenbank, sobald die App die Zusage
- * auf „verhindert" setzt (`absagen.created_at`, Trigger `absage_vermerken`).
- * Eine zurückgenommene und neu gegebene Absage ist damit eine neue — und eine
- * Meldung über den Vorgänger am selben Platz liegt vor ihrem Beginn.
+ * **Zuerst der Vermerk an der Absage** (`absagen.gemeldet_am`, gesetzt von
+ * `alsGemeldetVermerken` unten): Er steht, solange die Absage steht — anders
+ * als die Zeilen in den Glocken, die jeder Planer löschen kann und die nach
+ * acht Wochen die Aufbewahrung räumt. Eine neue Absage beginnt ohne ihn
+ * (Trigger `absage_vermerken`); eine zurückgenommene und neu gegebene ist also
+ * wieder zu melden.
  *
- * Ohne Vermerk — die Zusage der App ist noch unterwegs, oder niemand schreibt
- * sie — zählt eine Meldung der letzten `OHNE_VERMERK_MINUTEN`: Die eine App,
+ * **Ohne Vermerk die Glocken:** eine Zeile „Verhinderung gemeldet" seit Beginn
+ * der jetzigen Absage (`absagen.created_at`). Das trifft, was vor dem Vermerk
+ * gemeldet wurde, und eine Meldung, deren Vermerk scheiterte. Fehlt auch die
+ * Absage selbst — die Zusage der App ist noch unterwegs, oder niemand schreibt
+ * sie —, zählt eine Meldung der letzten `OHNE_VERMERK_MINUTEN`: Die eine App,
  * deren Zusage den Aufruf überholt, meldet trotzdem, und wer die Function ohne
  * Zusage ruft, wird gebremst.
  *
- * **Nur Meldungen, die diese Person nennen** (`wer`, der Name als Freitext im
- * Rumpf; Namen sind eindeutig): Der Zusage und diesem Aufruf schreibt die App
- * im selben Augenblick, und überholt der Aufruf sie, fehlt der Vermerk. Dann
- * zählte sonst auch die Absage des Vorgängers, der den Platz eben noch hatte,
- * und die eigene ginge gar nicht hinaus.
+ * **Dort nur Meldungen, die diese Person nennen** (`wer`, der Name als
+ * Freitext im Rumpf; Namen sind eindeutig): Überholt der Aufruf die Zusage,
+ * fehlt der Beginn, und sonst zählte auch die Absage des Vorgängers, der den
+ * Platz eben noch hatte — die eigene ginge gar nicht hinaus.
  *
- * Lässt sich das nicht lesen, wird gemeldet: Eine Meldung zu viel schadet
- * weniger als eine, die fehlt.
+ * Lässt sich etwas nicht lesen, wird gemeldet, was nicht feststeht: Eine
+ * Meldung zu viel schadet weniger als eine, die fehlt.
  */
 async function schonGemeldet(
   rest: Rest,
@@ -279,34 +287,67 @@ async function schonGemeldet(
   keys: readonly string[],
   jetzt: number,
 ): Promise<ReadonlySet<string>> {
-  if (keys.length === 0) return new Set()
+  const schon = new Set<string>()
+  if (keys.length === 0) return schon
   try {
-    const liste = inListe(keys)
-    const vermerkt = await rest.get<{ task_key: string; created_at: string }[]>(
-      `absagen?select=task_key,created_at&congregation_id=eq.${wert(cong)}&person_id=eq.${wert(wer.personId)}&task_key=in.${liste}`,
+    const vermerkt = await rest.get<{ task_key: string; created_at: string; gemeldet_am: string | null }[]>(
+      `absagen?select=task_key,created_at,gemeldet_am&${absagenFilter(cong, wer.personId, keys)}`,
     )
     const seit = new Map<string, number>()
     for (const a of vermerkt) {
+      if (a.gemeldet_am) schon.add(a.task_key)
       const ms = zeitpunkt(a.created_at)
       if (ms !== null) seit.set(a.task_key, ms)
     }
+    const offen = keys.filter((k) => !schon.has(k))
+    if (offen.length === 0) return schon
+
     const ohneVermerk = jetzt - OHNE_VERMERK_MINUTEN * 60e3
     const ab = (key: string): number => seit.get(key) ?? ohneVermerk
-    const frueheste = new Date(Math.min(...keys.map(ab))).toISOString()
+    const frueheste = new Date(Math.min(...offen.map(ab))).toISOString()
     const gemeldet = await rest.get<{ task_key: string; created_at: string; body: string }[]>(
       `notifications?select=task_key,created_at,body&congregation_id=eq.${wert(cong)}&type=eq.verhindert` +
-        `&task_key=in.${liste}&created_at=gte.${wert(frueheste)}`,
+        `&task_key=in.${inListe(offen)}&created_at=gte.${wert(frueheste)}`,
     )
     // Wie der Rumpf sie nennt (`absageMelden` unten): „<Aufgabe> — <Name> · …".
     const genannt = ` — ${alsFreitext(wer.name)}`
-    return new Set(
-      gemeldet
-        .filter((z) => z.body.includes(genannt) && (zeitpunkt(z.created_at) ?? -Infinity) >= ab(z.task_key))
-        .map((z) => z.task_key),
-    )
+    for (const z of gemeldet) {
+      if (z.body.includes(genannt) && (zeitpunkt(z.created_at) ?? -Infinity) >= ab(z.task_key)) schon.add(z.task_key)
+    }
   } catch (err) {
     console.error('substitute/absage: schon gemeldet?', err instanceof Error ? err.message : String(err))
-    return new Set()
+  }
+  return schon
+}
+
+/**
+ * **Die gemeldeten Absagen vermerken** (`absagen.gemeldet_am`) — gleich nach
+ * den Zeilen in den Glocken, denn ab da sind sie gemeldet. Scheitert es, sagt
+ * es nur das Protokoll — gemeldet ist gemeldet, und der nächste Aufruf findet
+ * die Meldung in den Glocken.
+ *
+ * Steht die Absage noch nicht, weil der Aufruf die Zusage der App überholt
+ * hat, trifft es keine Zeile, und der Vermerk fehlt auf Dauer: Die Zeile, die
+ * der Trigger danach anlegt, beginnt nach der Meldung, also zählen auch die
+ * Glocken sie nicht. Ein weiterer Aufruf meldete dieselbe Absage noch einmal.
+ * Das ist hingenommen: Die App schickt die Zusage vor dem Aufruf ab, und sie
+ * ist ein einziger Schreibvorgang. Der Aufruf fragt bis hierher dreimal
+ * nacheinander die Datenbank.
+ */
+async function alsGemeldetVermerken(
+  rest: Rest,
+  cong: string,
+  personId: string,
+  keys: readonly string[],
+  jetzt: number,
+): Promise<void> {
+  if (keys.length === 0) return
+  try {
+    await rest.send('PATCH', `absagen?${absagenFilter(cong, personId, keys)}`, {
+      gemeldet_am: new Date(jetzt).toISOString(),
+    })
+  } catch (err) {
+    console.error('substitute/absage: als gemeldet vermerken', err instanceof Error ? err.message : String(err))
   }
 }
 
@@ -450,13 +491,8 @@ export async function absageMelden(
     return json({ error: ersteAbweisung.error }, ABWEISUNG[ersteAbweisung.error])
   }
 
-  const schon = await schonGemeldet(
-    rest,
-    cong,
-    { personId: person.id, name },
-    meldungen.map((m) => m.taskKey),
-    anfrage.jetzt ?? Date.now(),
-  )
+  const jetzt = anfrage.jetzt ?? Date.now()
+  const schon = await schonGemeldet(rest, cong, { personId: person.id, name }, meldungen.map((m) => m.taskKey), jetzt)
   const neue = meldungen.filter((m) => !schon.has(m.taskKey))
 
   const nachricht = absageNachricht(anfrage.nachricht)
@@ -488,6 +524,9 @@ export async function absageMelden(
     nachricht,
     url: `${anfrage.appUrl}#go=mitteilungen`,
   })
-  if (pushes.length > 0) await zustellen(pushes)
+  await Promise.all([
+    alsGemeldetVermerken(rest, cong, person.id, neue.map((m) => m.taskKey), jetzt),
+    pushes.length > 0 ? zustellen(pushes) : undefined,
+  ])
   return json(ergebnis)
 }

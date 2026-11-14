@@ -226,8 +226,28 @@ self.addEventListener('push', (event) => {
     renotify: true,
     data: { url: data.url || '.' },
   })
-  event.waitUntil(Promise.all([meldung, zahlSetzen(data.zahl)]))
+  event.waitUntil(Promise.all([meldung, zahlSetzen(data.zahl), fensternMelden()]))
 })
+
+/**
+ * **Die offene App erfährt vom Push.** Sonst lüde sie erst bei einer Rückkehr
+ * nach Ablauf der Frist nach, und die Zahl am Symbol und „Meine Aufgaben"
+ * liefen so lange auseinander. Was sie damit tut, entscheidet sie
+ * (`useNachladenBeiRueckkehr`). Wie beim Symbol: Die Meldung darf daran nicht
+ * scheitern.
+ */
+function fensternMelden() {
+  try {
+    return clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((list) => {
+        for (const client of list) client.postMessage({ type: 'push' })
+      })
+      .catch(() => {})
+  } catch {
+    return Promise.resolve()
+  }
+}
 
 /**
  * Ziel eines Mitteilungs-Klicks — aber nur innerhalb dieser App.

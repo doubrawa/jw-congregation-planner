@@ -30,8 +30,12 @@ const JETZT = new Date(2026, 10, 14, 12, 0).getTime()
 let begonnen: number
 let sichtbar: DocumentVisibilityState
 let online: boolean
+/** `navigator.serviceWorker` — über ihn meldet der Worker einen Push (`fensternMelden` in `sw.js`). */
+let worker: EventTarget & { startMessages: () => void }
 
 beforeEach(() => {
+  worker = Object.assign(new EventTarget(), { startMessages: vi.fn() })
+  Object.defineProperty(navigator, 'serviceWorker', { configurable: true, get: () => worker })
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(JETZT)
   begonnen = JETZT - NACHLADEN_NACH_MS
@@ -52,6 +56,7 @@ afterEach(async () => {
   vi.useRealTimers()
   delete (document as { visibilityState?: unknown }).visibilityState
   delete (navigator as { onLine?: unknown }).onLine
+  delete (navigator as { serviceWorker?: unknown }).serviceWorker
 })
 
 /** Eine offene Ebene im Stapel von `useBackDismiss` — ein Blatt oder eine Unteransicht. */
@@ -105,6 +110,17 @@ function zeige(over: Partial<AppState> = {}) {
 function zurueckkehren(): void {
   sichtbar = 'visible'
   document.dispatchEvent(new Event('visibilitychange'))
+}
+
+/** Die App geht in den Hintergrund. */
+function verlassen(): void {
+  sichtbar = 'hidden'
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
+/** Der Worker meldet eine Nachricht — `push` bei jedem Push, `navigate` beim Tipp auf die Meldung. */
+function workerMeldet(type = 'push'): void {
+  worker.dispatchEvent(new MessageEvent('message', { data: { type, url: '#go=aufgaben' } }))
 }
 
 describe('Zurück in der App: still nachladen', () => {
@@ -220,6 +236,71 @@ describe('Zurück in der App: nicht, solange ein Blatt offen ist oder ein Feld d
     begonnen = Date.now()
     app.blattZu()
     await ausklingen()
+    expect(laden).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * **Nach einem Push gilt die Frist nicht.** Den Push zeigt der Worker, samt
+ * Zahl am Symbol. Lüde die Rückkehr erst nach fünf Minuten, sagte das Symbol
+ * 3, „Meine Aufgaben" 2 — und wer dort zusagte, setzte es auf 1.
+ */
+describe('Nach einem Push: ohne Frist nachladen', () => {
+  const KURZ_DANACH = JETZT - 60_000
+
+  it('kam ein Push, lädt die Rückkehr auch eine Minute nach dem letzten Laden', () => {
+    begonnen = KURZ_DANACH
+    zeige()
+    workerMeldet()
+    expect(laden).not.toHaveBeenCalled()
+    zurueckkehren()
+    expect(laden).toHaveBeenCalledTimes(1)
+    expect(laden).toHaveBeenCalledWith(dispatch, 'u1', { silent: true, ohneHinweis: true })
+  })
+
+  it('ist die App beim Push sichtbar, lädt sie gleich', () => {
+    begonnen = KURZ_DANACH
+    sichtbar = 'visible'
+    zeige()
+    workerMeldet()
+    expect(laden).toHaveBeenCalledTimes(1)
+  })
+
+  it('… aber nicht unter den Fingern: Mit offenem Blatt lädt sie erst nach dem Schließen', async () => {
+    begonnen = KURZ_DANACH
+    sichtbar = 'visible'
+    const app = zeige()
+    app.blattAuf()
+    workerMeldet()
+    expect(laden).not.toHaveBeenCalled()
+    app.blattZu()
+    await vi.waitFor(() => expect(laden).toHaveBeenCalledTimes(1))
+  })
+
+  it('ein Push zählt einmal: Nach dem Laden gilt wieder die Frist', () => {
+    begonnen = KURZ_DANACH
+    zeige()
+    workerMeldet()
+    zurueckkehren()
+    verlassen()
+    zurueckkehren()
+    expect(laden).toHaveBeenCalledTimes(1)
+  })
+
+  it('Gegenprobe: Der Tipp auf eine Meldung (`navigate`) hebt die Frist nicht auf — dort lädt die App selbst', () => {
+    begonnen = KURZ_DANACH
+    zeige()
+    workerMeldet('navigate')
+    zurueckkehren()
+    expect(laden).not.toHaveBeenCalled()
+  })
+
+  it('ohne Netz auch nach einem Push nicht', () => {
+    begonnen = KURZ_DANACH
+    online = false
+    zeige()
+    workerMeldet()
+    zurueckkehren()
     expect(laden).not.toHaveBeenCalled()
   })
 })

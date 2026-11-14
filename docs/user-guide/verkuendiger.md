@@ -341,10 +341,12 @@ Mit **Später** legst du das Blatt weg; beim nächsten Öffnen liegt es wieder d
 
 Liegt die App schon offen im Hintergrund, holt sie beim Zurückkehren den neuen
 Stand von selbst, wenn sie zuletzt vor fünf Minuten oder länger geladen hat –
-auch ohne dass du auf die Benachrichtigung tippst. Die neue Zuteilung steht
-dann unter **Meine Aufgaben** und bei der Glocke; das Blatt zum Bestätigen
-legt die App erst beim nächsten Start vor. Ist gerade ein Blatt offen oder
-schreibst du in ein Feld, wartet sie damit, bis du fertig bist.
+auch ohne dass du auf die Benachrichtigung tippst. Kam inzwischen eine
+Push-Nachricht, holt sie ihn gleich beim Zurückkehren, und ist die App dabei
+gerade offen, sofort. Die neue Zuteilung steht dann unter **Meine Aufgaben**
+und bei der Glocke; das Blatt zum Bestätigen legt die App erst beim nächsten
+Start vor. Ist gerade ein Blatt offen oder schreibst du in ein Feld, wartet
+sie damit, bis du fertig bist.
 
 Weitere Nachrichten können dich erreichen:
 

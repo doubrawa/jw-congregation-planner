@@ -179,9 +179,16 @@ export const UMBENANNT = {
  * Woche". Bliebe die Spalte beim Zurücksetzen stehen, gälte nach der Rückkehr
  * zum Stand vor der Beta weiter ein Wechsel, den dort jemand ausprobiert hat:
  * die Grundzeit von damals, der Wechsel von heute.
+ *
+ * `absagen.gemeldet_am` (14.11.2026): ob die Function eine Absage schon denen
+ * gemeldet hat, die planen. Eine Sicherung von davor weiß es nicht — `null`
+ * heißt „unbekannt", und die Function fragt dann die Glocken. Bliebe beim
+ * Zurücksetzen der Vermerk aus der Beta stehen, gälte eine Absage aus der
+ * Sicherung als gemeldet, weil in der Beta eine gleichnamige gemeldet wurde.
  */
 export const SEITHER = {
   congregations: { zeiten_ab: [] },
+  absagen: { gemeldet_am: null },
 }
 
 /**
