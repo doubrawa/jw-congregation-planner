@@ -32,6 +32,9 @@
 //    Ein Platz, der inzwischen einem anderen gehört oder vorbei ist, hält die
 //    übrigen nicht auf. Geht keiner, antwortet die Function mit dem Grund des
 //    ersten — wie bei einem einzelnen.
+//  - **Jede Absage einmal** (`schonGemeldet`): Ruft jemand die Function für
+//    einen Platz noch einmal, den sie schon gemeldet hat, geht nichts mehr
+//    hinaus — sonst bekämen alle, die planen, denselben Push beliebig oft.
 //
 // Der Rumpf der Glocke bleibt, wie die App ihn bis dahin selbst baute:
 // „<Aufgabe> — <Name> · <Nachricht>", kanonisch deutsch, der Name und die
@@ -39,6 +42,7 @@
 // der Datenbank — die App nähme den Titel aus der Sprache des Absagenden.
 // =============================================================================
 
+import { absageNachricht } from '../_shared/absage-nachricht.ts'
 import { json, type Rest, wert } from '../_shared/rest.ts'
 import { type SchluesselTeile, schluesselTeile } from '../_shared/aufgaben-schluessel.ts'
 import { alsFreitext } from '../_shared/i18n/freitext.ts'
@@ -63,9 +67,6 @@ import {
   type Week,
 } from '../_shared/zuteilungen.ts'
 import { substituteTexte, TITEL_ABGESAGT } from './texte.ts'
-
-/** So lang darf die Nachricht an den Planer sein — wie das Feld im Blatt (`AbsageBlatt`). */
-export const NACHRICHT_MAX = 200
 
 /**
  * So viele Plätze nimmt ein Aufruf höchstens. Eine Abwesenheit über ein ganzes
@@ -154,16 +155,6 @@ export function absageSchluessel(rumpf: { taskKeys?: unknown; taskKey?: unknown 
   return typeof rumpf.taskKey === 'string' ? [rumpf.taskKey] : []
 }
 
-/**
- * Die Nachricht als ein Atom: ohne „ · " darin, begrenzt. Gekürzt wird nach
- * Zeichen, nicht nach Code-Einheiten: Ein halbes Zeichenpaar (ein Emoji an der
- * Grenze) nimmt die Datenbank nicht an, und die Meldung an alle, die planen,
- * scheiterte an einem Zeichen.
- */
-function nachrichtText(nachricht: string): string {
-  return [...nachricht.trim().split(' · ').join(', ')].slice(0, NACHRICHT_MAX).join('')
-}
-
 /*
  * Der Platz, wie ihn auch „Plan senden" und die Erinnerungen aufzählen
  * (`pendingOfMeeting`, `pendingOfFsWeek`) — ohne Zusagen gefragt: Die Absage
@@ -242,6 +233,72 @@ function pushRumpf(plaetze: readonly Platz[], name: string, nachricht: string): 
 }
 
 /**
+ * Wie lange eine Meldung als die der jetzigen Absage gilt, wenn die Datenbank
+ * deren Beginn nicht kennt (`schonGemeldet`).
+ */
+export const OHNE_VERMERK_MINUTEN = 10
+
+/** Liste für einen `in.(…)`-Filter — jeder Wert in Anführungszeichen und für sich kodiert. */
+const inListe = (werte: readonly string[]): string => `(${werte.map((w) => wert(`"${w}"`)).join(',')})`
+
+/** Ein Zeitpunkt aus der Datenbank in Millisekunden — `null`, wenn er sich nicht lesen lässt. */
+function zeitpunkt(text: string): number | null {
+  const ms = Date.parse(text)
+  return Number.isNaN(ms) ? null : ms
+}
+
+/**
+ * **Welche dieser Absagen schon gemeldet sind** — die Plätze, zu denen seit
+ * Beginn der jetzigen Absage eine Zeile „Verhinderung gemeldet" in einer Glocke
+ * steht. Ohne diese Frage meldete jeder Aufruf aufs Neue: Ein Mitglied konnte
+ * allen, die planen, für seinen Platz denselben Push beliebig oft schicken.
+ *
+ * Seit wann die Absage gilt, vermerkt die Datenbank, sobald die App die Zusage
+ * auf „verhindert" setzt (`absagen.created_at`, Trigger `absage_vermerken`).
+ * Eine zurückgenommene und neu gegebene Absage ist damit eine neue — und eine
+ * Meldung über den Vorgänger am selben Platz liegt vor ihrem Beginn.
+ *
+ * Ohne Vermerk — die Zusage der App ist noch unterwegs, oder niemand schreibt
+ * sie — zählt eine Meldung der letzten `OHNE_VERMERK_MINUTEN`: Die eine App,
+ * deren Zusage den Aufruf überholt, meldet trotzdem, und wer die Function ohne
+ * Zusage ruft, wird gebremst.
+ *
+ * Lässt sich das nicht lesen, wird gemeldet: Eine Meldung zu viel schadet
+ * weniger als eine, die fehlt.
+ */
+async function schonGemeldet(
+  rest: Rest,
+  cong: string,
+  personId: string,
+  keys: readonly string[],
+  jetzt: number,
+): Promise<ReadonlySet<string>> {
+  if (keys.length === 0) return new Set()
+  try {
+    const liste = inListe(keys)
+    const vermerkt = await rest.get<{ task_key: string; created_at: string }[]>(
+      `absagen?select=task_key,created_at&congregation_id=eq.${wert(cong)}&person_id=eq.${wert(personId)}&task_key=in.${liste}`,
+    )
+    const seit = new Map<string, number>()
+    for (const a of vermerkt) {
+      const ms = zeitpunkt(a.created_at)
+      if (ms !== null) seit.set(a.task_key, ms)
+    }
+    const ohneVermerk = jetzt - OHNE_VERMERK_MINUTEN * 60e3
+    const ab = (key: string): number => seit.get(key) ?? ohneVermerk
+    const frueheste = new Date(Math.min(...keys.map(ab))).toISOString()
+    const gemeldet = await rest.get<{ task_key: string; created_at: string }[]>(
+      `notifications?select=task_key,created_at&congregation_id=eq.${wert(cong)}&type=eq.verhindert` +
+        `&task_key=in.${liste}&created_at=gte.${wert(frueheste)}`,
+    )
+    return new Set(gemeldet.filter((z) => (zeitpunkt(z.created_at) ?? -Infinity) >= ab(z.task_key)).map((z) => z.task_key))
+  } catch (err) {
+    console.error('substitute/absage: schon gemeldet?', err instanceof Error ? err.message : String(err))
+    return new Set()
+  }
+}
+
+/**
  * Je Empfänger ein Push mit allen seinen Plätzen. Wer dieselben erfährt — die
  * Planer untereinander —, bekommt dieselbe Sendung. Der Absagende selbst
  * keine, und wer kein Gerät angemeldet hat, auch nicht.
@@ -280,12 +337,13 @@ function sendungen(
  * Die Absagen des Aufrufers für `taskKeys` melden.
  *
  * `heute` ist der Kalendertag, an dem gefragt wird („YYYY-MM-DD", `heuteUtc`
- * in `index.ts`); `appUrl` die Adresse der App für den Push.
+ * in `index.ts`); `appUrl` die Adresse der App für den Push; `jetzt` der
+ * Zeitpunkt des Aufrufs (`schonGemeldet`, ohne Angabe die Uhr der Function).
  */
 export async function absageMelden(
   rest: Rest,
   userId: string,
-  anfrage: { taskKeys: readonly string[]; nachricht: string; heute: string; appUrl: string },
+  anfrage: { taskKeys: readonly string[]; nachricht: string; heute: string; appUrl: string; jetzt?: number },
   zustellen: Zustellen,
 ): Promise<Response> {
   const { heute } = anfrage
@@ -380,9 +438,12 @@ export async function absageMelden(
     return json({ error: ersteAbweisung.error }, ABWEISUNG[ersteAbweisung.error])
   }
 
-  const nachricht = nachrichtText(anfrage.nachricht)
+  const schon = await schonGemeldet(rest, cong, person.id, meldungen.map((m) => m.taskKey), anfrage.jetzt ?? Date.now())
+  const neue = meldungen.filter((m) => !schon.has(m.taskKey))
+
+  const nachricht = absageNachricht(anfrage.nachricht)
   const zusatz = nachricht ? ` · ${alsFreitext(nachricht)}` : ''
-  const zeilen = meldungen.flatMap(({ taskKey, platz, empfaenger }) =>
+  const zeilen = neue.flatMap(({ taskKey, platz, empfaenger }) =>
     empfaenger.map((user_id) => ({
       congregation_id: cong,
       user_id,
@@ -396,13 +457,15 @@ export async function absageMelden(
     ok: true,
     gemeldet: new Set(zeilen.map((z) => z.user_id)).size,
     ...(abgewiesen.length > 0 ? { abgewiesen } : {}),
+    // Kein Fehler — die App braucht dafür weder nachzuladen noch etwas zu sagen.
+    ...(schon.size > 0 ? { schonGemeldet: [...schon] } : {}),
   }
   if (zeilen.length === 0) return json(ergebnis)
 
   const geschrieben = await rest.zeilenSchreiben<{ id: string }>('POST', 'notifications?select=id', zeilen)
   if (geschrieben === null) return json({ error: 'server-error' }, 500)
 
-  const pushes = sendungen(meldungen, userId, abosJeKonto(subs), {
+  const pushes = sendungen(neue, userId, abosJeKonto(subs), {
     name,
     nachricht,
     url: `${anfrage.appUrl}#go=mitteilungen`,

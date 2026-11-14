@@ -106,12 +106,40 @@ describe('Ein weiteres Gerät anmelden', () => {
       const { container, dispatch } = zeige()
       fireEvent.click(knopf(container, t.codeAnzeigen)!)
       await waitFor(() => expect(toasts(dispatch)).toEqual([t.zugangFehler]))
-      expect(knopf(container, t.codeAnzeigen)?.disabled).toBe(false)
+      expect(knopf(container, t.codeAnzeigen)?.getAttribute('aria-disabled')).toBe('false')
       fireEvent.click(knopf(container, t.codeAnzeigen)!)
       await waitFor(() => expect(container.querySelector('.anmeldung-code-wert')?.textContent).toBe('K7RD 2QWM'))
     } finally {
       fehler.mockRestore()
     }
+  })
+
+  /*
+   * Solange gefragt wird, sind beide Knöpfe gesperrt — per `aria-disabled`,
+   * nicht per `disabled`: Ein Knopf, der unter dem Fokus `disabled` wird,
+   * schiebt den Fokus an den Anfang der Seite, und wer per Tastatur oder
+   * Vorleseprogramm bedient, steht danach woanders. Gesperrt heißt trotzdem:
+   * Ein zweiter Tipp fragt nicht ein zweites Mal.
+   */
+  it('während gefragt wird, sind beide Knöpfe gesperrt, ohne den Fokus abzugeben — ein zweiter Tipp fragt nicht noch einmal', async () => {
+    let antworten: (code: EinmalCode) => void = () => {}
+    einmalCodeHolen.mockReturnValue(new Promise((fertig) => (antworten = fertig)))
+    const { container } = zeige()
+    const anzeigen = knopf(container, t.codeAnzeigen)!
+    fireEvent.click(anzeigen)
+    await waitFor(() => expect(anzeigen.getAttribute('aria-disabled')).toBe('true'))
+    for (const k of [anzeigen, knopf(container, t.zugangErneuern)!]) {
+      expect(k.disabled, k.textContent ?? '').toBe(false)
+      expect(k.getAttribute('aria-disabled'), k.textContent ?? '').toBe('true')
+    }
+    fireEvent.click(anzeigen)
+    fireEvent.click(knopf(container, t.zugangErneuern)!)
+    expect(einmalCodeHolen).toHaveBeenCalledTimes(1)
+    // Gesperrt schärft auch der zweite Knopf nicht.
+    expect(knopf(container, t.zugangErneuernSicher)).toBeUndefined()
+    antworten(CODE)
+    await waitFor(() => expect(container.querySelector('.anmeldung-code-wert')).not.toBeNull())
+    expect(knopf(container, t.zugangErneuern)?.getAttribute('aria-disabled')).toBe('false')
   })
 
   it('offline fragt er gar nicht erst — der Hinweis sagt, warum', () => {

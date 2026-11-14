@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 /**
  * **Ein Knopf, der gesperrt sein kann, ohne den Fokus abzugeben** (T121):
@@ -15,13 +15,17 @@ export function GesperrterKnopf({
   label,
   gesperrt,
   onTipp,
+  onBlur,
   children,
 }: {
   className: string
   /** Für Knöpfe ohne Text (nur ein Zeichen) — sonst sagt der Inhalt, was er tut. */
   label?: string
   gesperrt: boolean
-  onTipp: () => void
+  /** Mit dem Ereignis — ein Knopf mit zwei Tipps (`useZweiTipp`) merkt sich daran, wer geschärft ist. */
+  onTipp: (e: MouseEvent<HTMLButtonElement>) => void
+  /** Für einen Knopf mit zwei Tipps: Wer weggeht, hat nicht bestätigt. */
+  onBlur?: () => void
   children: ReactNode
 }) {
   return (
@@ -30,9 +34,10 @@ export function GesperrterKnopf({
       className={className}
       aria-label={label}
       aria-disabled={gesperrt}
-      onClick={() => {
-        if (!gesperrt) onTipp()
+      onClick={(e) => {
+        if (!gesperrt) onTipp(e)
       }}
+      onBlur={onBlur}
     >
       {children}
     </button>

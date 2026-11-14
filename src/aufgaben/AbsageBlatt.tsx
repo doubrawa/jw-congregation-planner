@@ -1,4 +1,6 @@
 import { useId, useState } from 'react'
+// Die längste Nachricht an den Planer — sie steht in seiner Mitteilung und im Push.
+import { NACHRICHT_MAX } from '../../supabase/functions/_shared/absage-nachricht.ts'
 import { useApp } from '../app/context'
 import { Spur, type SpurSchritt } from '../bausteine/Spur'
 import { Sheet } from '../components/Sheet'
@@ -12,9 +14,6 @@ import { absageArt, aufgabeTag, type AbsageArt } from './aufgabe-anzeige'
 import { AufgabeTermin, AufgabeText } from './AufgabeText'
 import { useAlsBeantwortet } from './useAlsBeantwortet'
 import './aufgaben.css'
-
-/** Längste Nachricht an den Planer — sie steht in seiner Mitteilung und im Push. */
-const NACHRICHT_MAX = 200
 
 /** Was nach der Absage geschieht, als Spur. */
 function spurDanach(art: AbsageArt, t: Dict): SpurSchritt[] {

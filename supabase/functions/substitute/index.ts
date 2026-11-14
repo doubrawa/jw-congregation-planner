@@ -33,7 +33,7 @@
 //     Admin und Planern — bei einem Gruppentreffpunkt auch von Aufseher und
 //     Gehilfe —, dazu je Empfänger ein Push mit allen Plätzen, bei denen er neu
 //     zuteilen muss (nicht bei Hilfsdiensten). Melden darf nur, wer an dem
-//     Platz steht.
+//     Platz steht — und jede Absage geht einmal hinaus.
 //
 // Alle fünf Aktionen weisen eine **ausgefallene** Zusammenkunft ab (T30, 409
 // 'meeting-cancelled'): dort ist nichts zu vertreten. Die App zeigt solche

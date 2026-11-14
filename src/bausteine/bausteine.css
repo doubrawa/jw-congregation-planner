@@ -429,7 +429,8 @@
 .knopf-haupt:disabled,
 .knopf-haupt[aria-disabled='true'],
 .knopf-pille:disabled,
-.knopf-pille[aria-disabled='true'] {
+.knopf-pille[aria-disabled='true'],
+.knopf-umriss[aria-disabled='true'] {
   opacity: 0.45;
   cursor: default;
 }

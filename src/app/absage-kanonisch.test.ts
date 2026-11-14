@@ -4,6 +4,7 @@ import { aufgabenAbgeleitet, reducer } from './reducer'
 import type { AppState } from './context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { FS_LEITER } from '../../supabase/functions/_shared/zuteilungen.ts'
+import { NACHRICHT_MAX } from '../../supabase/functions/_shared/absage-nachricht.ts'
 import { alsFreitext, makeTr } from '../i18n/translate'
 import { loadOverlay } from '../i18n/ui'
 
@@ -67,6 +68,13 @@ describe('Nachricht an den Planer', () => {
 
   it('ein „ · " darin wird zum Komma — sonst zerfiele sie an der Atomgrenze', () => {
     expect(absage('heute · morgen')).toContain(alsFreitext('heute, morgen'))
+  })
+
+  it('eine zu lange endet, wo die Function sie für die Glocken der anderen kürzt — beide zeigen dieselbe', () => {
+    // Die Grenze steht einmal (`absageNachricht`); hier wie in `substitute/absage.ts`.
+    const text = absage(`${'x'.repeat(NACHRICHT_MAX)}-zu-viel`)
+    expect(text.endsWith(` · ${alsFreitext('x'.repeat(NACHRICHT_MAX))}`)).toBe(true)
+    expect(text).not.toContain('zu-viel')
   })
 
   it('ohne Nachricht — oder nur mit Leerzeichen — kein leeres Atom', () => {

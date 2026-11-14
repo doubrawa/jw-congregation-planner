@@ -16,7 +16,7 @@
  * Der REST-Zugang ist eine Attrappe des `Rest`-Vertrags (`_shared/rest.ts`),
  * die Filter wirklich auswertet; das Zustellen fängt ein Mitschreiber ab.
  */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { APP_LANGS } from '../../../src/i18n/langs'
 import { dict, loadOverlay, NOTIF_TITLE_KEY } from '../../../src/i18n/ui'
 import { fsKey, helferKey, punktKey } from '../_shared/aufgaben-schluessel.ts'
@@ -24,7 +24,8 @@ import { alsFreitext } from '../_shared/i18n/freitext.ts'
 import { makeTr } from '../_shared/i18n/translate.ts'
 import type { Rest } from '../_shared/rest.ts'
 import type { FsInstance, SubscriptionRow, Week } from '../_shared/zuteilungen.ts'
-import { absageMelden, absageSchluessel, NACHRICHT_MAX, PLAETZE_MAX, type Sendung } from '../substitute/absage.ts'
+import { NACHRICHT_MAX } from '../_shared/absage-nachricht.ts'
+import { absageMelden, absageSchluessel, OHNE_VERMERK_MINUTEN, PLAETZE_MAX, type Sendung } from '../substitute/absage.ts'
 import { substituteTexte, TITEL_ABGESAGT } from '../substitute/texte.ts'
 import { erfuelltVergleiche, filterWert, nurSpalten } from './attrappe.ts'
 
@@ -141,6 +142,22 @@ let gelesen: string[]
 let glockeKaputt: boolean
 /** Die Wechsel der Regelzeit (`congregations.zeiten_ab`) — ohne Angabe keiner. */
 let zeitenAb: Array<{ ab: string; tab: 'mid' | 'we'; wd: number; time: string }>
+/** Die Uhr: Zeitpunkt des Aufrufs (`jetzt`) und `created_at` jeder geschriebenen Glocken-Zeile. */
+let uhr: number
+/** Was die Datenbank in der Glocke führt — die geschriebenen Zeilen mit ihrer Zeit. */
+let glockeMitZeit: (Glockenzeile & { created_at: string })[]
+/** `absagen` (Trigger `absage_vermerken`): seit wann die Absage einer Person gilt. */
+let vermerkt: { task_key: string; person_id: string; created_at: string }[]
+/** `absagen` und die Glocke lassen sich nicht lesen. */
+let lesenKaputt: boolean
+
+/** Die Werte eines `spalte=in.(…)`-Filters, dekodiert und ohne Anführungszeichen — `null` ohne Filter. */
+function inWerte(path: string, spalte: string): string[] | null {
+  const roh = new URLSearchParams(path.slice(path.indexOf('?') + 1)).get(spalte)
+  if (!roh?.startsWith('in.(') || !roh.endsWith(')')) return null
+  return roh.slice(4, -1).split(',').map((w) => w.replace(/^"(.*)"$/, '$1'))
+}
+const vorMinuten = (min: number): string => new Date(uhr - min * 60e3).toISOString()
 
 /**
  * Wie die Datenbank: nur die Wochen, die der Filter auf `start` durchlässt.
@@ -187,6 +204,20 @@ const rest: Rest = {
       rows = GROUPS
     } else if (path.startsWith('push_subscriptions')) {
       rows = SUBS
+    } else if (path.startsWith('absagen')) {
+      if (lesenKaputt) throw new Error('absagen nicht lesbar')
+      // Nur mit beiden Filtern: ohne Person zählte die Absage eines anderen.
+      const keys = inWerte(path, 'task_key')
+      rows = keys ? vermerkt.filter((a) => a.person_id === filterWert(path, 'person_id') && keys.includes(a.task_key)) : []
+    } else if (path.startsWith('notifications')) {
+      if (lesenKaputt) throw new Error('notifications nicht lesbar')
+      const keys = inWerte(path, 'task_key')
+      const ab = filterWert(path, 'created_at', 'gte')
+      rows = keys
+        ? glockeMitZeit.filter(
+            (z) => z.type === filterWert(path, 'type') && keys.includes(z.task_key) && (ab === null || z.created_at >= ab),
+          )
+        : []
     }
     return rows as T
   },
@@ -206,6 +237,7 @@ const rest: Rest = {
     if (method !== 'POST' || !path.startsWith('notifications')) throw new Error(`unerwartet: ${method} ${path}`)
     if (glockeKaputt) return null
     glocken.push(...(body as Glockenzeile[]))
+    glockeMitZeit.push(...(body as Glockenzeile[]).map((z) => ({ ...z, created_at: new Date(uhr).toISOString() })))
     return (body as Glockenzeile[]).map((_, i) => ({ id: `n${i}` })) as T[]
   },
   async userId(): Promise<string | null> {
@@ -227,10 +259,14 @@ beforeEach(() => {
   gelesen = []
   glockeKaputt = false
   zeitenAb = []
+  uhr = Date.parse('2026-09-07T08:00:00.000Z')
+  glockeMitZeit = []
+  vermerkt = []
+  lesenKaputt = false
 })
 
 const absagenAlle = (taskKeys: string[], wer = U_ICH, nachricht = '', heute = HEUTE) =>
-  absageMelden(rest, wer, { taskKeys, nachricht, heute, appUrl: APP }, zustellen)
+  absageMelden(rest, wer, { taskKeys, nachricht, heute, appUrl: APP, jetzt: uhr }, zustellen)
 const absagen = (taskKey: string, wer = U_ICH, nachricht = '', heute = HEUTE) => absagenAlle([taskKey], wer, nachricht, heute)
 const antwort = async (res: Response) => ({ status: res.status, body: await res.json() })
 const anWen = (): string[] => glocken.map((z) => z.user_id).sort()
@@ -273,7 +309,9 @@ describe('absage: ein Programmpunkt', () => {
     const text = alsFreitext('bin verreist, ab Montag wieder da')
     expect(glocken[0]!.body).toBe(`Bibellesung — ${ICH} · ${text}`)
     expect(pushes[0]!.body).toBe(`Bibellesung · Dienstag, 8. September · 19:00 · ${ICH} · ${text}`)
+    // Eine leere Glocke: Dieselbe Absage ginge sonst kein zweites Mal hinaus.
     glocken = []
+    glockeMitZeit = []
     await absagen(K_LESUNG, U_ICH, 'x'.repeat(NACHRICHT_MAX + 50))
     expect(glocken[0]!.body).toBe(`Bibellesung — ${ICH} · ${alsFreitext('x'.repeat(NACHRICHT_MAX))}`)
   })
@@ -508,5 +546,129 @@ describe('absage: der Titel', () => {
     }
     // Positivkontrolle: Es wird wirklich übersetzt.
     expect(substituteTexte('fr').abgesagt).not.toBe(substituteTexte('de').abgesagt)
+  })
+})
+
+/*
+ * **Jede Absage einmal** (Gesamt-Review 14.11.2026): Bis dahin meldete jeder
+ * Aufruf aufs Neue — wer die Function für seinen Platz wiederholt rief, schickte
+ * allen, die planen, denselben Push noch einmal, beliebig oft. Gemessen wurde
+ * das an der echten Logik: drei Aufrufe, sechs Zeilen, sechs Pushes.
+ *
+ * Seit wann die Absage gilt, steht in `absagen` (Trigger `absage_vermerken`,
+ * gemessen in `supabase/absage-einmal.test.ts`); die Attrappe führt es in
+ * `vermerkt`.
+ */
+describe('absage: jede Absage geht einmal hinaus', () => {
+  /** Die Absage gilt seit `min` Minuten — die App hat die Zusage geschrieben. */
+  const abgesagtVor = (min: number, key = K_LESUNG) =>
+    vermerkt.push({ task_key: key, person_id: 'p-ich', created_at: vorMinuten(min) })
+
+  it('ein zweiter Aufruf für dieselbe Absage schreibt keine Zeile und schickt keinen Push — und ist kein Fehler', async () => {
+    abgesagtVor(1)
+    await absagen(K_LESUNG)
+    expect(glocken).toHaveLength(2)
+    expect(pushes).toHaveLength(1)
+    uhr += 3 * 60e3
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({
+      status: 200,
+      body: { ok: true, gemeldet: 0, schonGemeldet: [K_LESUNG] },
+    })
+    uhr += 60 * 60e3
+    await absagen(K_LESUNG)
+    expect(glocken).toHaveLength(2)
+    expect(pushes).toHaveLength(1)
+  })
+
+  it('Gegenprobe: zurückgenommen und neu abgesagt ist eine neue Absage — sie geht wieder hinaus', async () => {
+    abgesagtVor(1)
+    await absagen(K_LESUNG)
+    // „Doch bestätigen", dann wieder „Ich kann nicht": Der Vermerk beginnt neu.
+    uhr += 5 * 60e3
+    vermerkt = []
+    abgesagtVor(0)
+    uhr += 1000
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({ status: 200, body: { ok: true, gemeldet: 2 } })
+    expect(glocken).toHaveLength(4)
+    expect(pushes).toHaveLength(2)
+  })
+
+  it('die Meldung über den Vorgänger am selben Platz hält die eigene nicht auf', async () => {
+    // Ein anderer hatte den Platz und sagte vor einer Stunde ab; der Planer gab ihn mir.
+    glockeMitZeit.push({
+      congregation_id: CONG, user_id: U_ADMIN, type: 'verhindert', title: TITEL_ABGESAGT,
+      body: 'Bibellesung — Vorgänger', task_key: K_LESUNG, created_at: vorMinuten(60),
+    })
+    abgesagtVor(1)
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({ status: 200, body: { ok: true, gemeldet: 2 } })
+    expect(pushes).toHaveLength(1)
+  })
+
+  it('ohne Vermerk — die Zusage der App ist noch unterwegs — wird gemeldet, ein Aufruf gleich danach aber nicht', async () => {
+    await absagen(K_LESUNG)
+    expect(pushes).toHaveLength(1)
+    uhr += 5 * 60e3
+    await absagen(K_LESUNG)
+    expect(pushes).toHaveLength(1)
+    // Wer die Zusage nie schreibt, kommt erst nach zehn Minuten wieder durch.
+    uhr += (OHNE_VERMERK_MINUTEN - 5) * 60e3 + 1000
+    await absagen(K_LESUNG)
+    expect(pushes).toHaveLength(2)
+  })
+
+  it('aus einer Abwesenheit: nur der Platz, der noch nicht gemeldet ist — als Meldung für einen', async () => {
+    abgesagtVor(2)
+    await absagen(K_LESUNG)
+    abgesagtVor(0, K_LESUNG_2)
+    uhr += 60e3
+    expect(await antwort(await absagenAlle([K_LESUNG, K_LESUNG_2]))).toEqual({
+      status: 200,
+      body: { ok: true, gemeldet: 2, schonGemeldet: [K_LESUNG] },
+    })
+    expect(glocken.filter((z) => z.task_key === K_LESUNG)).toHaveLength(2)
+    expect(glocken.filter((z) => z.task_key === K_LESUNG_2)).toHaveLength(2)
+    expect(pushes).toHaveLength(2)
+    expect(pushes[1]!.body).toBe(`Bibellesung · Dienstag, 15. September · 19:00 · ${ICH}`)
+  })
+
+  it('mehrere Plätze, verschieden lange abgesagt: Jeder zählt nur Meldungen seit seiner eigenen Absage', async () => {
+    // Die Lesung sagte ich vor einer Stunde ab, gemeldet ist sie seitdem.
+    abgesagtVor(60)
+    uhr -= 59 * 60e3
+    await absagen(K_LESUNG)
+    uhr += 59 * 60e3
+    // Den Platz der Woche danach hatte vor einer halben Stunde ein anderer, der absagte;
+    // seit einer Minute ist er meiner, und ich sage ab.
+    glockeMitZeit.push({
+      congregation_id: CONG, user_id: U_ADMIN, type: 'verhindert', title: TITEL_ABGESAGT,
+      body: 'Bibellesung — Vorgänger', task_key: K_LESUNG_2, created_at: vorMinuten(30),
+    })
+    abgesagtVor(1, K_LESUNG_2)
+    expect(await antwort(await absagenAlle([K_LESUNG, K_LESUNG_2]))).toEqual({
+      status: 200,
+      body: { ok: true, gemeldet: 2, schonGemeldet: [K_LESUNG] },
+    })
+    expect(glocken.filter((z) => z.task_key === K_LESUNG_2)).toHaveLength(2)
+  })
+
+  it('die eigene Absage zählt, nicht die eines anderen am selben Platz — gefragt wird mit der eigenen Person', async () => {
+    vermerkt.push({ task_key: K_LESUNG, person_id: 'p-x', created_at: vorMinuten(30) })
+    await absagen(K_LESUNG)
+    expect(abfragen.find((p) => p.startsWith('absagen'))).toContain('person_id=eq.p-ich')
+  })
+
+  it('lässt sich nicht lesen, ob schon gemeldet ist, wird gemeldet — eine Meldung zu viel statt einer, die fehlt', async () => {
+    abgesagtVor(1)
+    await absagen(K_LESUNG)
+    lesenKaputt = true
+    const fehler = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      uhr += 60e3
+      expect((await absagen(K_LESUNG)).status).toBe(200)
+      expect(pushes).toHaveLength(2)
+      expect(fehler).toHaveBeenCalledWith('substitute/absage: schon gemeldet?', 'absagen nicht lesbar')
+    } finally {
+      fehler.mockRestore()
+    }
   })
 })

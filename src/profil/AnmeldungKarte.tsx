@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
+import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { QrSvg } from '../bausteine/QrSvg'
 import { gebundenesDatum } from '../components/datum-anzeige'
 import { useZweiTipp } from '../components/useZweiTipp'
@@ -98,22 +99,23 @@ export function AnmeldungKarte() {
         </div>
       ) : (
         <div className="profil-zeile anmeldung-knopf">
-          <button type="button" className="knopf-umriss" onClick={() => void zeigen()} disabled={laeuft}>
+          {/* Gesperrt, ohne den Fokus abzugeben: Ein `disabled` unter dem
+              Finger, der eben getippt hat, schöbe ihn an den Anfang der Seite. */}
+          <GesperrterKnopf className="knopf-umriss" gesperrt={laeuft} onTipp={() => void zeigen()}>
             {t.codeAnzeigen}
-          </button>
+          </GesperrterKnopf>
         </div>
       )}
       <div className="profil-zeile anmeldung-erneuern">
         <p className="klein-text">{t.zugangErneuernText}</p>
-        <button
-          type="button"
+        <GesperrterKnopf
           className={`zwei-tipp knopf-umriss${erneuern.armed ? ' is-armed' : ''}`}
-          onClick={erneuern.onClick}
+          gesperrt={laeuft}
+          onTipp={erneuern.onClick}
           onBlur={erneuern.onBlur}
-          disabled={laeuft}
         >
           {erneuern.armed ? t.zugangErneuernSicher : t.zugangErneuern}
-        </button>
+        </GesperrterKnopf>
       </div>
     </section>
   )

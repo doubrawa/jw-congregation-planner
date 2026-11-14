@@ -4,6 +4,7 @@
  * „persönlich Bescheid gegeben".
  */
 
+import { absageNachricht } from '../../../supabase/functions/_shared/absage-nachricht.ts'
 import { platzAuswahl } from '../../data/offene-plaetze'
 import { eigenePerson } from '../eigene-person'
 import { gesuchKennung } from '../../lib/abgelehnte-gesuche'
@@ -28,12 +29,12 @@ function currentUserName(state: AppState): string {
  *
  * **Ein eigenes Atom, als Freitext gekennzeichnet**: Der Planer liest sie so,
  * wie sie geschrieben wurde, in jeder Sprache — der Übersetzer der Glocke
- * reicht ein gekennzeichnetes Atom unverändert weiter. Ein „ · " darin würde
- * sie an der Atomgrenze zerteilen und die Kennzeichnung brechen; es wird zum
- * Komma.
+ * reicht ein gekennzeichnetes Atom unverändert weiter. Wie sie dafür
+ * zugeschnitten wird, fragt die Function an derselben Stelle
+ * (`absageNachricht`).
  */
 function nachrichtAtom(nachricht: string | undefined): string {
-  const text = nachricht?.trim().split(' · ').join(', ')
+  const text = absageNachricht(nachricht ?? '')
   return text ? ` · ${alsFreitext(text)}` : ''
 }
 

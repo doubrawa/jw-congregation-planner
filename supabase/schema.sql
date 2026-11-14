@@ -2432,6 +2432,14 @@ revoke all on function public.woche_im_schluessel(text) from anon, authenticated
 -- Hier, nicht in der App: Jeder Weg, der eine Absage schreibt — der Client,
 -- eine Function —, vermerkt sie damit. Security definer, weil kein Konto in
 -- `absagen` schreiben darf.
+--
+-- `created_at` ist, **seit wann die jetzige Absage gilt** (14.11.2026): Daran
+-- erkennt die Function `substitute` (Aufruf 'absage'), ob sie diese Absage
+-- schon gemeldet hat — ein zweiter Aufruf schickte allen, die planen, sonst
+-- denselben Push noch einmal. Eine neue Absage setzt die Zeit neu, auch wenn
+-- die Zeile noch von einer früheren steht (der Platz war dazwischen bei einem
+-- anderen und ist wieder bei ihr); dieselbe Absage noch einmal geschrieben —
+-- von der App und einer älteren App zugleich — lässt sie stehen.
 create or replace function public.absage_vermerken()
 returns trigger
 language plpgsql
@@ -2451,7 +2459,9 @@ begin
   if new.status = 'verhindert' then
     insert into public.absagen (congregation_id, person_id, task_key, woche)
     values (new.congregation_id, person, new.task_key, woche::date)
-    on conflict do nothing;
+    on conflict (congregation_id, task_key, person_id) do update
+      set created_at = now()
+      where not (tg_op = 'UPDATE' and old.status = 'verhindert');
   elsif tg_op = 'UPDATE' and old.status = 'verhindert' then
     delete from public.absagen
      where congregation_id = new.congregation_id and task_key = new.task_key and person_id = person;
@@ -2477,6 +2487,54 @@ select c.congregation_id, m.person_id, c.task_key, public.woche_im_schluessel(c.
    and m.person_id is not null
    and public.woche_im_schluessel(c.task_key) is not null
 on conflict do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Ein Ersatzgesuch endet mit seiner Absage (14.11.2026)
+-- ---------------------------------------------------------------------------
+-- „Ersatz gesucht" (Function `substitute`, Aufruf 'seek') steht in der Glocke
+-- aller, die den Hilfsdienst übernehmen dürften — gemeint ist, solange die
+-- Absage steht. Geht sie, ist das Gesuch erledigt: Jemand ist eingesprungen,
+-- der Planer hat den Platz neu besetzt oder freigegeben, der Absagende hat doch
+-- bestätigt, der Dienst oder das Konto ist fort. Die App bietet dann nichts
+-- mehr an (`handlungZu`), die Zeile blieb aber stehen, und wer darauf tippte,
+-- fand nichts. Aufgeräumt hatten nur das Einspringen und „Doch bestätigen" in
+-- der Function; das Umbesetzen durch den Planer nicht.
+--
+-- Die Regel: **Ein Gesuch steht, solange zu seinem Platz eine Absage steht.**
+-- Gefragt wird nach jeder Zusage, die geht oder ihren Stand wechselt — steht
+-- danach keine Absage mehr, gehen die Zeilen. Hier, an der Absage selbst, für
+-- jeden Weg, auf dem sie geht. Security definer, weil die Zeilen in fremden
+-- Glocken stehen.
+create or replace function public.ersatzgesuch_beenden()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+      from public.confirmations c
+     where c.congregation_id = old.congregation_id
+       and c.task_key = old.task_key
+       and c.status = 'verhindert'
+  ) then
+    delete from public.notifications n
+     where n.congregation_id = old.congregation_id
+       and n.task_key = old.task_key
+       and n.title = 'Ersatz gesucht';
+  end if;
+  return null;
+end;
+$$;
+
+revoke all on function public.ersatzgesuch_beenden() from public;
+revoke all on function public.ersatzgesuch_beenden() from anon, authenticated;
+
+drop trigger if exists confirmations_gesuch on public.confirmations;
+create trigger confirmations_gesuch
+  after delete or update of status on public.confirmations
+  for each row execute function public.ersatzgesuch_beenden();
 
 create or replace function public.alte_daten_loeschen(trocken boolean default false)
 returns table (tabelle text, zeilen bigint)
