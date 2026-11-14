@@ -11530,6 +11530,14 @@ Gepushte, sieben Befunde, keiner kritisch.
   derselbe Push wieder hinaus. Fest wäre ein Vermerk an der Absage selbst
   (eine Spalte `absagen.gemeldet_am`, gesetzt von der Function).
 
+**Ausgerollt** am 14. November (`f5e058a8`, Betreiber: „commit und push"),
+zusammen mit `cabe866c` und `5ba7d865`: Der Lauf der CI war grün — die zwei
+Migrationen (`20261114100000_absage-seit.sql`,
+`20261114110000_gesuch-beenden.sql`), die Functions, das Frontend
+(`shell-f5e058a`) —, die Laufzeit-Messung der CI ebenso. Nachgemessen mit
+`node scripts/ausrollen-pruefen.mjs`: alle 10 Migrationen eingespielt, der
+Katalog gleicht ihrer Folge, alle 8 Functions aktiv, der Rauchtest besteht.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
