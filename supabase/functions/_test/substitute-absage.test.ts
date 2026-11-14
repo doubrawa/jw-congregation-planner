@@ -604,6 +604,18 @@ describe('absage: jede Absage geht einmal hinaus', () => {
     expect(pushes).toHaveLength(1)
   })
 
+  it('auch ohne Vermerk hält die Meldung des Vorgängers die eigene nicht auf — gezählt wird nur, was mich nennt', async () => {
+    // Der Vorgänger sagte vor fünf Minuten ab, der Planer gab den Platz mir, und
+    // mein Aufruf überholt meine Zusage: kein Vermerk, das Fenster reicht zehn
+    // Minuten zurück — und die Zeile des Vorgängers liegt darin.
+    glockeMitZeit.push({
+      congregation_id: CONG, user_id: U_ADMIN, type: 'verhindert', title: TITEL_ABGESAGT,
+      body: `Bibellesung — ${alsFreitext('Vor Gänger')}`, task_key: K_LESUNG, created_at: vorMinuten(5),
+    })
+    expect(await antwort(await absagen(K_LESUNG))).toEqual({ status: 200, body: { ok: true, gemeldet: 2 } })
+    expect(pushes).toHaveLength(1)
+  })
+
   it('ohne Vermerk — die Zusage der App ist noch unterwegs — wird gemeldet, ein Aufruf gleich danach aber nicht', async () => {
     await absagen(K_LESUNG)
     expect(pushes).toHaveLength(1)

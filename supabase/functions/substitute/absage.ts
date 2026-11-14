@@ -263,13 +263,19 @@ function zeitpunkt(text: string): number | null {
  * deren Zusage den Aufruf überholt, meldet trotzdem, und wer die Function ohne
  * Zusage ruft, wird gebremst.
  *
+ * **Nur Meldungen, die diese Person nennen** (`wer`, der Name als Freitext im
+ * Rumpf; Namen sind eindeutig): Der Zusage und diesem Aufruf schreibt die App
+ * im selben Augenblick, und überholt der Aufruf sie, fehlt der Vermerk. Dann
+ * zählte sonst auch die Absage des Vorgängers, der den Platz eben noch hatte,
+ * und die eigene ginge gar nicht hinaus.
+ *
  * Lässt sich das nicht lesen, wird gemeldet: Eine Meldung zu viel schadet
  * weniger als eine, die fehlt.
  */
 async function schonGemeldet(
   rest: Rest,
   cong: string,
-  personId: string,
+  wer: { personId: string; name: string },
   keys: readonly string[],
   jetzt: number,
 ): Promise<ReadonlySet<string>> {
@@ -277,7 +283,7 @@ async function schonGemeldet(
   try {
     const liste = inListe(keys)
     const vermerkt = await rest.get<{ task_key: string; created_at: string }[]>(
-      `absagen?select=task_key,created_at&congregation_id=eq.${wert(cong)}&person_id=eq.${wert(personId)}&task_key=in.${liste}`,
+      `absagen?select=task_key,created_at&congregation_id=eq.${wert(cong)}&person_id=eq.${wert(wer.personId)}&task_key=in.${liste}`,
     )
     const seit = new Map<string, number>()
     for (const a of vermerkt) {
@@ -287,11 +293,17 @@ async function schonGemeldet(
     const ohneVermerk = jetzt - OHNE_VERMERK_MINUTEN * 60e3
     const ab = (key: string): number => seit.get(key) ?? ohneVermerk
     const frueheste = new Date(Math.min(...keys.map(ab))).toISOString()
-    const gemeldet = await rest.get<{ task_key: string; created_at: string }[]>(
-      `notifications?select=task_key,created_at&congregation_id=eq.${wert(cong)}&type=eq.verhindert` +
+    const gemeldet = await rest.get<{ task_key: string; created_at: string; body: string }[]>(
+      `notifications?select=task_key,created_at,body&congregation_id=eq.${wert(cong)}&type=eq.verhindert` +
         `&task_key=in.${liste}&created_at=gte.${wert(frueheste)}`,
     )
-    return new Set(gemeldet.filter((z) => (zeitpunkt(z.created_at) ?? -Infinity) >= ab(z.task_key)).map((z) => z.task_key))
+    // Wie der Rumpf sie nennt (`absageMelden` unten): „<Aufgabe> — <Name> · …".
+    const genannt = ` — ${alsFreitext(wer.name)}`
+    return new Set(
+      gemeldet
+        .filter((z) => z.body.includes(genannt) && (zeitpunkt(z.created_at) ?? -Infinity) >= ab(z.task_key))
+        .map((z) => z.task_key),
+    )
   } catch (err) {
     console.error('substitute/absage: schon gemeldet?', err instanceof Error ? err.message : String(err))
     return new Set()
@@ -438,7 +450,13 @@ export async function absageMelden(
     return json({ error: ersteAbweisung.error }, ABWEISUNG[ersteAbweisung.error])
   }
 
-  const schon = await schonGemeldet(rest, cong, person.id, meldungen.map((m) => m.taskKey), anfrage.jetzt ?? Date.now())
+  const schon = await schonGemeldet(
+    rest,
+    cong,
+    { personId: person.id, name },
+    meldungen.map((m) => m.taskKey),
+    anfrage.jetzt ?? Date.now(),
+  )
   const neue = meldungen.filter((m) => !schon.has(m.taskKey))
 
   const nachricht = absageNachricht(anfrage.nachricht)

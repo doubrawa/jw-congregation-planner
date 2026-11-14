@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { leerePostgres } from '../scripts/pglite-postgres.mjs'
+import { TITEL_ABGESAGT, TITEL_GESUCHT } from './functions/substitute/texte.ts'
 
 /**
  * **Eine Absage und was an ihr hängt** (Gesamt-Review 14.11.2026) — zwei
@@ -158,17 +159,22 @@ describe('Seit wann eine Absage gilt (`absagen.created_at`)', () => {
 })
 
 describe('Ein Ersatzgesuch endet mit seiner Absage', () => {
+  /*
+   * Die Titel aus der Function, nicht abgeschrieben: Der Trigger erkennt ein
+   * Gesuch an `title = 'Ersatz gesucht'`. Ändert sich `TITEL_GESUCHT` ohne ihn,
+   * wird diese Probe rot — sonst räumte er still nichts mehr ab.
+   */
   /** Anna hat ihren Hilfsdienst abgesagt; Ersatz gesucht wurde bei Planer und Bernd. */
   async function gesucht(): Promise<void> {
     await zusage(ANNA_KONTO, MIKRO, 'verhindert')
-    await glocke(PLANER, 'Ersatz gesucht', MIKRO)
-    await glocke(BERND_KONTO, 'Ersatz gesucht', MIKRO)
+    await glocke(PLANER, TITEL_GESUCHT, MIKRO)
+    await glocke(BERND_KONTO, TITEL_GESUCHT, MIKRO)
     // Was bleiben muss: die Absage selbst beim Planer und das Gesuch eines anderen Platzes.
-    await glocke(PLANER, 'Verhinderung gemeldet', MIKRO)
-    await glocke(BERND_KONTO, 'Ersatz gesucht', MIKRO_2)
+    await glocke(PLANER, TITEL_ABGESAGT, MIKRO)
+    await glocke(BERND_KONTO, TITEL_GESUCHT, MIKRO_2)
   }
-  const OHNE_GESUCH = [`Ersatz gesucht · ${MIKRO_2} · 1`, `Verhinderung gemeldet · ${MIKRO} · 1`]
-  const MIT_GESUCH = [`Ersatz gesucht · ${MIKRO} · 2`, ...OHNE_GESUCH].sort()
+  const OHNE_GESUCH = [`${TITEL_GESUCHT} · ${MIKRO_2} · 1`, `${TITEL_ABGESAGT} · ${MIKRO} · 1`]
+  const MIT_GESUCH = [`${TITEL_GESUCHT} · ${MIKRO} · 2`, ...OHNE_GESUCH].sort()
 
   it('besetzt der Planer den Platz neu, verschwindet „Ersatz gesucht" aus jeder Glocke — sonst nichts', async () => {
     await gesucht()

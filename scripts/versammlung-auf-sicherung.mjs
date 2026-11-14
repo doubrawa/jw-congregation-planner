@@ -49,7 +49,12 @@
  *    fehlt, einfügen; was abweicht, ändern; was die Datenbank eben selbst
  *    angelegt hat und die Sicherung nicht kennt, löschen. Frisch, weil sie
  *    mitschreibt: Kaskaden und `set null` beim Löschen, `absage_vermerken`
- *    beim Einfügen einer Absage.
+ *    beim Einfügen einer Absage, `ersatzgesuch_beenden` beim Ändern einer
+ *    Zusage. Der letzte räumt „Ersatz gesucht" zu einem Platz ab, an dem
+ *    keine Absage mehr steht — auch ein Gesuch, das die Sicherung verwaist
+ *    mitbringt und das `notifications` (in `schema.sql` vor `confirmations`)
+ *    eben zurückgeschrieben hat. Die Gegenprobe nennt es dann, ein zweiter
+ *    Lauf schreibt es zurück; fehlen darf es ebenso, es führte ins Leere.
  * 3. Die Verweise nachtragen, deren Ziel erst später kommt — der Ring
  *    `persons.grp ↔ groups` (`aufgeschobene` aus `zurueckspielen.mjs`).
  * 4. Konten wieder mit ihrer Person verknüpfen (siehe oben).

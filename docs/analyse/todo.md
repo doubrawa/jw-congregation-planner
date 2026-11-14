@@ -11469,6 +11469,67 @@ kennt („Plan senden", „Jetzt erinnern", der Tausch); der Entzug und der
 tägliche Lauf zählen mit dem Tag des Servers. **Nicht geprüft:** am echten
 Gerät (Android, iPhone) — das kann nur der Betreiber.
 
+## Aufgenommen am 14. November 2026 — viertes Gesamt-Review und Übersetzungen
+
+Am 14. November ging der Code seit dem letzten Gesamt-Review (`ad5e5464`,
+2. November) noch einmal durch, nur lesend: T165–T184 samt der Sammel-Absage,
+danach das Zusammenspiel mit T180. Kein kritischer, kein hoher Befund; vier
+niedrige, alle behoben (Betreiber: „Ja, alle vier"), in `5ba7d865`:
+
+1. **Eine Absage geht einmal hinaus.** `substitute` (Aufruf 'absage') meldete
+   jeden Aufruf aufs Neue — gemessen drei Aufrufe, sechs Zeilen, sechs Pushes.
+   Jetzt fragt `schonGemeldet`, ob zum Platz seit Beginn der jetzigen Absage
+   (`absagen.created_at`, Migration `20261114100000_absage-seit.sql`) schon
+   eine Meldung steht.
+2. „Code anzeigen" und „Zugang erneuern" sperren sich per `aria-disabled`
+   (`GesperrterKnopf`) — der Fokus fiel sonst an den Anfang der Seite.
+3. Die Nachricht beim Absagen wird an einer Stelle zugeschnitten
+   (`_shared/absage-nachricht.ts`), für das Echo in der eigenen Glocke wie für
+   die Zeilen der anderen.
+4. **Ein Ersatzgesuch endet mit seiner Absage**: Trigger `ersatzgesuch_beenden`
+   (Migration `20261114110000_gesuch-beenden.sql`) — „Ersatz gesucht" blieb
+   stehen, wenn der Planer einen abgesagten Hilfsdienst neu besetzte.
+
+**Offen, zur Entscheidung (Nr. 5, T180 × T184):** Ein Push erreicht die offene
+App nicht — der Worker zeigt die Meldung und setzt die Zahl am App-Symbol,
+die App lädt nicht nach, und liegt das letzte Laden keine fünf Minuten zurück,
+auch die Rückkehr nicht. Symbol und „Meine Aufgaben" laufen dann auseinander
+(das Symbol sagt 3, die Liste 2; sagt man zu, setzt die App 1). Vorschlag: Der
+Worker meldet jedem offenen Fenster den Push (`postMessage`, der Weg steht für
+den Push-Tipp schon), und die App lädt bei der nächsten Rückkehr ohne Frist
+nach. Das ist kein Live-Abgleich — die Entscheidung zu T180 bleibt.
+
+**Übersetzungen** (`cabe866c`): alle 32 seit `ad5e5464` neuen oder geänderten
+Schlüssel in allen zwölf Sprachen einzeln gelesen, dazu der Push-Titel der
+Sammel-Absage — 408 Werte, zehn Befunde, alle behoben (Betreiber: „Ja,
+einbauen"). Der größte: `zeitGiltAbHinweis` sagte in neun Sprachen „Datum",
+wo das Blatt Tag und Uhrzeit einstellt. Bemerkt, nicht beauftragt: Italienisch
+zeigt die Wochenspanne mit führender Null („09–15 novembre", so liefert es
+`Intl.formatRange`), und Persisch mischt unter „Geplante Änderungen"
+persische Ziffern im Datum mit lateinischen in der Uhrzeit.
+
+**Review gesammelt** (Betreiber: „wenn alle untersessions fertig sind dann
+mach ein review und verify"): `/code-review max` über alles noch nicht
+Gepushte, sieben Befunde, keiner kritisch.
+
+- **Behoben:** Ohne Vermerk — die Zusage der App ist noch unterwegs — zählte
+  die Sperre jede Meldung der letzten zehn Minuten zum Platz, auch die des
+  Vorgängers, der ihn eben noch hatte. Überholte der Aufruf die Zusage, ging
+  die eigene Absage dann gar nicht hinaus. Jetzt zählt nur eine Meldung, die
+  die Person nennt (Namen sind eindeutig). Die PGlite-Probe des Gesuch-Triggers
+  schreibt die Titel aus `texte.ts`: Der Trigger vergleicht mit dem Wortlaut,
+  und eine Änderung von `TITEL_GESUCHT` ohne ihn fiel sonst nicht auf. Der
+  Kopf von `versammlung-auf-sicherung.mjs` nennt den neuen Trigger — er räumt
+  beim Zurücksetzen ein verwaistes Gesuch aus der Sicherung wieder ab.
+- **Ausgelassen:** die Abfrage nach `absagen` ins große `Promise.all` (ein
+  Round-Trip, der Aufruf geht ohne Warten hinaus) und eine geteilte Liste für
+  `in.(…)`-Filter (sie stünde in `_shared/rest.ts` und rollte damit alle
+  Functions neu aus).
+- **Zur Entscheidung:** Ob gemeldet ist, liest die Sperre an Zeilen in den
+  Glocken ab — die kann jeder Planer löschen („Alle löschen"), und danach geht
+  derselbe Push wieder hinaus. Fest wäre ein Vermerk an der Absage selbst
+  (eine Spalte `absagen.gemeldet_am`, gesetzt von der Function).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -12041,6 +12102,8 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | **T175** | Push der Absage am echten Gerät ansehen (Betreiber) | T175–T179 sind am 13. November ausgerollt (`114c485d`), die Sammel-Absage am 14. November (`c330ddc2`). Was bleibt: einmal absagen und den Push beim Planer ansehen, dazu einmal eine Abwesenheit mit zwei Aufgaben eintragen (ein Push für beide) — die Entwicklerseite hat keine Datenbank, und an echte Geräte geht nichts ohne den Betreiber. |
 | **T180** | Nachladen bei der Rückkehr am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`757b7098`): Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. App im Hintergrund lassen, nach über fünf Minuten zurück — was ein Planer inzwischen geändert hat, ist ohne Neustart da. Die Entwicklerseite zeigt es nicht (kein Konto, keine Datenbank). |
 | **T184** | Zahl am App-Symbol am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`c330ddc2`). Android (je nach Startbildschirm Zahl oder Punkt) und iPhone (nur mit erlaubten Mitteilungen) — die Entwicklerseite zeigt kein Symbol. |
+| **Review 14.11., Nr. 5** | Push erreicht die offene App nicht — Entscheidung (Betreiber) | Gefunden im vierten Gesamt-Review (Abschnitt vom 14. November): Nach einem Push laufen Zahl am App-Symbol und „Meine Aufgaben" bis zur nächsten Rückkehr nach Ablauf der fünf Minuten auseinander. Vorschlag: Der Worker meldet den Push jedem offenen Fenster, die App lädt bei der Rückkehr ohne Frist nach. |
+| **Absage-Sperre** | Vermerk „gemeldet" an der Absage statt in den Glocken — Entscheidung (Betreiber) | Seit dem 14. November meldet `substitute` eine Absage einmal; ob schon gemeldet ist, liest es an den Glocken-Zeilen ab. Leeren alle, die planen, ihre Glocke, geht derselbe Push wieder hinaus. Fest wäre `absagen.gemeldet_am` (neue Spalte, Migration, in der Sicherung `SEITHER`). |
 | **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
 | **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan liest der Betreiber zum Livegang ein, nach dem Zurücksetzen (XML, Planung › Vortragsplan): Das Zurücksetzen vom 8. November hat `vortraege` geleert, die Sicherung vor der Beta hat keinen, und was während der Beta eingelesen wird, nimmt das Zurücksetzen wieder mit |
