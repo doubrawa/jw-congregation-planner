@@ -130,7 +130,7 @@ export default {
   "unterDerWoche": "În timpul săptămânii",
   "amWochenende": "La sfârșitul săptămânii",
   "zeitGiltAbWoche": "Se aplică din săptămâna",
-  "zeitGiltAbHinweis": "Săptămânile dinainte rămân cum sunt. Notificările deja trimise arată în continuare data veche.",
+  "zeitGiltAbHinweis": "Săptămânile dinainte rămân cum sunt. Notificările deja trimise arată în continuare ziua și ora vechi.",
   "zeitGeplanteWechsel": "Schimbări planificate",
   "auxKurz": "Pentru temele cursanților",
   "gruppenTitel": "Grupe",

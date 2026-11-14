@@ -1159,7 +1159,7 @@ describe('substitute: mehrere Absagen, ein Push je Planer', () => {
     // darin: Dort sucht die App selbst Ersatz.
     expect(sentPush.map((p) => p.endpoint).sort()).toEqual([ABO_ADMIN.endpoint, ABO_ZUTEILER.endpoint].sort())
     expect(zustellungAn(ABO_ADMIN.endpoint)).toMatchObject({
-      title: 'Assignment declined',
+      title: 'Can’t take part',
       body: 'Otto Riginal — Tuesday, September 8 · 19:00: Bible Reading · Tuesday, September 8 · 19:00: Platzhalter-Besprechung',
       tag: LESUNG,
     })

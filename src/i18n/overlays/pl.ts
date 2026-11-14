@@ -711,7 +711,7 @@ export default {
   "codePasst": "Kod się zgadza",
   "codeNichtDu": "To nie ty? W takim razie zapytaj w swoim zborze.",
   "codeUnbekannt": "Taki kod nie istnieje. Sprawdź go jeszcze raz.",
-  "codeAbgelaufen": "Ten kod jest już nieważny. Nowy pokazuje profil na zalogowanym urządzeniu, a jeśli go nie masz, poproś starszych.",
+  "codeAbgelaufen": "Ten kod jest już nieważny. Nowy znajdziesz w profilu na zalogowanym urządzeniu, a jeśli takiego nie masz, poproś o niego starszych.",
   "angemeldetBleiben": "Potem to urządzenie pozostanie zalogowane.",
   "linkUngueltig": "Ten link jest już nieważny. Poproś starszych o nowy.",
   "anmeldenFehler": "Nie udało się zalogować. Spróbuj ponownie.",

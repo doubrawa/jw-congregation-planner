@@ -261,7 +261,7 @@ describe('absage: ein Programmpunkt', () => {
     expect([...push.an].sort()).toEqual([U_ADMIN, U_PLANER].sort())
     expect(push.body).toBe(`Bibellesung · Dienstag, 8. September · 19:00 · ${ICH}`)
     expect(push.titel(null)).toBe('Verhinderung gemeldet')
-    expect(push.titel('en')).toBe('Assignment declined')
+    expect(push.titel('en')).toBe('Can’t take part')
     // In die Mitteilungen: Von dort führt ein Tipp in die Woche der Absage.
     expect(push.url).toBe(`${APP}#go=mitteilungen`)
     // Je Platz eine eigene Meldung — zwei Absagen am selben Abend ersetzen einander nicht.

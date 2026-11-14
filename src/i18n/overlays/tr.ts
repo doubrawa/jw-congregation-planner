@@ -130,7 +130,7 @@ export default {
   "unterDerWoche": "Hafta içi",
   "amWochenende": "Hafta sonu",
   "zeitGiltAbWoche": "Geçerli olduğu ilk hafta",
-  "zeitGiltAbHinweis": "Önceki haftalar olduğu gibi kalır. Daha önce gönderilen bildirimlerde eski tarih yazmaya devam eder.",
+  "zeitGiltAbHinweis": "Önceki haftalar olduğu gibi kalır. Daha önce gönderilen bildirimlerde eski gün ve saat yazmaya devam eder.",
   "zeitGeplanteWechsel": "Planlanan değişiklikler",
   "auxKurz": "Öğrenci görevleri için",
   "gruppenTitel": "Gruplar",
