@@ -10948,7 +10948,8 @@ weiter"): T181, T182 und T184. Am 14. November entschieden: T183 bleibt ohne
 Ansicht in der App (Betreiber: „nichts in der app"), und die Absagen aus einer
 Abwesenheit gehen als **ein** Push je Planer hinaus („ein push je planer") —
 umgesetzt am selben Tag. Am selben Tag besprochen und umgesetzt: T180 (die
-offene App lädt bei der Rückkehr still nach, Betreiber: „Ja, so umsetzen").
+offene App lädt bei der Rückkehr still nach, Betreiber: „Ja, so umsetzen"),
+ausgerollt mit `757b7098`.
 
 **Nicht beauftragt** und deshalb keine Aufgabe: Nr. 5 (wer beim Verkleinern
 eines Dienstes am wegfallenden Platz stand, verliert die Aufgabe ohne Meldung
@@ -11278,6 +11279,11 @@ schlimmer (die Stände der Wochen setzt schon das Lesen). Nicht bereinigt
 (Betreiber: „nein nicht nötig"): 54 Zeilen mit Datum oder Verlauf aus
 `114c485d` und `c330ddc2`.
 
+**Ausgerollt** am 14. November (`757b7098`, Betreiber: „ja"): Der Lauf der CI
+war grün — nur das Frontend (`shell-757b709`) —, die Laufzeit-Messung der CI
+ebenso; `node scripts/ausrollen-pruefen.mjs` danach ohne Befund. Offen bleibt
+der Blick am echten Gerät.
+
 ### T181 · Abwesenheit eintragen: die eigenen Aufgaben in der Zeit zeigen und die Absage anbieten 🔧 ✅ umgesetzt (13. November 2026)
 
 **Vorschlag (V1; Betreiber: „klingt gut"):** Wer eine Abwesenheit einträgt,
@@ -11508,7 +11514,8 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 **Alle 184 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
 Begründung als „kein Mangel" zurückgewiesen. Als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
-umgesetzt und geprüft; das Ausrollen steht aus). **T183** ist am selben Tag entschieden:
+umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
+echten Gerät). **T183** ist am selben Tag entschieden:
 nichts in der App. **T181**, **T182** und **T184** vom 13. November sind samt
 der Sammel-Absage (ein Push je Planer) am 14. November ausgerollt
 (`c330ddc2`); offen ist dort nur der Blick auf die Zahl am App-Symbol am
@@ -12000,12 +12007,11 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 **Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
 und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, keiner
-offen — T183 ist am 14. November entschieden (nichts in der App), T180 am
-selben Tag umgesetzt; das Ausrollen steht aus. Neu in der Tabelle stehen
-T180 (ausrollen und am echten Gerät ansehen) und die Proben von T175 und T184
-am echten Gerät. T175–T179 sind seit dem 13. November ausgerollt (`114c485d`), T181,
-T182 und T184 samt der Sammel-Absage seit dem 14. November (`c330ddc2`) —
-beide mit `ausrollen-pruefen.mjs` nachgemessen.
+offen — T183 ist am 14. November entschieden (nichts in der App). Neu in der
+Tabelle stehen nur noch die Proben am echten Gerät (T175, T180, T184).
+T175–T179 sind seit dem 13. November ausgerollt (`114c485d`), T181, T182 und
+T184 samt der Sammel-Absage seit dem 14. November (`c330ddc2`), T180 am selben
+Tag (`757b7098`) — alle drei mit `ausrollen-pruefen.mjs` nachgemessen.
 
 **Stand 8. November 2026, alles Offene an einer Stelle** (gemessen am Abend:
 174 Köpfe, keiner offen — dazu kamen am Tag der Neuaufbau zum Echtbetrieb, die
@@ -12033,7 +12039,7 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | | Punkt | Warum offen |
 | --- | --- | --- |
 | **T175** | Push der Absage am echten Gerät ansehen (Betreiber) | T175–T179 sind am 13. November ausgerollt (`114c485d`), die Sammel-Absage am 14. November (`c330ddc2`). Was bleibt: einmal absagen und den Push beim Planer ansehen, dazu einmal eine Abwesenheit mit zwei Aufgaben eintragen (ein Push für beide) — die Entwicklerseite hat keine Datenbank, und an echte Geräte geht nichts ohne den Betreiber. |
-| **T180** | ausrollen, dann am echten Gerät ansehen (Betreiber) | Am 14. November besprochen und umgesetzt: Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. Geprüft (Suite, Typprüfung, Lint, Build, Laufzeit-Messung) und durch `/simplify` und `/code-review max` gegangen. Der Push bringt nur das Frontend — keine Migration, keine Function. Am echten Gerät: App im Hintergrund lassen, nach über fünf Minuten zurück, der neue Stand ist da. |
+| **T180** | Nachladen bei der Rückkehr am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`757b7098`): Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. App im Hintergrund lassen, nach über fünf Minuten zurück — was ein Planer inzwischen geändert hat, ist ohne Neustart da. Die Entwicklerseite zeigt es nicht (kein Konto, keine Datenbank). |
 | **T184** | Zahl am App-Symbol am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`c330ddc2`). Android (je nach Startbildschirm Zahl oder Punkt) und iPhone (nur mit erlaubten Mitteilungen) — die Entwicklerseite zeigt kein Symbol. |
 | **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
 | **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
