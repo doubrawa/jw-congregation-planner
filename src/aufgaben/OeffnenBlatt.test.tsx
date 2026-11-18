@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import type { MyTask, SubstituteReq } from '../data/types'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { OeffnenBlatt } from './OeffnenBlatt'
 
@@ -86,12 +87,12 @@ describe('Offene Zuteilungen', () => {
     expect(dispatch.mock.calls.some((c) => c[0].type === 'declineTask')).toBe(false)
   })
 
-  it('„Alle bestätigen" sagt alles auf einmal zu — bei nur einer Aufgabe steht es nicht da', () => {
+  it('„Alle 2 bestätigen" sagt alles auf einmal zu — bei nur einer Aufgabe steht es nicht da', () => {
     const { container, dispatch } = zeige({ myTasks: [aufgabe('t1'), aufgabe('t2')], substituteReqs: [] })
-    fireEvent.click(text(container, t.alleBestaetigen)[0]!)
+    fireEvent.click(text(container, fill(t.alleNBestaetigen, { n: 2 }))[0]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmAll' })
     cleanup()
-    expect(text(zeige({ myTasks: [aufgabe('t1')], substituteReqs: [] }).container, t.alleBestaetigen)).toHaveLength(0)
+    expect(text(zeige({ myTasks: [aufgabe('t1')], substituteReqs: [] }).container, fill(t.alleNBestaetigen, { n: 1 }))).toHaveLength(0)
   })
 
   it('„Später", Hintergrund und Escape legen es weg — auch mit offenen Zuteilungen', () => {
@@ -125,10 +126,11 @@ describe('T69 — das Blatt beim Öffnen zeigt auch Ersatzgesuche', () => {
     expect(bitte.textContent).toContain('Mikrofone')
   })
 
-  it('„Übernehmen" nimmt das Gesuch an', () => {
+  it('„Übernehmen" legt das Gesuch erst im Blatt vor — eingetragen wird dort (T185)', () => {
     const { container, dispatch } = zeige({ myTasks: [], substituteReqs: [gesuch('k1')] })
     fireEvent.click(text(container, t.uebernehmen)[0]!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'takeSubstitute', key: 'k1' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openUebernehmen', auswahl: { art: 'gesuch', key: 'k1' } })
+    expect(dispatch.mock.calls.some((c) => c[0].type === 'takeSubstitute')).toBe(false)
   })
 
   it('„Nein, danke" lehnt genau das Gesuch seiner Karte ab (1.11.2026)', () => {

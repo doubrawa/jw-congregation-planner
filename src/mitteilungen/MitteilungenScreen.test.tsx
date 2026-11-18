@@ -252,13 +252,12 @@ describe('Gleich hier erledigen (T121)', () => {
     expect(knopf(container, t.bestaetigen)).toBeUndefined()
   })
 
-  it('ein offenes Ersatzgesuch: „Übernehmen" übernimmt und gilt als gelesen', () => {
+  it('ein offenes Ersatzgesuch: „Übernehmen" öffnet erst das Blatt — gelesen ist sie, wenn darin übernommen wird (T185)', () => {
     const n = notif({ id: 'n9', title: 'Ersatz gesucht', taskId: HILFSDIENST })
     const { container, dispatch } = zeige({ notifs: [n], substituteReqs: [gesuch(HILFSDIENST)] })
     fireEvent.click(knopf(container, t.uebernehmen)!)
     expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
-      { type: 'mitteilungGelesen', id: 'n9' },
-      { type: 'takeSubstitute', key: HILFSDIENST },
+      { type: 'openUebernehmen', auswahl: { art: 'gesuch', key: HILFSDIENST } },
     ])
   })
 

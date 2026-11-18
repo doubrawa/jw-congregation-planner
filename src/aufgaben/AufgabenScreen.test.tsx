@@ -11,6 +11,7 @@ import {
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import type { MyTask, Person, S89Payload, SubstituteReq, TrolleyTermin } from '../data/types'
 import { AufgabenScreen } from './AufgabenScreen'
@@ -105,14 +106,14 @@ describe('Kopf', () => {
     expect(container.querySelector('.aufgaben-zusage')?.textContent).toContain(zahlBinden(`${t.dashZuBest}: 2`))
   })
 
-  it('„Alle bestätigen" sagt alles Offene auf einmal zu', () => {
-    const { container, dispatch } = zeige({ myTasks: [task(), task({ id: 'T2' })] })
-    fireEvent.click(knopf(container.querySelector('.aufgaben-zusage'), t.alleBestaetigen)!)
+  it('„Alle 2 bestätigen" nennt die Zahl und sagt alles Offene auf einmal zu (T186)', () => {
+    const { container, dispatch } = zeige({ myTasks: [task(), task({ id: 'T2' }), task({ id: 'T3', status: 'bestätigt' })] })
+    fireEvent.click(knopf(container.querySelector('.aufgaben-zusage'), fill(t.alleNBestaetigen, { n: 2 }))!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmAll' })
   })
 
   it('bei nur einer offenen Aufgabe kein „Alle" — und ohne offene nichts davon', () => {
-    expect(knopf(zeige({ myTasks: [task()] }).container, t.alleBestaetigen)).toBeUndefined()
+    expect(zeige({ myTasks: [task()] }).container.querySelector('.aufgaben-zusage button')).toBeNull()
     cleanup()
     expect(zeige({ myTasks: [task({ status: 'bestätigt' })] }).container.querySelector('.aufgaben-zusage')).toBeNull()
   })

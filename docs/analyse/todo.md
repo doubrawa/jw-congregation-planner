@@ -11581,6 +11581,75 @@ ebenso. Nachgemessen mit `node scripts/ausrollen-pruefen.mjs`: alle 11
 Migrationen eingespielt, der Katalog gleicht ihrer Folge, alle 8 Functions
 aktiv, der Rauchtest besteht.
 
+## Aufgenommen am 18. November 2026 — Impeccable-Audit und -Critique (T185–T201)
+
+Am 18. November lief der Design-Skill Impeccable (pbakaus/impeccable 4.9.2,
+nur lokal unter `.claude/`, nicht im Repo) über die App. Betreiber: „kannst du
+für dieses projekt den impeccable skill aktivieren und das mal drüberlaufen
+lassen". Es gab zwei Läufe: den **Audit** mit 17/20 (kein Verstoß gegen WCAG
+AA, Befunde nur bei kleiner Schrift) und die **Critique** mit 27/40 (Nielsen,
+zwei getrennte Prüfungen: Gestaltung und Detektor). Gemessen wurden 9
+Bildschirme in 375, 1280 und 1920 px, dazu dunkel, ar/ru und Schriftstufe 1,45.
+Die Hauptbefunde sind im Code nachgeprüft.
+
+Beauftragt hat der Betreiber Befund für Befund, jeweils den vorgeschlagenen
+Weg („wir gehen möglichst viel an. frag mich einzeln ab mit lösungsvorschlag").
+Committen und pushen soll Claude selbst. V3 (nächster offener Platz) und V6
+(den Saal erklären) vom 13. November sind damit doch beauftragt.
+
+**Bewusst nicht:**
+- eine untere Leiste am Handy (Befund 15, „so lassen")
+- das federnde Easing des Startbilds (gewählt am 22. Oktober)
+- der Streifen an Trolley-Terminen (Kalenderkonvention; der Detektor meldet ihn fälschlich)
+- 44 statt 24 px
+
+| T | Befund | Entscheidung |
+| --- | --- | --- |
+| T185 | „Übernehmen" (Freie Plätze) trägt mit einem Tipp ein und benachrichtigt sofort Ursprungsperson und Planer; ein Fehltipp lässt sich nur über „Ich kann nicht" zurücknehmen | Der Tipp öffnet ein kurzes Blatt: Dienst, Datum, „für Bernd Klein", Konflikt „An diesem Tag schon …", ein Knopf „Übernehmen" |
+| T186 | „Alle bestätigen" sagt alle offenen Aufgaben zu, auch Oktober | Die Zahl in den Knopf: „Alle 5 bestätigen" |
+| T187 | „Danke!" kommt vor der Antwort der Datenbank; der Speicherfehler steht nur 2,4 s als Toast, ohne Knopf; die Toast-Region wird erst mit dem Text eingehängt | Speicherfehler als stehendes Banner mit „Neu laden" (wie das Offline-Banner), Toast-Region fest im DOM, Toastdauer nach Textlänge (mindestens 4 s) |
+| T188 | Der Saal auf der Aufgabenkarte des Verkündigers zeigt rote, graue und gestrichelte Punkte ohne Deutung; die Zahl steht nur im `aria-label` | Darunter sichtbar „20 von 23 Plätzen besetzt · dein Platz ist markiert"; Probleme anderer grau wie „wartet" |
+| T189 | Freie Plätze: vier schwarze Vollbreite-Knöpfe, darunter Pillen; der Ausfallende steht ohne „für" da; alle Knöpfe heißen gleich | Beide Abschnitte mit Pille, „für {Name}", Knopfname mit Dienst und Datum |
+| T190 | Am Desktop scrollt die Planen-Leiste weg, und nach jeder Zuteilung schließt sich die Kandidatenspalte | Leiste ab dem Tablet klebend; nach einer Zuteilung ist der nächste offene Platz derselben Zusammenkunft gewählt |
+| T191 | 22 Stellen unter 12 px in sieben Einzelwerten (bis 9,5 px) | Zwei Stufen: Beschriftungen in Großbuchstaben mindestens 11 px, Text und Aktionen mindestens 12 px |
+| T192 | Profil ab 1180 px: links 261 px, rechts 1141 px | Die Abwesenheiten in die linke Spalte |
+| T193 | ar/fa: lateinisches Komma in der Anrede; „09:00–11:00" bricht am Strich um | Anrede als Vorlage je Sprache; Zeitspannen umbrechen nicht |
+| T194 | Trolley-Termin: „verabredet, ohne Zusage" in Aufgaben, „hat euch beide eingetragen" in der Trolley-Ansicht, verschiedene Punkte | Überall „mit {Name}" bzw. „Partner gesucht", gleicher Punkt |
+| T195 | Auswertung: „Was auffällt" und „Zu oft, zu selten" nennen dieselben Personen; „erwartet: 0" | Dopplung weg, „erwartet" → „üblich wären" |
+| T196 | Einzelne Wörter allein in der letzten Zeile; zweizeilige Titel brechen schief | `text-wrap: pretty` für Absätze, `balance` für Titel |
+| T197 | Im Programm hat jede eingeteilte Person einen schwarzen Punkt, „voll" heißt aber „zugesagt" | Punkt nur noch am eigenen Namen (Minze) |
+| T198 | „Leeren" im Blatt „Automatisch zuteilen" sagt nicht, was | Der Knopf nennt den Umfang |
+| T199 | „länger nicht dran" an 48 von 52 Kandidaten | Zusatz entfällt |
+| T200 | „+ Partner" / „– Partner" als 11-px-Kürzel | „Partner hinzufügen" / „Partner entfernen" |
+| T201 | Seitentitel „Zusammenkünfte", im Menü markiert „Planung" | Im Planen-Modus nennt der Titel den Modus („Zusammenkünfte planen" …) |
+
+Umgesetzt wird in Paketen. Vor jedem Push laufen ein Review und ein Verify
+(Betreiber: „mach vor dem push jedes paketes noch ein review und verify").
+
+**Paket 1 ✅ umgesetzt (18. November 2026): T185, T186, T187 und T189.**
+- **T185:** `UebernehmenBlatt`. Freie Plätze, das Blatt beim Öffnen und die
+  Mitteilung öffnen es mit `openUebernehmen`. Erst der Knopf darin ruft
+  `takeSubstitute` bzw. `platzUebernehmen` und erst dann gilt die Mitteilung
+  als beantwortet. Ist das Angebot inzwischen vergeben, erscheint das Blatt
+  nicht (`angebotZu`). Über dem Blatt beim Öffnen liegt es wie das
+  Absage-Blatt.
+- **T187:** Der Schreibfehler setzt `speicherFehler`. Das Banner
+  (`role="alert"`) hat „Neu laden" und ✕. Ein Toast steht 4–8 s
+  (`toastDauer`), die Live-Region steht immer im Dokument.
+- **T189:** eine `AngebotZeile` für beide Abschnitte. „für {name}" steht als
+  `gesuchFuer`, der Knopf hat `aria-describedby` auf die Zeile.
+- **Neue Schlüssel in allen zwölf Sprachen:** `alleNBestaetigen` ersetzt
+  `alleBestaetigen`.
+- **Geprüft:**
+  - Laufzeit-Messung kern mit axe: 168 Läufe, kein Befund.
+  - Satz voll für Freie Plätze und das neue Blatt: 24 Läufe, kein Befund.
+  - Bedienung im Pane: Blatt öffnen, übernehmen, Escape, offline gesperrt,
+    gestapelt über dem Blatt beim Öffnen mit Fokus zurück, Arabisch.
+  - Handbuch Verkündiger mit neuem Bild `verkuendiger-uebernehmen.png`.
+- **Nicht im Pane prüfbar:** das Banner (die Entwicklerseite schreibt nicht)
+  und „Übernehmen" aus der Glocke (keine Testmitteilung „Ersatz gesucht").
+  Beides decken die Komponententests.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |

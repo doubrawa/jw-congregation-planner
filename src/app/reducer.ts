@@ -304,6 +304,10 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'closeAbsage':
     case 'openTausch':
     case 'closeTausch':
+    case 'openUebernehmen':
+    case 'closeUebernehmen':
+    case 'speicherFehler':
+    case 'speicherFehlerWeg':
     case 'openS89':
     case 'closeS89':
     case 'setLang':

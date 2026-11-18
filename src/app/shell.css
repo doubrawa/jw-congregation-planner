@@ -39,6 +39,11 @@
   color: var(--text2);
 }
 
+/* Nicht gespeichert (T187): dieselbe Leiste, das Zeichen in der Farbe des Problems. */
+.offline-banner.is-fehler > .zeichen {
+  color: var(--problem);
+}
+
 /* Text und „Neu laden": Bleiben neben dem Knopf keine 10em für den Text, rückt
    der Knopf darunter (rechtsbündig). Vorher stand der Text bei 320 px und
    großer Schrift in einer Spalte von drei Wörtern. */
@@ -420,6 +425,12 @@
 
 /* Meldung (T121, Entwurf „Zustände"): eine dunkle Pille unten — umbrechen
    statt hinausragen, wenn der Text länger ist als das Handy breit. */
+/* Die Live-Region um den Toast steht immer im Dokument (T187); der Toast darin
+   liegt fest am unteren Rand, die Region selbst nimmt keinen Platz ein. */
+.toast-region {
+  height: 0;
+}
+
 .toast {
   position: fixed;
   bottom: max(28px, env(safe-area-inset-bottom));

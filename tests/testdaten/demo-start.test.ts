@@ -100,6 +100,7 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     s89: (s) => s.s89,
     zuteilen: (s) => s.slotSel,
     sprache: (s) => s.langSheetOpen,
+    uebernehmen: (s) => s.uebernehmen,
   }
   /** Die Hashes, mit denen die Laufzeit-Messung die Blätter öffnet (`scripts/laufzeit-auftraege.mjs`). */
   const HASH: Record<Blatt, string> = {
@@ -109,6 +110,7 @@ describe('entwicklerStart – was der Hash der Entwicklerseite verlangt', () => 
     s89: '#s=aufgaben&pl=0&me=p9',
     zuteilen: '#s=planen&tab=mid&me=p9',
     sprache: '#s=einstellungen',
+    uebernehmen: '#s=freie&pl=0&me=p9',
   }
 
   it.each(BLAETTER)('blatt=%s öffnet sein Blatt — mit dem Bestand und der Uhr der Seite (T173)', (blatt) => {

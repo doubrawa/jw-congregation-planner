@@ -120,6 +120,7 @@ vi.mock('../lib/daten/versand', async (orig) => ({
 }))
 
 const { AppProvider } = await import('./store')
+const { toastDauer } = await import('./toast-dauer')
 const { aktuelleSitzung } = await import('./sitzung')
 const { STANDARD_ZEITEN } = await import('../data/vorgaben')
 const { useApp } = await import('./context')
@@ -195,49 +196,39 @@ describe('Fehlgeschlagene Schreibvorgänge werden gemeldet', () => {
     expect(result.current.state.toast?.text).toBe(DE.toastEntzugNichtGemeldet)
   })
 
-  it('ein Fehlschlag erzeugt einen Hinweis', () => {
+  it('ein Fehlschlag setzt das Banner — nicht einen Toast, der nach Sekunden verschwindet (T187)', () => {
+    vi.useFakeTimers()
     const { result } = starte()
     act(() => {
       melderAufrufen('schreibfehler')
     })
-    expect(result.current.state.toast?.text).toBe(DE.toastSpeicherFehler)
+    expect(result.current.state.speicherFehler).toBe(true)
+    expect(result.current.state.toast).toBeNull()
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+    expect(result.current.state.speicherFehler).toBe(true)
   })
 
-  it('mehrere kurz hintereinander erzeugen nur einen — sonst verdeckt der letzte alles', () => {
+  it('mehrere hintereinander lassen es ein Banner bleiben; geschlossen, setzt der nächste es neu', () => {
     // Ein Fehlschlag reißt meist mehrere Writes mit (Token weg, Netz weg).
-    // Gemessen wird über das Wiederauftauchen: der Hinweis blendet sich nach
-    // 2,4 s aus, und ein gesperrter zweiter Fehlschlag holt ihn nicht zurück.
-    vi.useFakeTimers()
     const { result } = starte()
     act(() => {
       melderAufrufen('schreibfehler')
     })
-    expect(result.current.state.toast?.text).toBe(DE.toastSpeicherFehler)
-    act(() => {
-      vi.advanceTimersByTime(2400)
-    })
-    expect(result.current.state.toast).toBeNull()
-    act(() => {
-      melderAufrufen('schreibfehler')
-      melderAufrufen('schreibfehler')
-    })
-    expect(result.current.state.toast).toBeNull()
-  })
-
-  it('nach der Sperrfrist wieder — ein späterer Fehlschlag ist eine neue Nachricht', () => {
-    vi.useFakeTimers()
-    const { result } = starte()
+    const zustand = result.current.state
     act(() => {
       melderAufrufen('schreibfehler')
     })
+    expect(result.current.state).toBe(zustand)
     act(() => {
-      vi.advanceTimersByTime(6000)
+      result.current.dispatch({ type: 'speicherFehlerWeg' })
     })
-    expect(result.current.state.toast).toBeNull() // zwischendurch ausgeblendet
+    expect(result.current.state.speicherFehler).toBe(false)
     act(() => {
       melderAufrufen('schreibfehler')
     })
-    expect(result.current.state.toast?.text).toBe(DE.toastSpeicherFehler)
+    expect(result.current.state.speicherFehler).toBe(true)
   })
 
   it('beim Abbauen wird der Melder abgeräumt — kein Aufruf in einen toten Baum', () => {
@@ -1287,29 +1278,43 @@ describe('Gerätevorlieben stehen auf <html> — dort liest das CSS sie', () => 
 })
 
 describe('Der Toast blendet sich selbst aus', () => {
-  it('nach 2,4 Sekunden', async () => {
+  it('ein kurzer nach 4 Sekunden, vorher nicht — sonst liest ihn niemand', async () => {
     vi.useFakeTimers()
     const { result } = starte()
     await act(async () => {
       result.current.dispatch({ type: 'showToast', text: 'Zugeteilt' })
     })
+    await act(async () => {
+      vi.advanceTimersByTime(3900)
+    })
     expect(result.current.state.toast).not.toBeNull()
     await act(async () => {
-      vi.advanceTimersByTime(2400)
+      vi.advanceTimersByTime(100)
     })
     expect(result.current.state.toast).toBeNull()
   })
 
-  it('vorher nicht — sonst liest ihn niemand', async () => {
+  it('ein langer steht länger — so lange, wie das Lesen dauert (T187)', async () => {
     vi.useFakeTimers()
     const { result } = starte()
+    const lang = DE.toastErsatzNichtMehrGesucht // 71 Zeichen
     await act(async () => {
-      result.current.dispatch({ type: 'showToast', text: 'Zugeteilt' })
+      result.current.dispatch({ type: 'showToast', text: lang })
     })
     await act(async () => {
-      vi.advanceTimersByTime(2000)
+      vi.advanceTimersByTime(4000)
     })
     expect(result.current.state.toast).not.toBeNull()
+    await act(async () => {
+      vi.advanceTimersByTime(toastDauer(lang) - 4000)
+    })
+    expect(result.current.state.toast).toBeNull()
+  })
+
+  it('Dauer: mindestens 4 s, höchstens 8 s', () => {
+    expect(toastDauer('Gespeichert')).toBe(4000)
+    expect(toastDauer('x'.repeat(100))).toBe(6000)
+    expect(toastDauer('x'.repeat(500))).toBe(8000)
   })
 })
 

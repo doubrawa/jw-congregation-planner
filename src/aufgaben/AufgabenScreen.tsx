@@ -6,7 +6,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { fromIso } from '../data/meeting-dates'
 import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { eigeneTermine } from '../data/trolleys'
-import { aufgabenLabel, useT } from '../i18n/useT'
+import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { AufgabeKarte } from './AufgabeKarte'
@@ -40,7 +40,7 @@ export function AufgabenScreen() {
             <span className="klein-text">{zahlBinden(`${t.dashZuBest}: ${zuBestaetigen}`)}</span>
             {zuBestaetigen > 1 && (
               <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'confirmAll' })}>
-                {t.alleBestaetigen}
+                {fill(t.alleNBestaetigen, { n: zuBestaetigen })}
               </button>
             )}
           </div>

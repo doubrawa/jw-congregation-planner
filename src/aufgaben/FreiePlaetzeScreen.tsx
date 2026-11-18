@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { useApp } from '../app/context'
-import { Punkt } from '../bausteine/Punkt'
+import { Punkt, type PunktArt } from '../bausteine/Punkt'
 import { useT } from '../i18n/useT'
 import { AngebotText, GesuchText } from './Angebot'
 import { AufgabeTermin, AufgabeText } from './AufgabeText'
@@ -55,15 +55,12 @@ export function FreiePlaetzeScreen() {
           <div className="karte aufgaben-angebote">
             <p className="klein-text">{t.einspringenHint}</p>
             {state.substituteReqs.map((req) => (
-              <div key={req.key} className="aufgaben-angebot">
-                <div className="aufgaben-angebot-text">
-                  <Punkt art="problem" />
-                  <GesuchText req={req} />
-                </div>
-                <button type="button" className="knopf-dunkel" onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}>
-                  {t.uebernehmen}
-                </button>
-              </div>
+              <AngebotZeile
+                key={req.key}
+                punkt="problem"
+                text={(id) => <GesuchText req={req} id={id} />}
+                onUebernehmen={() => dispatch({ type: 'openUebernehmen', auswahl: { art: 'gesuch', key: req.key } })}
+              />
             ))}
           </div>
         </section>
@@ -71,8 +68,8 @@ export function FreiePlaetzeScreen() {
 
       {/*
         Freie Plätze (4.10.2026): unbesetzte Plätze gesendeter Wochen, für die
-        ich den Aufgabenbereich habe. Der Tipp trägt direkt ein
-        (`platzUebernehmen` → Edge Function).
+        ich den Aufgabenbereich habe. Eingetragen wird erst im Blatt
+        „Übernehmen?" (`platzUebernehmen` → Edge Function).
       */}
       {state.offenePlaetze.length > 0 && (
         <section className="aufgaben-abschnitt" data-bereich="freie-plaetze">
@@ -80,17 +77,45 @@ export function FreiePlaetzeScreen() {
           <div className="karte aufgaben-angebote">
             <p className="klein-text">{t.freiePlaetzeHint}</p>
             {state.offenePlaetze.map((platz) => (
-              <div key={platz.key} className="aufgaben-zeile">
-                <Punkt art="offen" />
-                <AngebotText titel={<AufgabeText task={platz} />} wann={<AufgabeTermin task={platz} />} schonHeute={platz.schonHeute} />
-                <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'platzUebernehmen', key: platz.key })}>
-                  {t.uebernehmen}
-                </button>
-              </div>
+              <AngebotZeile
+                key={platz.key}
+                punkt="offen"
+                text={(id) => (
+                  <AngebotText id={id} titel={<AufgabeText task={platz} />} wann={<AufgabeTermin task={platz} />} schonHeute={platz.schonHeute} />
+                )}
+                onUebernehmen={() => dispatch({ type: 'openUebernehmen', auswahl: { art: 'platz', key: platz.key } })}
+              />
             ))}
           </div>
         </section>
       )}
     </section>
+  )
+}
+
+/**
+ * Eine Zeile zum Übernehmen — Ersatzgesuch wie freier Platz in derselben Form,
+ * die Pille rechts. Der Knopf heißt, was er tut („Übernehmen"); was er
+ * übernimmt, liest ein Vorleseprogramm aus der Zeile (`aria-describedby`).
+ */
+function AngebotZeile({
+  punkt,
+  text,
+  onUebernehmen,
+}: {
+  punkt: PunktArt
+  text: (id: string) => ReactNode
+  onUebernehmen: () => void
+}) {
+  const { t } = useT()
+  const id = useId()
+  return (
+    <div className="aufgaben-zeile">
+      <Punkt art={punkt} />
+      {text(id)}
+      <button type="button" className="knopf-pille" aria-describedby={id} onClick={onUebernehmen}>
+        {t.uebernehmen}
+      </button>
+    </div>
   )
 }

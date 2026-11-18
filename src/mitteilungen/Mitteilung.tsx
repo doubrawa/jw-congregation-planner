@@ -17,8 +17,8 @@ import { relativeZeit } from '../i18n/zeit'
  * lesen". Das Ziel selbst ist Ansehen und geht auch offline.
  *
  * Eine neue trägt darunter, was man gleich hier tun kann (`handlungZu`). Wer
- * bestätigt oder übernimmt, hat sie damit gelesen; „Ich kann nicht" öffnet
- * erst das Blatt zum Absagen, und wer es abbricht, hat nichts beantwortet.
+ * bestätigt, hat sie damit gelesen; „Ich kann nicht" und „Übernehmen" öffnen
+ * erst ihr Blatt, und wer es abbricht, hat nichts beantwortet.
  */
 export function Mitteilung({ notif }: { notif: Notification }) {
   const { state, dispatch } = useApp()
@@ -74,10 +74,7 @@ export function Mitteilung({ notif }: { notif: Notification }) {
           <button
             type="button"
             className="knopf-dunkel"
-            onClick={() => {
-              gelesen()
-              dispatch({ type: 'takeSubstitute', key: handlung.id })
-            }}
+            onClick={() => dispatch({ type: 'openUebernehmen', auswahl: { art: 'gesuch', key: handlung.id } })}
           >
             {t.uebernehmen}
           </button>

@@ -14,6 +14,8 @@ import { fill, useT } from '../i18n/useT'
 import type { Screen, Thema } from '../data/types'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { TauschenBlatt } from '../tauschen/TauschenBlatt'
+import { angebotZu } from '../aufgaben/angebot-auswahl'
+import { UebernehmenBlatt } from '../aufgaben/UebernehmenBlatt'
 import { AuswertungScreen } from '../auswertung/AuswertungScreen'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { AufgabenScreen } from '../aufgaben/AufgabenScreen'
@@ -210,7 +212,7 @@ export function AppShell() {
   // Die Meldung steht im Startbild und in der App an derselben Stelle (zweites
   // Kind des Fragments): Löst die App das Startbild ab, läuft sie nicht noch
   // einmal ein.
-  const meldung = state.toast && <Meldung key={state.toast.id} toast={state.toast} />
+  const meldung = <Meldung toast={state.toast} />
 
   // Erst prüfen, dann zeigen: Solange offen ist, ob jemand angemeldet ist
   // (`sitzungPruefen`), und solange die Daten kommen, steht das Startbild —
@@ -332,6 +334,7 @@ export function AppShell() {
   const meineAufgabe = state.myTasks.find((task) => task.id === state.myTaskId)
   const abzusagen = state.myTasks.find((task) => task.id === state.absageId)
   const zuTauschen = state.myTasks.find((task) => task.id === state.tauschId)
+  const zuUebernehmen = state.uebernehmen && angebotZu(state.uebernehmen, state)
   // Am Desktop teilt die Spalte neben dem Plan zu — dafür kein Blatt darüber.
   const zuteilenBlatt = state.slotSel && !zuteilenInSpalte(state, desktop) ? state.slotSel : null
   /** Ein Blatt in seiner eigenen Fehlergrenze (siehe unten). */
@@ -381,6 +384,7 @@ export function AppShell() {
               />
 
               <OfflineBanner />
+              <SpeicherFehlerBanner />
               <AnsichtLeiste />
 
               {/* `key` am Screen: nach einem Fehler hängt der nächste
@@ -420,6 +424,8 @@ export function AppShell() {
           {/* Nach dem Blatt beim Öffnen: „Ich kann nicht" darin legt sich darüber. */}
           {abzusagen && blatt(<AbsageBlatt key={abzusagen.id} task={abzusagen} />)}
           {zuTauschen && blatt(<TauschenBlatt key={zuTauschen.id} task={zuTauschen} />)}
+          {/* Wie das Absagen über dem Blatt beim Öffnen — und nur, solange es noch angeboten wird. */}
+          {zuUebernehmen && blatt(<UebernehmenBlatt key={state.uebernehmen?.key} angebot={zuUebernehmen} />)}
         </main>
       </div>
       {meldung}
@@ -427,11 +433,53 @@ export function AppShell() {
   )
 }
 
-/** Die Meldung unten. Aufgerufen mit `key` je Meldung: Eine neue läuft frisch ein. */
-function Meldung({ toast }: { toast: Toast }) {
+/**
+ * Die Meldung unten. Die Live-Region steht immer im Dokument und tauscht nur
+ * ihren Inhalt: Eine erst mit dem Text eingehängte Region sagen
+ * Vorleseprogramme nicht zuverlässig an (T187). Die Meldung selbst trägt `key`
+ * je Meldung — eine neue läuft frisch ein.
+ */
+function Meldung({ toast }: { toast: Toast | null }) {
   return (
-    <div className="toast" role="status">
-      {toast.text}
+    <div className="toast-region" role="status">
+      {toast && (
+        <div key={toast.id} className="toast">
+          {toast.text}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * **Eine Änderung ist nicht gespeichert** (T187) — stehend, bis man neu lädt
+ * oder es schließt. Gebaut wie das Offline-Banner; `role="alert"`, weil das
+ * eben Gemeldete („Danke!", „Zugeteilt") damit nicht mehr stimmt.
+ */
+function SpeicherFehlerBanner() {
+  const { state, dispatch } = useApp()
+  const { t } = useT()
+  if (!state.speicherFehler) return null
+  return (
+    <div className="offline-banner is-fehler" role="alert">
+      <Zeichen name="warnung" />
+      <div className="offline-banner-inhalt">
+        <div className="offline-banner-text">
+          <strong>{t.speicherFehlerBanner}</strong>
+          <div className="offline-banner-hint">{fill(t.speicherFehlerHint, { knopf: t.offlineRetry })}</div>
+        </div>
+        <button type="button" className="knopf-pille" onClick={() => location.reload()}>
+          {t.offlineRetry}
+        </button>
+      </div>
+      <button
+        type="button"
+        className="rund-knopf"
+        aria-label={t.a11yClose}
+        onClick={() => dispatch({ type: 'speicherFehlerWeg' })}
+      >
+        <Zeichen name="kreuz" />
+      </button>
     </div>
   )
 }

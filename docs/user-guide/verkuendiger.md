@@ -336,7 +336,8 @@ gleich darunter im Menü unter **Freie Plätze** (siehe
 „Neue Zuteilung" mit allen deinen Aufgaben dieser Woche auf einmal – in der App
 und, wenn du Push aktiviert hast, auch als Benachrichtigung auf dem Gerät. Beim
 nächsten Öffnen der App legt sie dir die offenen Zuteilungen zum Bestätigen vor:
-je Aufgabe **Bestätigen** oder **Ich kann nicht**, unten **Alle bestätigen**.
+je Aufgabe **Bestätigen** oder **Ich kann nicht**, unten **Alle … bestätigen**
+mit der Zahl der offenen Aufgaben (etwa **Alle 5 bestätigen**).
 Mit **Später** legst du das Blatt weg; beim nächsten Öffnen liegt es wieder da.
 
 Liegt die App schon offen im Hintergrund, holt sie beim Zurückkehren den neuen
@@ -373,7 +374,8 @@ Mauszeiger den ganzen Text).
 
 - **Gleich hier erledigen:** Wartet eine neue Zuteilung noch auf deine Zusage,
   stehen **Bestätigen** und **Ich kann nicht** direkt darunter; bei „Ersatz
-  gesucht" steht **Übernehmen**, solange noch niemand eingesprungen ist.
+  gesucht" steht **Übernehmen**, solange noch niemand eingesprungen ist – es
+  öffnet erst das Blatt **Übernehmen?** (siehe [Einspringen](#einspringen-für-jemand-anderen)).
 - **Ein Tipp auf die Mitteilung führt dorthin, wo sie herkommt:** zu deiner
   Aufgabe, gleich mit Bestätigen und Absagen; bei „Ersatz gesucht" zum
   Einspringen unter **Freie Plätze**; ohne bestimmte Aufgabe zu **Meine
@@ -402,8 +404,9 @@ ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
 
 - **Der Haken** rechts bestätigt die Aufgabe – der Planer sieht, dass du
   sie übernimmst. Ist sie schon bestätigt oder abgesagt, steht dort ein Pfeil.
-- **Alle bestätigen** oben sagt alles Offene auf einmal zu; der Knopf steht
-  da, sobald mindestens zwei Aufgaben auf deine Zusage warten.
+- **Alle … bestätigen** oben sagt alles Offene auf einmal zu und nennt, wie
+  viele es sind (etwa **Alle 5 bestätigen**); der Knopf steht da, sobald
+  mindestens zwei Aufgaben auf deine Zusage warten.
 - **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
   eine Absage später wieder zurücknehmen.
 - **S‑89** – siehe unten.
@@ -496,8 +499,8 @@ Dienst niemanden dazu. Es gelten dieselben Regeln wie bei den freien Plätzen
 
 Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
 
-- **Über die Push-Nachricht oder die Mitteilungen** – dort übernimmst du
-  gleich mit **Übernehmen**; ein Tipp auf die Mitteilung selbst öffnet **Freie
+- **Über die Push-Nachricht oder die Mitteilungen** – dort steht gleich
+  **Übernehmen**; ein Tipp auf die Mitteilung selbst öffnet **Freie
   Plätze** und springt direkt zum Bereich **Einspringen**, statt oben auf der
   Seite zu landen.
 - **Beim Öffnen der App** – dasselbe Blatt, das dich an unbestätigte
@@ -511,10 +514,18 @@ Du bekommst es auf drei Wegen zu sehen, und dafür musst du nichts suchen:
   Zahl am Menüpunkt sagt, wie viel du gerade übernehmen könntest (Gesuche und
   freie Plätze zusammen).
 
-Alle zeigen dasselbe: den gesuchten Dienst, den Termin und den Namen dessen,
-der abgesagt hat. Hast du an dem Tag **schon etwas anderes**, steht es rot
-darunter („An diesem Tag schon: …") – du siehst es also, bevor du zusagst. Ein
-Tipp auf **Übernehmen** trägt dich ein und bestätigt die Aufgabe gleich mit.
+Alle zeigen dasselbe: den gesuchten Dienst, den Termin und für wen („für
+Bernd Klein"). Hast du an dem Tag **schon etwas anderes**, steht es darunter
+(„An diesem Tag schon: …") – du siehst es also, bevor du zusagst.
+
+Ein Tipp auf **Übernehmen** trägt dich noch nicht ein: Erst öffnet sich das
+Blatt **Übernehmen?** mit Dienst, Termin, für wen und was du an dem Tag schon
+hast. Erst **Übernehmen** darin trägt dich ein und bestätigt die Aufgabe gleich
+mit – dann erfahren es die Person, die abgesagt hat, und wer plant.
+**Abbrechen** schließt das Blatt, ohne dass etwas geschieht. Kannst du
+später doch nicht, sagst du die Aufgabe unter **Meine Aufgaben** ab.
+
+![Das Blatt „Übernehmen?"](screenshots/verkuendiger-uebernehmen.png)
 
 Es gilt: **wer zuerst tippt.** War jemand schneller, verschwindet der Eintrag –
 dann ist der Dienst schon besetzt.
@@ -535,8 +546,9 @@ in dem du an dem Tag schon stehst. **Programmpunkte** – Vorträge, Gebete,
 Leser, Schulungsaufgaben – übernimmst du hier nicht: Die teilt der Planer zu.
 Auch die Reinigung steht nicht dabei; sie übernimmt eine Gruppe.
 
-Wie beim Einspringen steht vorher darunter, was du an dem Tag schon hast. Ein
-Tipp auf **Übernehmen** trägt dich ein und bestätigt gleich mit. Auch hier gilt:
+Wie beim Einspringen steht vorher darunter, was du an dem Tag schon hast, und
+**Übernehmen** öffnet erst das Blatt **Übernehmen?**; eingetragen und bestätigt
+wird mit dem Knopf darin. Auch hier gilt:
 **wer zuerst tippt.** War jemand schneller, lädt die App neu, und der Platz ist
 weg.
 

@@ -97,6 +97,9 @@ SHOTS=(
   # den Ordner-Bereich, und die Ordner-Plätze der ersten Woche sind offen;
   # deren Plan gilt auf der Entwicklerseite als gesendet (`demoVersand`).
   "verkuendiger-freie-plaetze|s=freie&pl=0&me=p7"
+  # Das Blatt vor dem Übernehmen (T185): Simon (p9) bekommt das erste
+  # Ersatzgesuch vorgelegt — eins mit „An diesem Tag schon".
+  "verkuendiger-uebernehmen|s=freie&pl=0&me=p9&blatt=uebernehmen"
   # Höher, damit unten Anmeldung, Handbuch, „Erste Schritte" und „Abmelden"
   # ganz draufstehen — sonst schneidet das Bild die Knöpfe ab.
   "verkuendiger-profil|s=profil&pl=0&me=p9|${W}x1480"

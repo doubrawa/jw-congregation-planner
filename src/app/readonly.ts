@@ -84,6 +84,12 @@ const VIEW_ACTIONS: ReadonlySet<AppAction['type']> = new Set([
   'closeTausch',
   'tauschAngefragt',
   'tauschWeg',
+  // Ebenso das Blatt „Übernehmen?" (T185): Erst der Knopf darin schreibt.
+  'openUebernehmen',
+  'closeUebernehmen',
+  // Das Banner eines fehlgeschlagenen Schreibvorgangs (T187) — rein lokal.
+  'speicherFehler',
+  'speicherFehlerWeg',
   // Vermerk, dass die Begrüßung gezeigt wurde. Rein lokal; fehlte sie hier,
   // begrüßte der Offline-Start mit einem „nur lesend"-Hinweis.
   'welcomeShown',

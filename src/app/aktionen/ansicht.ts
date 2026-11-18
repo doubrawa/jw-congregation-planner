@@ -53,6 +53,10 @@ type AnsichtAktion = Extract<
       | 'closeAbsage'
       | 'openTausch'
       | 'closeTausch'
+      | 'openUebernehmen'
+      | 'closeUebernehmen'
+      | 'speicherFehler'
+      | 'speicherFehlerWeg'
       | 'openS89'
       | 'closeS89'
       | 'setLang'
@@ -217,6 +221,14 @@ export function ansicht(state: AppState, action: AnsichtAktion): AppState {
       return { ...state, tauschId: action.id, myTaskId: null }
     case 'closeTausch':
       return { ...state, tauschId: null }
+    case 'openUebernehmen':
+      return { ...state, uebernehmen: action.auswahl }
+    case 'closeUebernehmen':
+      return { ...state, uebernehmen: null }
+    case 'speicherFehler':
+      return state.speicherFehler ? state : { ...state, speicherFehler: true }
+    case 'speicherFehlerWeg':
+      return { ...state, speicherFehler: false }
     case 'openS89':
       return { ...state, s89: action.payload }
     case 'closeS89':

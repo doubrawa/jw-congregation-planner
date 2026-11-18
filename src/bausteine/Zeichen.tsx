@@ -35,6 +35,8 @@ const PFADE = {
   stab: <path d="M4.8 19.2 15 9M16.8 3.6v3.6M15 5.4h3.6M19.8 10.8v2.4M18.6 12h2.4M10.2 3.6v2.4M9 4.8h2.4" />,
   /** Ohne Verbindung. */
   wolke: <path d="M7.2 18.6h9.8a4 4 0 0 0 .6-7.9 5.5 5.5 0 0 0-10.7 1.2 3.5 3.5 0 0 0 .3 6.7z" />,
+  /** Nicht gespeichert (T187): Dreieck mit Ausrufezeichen. */
+  warnung: <path d="M12 4.5 3.8 18.6h16.4zM12 10v4M12 16.6v.1" />,
   haken: <path d="m6.5 12.5 3.7 3.7L17.5 8.5" />,
   /** Bearbeiten: der Stift bei der Person (`werk.mjs`, dort 20 × 20). */
   stift: <path d="M4.8 19.2l.96-4.08L16.32 4.56a1.68 1.68 0 0 1 2.4 0l.72.72a1.68 1.68 0 0 1 0 2.4L8.88 18.24z" />,

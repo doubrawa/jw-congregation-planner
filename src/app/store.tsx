@@ -36,6 +36,7 @@ import { initialState } from './init'
 import { ausstehendesSchreiben, persist } from './persist'
 import { isViewAction } from './readonly'
 import { reducer } from './reducer'
+import { toastDauer } from './toast-dauer'
 
 /**
  * Reacts Reducer ist die **Identität** — der Folgezustand kommt fertig herein.
@@ -148,17 +149,14 @@ export function AppProvider({
   // sind fire-and-forget — der Erfolgs-Toast entsteht im Reducer, bevor die
   // Datenbank überhaupt geantwortet hat. Ohne diese Meldung sieht der Nutzer
   // „Zugeteilt", während nichts gespeichert wurde.
+  //
+  // Als stehendes Banner, nicht als Toast (T187): Der Toast verschwand nach
+  // 2,4 s — wer eben „Danke!" gelesen und das Handy weggelegt hatte, verpasste
+  // den Widerspruch, und in der installierten App fehlt der Neu-laden-Knopf des
+  // Browsers. Mehrere Fehlschläge hintereinander (Token weg, Netz weg) setzen
+  // dasselbe Banner nur noch einmal.
   useEffect(() => {
-    let zuletzt = 0
-    setSchreibfehlerMelder(() => {
-      // Ein Fehlschlag reißt meist mehrere Writes mit (Token abgelaufen, Netz
-      // weg). Ein Hinweis genügt — sonst überschreiben sich die Toasts
-      // gegenseitig und der letzte verdeckt, wie viel schiefging.
-      const jetzt = Date.now()
-      if (jetzt - zuletzt < 5000) return
-      zuletzt = jetzt
-      dispatch({ type: 'showToast', text: dict(stateRef.current.lang).toastSpeicherFehler })
-    })
+    setSchreibfehlerMelder(() => dispatch({ type: 'speicherFehler' }))
     return () => setSchreibfehlerMelder(null)
   }, [dispatch])
 
@@ -487,10 +485,10 @@ export function AppProvider({
       .catch((fehler: unknown) => console.error('[bibelbuecher]', fehler))
   }, [state.lang, state.congLang, dispatch])
 
-  // Toast automatisch ausblenden (2.4 s wie im Prototyp)
+  // Toast automatisch ausblenden — so lange, wie das Lesen dauert (T187).
   useEffect(() => {
     if (!state.toast) return
-    const timer = setTimeout(() => dispatch({ type: 'hideToast' }), 2400)
+    const timer = setTimeout(() => dispatch({ type: 'hideToast' }), toastDauer(state.toast.text))
     return () => clearTimeout(timer)
   }, [state.toast, dispatch])
 

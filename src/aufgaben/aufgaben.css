@@ -191,27 +191,6 @@
   padding: 14px 10px 14px 18px;
 }
 
-.aufgaben-angebot {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.aufgaben-angebot + .aufgaben-angebot {
-  padding-block-start: 12px;
-  border-block-start: 1px solid var(--linie);
-}
-
-.aufgaben-angebot-text {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr);
-  column-gap: 14px;
-}
-
-.aufgaben-angebot-text .punkt {
-  margin-block-start: 6px;
-}
-
 /* Was man übernehmen kann (`AngebotText`): was, wann, was man schon hat. */
 .angebot-text {
   display: flex;
@@ -230,6 +209,18 @@
   color: var(--sek2);
   font-size: calc(13.5px * var(--fs));
   font-weight: 500;
+}
+
+/* ---- Übernehmen? (T185) ---------------------------------------------------- */
+
+.uebernehmen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uebernehmen p {
+  margin: 0;
 }
 
 /* ---- Absagen --------------------------------------------------------------- */

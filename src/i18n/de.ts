@@ -356,7 +356,8 @@ export const DE = {
     // Versammlung, das Blatt beim Öffnen und das Absagen mit seiner Spur.
     saalBesetzung: 'Besetzung', saalDeinPlatz: 'dein Platz ist markiert',
     dieseWocheVersammlung: 'Diese Woche in der Versammlung',
-    alleBestaetigen: 'Alle bestätigen', spaeter: 'Später',
+    // Die Zahl im Knopf (T186): Man sieht, wie viel man auf einmal zusagt.
+    alleNBestaetigen: 'Alle {n} bestätigen', spaeter: 'Später',
     absageFrage: 'Du kannst nicht?', absageIntro: 'Kein Problem. So geht es danach weiter:',
     spurDuSagstAb: 'Du sagst ab', spurErsatzGesucht: 'Ersatz gesucht', spurUebernommen: 'Übernommen',
     spurPlanerErfaehrt: 'Planer erfährt es', spurNeuZugeteilt: 'Neu zugeteilt',
@@ -728,6 +729,12 @@ export const DE = {
     ersatzHint: 'Wenn du einen Hilfsdienst absagst, wird automatisch ein Ersatz aus dem Kreis der Qualifizierten gesucht.',
     einspringenTitle: 'Einspringen', einspringenHint: 'Für diese Hilfsdienste wird ein Ersatz gesucht — kannst du übernehmen?',
     uebernehmen: 'Übernehmen',
+    // Wer abgesagt hat, beim Ersatzgesuch (T189).
+    gesuchFuer: 'für {name}',
+    // Das Blatt vor dem Übernehmen (T185). {ort} ist `navAufgabenLong`.
+    uebernehmenFrage: 'Übernehmen?',
+    uebernehmenGesuch: '{name} kann nicht — es wird Ersatz gesucht.',
+    uebernehmenDanach: 'Danach steht der Dienst unter „{ort}“. Kannst du doch nicht, sagst du dort ab.',
     // Freie Plätze (4.10.2026, seit T142 nur Hilfsdienste): unbesetzte Plätze
     // gesendeter Wochen, für die man den Aufgabenbereich hat.
     freiePlaetzeTitle: 'Freie Plätze',
@@ -853,6 +860,7 @@ export const DE = {
     toastLacAdd: 'Programmpunkt eingefügt · Zeiten angepasst', toastLacDel: 'Programmpunkt entfernt · Zeiten angepasst',
     // Seit „Alles Planen" (15.10.2026) sehen es Admin und Planer — wer plant.
     toastBestaetigt: 'Bestätigt · wer plant, sieht es',
+    toastAlleBestaetigt: 'Bestätigt: {n} · wer plant, sieht es',
     toastVerhindert: 'Gemeldet · wer plant, erfährt es',
     toastErsatzGesucht: 'Abgesagt · es wird ein Ersatz gesucht',
     toastUebernommen: 'Danke! Du hast den Hilfsdienst übernommen',
@@ -870,6 +878,9 @@ export const DE = {
     // Error Boundary — Anzeigefehler, nicht Ladefehler
     errTitel: 'Anzeige gestört', errText: 'Dieser Bereich konnte nicht angezeigt werden. Der Rest der App funktioniert weiter.',
     toastSpeicherFehler: 'Änderung konnte nicht gespeichert werden — bitte neu laden',
+    // Stehendes Banner statt Toast (T187). {knopf} ist `offlineRetry`.
+    speicherFehlerBanner: 'Eine Änderung ist nicht gespeichert.',
+    speicherFehlerHint: '„{knopf}“ zeigt, was wirklich gespeichert ist.',
     stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',

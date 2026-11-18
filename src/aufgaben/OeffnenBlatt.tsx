@@ -1,7 +1,7 @@
 import { useApp } from '../app/context'
 import { vorzulegendeGesuche } from '../app/vorlegen'
 import { Sheet } from '../components/Sheet'
-import { aufgabenTitelSprache, aufgabenZeilen, useT } from '../i18n/useT'
+import { aufgabenTitelSprache, aufgabenZeilen, fill, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { GesuchText } from './Angebot'
 import { AufgabeWann } from './AufgabeText'
@@ -82,7 +82,11 @@ export function OeffnenBlatt() {
               <div key={req.key} className="oeffnen-aufgabe">
                 <GesuchText req={req} />
                 <div className="oeffnen-knoepfe">
-                  <button type="button" className="knopf-dunkel" onClick={() => dispatch({ type: 'takeSubstitute', key: req.key })}>
+                  <button
+                    type="button"
+                    className="knopf-dunkel"
+                    onClick={() => dispatch({ type: 'openUebernehmen', auswahl: { art: 'gesuch', key: req.key } })}
+                  >
                     {t.uebernehmen}
                   </button>
                   <button type="button" className="knopf-leise" onClick={() => dispatch({ type: 'gesuchAblehnen', key: req.key })}>
@@ -97,7 +101,7 @@ export function OeffnenBlatt() {
       <div className="sheet-fuss sheet-fuss--haupt">
         {offen.length > 1 ? (
           <button type="button" className="knopf-umriss" onClick={() => dispatch({ type: 'confirmAll' })}>
-            {t.alleBestaetigen}
+            {fill(t.alleNBestaetigen, { n: offen.length })}
           </button>
         ) : (
           <span />

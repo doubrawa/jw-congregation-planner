@@ -886,9 +886,30 @@ describe('Der Toast', () => {
     expect(zeige().container.querySelector('.toast')).toBeNull()
     cleanup()
     const { container } = zeige({ toast: { id: 1, text: 'Zugeteilt' } })
-    const toast = container.querySelector('.toast')!
-    expect(toast.textContent).toBe('Zugeteilt')
-    expect(toast.getAttribute('role')).toBe('status')
+    expect(container.querySelector('.toast')!.textContent).toBe('Zugeteilt')
+  })
+
+  it('die Live-Region steht schon vor der Meldung da — eine erst mit dem Text eingehängte sagen Vorleseprogramme nicht zuverlässig an (T187)', () => {
+    const { container } = zeige()
+    const region = container.querySelector('[role="status"].toast-region')
+    expect(region).toBeTruthy()
+    expect(region!.textContent).toBe('')
+  })
+})
+
+describe('Eine Änderung ist nicht gespeichert (T187)', () => {
+  it('steht als Banner mit „Neu laden", bis man es schließt', () => {
+    expect(zeige().container.querySelector('[role="alert"]')).toBeNull()
+    cleanup()
+    const { container, dispatch } = zeige({ speicherFehler: true })
+    const banner = container.querySelector('[role="alert"]')!
+    expect(banner.textContent).toContain(t.speicherFehlerBanner)
+    expect([...banner.querySelectorAll('button')].map((b) => b.textContent || b.getAttribute('aria-label'))).toEqual([
+      t.offlineRetry,
+      t.a11yClose,
+    ])
+    fireEvent.click(banner.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'speicherFehlerWeg' })
   })
 })
 

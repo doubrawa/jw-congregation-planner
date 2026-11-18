@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { MeetingAssignment, SubstituteReq } from '../data/types'
-import { useT } from '../i18n/useT'
+import { fill, useT } from '../i18n/useT'
 import { AufgabeTermin, ZuteilungenText } from './AufgabeText'
 import './aufgaben.css'
 
@@ -20,6 +20,7 @@ export function AngebotText({
   wann,
   schonHeute = [],
   hinweis,
+  id,
 }: {
   /** Titel und Termin dürfen aus zwei Sprachen bestehen (`AufgabeText`, `AufgabeWann`). */
   titel: ReactNode
@@ -27,10 +28,12 @@ export function AngebotText({
   schonHeute?: readonly MeetingAssignment[]
   /** Eine Zeile darunter — beim Tauschen: „Ohne App-Konto — vorher persönlich absprechen". */
   hinweis?: string
+  /** Für `aria-describedby` am Knopf daneben: Er heißt nur „Übernehmen", der Zusammenhang steht hier. */
+  id?: string
 }) {
   const { t } = useT()
   return (
-    <span className="angebot-text">
+    <span className="angebot-text" id={id}>
       <span className="angebot-titel">{titel}</span>
       <span className="klein-text">{wann}</span>
       {hinweis && <span className="klein-text">{hinweis}</span>}
@@ -44,17 +47,18 @@ export function AngebotText({
 }
 
 /**
- * Ein Ersatzgesuch: der Dienst, sein Termin und wer abgesagt hat — sein Name
- * ohne Übersetzer, wie überall (`platzName`).
+ * Ein Ersatzgesuch: der Dienst, sein Termin und für wen — der Name ohne
+ * Übersetzer, wie überall (`platzName`).
  */
-export function GesuchText({ req }: { req: SubstituteReq }) {
-  const { tu } = useT()
+export function GesuchText({ req, id }: { req: SubstituteReq; id?: string }) {
+  const { t, tu } = useT()
   return (
     <AngebotText
+      id={id}
       titel={tu(req.title)}
       wann={
         <>
-          <AufgabeTermin task={req} /> · {req.declinedBy}
+          <AufgabeTermin task={req} /> · {fill(t.gesuchFuer, { name: req.declinedBy })}
         </>
       }
       schonHeute={req.schonHeute}

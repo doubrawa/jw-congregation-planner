@@ -64,7 +64,8 @@ describe('UI-Wörterbücher (Fallback-Kette DE ← EN ← Sprache)', () => {
      * Die Form „Bezeichnung: {n}" stimmt für jede Zahl, und die Übersetzungen
      * folgen dem Deutschen.
      */
-    const MINDESTENS_ZWEI = new Set(['dublettenRow']) // zählt Dubletten, also nie 1
+    // Dubletten gibt es nie einzeln; „Alle {n} bestätigen" steht erst ab zwei offenen Aufgaben da.
+    const MINDESTENS_ZWEI = new Set(['dublettenRow', 'alleNBestaetigen'])
     // „Seite {n} von {m}", „Schritt {n} von {m}" (Film „Erste Schritte"), „{n}
     // und mehr" (Legende der Auswertung), „{n} mehr", „{n} weniger" (Marken der
     // Auswertung, T138): Auf die Zahl folgt eine Präposition, ein „und" oder

@@ -3,6 +3,7 @@ import { aufgabenAbgeleitet, reducer } from './reducer'
 import { hatAuxKlasse } from '../data/aux-class'
 import type { AppAction, AppState } from './context'
 import type { HydratePayload } from './context'
+import { fill } from '../i18n/useT'
 import type { Befund } from '../../supabase/functions/import-week/befunde.ts'
 import {
   buildDemoFsWeeks,
@@ -98,6 +99,8 @@ function makeState(over: Partial<AppState> = {}): AppState {
     myTaskId: null,
     absageId: null,
     tauschId: null,
+    uebernehmen: null,
+    speicherFehler: false,
     substituteReqs: [],
     offenePlaetze: [],
     s89: null,
@@ -1984,7 +1987,8 @@ describe('Sprache', () => {
     })
     const nach = reducer(s, { type: 'confirmAll' })
     expect(nach.confirmations).toEqual({ a: 'bestätigt', b: 'verhindert', c: 'bestätigt' })
-    expect(nach.toast?.text).toBe(t.toastBestaetigt)
+    // Der Toast nennt die Zahl (T186): Man sieht, wie viel man zugesagt hat.
+    expect(nach.toast?.text).toBe(fill(t.toastAlleBestaetigt, { n: 2 }))
     // Nichts offen: nichts geändert, auch kein Toast.
     const ohne = makeState({ myTasks: [{ id: 'b', title: 'B', date: 'Di', status: 'verhindert', s89: null }] })
     expect(reducer(ohne, { type: 'confirmAll' })).toBe(ohne)

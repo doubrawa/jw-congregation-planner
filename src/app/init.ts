@@ -93,6 +93,8 @@ export function leererZustand({ theme, fontScale, lang }: Vorlieben): AppState {
     myTaskId: null,
     absageId: null,
     tauschId: null,
+    uebernehmen: null,
+    speicherFehler: false,
     substituteReqs: [],
     offenePlaetze: [],
     s89: null,

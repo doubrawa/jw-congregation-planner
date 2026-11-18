@@ -113,7 +113,7 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
       if (offen.length === 0) return state
       const confirmations = { ...state.confirmations }
       for (const t of offen) confirmations[t.id] = 'bestätigt'
-      return { ...state, confirmations, toast: toastKey(state, 'toastBestaetigt') }
+      return { ...state, confirmations, toast: toastKey(state, 'toastAlleBestaetigt', { n: offen.length }) }
     }
     case 'confirmTask':
       // Status in die ConfirmationMap — myTasks und confirmOpen folgen aus der
@@ -182,6 +182,7 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
         weeks,
         confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
         myTaskId: null,
+        uebernehmen: null,
         toast: toastKey(state, clash ? 'toastUebernommenKonflikt' : 'toastUebernommen'),
       }
     }
@@ -209,6 +210,7 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
         weeks,
         // Wer sich selbst einträgt, hat zugesagt — wie beim Einspringen.
         confirmations: { ...state.confirmations, [action.key]: 'bestätigt' },
+        uebernehmen: null,
         toast: toastKey(state, platz.schonHeute.length > 0 ? 'toastUebernommenKonflikt' : 'toastPlatzUebernommen'),
       }
     }

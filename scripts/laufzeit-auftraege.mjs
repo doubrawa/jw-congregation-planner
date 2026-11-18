@@ -78,6 +78,7 @@ export const BLATT_ZUSTAENDE = [
   { name: 'S-89', zustand: 's=aufgaben&pl=0&me=p9&blatt=s89', warten: '.s89-box' },
   { name: 'Zuteilen', zustand: 's=planen&tab=mid&me=p9&blatt=zuteilen', warten: '.zuteilen-zeile' },
   { name: 'Sprache', zustand: 's=einstellungen&blatt=sprache', warten: '.lang-list' },
+  { name: 'Übernehmen', zustand: 's=freie&pl=0&me=p9&blatt=uebernehmen', warten: '.sheet-inhalt.uebernehmen' },
   { name: 'Woche einrichten', zustand: 's=planen&tab=mid', klicks: ['.meeting-tab--icon'], warten: '.einrichten-karte' },
   { name: 'Programm', zustand: 's=planen&tab=mid', klicks: ['.meeting-tab--icon', '.einrichten-verweis'], warten: '.sheet-inhalt.programm' },
   {

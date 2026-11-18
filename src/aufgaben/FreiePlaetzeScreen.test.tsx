@@ -13,6 +13,7 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
 import { bibelbuecherLaden, makeTr } from '../i18n/translate'
 import { dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import type { Person, SubstituteReq } from '../data/types'
 import { FreiePlaetzeScreen } from './FreiePlaetzeScreen'
@@ -97,12 +98,26 @@ describe('Einspringen', () => {
     expect(bereich(zeige().container)).toBeNull()
   })
 
-  it('ein Gesuch nennt Dienst, Termin und wer abgesagt hat', () => {
+  it('ein Gesuch nennt Dienst, Termin und für wen (T189)', () => {
     const { container } = zeige({ substituteReqs: [gesuch()] })
-    const zeile = bereich(container)!.querySelector('.aufgaben-angebot')!
+    const zeile = bereich(container)!.querySelector('.aufgaben-zeile')!
     expect(zeile.querySelector('.angebot-titel')?.textContent).toBe('Mikrofone')
     expect(zeile.querySelector('.klein-text')?.textContent).toContain(zahlBinden('8. September'))
-    expect(zeile.querySelector('.klein-text')?.textContent).toContain('Bernd Brand')
+    expect(zeile.querySelector('.klein-text')?.textContent).toContain(fill(t.gesuchFuer, { name: 'Bernd Brand' }))
+  })
+
+  it('Gesuch und freier Platz stehen in derselben Form: Pille rechts, kein schwarzer Vollbreite-Knopf (T189)', () => {
+    const { container } = zeige({ substituteReqs: [gesuch()] })
+    const knoepfe = [...bereich(container)!.querySelectorAll('button')]
+    expect(knoepfe.map((k) => k.className)).toEqual(['knopf-pille'])
+  })
+
+  it('der Knopf heißt „Übernehmen", was er übernimmt, liest das Vorleseprogramm aus der Zeile', () => {
+    const { container } = zeige({ substituteReqs: [gesuch()] })
+    const k = knopf(bereich(container), t.uebernehmen)!
+    const beschreibung = container.querySelector(`[id="${k.getAttribute('aria-describedby')}"]`)
+    expect(beschreibung?.textContent).toContain('Mikrofone')
+    expect(beschreibung?.textContent).toContain('Bernd Brand')
   })
 
   it('wer abgesagt hat, steht in fremder Oberfläche da, wie er heißt — kein Bibelbuch', async () => {
@@ -112,7 +127,9 @@ describe('Einspringen', () => {
     await bibelbuecherLaden()
     expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
     const { container } = zeige({ lang: 'en', substituteReqs: [gesuch({ declinedBy: 'Markus 2 Weber' })] })
-    expect(bereich(container)!.querySelector('.aufgaben-angebot .klein-text')?.textContent).toContain('Markus 2 Weber')
+    // `fill` bindet Zahl und Wort mit einem geschützten Leerzeichen — der Name bleibt derselbe.
+    const text = bereich(container)!.querySelector('.aufgaben-zeile .klein-text')?.textContent?.replace(/\s+/g, ' ')
+    expect(text).toContain('Markus 2 Weber')
   })
 
   it('was ich an dem Tag schon habe, steht VOR dem Zusagen da', () => {
@@ -130,12 +147,12 @@ describe('Einspringen', () => {
     expect(container.querySelector('.hinweis-schon')).toBeNull()
   })
 
-  it('„Übernehmen" sagt für genau diesen Platz zu', () => {
+  it('„Übernehmen" legt genau dieses Gesuch im Blatt vor — eingetragen wird erst dort (T185)', () => {
     const { container, dispatch } = zeige({ substituteReqs: [gesuch()] })
     fireEvent.click(knopf(bereich(container), t.uebernehmen)!)
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'takeSubstitute', key: '2026-09-07|mid|helper|mik|0',
-    })
+    expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
+      { type: 'openUebernehmen', auswahl: { art: 'gesuch', key: '2026-09-07|mid|helper|mik|0' } },
+    ])
   })
 
   it('der Bereich erklärt, worum es geht — er erscheint unangekündigt', () => {
@@ -177,10 +194,12 @@ describe('Freie Plätze', () => {
     expect(karte(container)!.querySelector('.hinweis-schon')?.textContent).toContain('Leiter')
   })
 
-  it('„Übernehmen" trägt mich in genau diesen Platz ein', () => {
+  it('„Übernehmen" legt genau diesen Platz im Blatt vor — eingetragen wird erst dort (T185)', () => {
     const { container, dispatch } = zeige({ offenePlaetze: [frei()] })
     fireEvent.click(knopf(karte(container), t.uebernehmen)!)
-    expect(dispatch).toHaveBeenCalledWith({ type: 'platzUebernehmen', key: '2026-09-07|mid|helper|mik|1' })
+    expect(dispatch.mock.calls.map((c) => c[0])).toEqual([
+      { type: 'openUebernehmen', auswahl: { art: 'platz', key: '2026-09-07|mid|helper|mik|1' } },
+    ])
   })
 
   it('steht unter dem Einspringen — ein Gesuch drängt mehr als ein freier Platz', () => {

@@ -89,6 +89,12 @@ export type { Congregation }
  */
 export type DataStatus = 'loading' | 'ready' | 'error'
 
+/** Was man übernehmen will (T185): ein Ersatzgesuch (`SubstituteReq.key`) oder ein freier Platz (`OffenerPlatz.key`). */
+export interface UebernehmenAuswahl {
+  art: 'gesuch' | 'platz'
+  key: string
+}
+
 /** Nutzdaten der Hydration (aus Supabase geladen). */
 export interface HydratePayload {
   congregationId: string
@@ -337,6 +343,10 @@ export interface AppState {
   myTaskId: string | null // eigene Aufgabe im Aktions-Sheet (bestätigen/absagen)
   absageId: string | null // eigene Aufgabe im Absage-Blatt („Du kannst nicht?", T121)
   tauschId: string | null // eigene Aufgabe im Tausch-Blatt (T153)
+  /** Was im Blatt „Übernehmen?" liegt (T185): ein Ersatzgesuch oder ein freier Platz. */
+  uebernehmen: UebernehmenAuswahl | null
+  /** Ein Schreibvorgang ist fehlgeschlagen — das Banner steht, bis man neu lädt oder es schließt (T187). */
+  speicherFehler: boolean
   s89: S89Payload | null // offenes S-89-Formular
   langSheetOpen: boolean // Sprach-Sheet offen
   langSheetFor: 'cong' | 'alt' // Auswahl-Ziel: Versammlungssprache | weitere Programmsprache
@@ -597,6 +607,13 @@ export type AppAction =
   // Bildschirm nach ihrer Antwort hierher — geschrieben wird hier nichts.
   | { type: 'openTausch'; id: string } // Tausch-Blatt öffnen
   | { type: 'closeTausch' }
+  // Übernehmen erst im Blatt (T185): Der Tipp auf „Übernehmen" legt vor, was man
+  // zusagt; erst der Knopf darin trägt ein (`takeSubstitute`, `platzUebernehmen`).
+  | { type: 'openUebernehmen'; auswahl: UebernehmenAuswahl }
+  | { type: 'closeUebernehmen' }
+  // Ein Schreibvorgang schlug fehl (T187): Banner mit „Neu laden" statt Toast.
+  | { type: 'speicherFehler' }
+  | { type: 'speicherFehlerWeg' }
   | { type: 'tauschAngefragt'; anfrage: TauschAnfrage }
   | { type: 'tauschWeg'; id: string } // zurückgezogen, abgelehnt oder nicht mehr gültig
   /**

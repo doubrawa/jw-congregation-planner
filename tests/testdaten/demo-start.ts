@@ -148,7 +148,7 @@ export interface DebugHash {
  * Versammlungssprache. Blätter mit eigenem Zustand im Baustein (Programm,
  * Plan senden, Drucken) öffnet die Messung per Klick.
  */
-export const BLAETTER = ['aufgabe', 'absage', 'tausch', 's89', 'zuteilen', 'sprache'] as const
+export const BLAETTER = ['aufgabe', 'absage', 'tausch', 's89', 'zuteilen', 'sprache', 'uebernehmen'] as const
 export type Blatt = (typeof BLAETTER)[number]
 
 function blattOeffnen(s: AppState, blatt: Blatt): AppState {
@@ -168,6 +168,13 @@ function blattOeffnen(s: AppState, blatt: Blatt): AppState {
     }
     case 'sprache':
       return { ...s, langSheetOpen: true, langSheetFor: 'cong' }
+    case 'uebernehmen': {
+      // Das erste Ersatzgesuch, sonst der erste freie Platz (T185).
+      const req = s.substituteReqs[0]
+      const platz = s.offenePlaetze[0]
+      const uebernehmen = req ? { art: 'gesuch' as const, key: req.key } : platz ? { art: 'platz' as const, key: platz.key } : null
+      return { ...s, uebernehmen }
+    }
   }
 }
 
