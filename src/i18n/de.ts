@@ -285,7 +285,12 @@ export const DE = {
     treffpunkteDieserWoche: 'Treffpunkte dieser Woche',
     naechsteZusammenkunft: 'Nächste Zusammenkunft · {wann}',
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
+    // Der Seitentitel beim Planen (T201); {bereich} ist der Name des Bereichs.
+    planenBereich: '{bereich} planen',
     leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
+    // Was „Leeren" im Blatt „Automatisch zuteilen" leert (T198): {was} ist ein
+    // Bereich oder `leerenAlles`, {wann} der Wochentag oder `ganzeWoche`.
+    leerenUmfang: 'Leeren: {was} · {wann}', leerenAlles: 'Alles',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
     // Das Schlussgebet am Wochenende plant niemand (T133): Es spricht der Redner,
     // wenn er bleibt, sonst bittet der Studienleiter vor Ort jemanden.
@@ -492,8 +497,9 @@ export const DE = {
     // in allen 34 Sprachen gegen WOL 1201038 gehalten am 27.9.2026.
     familieHint: 'Der Gesprächspartner soll dasselbe Geschlecht haben oder ein Familienangehöriger sein.',
     familieHinzu: 'Familienmitglied hinzufügen',
-    partnerHinzu: '+ Partner',
-    partnerEntfernen: '– Partner',
+    // Ausgeschrieben (T200): „– Partner" las sich nicht als „entfernen".
+    partnerHinzu: 'Partner hinzufügen',
+    partnerEntfernen: 'Partner entfernen',
     schriftgroesse: 'Schriftgröße',
     // Vorlesbare Beschriftungen für Icon-Schaltflächen (Screenreader)
     a11yClose: 'Schließen',
@@ -621,7 +627,7 @@ export const DE = {
     // klein: {wann} ist „vor 12 Wochen" aus Intl, {zeitraum} „7.–11. September".
     werUebernimmt: 'Wer übernimmt?', nameSuchen: 'Name suchen',
     mitBereichN: 'Mit diesem Aufgabenbereich: {n}', aufgabenInWochen: 'Aufgaben in {w} Wochen',
-    vorschlag: 'Vorschlag', zuletztWann: 'zuletzt {wann}', zuletztLange: 'länger nicht dran',
+    vorschlag: 'Vorschlag', zuletztWann: 'zuletzt {wann}',
     abwesendZeitraum: 'abwesend {zeitraum}',
     // Die Spalte zum Zuteilen am Desktop, solange kein Platz gewählt ist.
     zuteilenLeer: 'Wähle im Programm einen Platz, um ihn zu besetzen.',

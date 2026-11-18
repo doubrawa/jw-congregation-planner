@@ -182,7 +182,7 @@ describe('„Leeren" fragt nach', () => {
     const { dispatch } = zeige()
     fireEvent.click(leeren())
     fireEvent.blur(leeren())
-    expect(leeren().textContent).toBe(t.leeren)
+    expect(leeren().textContent).not.toBe(t.leerenSicher)
     fireEvent.click(leeren())
     expect(dispatch).not.toHaveBeenCalled()
   })
@@ -191,10 +191,21 @@ describe('„Leeren" fragt nach', () => {
     const { dispatch } = zeige()
     fireEvent.click(leeren())
     fireEvent.click(kaestchen()[0]!)
-    expect(leeren().textContent).toBe(t.leeren)
+    expect(leeren().textContent).not.toBe(t.leerenSicher)
     fireEvent.click(leeren())
     fireEvent.click(knopf(t.ganzeWoche))
-    expect(leeren().textContent).toBe(t.leeren)
+    expect(leeren().textContent).not.toBe(t.leerenSicher)
     expect(dispatch).not.toHaveBeenCalled()
+  })
+})
+
+describe('„Leeren" sagt, was es leert (T198)', () => {
+  it('Bereich und Umfang stehen im Knopf — und folgen der Wahl', () => {
+    zeige()
+    expect(leeren().textContent).toMatch(new RegExp(`^Leeren: ${t.leerenAlles} · \\p{L}+tag$`, 'u'))
+    fireEvent.click(kaestchen()[0]!) // die Aufgaben im Programm ab, die Hilfsdienste bleiben
+    expect(leeren().textContent).toMatch(new RegExp(`^Leeren: ${t.hilfsdienste} · `))
+    fireEvent.click(knopf(t.ganzeWoche))
+    expect(leeren().textContent).toBe(`Leeren: ${t.hilfsdienste} · ${t.ganzeWoche}`)
   })
 })

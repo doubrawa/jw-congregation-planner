@@ -576,7 +576,7 @@ export type AppAction =
   | { type: 'stopImport' } // Import abgebrochen/fehlgeschlagen
   // Die geratenen Stellen der Woche sind geprüft: Kasten und Marken im Plan gehen (T163).
   | { type: 'heftBefundeGeprueft'; start: string }
-  | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher)
+  | { type: 'assign'; name: string; pid?: string; rolle?: string; herkunft?: string; extern?: boolean; weiter?: boolean } // auf state.slotSel; "" = entfernen; pid = Person-Id (fehlt bei Gastredner); rolle nur Gastredner-Slots; extern = Freitext-Leiter eines Treffpunkts (Kreisaufseher); weiter = danach der nächste offene Platz (Spalte am Desktop, T190)
   // Aktuelle Woche; Bereich (Default: alles) und Umfang: die gezeigte
   // Zusammenkunft oder beide (T121, „Ganze Woche").
   | { type: 'autoAssign'; scope?: AssignScope; umfang?: Umfang }

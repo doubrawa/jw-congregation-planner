@@ -25,16 +25,19 @@ export function WochenWahl({
   tpw,
   sprache,
   rechts,
+  klebend = false,
 }: {
   week: Week
   rawWeek: Week
   tpw: (s: string) => string
   sprache: string
   rechts?: ReactNode
+  /** Beim Planen (T190): Woche, „Automatisch" und „Plan senden" bleiben ab dem Tablet oben stehen. */
+  klebend?: boolean
 }) {
   const { state, dispatch } = useApp()
   return (
-    <div className="wochenwahl">
+    <div className={klebend ? 'wochenwahl is-klebend' : 'wochenwahl'}>
       <WeekNav
         canPrev={state.week > 0}
         canNext={state.week < state.weeks.length - 1}

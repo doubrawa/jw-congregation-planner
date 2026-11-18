@@ -236,7 +236,7 @@
   align-items: center;
   margin-top: 8px;
   color: var(--akzent-text);
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
 }
 

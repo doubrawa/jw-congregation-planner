@@ -133,6 +133,10 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
             : null
         }
         leeren={leeren}
+        leerenText={fill(t.leerenUmfang, {
+          was: scope === 'all' ? t.leerenAlles : scope ? bereichName(scope) : '',
+          wann: umfang === 'tag' ? tagName : t.ganzeWoche,
+        })}
         leerenMoeglich={scope !== null && besetzt}
         onClose={onClose}
       />
@@ -145,16 +149,21 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
  * „Zuteilen", darunter „Leeren" mit Rückfrage und „Abbrechen". Die Rückfrage
  * führt das Blatt selbst (`useZweiTipp`): Jede andere Wahl darin nimmt ein
  * „Wirklich leeren?" zurück.
+ *
+ * `leerenText` nennt, was geleert wird (T198) — bei den Zusammenkünften
+ * Bereich und Umfang („Leeren: Hilfsdienste · Dienstag"); ohne steht „Leeren".
  */
 export function AutomatikFuss({
   zuteilen,
   leeren,
+  leerenText,
   leerenMoeglich,
   onClose,
 }: {
   /** `null`: Es gibt nichts zuzuteilen — der Knopf ist gesperrt. */
   zuteilen: (() => void) | null
   leeren: ReturnType<typeof useZweiTipp>
+  leerenText?: string
   leerenMoeglich: boolean
   onClose: () => void
 }) {
@@ -172,7 +181,7 @@ export function AutomatikFuss({
           onClick={leeren.onClick}
           onBlur={leeren.onBlur}
         >
-          {leeren.armed ? t.leerenSicher : t.leeren}
+          {leeren.armed ? t.leerenSicher : (leerenText ?? t.leeren)}
         </button>
         <button type="button" className="knopf-leise" onClick={onClose}>
           {t.abbrechen}

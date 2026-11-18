@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { bestaetigen } from '../../tests/zwei-tipps'
 import { useState } from 'react'
 import { AppDispatchContext, AppStateContext, AppStoreContext, type AppState, useStaticStore } from './context'
+import { planenTitel } from './bereich'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { APP_LANGS, LOCALES } from '../i18n/langs'
 import { makeTr } from '../i18n/translate'
@@ -658,7 +659,7 @@ describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"'
   it('Kreuz und „Fertig" führen zurück zum Ansehen desselben Bereichs', () => {
     const { container, dispatch } = zeige({ screen: 'planen', tab: 'fs' })
     const kopf = container.querySelector('.planenkopf')!
-    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(t.tabFs)
+    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(planenTitel(t, 'predigtdienst'))
     fireEvent.click(kopf.querySelector(`[aria-label="${t.planenBeenden}"]`)!)
     expect(dispatch).toHaveBeenLastCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
     fireEvent.click([...kopf.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
@@ -670,7 +671,7 @@ describe('Beim Planen trägt am Handy der Kopf des Planens Titel und „Fertig"'
     // dorthin zurück, nicht in die Zusammenkünfte.
     const { container, dispatch } = zeige({ admin: false, personId: AUFSEHER.id, screen: 'planen', tab: 'mid' })
     const kopf = container.querySelector('.planenkopf')!
-    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(t.tabFs)
+    expect(kopf.querySelector('.planenkopf-titel')?.textContent).toBe(planenTitel(t, 'predigtdienst'))
     fireEvent.click([...kopf.querySelectorAll('button')].find((b) => b.textContent === t.fertig)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
   })
@@ -701,11 +702,12 @@ describe('Aus der Wahl auf „Planung" geplant: am Handy der Kopf mit Zurück, e
     // ‚Zusammenkünfte' oben rechts vom zurück button sein". Die Zeile des
     // Bereichstitels blendet das CSS am Handy dafür aus (`kopf-titel.test.ts`).
     for (const [over, titel] of [
+      // Die Seite der Wochen nennt den Bereich; beim Planen sagt der Titel, dass geplant wird (T201).
       [{ screen: 'wochen' }, t.navZusammenkuenfte],
-      [{ screen: 'planen', tab: 'mid', planenVon: 'wochen' }, t.navZusammenkuenfte],
-      [{ screen: 'planen', tab: 'fs', planenVon: 'wochen' }, t.tabFs],
-      [{ screen: 'planen', tab: 'fs', planenVon: 'planung' }, t.tabFs],
-      [{ screen: 'planen', tab: 'wp', planenVon: 'planung' }, t.navWeiterePlaene],
+      [{ screen: 'planen', tab: 'mid', planenVon: 'wochen' }, planenTitel(t, 'zusammenkuenfte')],
+      [{ screen: 'planen', tab: 'fs', planenVon: 'wochen' }, planenTitel(t, 'predigtdienst')],
+      [{ screen: 'planen', tab: 'fs', planenVon: 'planung' }, planenTitel(t, 'predigtdienst')],
+      [{ screen: 'planen', tab: 'wp', planenVon: 'planung' }, planenTitel(t, 'weitere')],
     ] as const) {
       const { container } = zeige(over)
       const kopf = container.querySelector('.unterseitenkopf')!

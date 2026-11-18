@@ -173,6 +173,43 @@ export function platzKey(platz: Platz, woche: string, tab: MeetingKey): string {
   }
 }
 
+/** Steht die Auswahl für diesen Platz? Verglichen wird, wo er steht, nicht wie er heißt. */
+function istPlatz(platz: Platz, sel: MeetingSlotSelection): boolean {
+  switch (platz.art) {
+    case 'ratgeber':
+      return sel.kind === 'ratgeber'
+    case 'helper':
+      return sel.kind === 'helper' && sel.svc === platz.svc.key && sel.pos === platz.pos
+    case 'programm':
+      return sel.kind === 'part' && sel.si === platz.si && sel.ii === platz.ii && sel.ni === platz.ni && Boolean(sel.aux) === Boolean(platz.aux)
+  }
+}
+
+/**
+ * **Der nächste offene Platz derselben Zusammenkunft** (T190) — in der
+ * Reihenfolge des Plans nach dem eben zugeteilten, sonst `null`. Offen heißt:
+ * niemand steht dort, und es ist kein Platz, der vor Ort leer bleibt (das
+ * Schlussgebet am Wochenende, `leerVorOrt`). Vor dem zugeteilten wird nicht
+ * gesucht: Was oben offen blieb, hat man dort gesehen und gelassen.
+ */
+export function naechsterOffenerPlatz(
+  meeting: Meeting,
+  services: readonly Service[],
+  wi: number,
+  tab: MeetingKey,
+  nach: MeetingSlotSelection,
+): MeetingSlotSelection | null {
+  let gefunden = false
+  for (const platz of allePlaetze(meeting, services)) {
+    if (!gefunden) {
+      gefunden = istPlatz(platz, nach)
+      continue
+    }
+    if (!platz.slot?.name && !leerVorOrt(meeting, platz)) return auswahlFuer(platz, wi, tab)
+  }
+  return null
+}
+
 /**
  * **Die Auswahl zu einem Platz** — wie das Zuteilen-Blatt sie braucht: die
  * Stelle, die nötige Qualifikation, die Gruppen-Rotation, das Freitext-Feld

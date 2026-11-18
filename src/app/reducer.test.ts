@@ -22,7 +22,8 @@ import {
 } from '../../tests/testdaten/testdaten'
 import { LABEL_VORTRAG, LABEL_WT_STUDIUM } from '../data/constants'
 import { displayName, isGuestRole, isNameless, isQualified, isSong, istAusgefallen, ROLE_OWN_SPEAKER, serviceQualKey } from '../data/helpers'
-import { allePlaetze, platzKey } from '../data/plaetze'
+import { allePlaetze, auswahlFuer, platzKey } from '../data/plaetze'
+import { diensteDerSprache } from './useDienste'
 import { fsTaskKey, genFsWeek, neueRegel } from '../data/fs'
 import { deriveMyTasks } from '../data/planung/aufgaben'
 import { sentKey } from '../data/planung/schluessel'
@@ -2999,6 +3000,68 @@ describe('Woche einrichten ohne geladene Woche', () => {
     const [erster, zweiter] = zwei.weeks[0]!.termine!
     const einer = reducer(zwei, { type: 'terminRemove', id: erster!.id })
     expect(einer.weeks[0]!.termine).toEqual([zweiter])
+  })
+})
+
+/**
+ * **Nach dem Zuteilen in der Spalte gleich der nächste offene Platz** (T190):
+ * Am Desktop teilt der Planer am Donnerstagabend Platz für Platz zu. Mit
+ * `weiter` steht danach der nächste offene Platz derselben Zusammenkunft da,
+ * statt dass die Spalte leer wird und man ihn im Plan suchen muss.
+ */
+describe('Zuteilen mit „weiter" (T190)', () => {
+  /** Die Plätze der Zusammenkunft in der Reihenfolge des Plans — die Dienste alphabetisch, wie er sie zeigt. */
+  const plaetze = (s: AppState) => [...allePlaetze(s.weeks[0]!.mid, diensteDerSprache(s.services, s.lang))]
+  const leer = (s: AppState) => {
+    const weeks = structuredClone(s.weeks)
+    for (const platz of allePlaetze(weeks[0]!.mid, s.services)) if (platz.slot) platz.slot.name = ''
+    return { ...s, weeks }
+  }
+
+  it('springt zum nächsten offenen Platz — nicht zu einem davor, nicht zum selben', () => {
+    const s = leer(makeState())
+    const erster = plaetze(s)[0]!
+    const sel = auswahlFuer(erster, 0, 'mid')
+    const nach = reducer({ ...s, slotSel: sel }, { type: 'assign', name: 'Anna Beispiel', pid: 'p1', weiter: true })
+    const zweiter = auswahlFuer(plaetze(s)[1]!, 0, 'mid')
+    expect(nach.slotSel).toEqual(zweiter)
+  })
+
+  it('ein offener Platz davor bleibt liegen — gesucht wird nach dem eben zugeteilten', () => {
+    const s = leer(makeState())
+    const sel = auswahlFuer(plaetze(s)[2]!, 0, 'mid')
+    const nach = reducer({ ...s, slotSel: sel }, { type: 'assign', name: 'Anna Beispiel', pid: 'p1', weiter: true })
+    expect(nach.slotSel).toEqual(auswahlFuer(plaetze(s)[3]!, 0, 'mid'))
+  })
+
+  it('besetzte Plätze dazwischen überspringt er', () => {
+    const s0 = leer(makeState())
+    const weeks = structuredClone(s0.weeks)
+    const [, zweiter] = [...allePlaetze(weeks[0]!.mid, diensteDerSprache(s0.services, s0.lang))]
+    zweiter!.slot!.name = 'Bernd Brand'
+    const s = { ...s0, weeks }
+    const sel = auswahlFuer(plaetze(s)[0]!, 0, 'mid')
+    const nach = reducer({ ...s, slotSel: sel }, { type: 'assign', name: 'Anna Beispiel', pid: 'p1', weiter: true })
+    expect(nach.slotSel).toEqual(auswahlFuer(plaetze(s)[2]!, 0, 'mid'))
+  })
+
+  it('Gegenprobe: ohne „weiter" schließt es wie bisher — so im Blatt am Handy', () => {
+    const s = leer(makeState())
+    const sel = auswahlFuer(plaetze(s)[0]!, 0, 'mid')
+    expect(reducer({ ...s, slotSel: sel }, { type: 'assign', name: 'Anna Beispiel', pid: 'p1' }).slotSel).toBeNull()
+  })
+
+  it('Entfernen springt nicht — da wollte man nicht weiter', () => {
+    const s = makeState()
+    const sel = firstPartSlot(s.weeks[0]!, 'mid')
+    expect(reducer({ ...s, slotSel: sel }, { type: 'assign', name: '', weiter: true }).slotSel).toBeNull()
+  })
+
+  it('nach dem letzten Platz des Plans schließt es — kein Sprung zurück an den Anfang', () => {
+    const s = leer(makeState()) // vorn ist alles offen
+    const letzter = plaetze(s).at(-1)!
+    const sel = auswahlFuer(letzter, 0, 'mid')
+    expect(reducer({ ...s, slotSel: sel }, { type: 'assign', name: 'Anna Beispiel', pid: 'p1', weiter: true }).slotSel).toBeNull()
   })
 })
 

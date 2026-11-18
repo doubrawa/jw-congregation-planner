@@ -11663,6 +11663,29 @@ Umgesetzt wird in Paketen. Vor jedem Push laufen ein Review und ein Verify
 - **Geprüft:** Laufzeit-Messung kern mit axe, 168 Läufe, kein Befund. Neun
   Handbuchbilder sind neu aufgenommen.
 
+**Paket 3 ✅ umgesetzt (18. November 2026): T190, T198, T199, T200 und T201.**
+- **T190:** Die Wochenwahl beim Planen klebt ab dem Tablet (`is-klebend`): am
+  Tablet unter der Kopfzeile (68 px), am Desktop oben.
+- **T190:** In der Zuteilen-Spalte (`weiter`) wählt `naechsterOffenerPlatz`
+  den nächsten offenen Platz derselben Zusammenkunft, in der Folge des Plans
+  (`diensteDerSprache`), nur nach dem eben zugeteilten Platz. Im Blatt am Handy
+  bleibt es beim Schließen.
+- **T198:** Im Blatt „Automatisch zuteilen" sagt der Knopf, was er leert:
+  „Leeren: Hilfsdienste · Dienstag" (`leerenUmfang`). Bei den Treffpunkten
+  bleibt „Leeren" stehen; dort gibt es nur einen Bereich und keinen Umfang.
+- **T199:** „länger nicht dran" ist fort, ebenso `zuletztLange`.
+- **T200:** „Partner hinzufügen" / „Partner entfernen" in 12 px, in jeder
+  Sprache mit dem S-89-Wort für den Partner.
+- **T201:** Beim Planen heißt die Seite „Zusammenkünfte planen" (`planenTitel`),
+  in den anderen Sprachen „Planung: …".
+- **Geprüft:**
+  - Laufzeit-Messung kern mit axe: 168 Läufe, kein Befund.
+  - Satz voll für Planen, Automatisch und Zuteilen: 190 Läufe, kein Befund.
+  - Klicks im Pane: Rundgangsordner → Saalordner → Zoom-Ordner, der Fokus
+    jeweils in der Suche.
+  - Klebend: am Tablet bei 68 px, am Desktop bei 0.
+  - Fünf Handbuchbilder sind neu aufgenommen.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |

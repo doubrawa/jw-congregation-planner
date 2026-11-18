@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { useReducer } from 'react'
 import { reducer } from '../app/reducer'
+import { planenTitel } from '../app/bereich'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -349,17 +350,18 @@ describe('Die Reiter', () => {
 describe('Der Kopf nennt das Thema (T120)', () => {
   const titel = (c: HTMLElement) => seite(c).querySelector('.bereichstitel .seitentitel')?.textContent
 
-  it('Zusammenkünfte oder Predigtdienst — je nach Reiter', () => {
-    expect(titel(zeige().container)).toBe(t.navZusammenkuenfte)
+  it('Zusammenkünfte oder Predigtdienst — je nach Reiter, und dass geplant wird (T201)', () => {
+    expect(titel(zeige().container)).toBe(planenTitel(t, 'zusammenkuenfte'))
+    expect(planenTitel(t, 'zusammenkuenfte')).toBe('Zusammenkünfte planen')
     cleanup()
-    expect(titel(zeige({ tab: 'fs' }).container)).toBe(t.tabFs)
+    expect(titel(zeige({ tab: 'fs' }).container)).toBe(planenTitel(t, 'predigtdienst'))
   })
 
   it('beim Gruppenaufseher immer den Predigtdienst — auch mit einem Reiter von früher', () => {
     // Darunter stehen seine Treffpunkte; der Kopf nennt, was darunter steht.
     for (const tab of ['mid', 'edit'] as const) {
       const { container } = zeige({ admin: false, personId: AUFSEHER.id, tab })
-      expect(titel(container), tab).toBe(t.tabFs)
+      expect(titel(container), tab).toBe(planenTitel(t, 'predigtdienst'))
       cleanup()
     }
   })
@@ -376,7 +378,7 @@ describe('Der Kopf nennt das Thema (T120)', () => {
     // Am Handy blendet das CSS die Zeile aus; dort trägt der Kopf der App Zurück und Titel.
     const { container, dispatch } = zeige({ tab: 'fs', planenVon: 'planung' })
     expect(seite(container).querySelector('.bereichstitel .planen-knopf')).toBeNull()
-    expect(titel(container)).toBe(t.tabFs)
+    expect(titel(container)).toBe(planenTitel(t, 'predigtdienst'))
     fireEvent.click(seite(container).querySelector(`.bereichstitel [aria-label="${t.a11yZurueck}"]`)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'planung' })
   })

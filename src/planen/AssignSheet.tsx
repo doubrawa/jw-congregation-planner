@@ -90,7 +90,7 @@ function SpaltenInhalt({ sel, onClose }: { sel: SlotSelection; onClose: () => vo
         <h2 className="sheet-title">{kopf.titel}</h2>
         {kopf.sub && <div className="sheet-sub">{kopf.sub}</div>}
       </div>
-      <ZuteilenInhalt sel={sel} onClose={onClose} fokusAufSuche />
+      <ZuteilenInhalt sel={sel} onClose={onClose} fokusAufSuche weiter />
     </>
   )
 }
@@ -194,10 +194,13 @@ function ZuteilenInhalt({
   sel,
   onClose,
   fokusAufSuche = false,
+  weiter = false,
 }: {
   sel: SlotSelection
   onClose: () => void
   fokusAufSuche?: boolean
+  /** In der Spalte (T190): Nach dem Zuteilen steht gleich der nächste offene Platz da. */
+  weiter?: boolean
 }) {
   const { state, dispatch } = useApp()
   const abwesend = useAbwesend()
@@ -319,10 +322,11 @@ function ZuteilenInhalt({
     // `SKIP_ROLE` steht: Aufgabe, Bestätigung, Erinnerung, Auslastung.
     //
     // pid nur für echte Personen (nicht für die Gruppen-Rotation).
+    const mitWeiter = weiter ? { weiter: true } : {}
     dispatch(
       guest
-        ? { type: 'assign', name: cand.assignName, rolle: ROLE_OWN_SPEAKER, pid: cand.key, herkunft: '' }
-        : { type: 'assign', name: cand.assignName, pid: sel.groups ? undefined : cand.key },
+        ? { type: 'assign', name: cand.assignName, rolle: ROLE_OWN_SPEAKER, pid: cand.key, herkunft: '', ...mitWeiter }
+        : { type: 'assign', name: cand.assignName, pid: sel.groups ? undefined : cand.key, ...mitWeiter },
     )
   }
 
@@ -538,9 +542,10 @@ function kandidatInfo(
       ton: 'doppelt',
     }
   }
+  // Wer in den geladenen Wochen gar nicht dran war, bekommt keinen Zusatz
+  // (T199): „länger nicht dran" stand an fast jedem Namen und unterschied nichts.
   const teile: ReactNode[] = []
-  if (cand.zuletzt === null) teile.push(t.zuletztLange)
-  else if (cand.zuletzt !== undefined) {
+  if (cand.zuletzt !== undefined && cand.zuletzt !== null) {
     const her = wochenHer(cand.zuletzt, lang)
     if (her) teile.push(fill(t.zuletztWann, { wann: her }))
   }

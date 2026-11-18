@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { AppState } from './context'
+import { planenTitel } from './bereich'
 import { ausklingen } from '../../tests/verlauf'
 import { isoDay, montagVon, tagNach } from '../data/meeting-dates'
 import type { WeitererPlan } from '../data/types'
@@ -279,7 +280,7 @@ describe('Zurück am Handy', () => {
     try {
       const { container } = zeige({ screen: 'planen', tab: 'fs', planenVon: 'wochen' })
       await ausklingen()
-      expect(container.querySelector('.bereichstitel h1')?.textContent).toBe(t.tabFs)
+      expect(container.querySelector('.bereichstitel h1')?.textContent).toBe(planenTitel(t, 'predigtdienst'))
 
       await zurueck()
       expect(container.querySelector('.wochen-karte'), 'nicht zurück bei den Wochen').not.toBeNull()

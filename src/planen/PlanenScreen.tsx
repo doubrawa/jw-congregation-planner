@@ -182,7 +182,14 @@ function PlanenBody() {
 
       {/* Ab dem Tablet stehen „Automatisch" und „Plan senden" rechts neben der
           Woche (`GDesktopPlanen`); am Handy unten in der Leiste. */}
-      <WochenWahl week={week} rawWeek={rawWeek} tpw={tpw} sprache={sprache} rechts={breit && art ? <PlanenAktionen art={art} /> : undefined} />
+      <WochenWahl
+        week={week}
+        rawWeek={rawWeek}
+        tpw={tpw}
+        sprache={sprache}
+        rechts={breit && art ? <PlanenAktionen art={art} /> : undefined}
+        klebend={breit && art !== null}
+      />
 
       {!isFs && !isEdit && (
         <MeetingTabs

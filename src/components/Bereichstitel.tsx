@@ -1,5 +1,5 @@
 import { useApp } from '../app/context'
-import { bereichsTitel, zumAnsehen, zumPlanen, zurueckInDerPlanung } from '../app/bereich'
+import { bereichsTitel, planenTitel, zumAnsehen, zumPlanen, zurueckInDerPlanung } from '../app/bereich'
 import { Zeichen } from '../bausteine/Zeichen'
 import { darfPlanen, rechteVon, themaVon } from '../data/rechte'
 import type { Thema } from '../data/types'
@@ -32,6 +32,7 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
   const thema = vorgegeben ?? themaVon(state.tab)
   const rechte = rechteVon(state)
   const planen = state.screen === 'planen'
+  const titel = planen ? planenTitel(t, thema) : bereichsTitel(t, thema)
   const zurueck = zurueckInDerPlanung(state.screen, state.planenVon, rechte, mitSpalte)
   if (zurueck) {
     return (
@@ -45,7 +46,7 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
           >
             <Zeichen name="zurueck" />
           </button>
-          <h1 className="seitentitel">{bereichsTitel(t, thema)}</h1>
+          <h1 className="seitentitel">{titel}</h1>
         </div>
       </div>
     )
@@ -72,7 +73,7 @@ export function Bereichstitel({ thema: vorgegeben }: { thema?: Thema }) {
   return (
     <div className={planen ? 'bereichstitel bereichstitel--planen' : 'bereichstitel'}>
       <div className="bereichstitel-zeile">
-        <h1 className="seitentitel">{bereichsTitel(t, thema)}</h1>
+        <h1 className="seitentitel">{titel}</h1>
         {knopf}
       </div>
     </div>

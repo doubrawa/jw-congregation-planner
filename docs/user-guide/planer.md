@@ -184,7 +184,8 @@ ebenso das Neuladen der App.
 ## 2. Planen: Zuteilungen vornehmen
 
 Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
-Aufgaben und Hilfsdienste einer Woche zu. Die Karten der beiden Tage (mit
+Aufgaben und Hilfsdienste einer Woche zu; die Seite heißt dann
+**Zusammenkünfte planen**. Die Karten der beiden Tage (mit
 Datum und Uhrzeit) wechseln zwischen der **Zusammenkunft unter der Woche** und
 **am Wochenende**; daneben steht die Karte mit dem Zeichen (drei Regler):
 **Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
@@ -241,14 +242,18 @@ ihren Raum.
 - Jede Zeile sagt, was für oder gegen die Person spricht: **rot** abwesend mit
   dem Zeitraum (antippen geht nicht, die App sagt warum), **„An diesem Tag
   schon: Mikrofone"** bei einer Doppelbelegung (das darfst du trotzdem), sonst
-  **„zuletzt vor 6 Wochen"** in diesem Aufgabenbereich oder „länger nicht dran"
-  und, was am anderen Tag der Woche schon ansteht („So Saalordner"). Rechts
+  **„zuletzt vor 6 Wochen"** in diesem Aufgabenbereich (wer in den geladenen
+  Wochen gar nicht dran war, bekommt keinen Zusatz) und, was am anderen Tag der
+  Woche schon ansteht („So Saalordner"). Rechts
   zeigen **fünf Punkte** die Auslastung: so viele voll, wie die Person in den
   fünf Wochen um diese herum Aufgaben hat. Abwesende stehen am Ende.
 - **Am Computer** (breites Fenster) öffnet sich kein Blatt: Das Zuteilen steht
   als **Spalte rechts neben dem Programm**, das sichtbar bleibt. Ein Klick auf
   einen Platz zeigt ihn dort und hebt ihn im Plan hervor; der Cursor steht
-  gleich in der Suche — Namen tippen, Person anklicken, nächster Platz.
+  gleich in der Suche — Namen tippen, Person anklicken. Danach steht gleich
+  der **nächste offene Platz** derselben Zusammenkunft in der Spalte (in der
+  Reihenfolge des Plans); nach dem letzten wird sie leer. Plätze weiter oben,
+  die du offen gelassen hast, überspringt sie.
 - Die Abwesenheiten kommen aus den Einträgen, die die Verkündiger selbst in
   ihrem **Profil** erfassen (**Von–Bis** als Datum). Geprüft wird der
   **Tag der jeweiligen Zusammenkunft**, nicht die Woche: wer nur übers Wochenende
@@ -286,7 +291,7 @@ Menschen zu Jüngern machen) haben einen **Hauptteilnehmer** und einen
 haben nur einen (männlichen) Teilnehmer; für sie gibt es den eigenen Bereich
 **„Schulungsaufgaben · Vorträge"** – wer Gespräche führt, hält damit nicht
 automatisch auch Vorträge. Die App legt die passende Zahl beim Import
-automatisch an; mit **+ Partner** bzw. **– Partner** unter einem
+automatisch an; mit **Partner hinzufügen** bzw. **Partner entfernen** unter einem
 Gesprächsteil kannst du den Partner bei Bedarf hinzufügen oder entfernen
 (entfernen mit zwei Tipps). Für den Gesprächspartner
 werden nur Personen mit demselben Geschlecht vorgeschlagen – **oder
@@ -314,8 +319,9 @@ bearbeiten").
 Beim Planen der Zusammenkünfte steht am Handy unten eine Leiste mit
 **Automatisch** und **Plan senden**; bei großer Schrift und auf sehr schmalen
 Handys stehen die beiden untereinander, **Plan senden** unten. Am Tablet und am
-Computer stehen die Knöpfe rechts neben der Woche. **Automatisch** öffnet ein
-Blatt:
+Computer stehen die Knöpfe rechts neben der Woche, und die Zeile mit Woche und
+Knöpfen bleibt beim Scrollen oben stehen – auch unten bei den Hilfsdiensten
+ist **Plan senden** gleich da. **Automatisch** öffnet ein Blatt:
 
 - **Die Bereiche:** **Aufgaben im Programm** und **Hilfsdienste**, je mit ihrer
   Besetzung („Besetzung: 5/8"). Vorgewählt ist, wo am gezeigten Tag etwas offen
@@ -326,7 +332,8 @@ Blatt:
 - **Zuteilen** besetzt die offenen Plätze der gewählten Bereiche; die Meldung
   danach nennt, wie viele es waren.
 - **Leeren** entfernt die Zuteilungen der gewählten Bereiche im gewählten
-  Umfang. Es fragt erst nach („Wirklich leeren?"); wählst du danach etwas
+  Umfang; der Knopf nennt beides, etwa **Leeren: Hilfsdienste · Dienstag** oder
+  **Leeren: Alles · Ganze Woche**. Es fragt erst nach („Wirklich leeren?"); wählst du danach etwas
   anderes, gilt die Frage nicht mehr. Die Reinigung rotiert über die
   Predigtdienstgruppen, die reinigen (siehe [Hilfsdienste](#hilfsdienste)).
 

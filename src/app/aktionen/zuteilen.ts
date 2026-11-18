@@ -8,6 +8,8 @@
 import { abwesenheitenVon } from '../../data/absence'
 import { fsSetLeader } from '../../data/fs'
 import { mtab } from '../../data/helpers'
+import { naechsterOffenerPlatz } from '../../data/plaetze'
+import { diensteDerSprache } from '../useDienste'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../../data/vortragsplan'
 import { autoAssignMeeting, clearAssignments, tabsImUmfang, type Umfang } from '../../data/planung/automatik'
 import { assignSlot, changedSlotKeys } from '../../data/planung/zuteilen'
@@ -101,7 +103,16 @@ export function zuteilen(state: AppState, action: ZuteilenAktion): AppState {
           state.confirmations,
           geaenderteSlots(state.weeks, weeks, sel.wi, sel.tab, state.services),
         ),
-        slotSel: null,
+        // In der Spalte am Desktop (`weiter`) gleich der nächste offene Platz
+        // derselben Zusammenkunft (T190); im Blatt schließt es wie bisher.
+        // „Nächster" in der Folge des Plans: die Dienste alphabetisch in der
+        // Sprache des Lesers, wie der Plan sie zeigt — nicht `state.services`.
+        slotSel: (() => {
+          const meeting = weeks[sel.wi]?.[sel.tab]
+          return action.weiter && action.name && meeting
+            ? naechsterOffenerPlatz(meeting, diensteDerSprache(state.services, state.lang), sel.wi, sel.tab, sel)
+            : null
+        })(),
         toast: action.name ? toastKey(state, 'toastZugeteilt') : toastKey(state, 'toastEntfernt'),
       }
     }

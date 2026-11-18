@@ -2,12 +2,22 @@ import type { ZeichenName } from '../bausteine/Zeichen'
 import { darfPlanen, type Rechte } from '../data/rechte'
 import type { Screen, Thema } from '../data/types'
 import type { Dict } from '../i18n/ui'
+import { fill } from '../i18n/useT'
 import type { AppAction, AppState } from './context'
 
-/** Der Name eines Bereichs — im Menü, über dem Bereich und im Kopf des Planens. */
+/** Der Name eines Bereichs — im Menü, über dem Bereich und auf der Wahl von „Planung". */
 export function bereichsTitel(t: Dict, thema: Thema): string {
   if (thema === 'predigtdienst') return t.tabFs
   return thema === 'weitere' ? t.navWeiterePlaene : t.navZusammenkuenfte
+}
+
+/**
+ * **Der Titel beim Planen** (T201): „Zusammenkünfte planen" statt nur
+ * „Zusammenkünfte". Im Menü ist dann „Planung" markiert, und ein Titel, der nur
+ * den Bereich nennt, sah aus wie die Ansicht darüber im Menü.
+ */
+export function planenTitel(t: Dict, thema: Thema): string {
+  return fill(t.planenBereich, { bereich: bereichsTitel(t, thema) })
 }
 
 /** Das Zeichen eines Bereichs — im Menü und auf der Wahl von „Planung" (T135, T144). */

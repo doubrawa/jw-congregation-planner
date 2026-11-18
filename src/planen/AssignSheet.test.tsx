@@ -251,13 +251,13 @@ describe('Die Kandidatenliste', () => {
     expect(namen(container)[0]).toBe('Bernd Brand')
   })
 
-  it('jede Zeile sagt, wann die Person zuletzt in diesem Bereich dran war', () => {
+  it('eine Zeile sagt, wann die Person zuletzt in diesem Bereich dran war — wer gar nicht, bekommt keinen Zusatz (T199)', () => {
     const vorher = woche('2026-08-24')
     schuelerPlatz(vorher).name = 'Anton Alt'
     schuelerPlatz(vorher).pid = 'p-a'
     const { container } = zeige({ ...SEL_SCHUELER, wi: 1 } as SlotSelection, { weeks: [vorher, woche('2026-09-07')], week: 1 })
     expect(info(zeile(container, 'Anton Alt')).textContent).toBe(fill(t.zuletztWann, { wann: 'vor 2 Wochen' }))
-    expect(info(zeile(container, 'Bernd Brand')).textContent).toBe(t.zuletztLange)
+    expect(info(zeile(container, 'Bernd Brand'))?.textContent ?? '').not.toMatch(/zuletzt|länger/)
   })
 
   it('und was am anderen Tag der Woche schon ansteht', () => {
@@ -265,7 +265,7 @@ describe('Die Kandidatenliste', () => {
     w.we.helpers.mik = [{ name: 'Bernd Brand', pid: 'p-b' }]
     const { container } = zeige(SEL_SCHUELER, { weeks: [w] })
     // Der Wochentag aus Intl — allein steht er im Deutschen ohne Punkt.
-    expect(info(zeile(container, 'Bernd Brand')).textContent).toBe(`${t.zuletztLange} · So Mikrofone`)
+    expect(info(zeile(container, 'Bernd Brand')).textContent).toBe('So Mikrofone')
   })
 
   it('die Suche findet Namen auch ohne Umlaute und in beliebiger Reihenfolge', () => {

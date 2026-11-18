@@ -155,6 +155,24 @@
     gap: 12px;
   }
 
+  /* Beim Planen bleibt die Woche mit „Automatisch" und „Plan senden" oben
+     stehen (T190): Nach den Hilfsdiensten unten stand „Plan senden" sonst weit
+     über dem Bild. Am Tablet unter der Kopfzeile (68 px, mit Statusleiste
+     mehr), am Desktop ohne sie ganz oben. */
+  .wochenwahl.is-klebend {
+    position: sticky;
+    top: max(68px, calc(env(safe-area-inset-top) + 52px));
+    z-index: var(--z-leiste);
+    padding-block: 8px;
+    background: var(--grund);
+  }
+}
+
+@media (min-width: 1180px) {
+  .wochenwahl.is-klebend {
+    top: 0;
+  }
+
   .wochenwahl .week-nav {
     grid-template-columns: 44px minmax(190px, auto) 44px;
   }

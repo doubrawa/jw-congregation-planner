@@ -48,7 +48,7 @@ import { sichtbareMitteilungen } from './mitteilungen'
 import { useAppSymbolZahl } from './useAppSymbolZahl'
 import { useNachladenBeiRueckkehr } from './useNachladenBeiRueckkehr'
 import { useKalendertag } from './useKalendertag'
-import { BEREICHS_ZEICHEN, bereichsTitel, hatPlanungsWahl, zumAnsehen, zumPlanen, zurueckInDerPlanung } from './bereich'
+import { BEREICHS_ZEICHEN, bereichsTitel, hatPlanungsWahl, planenTitel, zumAnsehen, zumPlanen, zurueckInDerPlanung } from './bereich'
 import { Kopfzeile, PlanenKopf, UnterseiteKopf } from './Kopfzeile'
 import { SchmaleLeiste, Schublade, Seitenmenue, type MenueAbschnitt, type MenueEintrag, type ProfilFuss } from './Menue'
 import { Startbild } from './Startbild'
@@ -327,7 +327,11 @@ export function AppShell() {
   // Unterseiten mit Zurück am Handy: die Mitteilungen und was unter „Planung" liegt
   // — dort mit dem Titel des Bereichs neben Zurück, wie im Kopf des Planens.
   const unterseite = state.screen === 'mitteilungen' || zurueck !== null
-  const unterseiteTitel = zurueck ? bereichsTitel(t, state.screen === 'wochen' ? 'zusammenkuenfte' : geplant) : undefined
+  const unterseiteTitel = !zurueck
+    ? undefined
+    : state.screen === 'wochen'
+      ? bereichsTitel(t, 'zusammenkuenfte')
+      : planenTitel(t, geplant)
   const menue = abschnitte([])
   // Texte für die Error Boundaries: die Klasse kann useT() nicht aufrufen.
   const fehlerTexte = { titel: t.errTitel, text: t.errText, aktion: t.offlineRetry }
@@ -363,7 +367,7 @@ export function AppShell() {
           ) : (
             <>
               {planenKopf && (
-                <PlanenKopf titel={bereichsTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
+                <PlanenKopf titel={planenTitel(t, geplant)} onBeenden={() => dispatch(zumAnsehen(geplant))} />
               )}
               {unterseite && (
                 <UnterseiteKopf titel={unterseiteTitel} onZurueck={zurueckWieDieTaste}>
