@@ -17,8 +17,9 @@ import type { MyTask, TrolleyTermin } from '../data/types'
 import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
-import { useT } from '../i18n/useT'
-import { zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
+import { fill, useT } from '../i18n/useT'
+import { zuDenTrolleys } from '../trolleys/trolley-anzeige'
+import { Zeitspanne } from '../trolleys/Zeitspanne'
 import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
@@ -74,7 +75,8 @@ export function DashboardScreen() {
 
   return (
     <section className="screen start">
-      <h1 className="seitentitel seitentitel--gross">{me?.fn ? `${gruss}, ${me.fn}` : gruss}</h1>
+      {/* Die Anrede als Vorlage je Sprache (T193): Arabisch und Persisch setzen „،". */}
+      <h1 className="seitentitel seitentitel--gross">{me?.fn ? fill(t.anrede, { gruss, name: me.fn }) : gruss}</h1>
 
       <div className={zuteilen ? 'start-spalten is-planer' : 'start-spalten'}>
         <div className="start-spalte">
@@ -134,7 +136,11 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
     ...trolley.map((termin) => ({
       key: termin.id,
       tag: termin.datum,
-      text: `${i18n.t.privZeugnis} · ${zeitSpanne(termin)}`,
+      text: (
+        <>
+          {i18n.t.privZeugnis} · <Zeitspanne termin={termin} />
+        </>
+      ),
       onTipp: () => zuDenTrolleys(dispatch),
     })),
   ]

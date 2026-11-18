@@ -9,7 +9,8 @@ import { Sheet } from '../components/Sheet'
 import { darfTrolley, istDabei } from '../data/trolleys'
 import type { TrolleyTermin } from '../data/types'
 import { fill, useT } from '../i18n/useT'
-import { andererIm, nameVon, tagLang, vornameVon, zeitSpanne } from './trolley-anzeige'
+import { andererIm, nameVon, tagLang, vornameVon } from './trolley-anzeige'
+import { Zeitspanne } from './Zeitspanne'
 import { trolleyFehlerText, useTrolleyAktion } from './useTrolleyAktion'
 
 /**
@@ -47,7 +48,11 @@ export function TerminBlatt({ termin, onClose }: { termin: TrolleyTermin; onClos
       label={name}
       eyebrow={<div className="sheet-marke">{t.privZeugnis}</div>}
       title={<span dir="auto">{name}</span>}
-      sub={`${tagLang(termin.datum, state.lang)} · ${zeitSpanne(termin)}`}
+      sub={
+        <>
+          {tagLang(termin.datum, state.lang)} · <Zeitspanne termin={termin} />
+        </>
+      }
       onClose={onClose}
     >
       <div className="sheet-inhalt trolley-termin-blatt">

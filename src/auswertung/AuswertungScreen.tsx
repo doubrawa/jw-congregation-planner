@@ -177,7 +177,7 @@ export function AuswertungScreen() {
       <Kennzahlen k={k} />
       <div className="aw-raster">
         <div className="aw-spalte">
-          <WasAuffaellt k={k} />
+          <WasAuffaellt k={k} neben />
           <section id={ANKER.engpaesse} className="aw-abschnitt" aria-label={t.awEngpaesseTitel}>
             <h2 className="abschnitt-titel">{t.awEngpaesseTitel}</h2>
             <EngpaesseAnsicht k={k} />
@@ -255,14 +255,23 @@ function Kennzahlen({ k }: { k: Kontext }) {
   )
 }
 
-function WasAuffaellt({ k }: { k: Kontext }) {
+/**
+ * **Was auffällt** — am Handy die Zusammenfassung vor den Kacheln. Ab dem
+ * Tablet steht „Zu oft, zu selten" gleich daneben (`neben`); dann nennt sie
+ * diese beiden Arten nicht noch einmal (T195): Dieselben Namen standen sonst
+ * zweimal nebeneinander. Bleibt danach nichts, fällt der Abschnitt weg —
+ * „Nichts fällt auf" stimmte dann nicht.
+ */
+function WasAuffaellt({ k, neben = false }: { k: Kontext; neben?: boolean }) {
+  const liste = neben ? k.a.hinweise.filter((h) => h.art !== 'oft' && h.art !== 'selten') : k.a.hinweise
+  if (liste.length === 0 && k.a.hinweise.length > 0) return null
   return (
     <section className="aw-abschnitt" aria-label={k.t.awWasAuffaellt}>
       <div className="aw-abschnitt-kopf">
         <h2 className="abschnitt-titel">{k.t.awWasAuffaellt}</h2>
-        {k.a.hinweise.length > 0 && <span className="klein-text">{fill(k.t.awHinweiseZahl, { n: k.zahl(k.a.hinweise.length) })}</span>}
+        {liste.length > 0 && <span className="klein-text">{fill(k.t.awHinweiseZahl, { n: k.zahl(liste.length) })}</span>}
       </div>
-      <HinweisListe k={k} />
+      <HinweisListe k={k} liste={liste} />
     </section>
   )
 }

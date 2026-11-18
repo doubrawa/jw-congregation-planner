@@ -5,7 +5,8 @@ import { Punkt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
 import type { TrolleyTermin } from '../data/types'
 import { fill, useT } from '../i18n/useT'
-import { mitWem, nameVon, tagKurz, trolleyNameVon, vornameVon, zeitSpanne } from './trolley-anzeige'
+import { mitWem, nameVon, tagKurz, trolleyNameVon, vornameVon } from './trolley-anzeige'
+import { Zeitspanne } from './Zeitspanne'
 
 /**
  * **Deine Termine** (Entwurf `GZeugnis`): je Termin Tag und Zeit, darunter der
@@ -40,7 +41,9 @@ export function DeineTermine({
             {/* Derselbe Punkt wie unter „Meine Aufgaben" (T194): voll mit Partner, gestrichelt, solange einer gesucht wird. */}
             <Punkt art={termin.partner ? 'voll' : 'offen'} />
             <span className="trolley-zeile-text">
-              <span className="trolley-zeile-titel">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)}`}</span>
+              <span className="trolley-zeile-titel">
+                {tagKurz(termin.datum, state.lang)} · <Zeitspanne termin={termin} />
+              </span>
               <span className="klein-text" dir="auto">
                 {teile.filter(Boolean).join(' · ')}
               </span>
@@ -81,9 +84,11 @@ export function PartnerGesucht({
           <span className="trolley-zeile-text">
             <span className="trolley-zeile-titel">{tagKurz(termin.datum, state.lang)}</span>
             <span className="klein-text" dir="auto">
-              {[zeitSpanne(termin), trolleyName(termin.trolleyId), nameVon(state.persons, termin.pid)]
+              <Zeitspanne termin={termin} />
+              {[trolleyName(termin.trolleyId), nameVon(state.persons, termin.pid)]
                 .filter(Boolean)
-                .join(' · ')}
+                .map((teil) => ` · ${teil}`)
+                .join('')}
             </span>
           </span>
           {darf && (

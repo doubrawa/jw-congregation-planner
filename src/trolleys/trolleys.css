@@ -17,6 +17,12 @@
   margin: 0;
 }
 
+/* „09:00–11:00" in einem Stück und bidi-isoliert (T193, `Zeitspanne`). */
+.zeitspanne {
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+
 /* Die Karten oben — mit dem Rand des Entwurfs (`S.karte('6px 10px 4px 18px')`). */
 .trolley-karte {
   padding: 6px 12px 4px 18px;
@@ -173,7 +179,7 @@
   position: absolute;
   inset-inline-end: 8px;
   color: var(--text3);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   line-height: 1;
   transform: translateY(-50%);
 }
@@ -217,7 +223,7 @@
 
 .trolley-termin-zeit {
   color: var(--text3);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(12px * var(--fs));
 }
 
 .trolley-termin-name {

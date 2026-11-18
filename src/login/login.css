@@ -172,7 +172,7 @@
 
 .login-note {
   text-align: center;
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12px * var(--fs));
   color: var(--text3);
 }
 
@@ -188,7 +188,7 @@
   column-gap: 0.35em;
   margin-top: -16px;
   text-align: center;
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12px * var(--fs));
   color: var(--text3);
 }
 

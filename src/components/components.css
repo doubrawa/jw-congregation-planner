@@ -285,9 +285,11 @@
   --panel-accent: var(--sek1);
 }
 
+/* Schriftstufen (T191): Beschriftungen in Großbuchstaben oder gesperrt
+   mindestens 11 px, Text und Aktionen mindestens 12 px — je mal `--fs`. */
 .panel-label {
   padding: 8px 0 2px;
-  font-size: calc(10px * var(--fs));
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.16em;
   color: var(--panel-accent);
@@ -305,7 +307,7 @@
 
 /* Erklärtext direkt unter einem Panel-Label */
 .panel-hint {
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(12px * var(--fs));
   color: var(--text2);
   margin-top: 4px;
 }

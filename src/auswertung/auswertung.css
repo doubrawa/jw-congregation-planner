@@ -526,7 +526,7 @@
   display: inline-flex;
   flex-direction: column;
   transform: rotate(180deg);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   line-height: 1.2;
   white-space: nowrap;
   writing-mode: vertical-rl;
@@ -542,7 +542,7 @@
 .aw-marke-einseitig {
   display: block;
   color: var(--problem);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(12px * var(--fs));
   font-weight: 700;
 }
 

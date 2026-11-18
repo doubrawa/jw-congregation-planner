@@ -8,7 +8,8 @@ import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { eigeneTermine } from '../data/trolleys'
 import { aufgabenLabel, fill, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
-import { mitWem, tagKurz, trolleyNameVon, zeitSpanne, zuDenTrolleys } from '../trolleys/trolley-anzeige'
+import { mitWem, tagKurz, trolleyNameVon, zuDenTrolleys } from '../trolleys/trolley-anzeige'
+import { Zeitspanne } from '../trolleys/Zeitspanne'
 import { AufgabeKarte } from './AufgabeKarte'
 import { AufgabeText, AufgabeWann } from './AufgabeText'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
@@ -114,7 +115,9 @@ function TrolleyTermine() {
               <span className="aufgaben-zeile-titel" dir="auto">
                 {`${trolleyNameVon(state.trolleys, termin.trolleyId)} · ${mitWem(termin, ich, state.persons, t)}`}
               </span>
-              <span className="klein-text">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)}`}</span>
+              <span className="klein-text">
+                {tagKurz(termin.datum, state.lang)} · <Zeitspanne termin={termin} />
+              </span>
             </button>
             <span className="aufgaben-zeile-pfeil">
               <Zeichen name="weiter" />

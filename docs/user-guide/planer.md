@@ -791,7 +791,9 @@ siehe [Anwesenheit](#anwesenheit)).
   **Treffpunkte, Absagen, Ballungen** und
   **Anwesenheit** (mit der Zahl der Zusammenkünfte ohne Zahl); Zurück führt
   wieder in den Überblick. Am Tablet steht alles auf einer Seite, die Engpässe
-  unter **Was auffällt**, die Anwesenheit ganz unten. Am Computer steht statt
+  unter **Was auffällt**, die Anwesenheit ganz unten. Weil **Zu oft, zu selten**
+  dort gleich daneben steht, nennt **Was auffällt** diese beiden Arten dann
+  nicht noch einmal. Am Computer steht statt
   der Karten **Einseitig verteilt** die Tabelle **Wer bekommt was** (Person ×
   Bereich).
 
@@ -828,7 +830,8 @@ siehe [Anwesenheit](#anwesenheit)).
   Hilfsdiensten**. Den zweiten Vergleich gibt es, weil „Automatisch" die
   Hilfsdienste nach der Gesamtlast verteilt: Wer viele Aufgaben hat, bekommt
   weniger Hilfsdienste.
-- Jede Zeile nennt die Zahl gegen die Erwartung („Aufgaben: 7 · erwartet: 1“)
+- Jede Zeile nennt die Zahl gegen das Übliche („Aufgaben: 7 · üblich: 1“ –
+  der Anteil, der auf jeden Anwesenden im Bereich fiele)
   und sagt rechts neben dem Namen in einem Wort, wie es steht: **6 mehr** (rot),
   **passt** (grau) oder **3 weniger** (gestrichelt). Gezählt wird gegen die
   gerundete Erwartung, die in der Zeile steht.

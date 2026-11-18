@@ -281,7 +281,7 @@
   background: var(--feld);
   color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: calc(10px * var(--fs));
+  font-size: calc(11px * var(--fs));
   line-height: 1.4;
   white-space: pre;
   -webkit-user-select: text;
@@ -297,5 +297,5 @@
 .prof-diag-btns .btn-outline {
   flex: 1;
   padding: 6px 8px;
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12px * var(--fs));
 }

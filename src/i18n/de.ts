@@ -297,6 +297,8 @@ export const DE = {
     schlussgebetVorOrt: 'Redner oder vor Ort',
     // Start / Dashboard
     grussMorgen: 'Guten Morgen', grussTag: 'Guten Tag', grussAbend: 'Guten Abend',
+    // Gruß und Vorname auf dem Start (T193) — das Komma gehört der Sprache.
+    anrede: '{gruss}, {name}',
     dashKeineAufgabe: 'Keine anstehende Aufgabe',
     dashZuBest: 'Zu bestätigen', dashPlanung: 'Planung',
     // „Planung" zeigt erst nur die Wahl, je Bereich eine Karte (T144, Betreiber
@@ -927,8 +929,10 @@ export const DE = {
     awAlleHinweise: 'Alle Hinweise', awWeniger: 'Weniger zeigen', awAlleZeigen: 'Alle zeigen',
     awHinweisSelten: 'Zu selten: {name}', awHinweisOft: 'Zu oft: {name}',
     awHinweisEinseitig: 'Einseitig: {name}',
-    awTextAufgaben: 'Aufgaben: {n} · erwartet: {e}',
-    awTextGesamt: 'Mit Hilfsdiensten: {n} · erwartet: {e}',
+    // „üblich" statt „erwartet" (T195): der Anteil, der jedem Anwesenden im
+    // Bereich zufiele — „erwartet: 0" klang nach Statistik und nach Pflicht.
+    awTextAufgaben: 'Aufgaben: {n} · üblich: {e}',
+    awTextGesamt: 'Mit Hilfsdiensten: {n} · üblich: {e}',
     awVorAllemNie: 'Vor allem {bereich}, nie {nie}', awVorAllem: 'Vor allem {bereich}', awNieBereich: 'Nie {nie}',
     awAusgewogen: 'Kein Bereich überwiegt',
     // Wer lange wartet, steht je Bereich (Jahresprobe 18.10.2026): {namen} sind
@@ -989,7 +993,7 @@ export const DE = {
     awErklaerungOhneBereich: 'Einteilungen in Bereichen, die jemand nicht hat, zählen hier nicht mit – sie stehen unter „Was auffällt“ als „Ohne Bereich eingeteilt“.',
     awUeblich: 'üblich',
     awZuOft: 'Zu oft', awImRahmen: 'Im Rahmen', awZuSelten: 'Zu selten',
-    awNErwartet: '{n} · erwartet {e}', awDavonHilfsdienste: 'davon Hilfsdienste: {n}',
+    awNErwartet: '{n} · üblich {e}', awDavonHilfsdienste: 'davon Hilfsdienste: {n}',
     // Der Befund in einem Wort neben dem Namen (T138): gegen die gerundete Erwartung.
     awMehrN: '{n} mehr', awWenigerN: '{n} weniger', awPasst: 'passt', awWartetLange: 'wartet lange',
     awEinseitigErklaerung: 'Wer zwei Drittel der Zuteilungen in einem Bereich hat und damit deutlich mehr, als dort zu erwarten ist – oder in einem eigenen Bereich nie dran war, obwohl die anderen ihn oft hatten.',
@@ -1017,7 +1021,7 @@ export const DE = {
     awBallungenTitel: 'Ballungen', awZweimal: 'Zweimal in einer Zusammenkunft, mit Hilfsdienst',
     awHintereinander: 'Wochen hintereinander im selben Bereich', awFolgeText: '{bereich} · {dauer} hintereinander',
     awKeineBallungen: 'Keine Ballungen im Zeitraum.',
-    awAufgabenErwartet: 'Aufgaben, erwartet {e}', awAbwesend: 'Zusammenkünfte abwesend',
+    awAufgabenErwartet: 'Aufgaben, üblich {e}', awAbwesend: 'Zusammenkünfte abwesend',
     awLetzte: 'Die letzten {dauer}', awAufgabe: 'Aufgabe', awHilfsdienst: 'Hilfsdienst', awAbwesendKurz: 'abwesend',
     // Über den Wochen einer Person, wenn oben Geplantes steht (Betreiber 24.10.2026: „Ergänzen").
     awLetzteUndKommend: 'Die letzten {dauer} und was ansteht',

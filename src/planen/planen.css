@@ -198,7 +198,7 @@
   align-items: center;
   justify-content: center;
   color: var(--problem);
-  font-size: calc(10px * var(--fs));
+  font-size: calc(12px * var(--fs));
 }
 
 .lac-add-input {
@@ -223,7 +223,7 @@
   color: var(--akzent-text);
   border-radius: var(--r-pill);
   padding: 9px 13px;
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -434,7 +434,7 @@
 
 /* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
 .plan-helper-label {
-  font-size: calc(9.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   letter-spacing: 0.14em;
   color: var(--text2);
 }
@@ -759,7 +759,7 @@
 }
 
 .sonder-label {
-  font-size: calc(9.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text2);
@@ -1384,7 +1384,7 @@ body:has(.planen-leiste) .toast {
   flex: none;
   border-radius: var(--r-pill);
   padding: 2px 9px;
-  font-size: calc(10.5px * var(--fs));
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
 }
 
@@ -1421,7 +1421,7 @@ body:has(.planen-leiste) .toast {
 .vp-lied,
 .vp-hinweis,
 .vp-notiz {
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(12px * var(--fs));
   color: var(--text2);
   margin-top: 2px;
 }
@@ -1494,7 +1494,7 @@ body:has(.planen-leiste) .toast {
   border-radius: var(--r-pill);
   background: var(--karte);
   color: var(--akzent-text);
-  font-size: calc(11.5px * var(--fs));
+  font-size: calc(12px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.06em;
   cursor: pointer;

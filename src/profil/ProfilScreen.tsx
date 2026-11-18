@@ -86,75 +86,80 @@ export function ProfilScreen() {
       </div>
 
       <div className="profil-spalten">
-        <section className="karte profil-karte">
-          <h2 className="abschnitt-titel karte-titel">{t.darstellung}</h2>
-          <Wahl
-            label={t.darstellung}
-            optionen={THEME_LIST.map(({ key, labelKey }) => ({ wert: key, text: t[labelKey] }))}
-            wert={state.theme}
-            onWahl={(theme) => dispatch({ type: 'setTheme', theme })}
-          />
-          <div className="profil-zeile profil-schrift">
-            <div className="profil-schrift-kopf">
-              <span>{t.schriftgroesse}</span>
-              <span className="klein-text">{t[scaleLabel]}</span>
+        {/* Links Darstellung und Abwesenheiten, rechts der Rest (T192): Am Desktop
+            stand links nur die Darstellung — 261 px gegen 1141 px daneben. Am Handy
+            bleibt die Folge dieselbe. */}
+        <div className="profil-spalte">
+          <section className="karte profil-karte">
+            <h2 className="abschnitt-titel karte-titel">{t.darstellung}</h2>
+            <Wahl
+              label={t.darstellung}
+              optionen={THEME_LIST.map(({ key, labelKey }) => ({ wert: key, text: t[labelKey] }))}
+              wert={state.theme}
+              onWahl={(theme) => dispatch({ type: 'setTheme', theme })}
+            />
+            <div className="profil-zeile profil-schrift">
+              <div className="profil-schrift-kopf">
+                <span>{t.schriftgroesse}</span>
+                <span className="klein-text">{t[scaleLabel]}</span>
+              </div>
+              <div className="profil-regler">
+                <span className="profil-regler-a" aria-hidden="true">
+                  A
+                </span>
+                <input
+                  type="range"
+                  className="profil-regler-feld"
+                  min={0}
+                  max={FONT_SCALES.length - 1}
+                  step={1}
+                  value={scaleIndex}
+                  aria-label={t.schriftgroesse}
+                  aria-valuetext={t[scaleLabel]}
+                  onChange={(e) =>
+                    dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
+                  }
+                />
+                <span className="profil-regler-a is-gross" aria-hidden="true">
+                  A
+                </span>
+              </div>
             </div>
-            <div className="profil-regler">
-              <span className="profil-regler-a" aria-hidden="true">
-                A
-              </span>
-              <input
-                type="range"
-                className="profil-regler-feld"
-                min={0}
-                max={FONT_SCALES.length - 1}
-                step={1}
-                value={scaleIndex}
-                aria-label={t.schriftgroesse}
-                aria-valuetext={t[scaleLabel]}
-                onChange={(e) =>
-                  dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
-                }
-              />
-              <span className="profil-regler-a is-gross" aria-hidden="true">
-                A
-              </span>
-            </div>
-          </div>
-          <label className="profil-zeile profil-sprache">
-            <span>{t.spracheLbl}</span>
-            <select
-              className="profil-auswahl"
-              value={state.lang}
-              onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
-            >
-              {/* Jede Sprache in ihrem eigenen Namen, mit ihrem `lang` (wie bei der Anmeldung). */}
-              {APP_LANGS_SORTED.map(({ code, label }) => (
-                <option key={code} value={code} lang={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {angemeldet && supported && (
-            <div className="profil-zeile schalter-zeile">
-              <span>{t.pushLbl}</span>
-              <Switch on={subscribed} label={t.pushLbl} onToggle={() => void (subscribed ? disable() : enable())} />
-            </div>
-          )}
-          {angemeldet && needsInstall && (
-            <div className="profil-zeile schalter-zeile">
-              <span className="schalter-text">
+            <label className="profil-zeile profil-sprache">
+              <span>{t.spracheLbl}</span>
+              <select
+                className="profil-auswahl"
+                value={state.lang}
+                onChange={(e) => dispatch({ type: 'setLang', lang: e.target.value as Lang })}
+              >
+                {/* Jede Sprache in ihrem eigenen Namen, mit ihrem `lang` (wie bei der Anmeldung). */}
+                {APP_LANGS_SORTED.map(({ code, label }) => (
+                  <option key={code} value={code} lang={code}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {angemeldet && supported && (
+              <div className="profil-zeile schalter-zeile">
                 <span>{t.pushLbl}</span>
-                <span className="klein-text">{t.pushIosHint}</span>
-              </span>
-            </div>
-          )}
-        </section>
+                <Switch on={subscribed} label={t.pushLbl} onToggle={() => void (subscribed ? disable() : enable())} />
+              </div>
+            )}
+            {angemeldet && needsInstall && (
+              <div className="profil-zeile schalter-zeile">
+                <span className="schalter-text">
+                  <span>{t.pushLbl}</span>
+                  <span className="klein-text">{t.pushIosHint}</span>
+                </span>
+              </div>
+            )}
+          </section>
+
+          <AbwesenheitenKarte />
+        </div>
 
         <div className="profil-spalte">
-          <AbwesenheitenKarte />
-
           {/* Nur für Admins, am echten Recht gefragt. */}
           <AnsichtKarte />
 

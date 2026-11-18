@@ -34,9 +34,8 @@ function oeffnen(h: Hinweis, k: Kontext): void {
  * Hinweis zu einer Person öffnet sie, einer zu einem Bereich die Wartezeiten
  * oder die Absagen.
  */
-export function HinweisListe({ k }: { k: Kontext }) {
+export function HinweisListe({ k, liste = k.a.hinweise }: { k: Kontext; liste?: readonly Hinweis[] }) {
   const [alle, setAlle] = useState(false)
-  const liste = k.a.hinweise
   if (liste.length === 0) return <p className="karte aw-leer">{k.t.awNichtsAuffaellig}</p>
   const sichtbar = alle ? liste : liste.slice(0, HINWEISE_SICHTBAR)
   return (

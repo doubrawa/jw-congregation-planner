@@ -99,6 +99,15 @@ function zeige(state: AppState) {
   return render(<Buehne />)
 }
 
+/**
+ * Die Hinweise, wie „Was auffällt" sie zeigt: ab dem Tablet ohne „zu oft" und
+ * „zu selten" — die stehen dort gleich daneben (T195).
+ */
+function gezeigteHinweise(c: HTMLElement, s: AppState) {
+  const alle = rechnung(s).hinweise
+  return c.querySelector('.auswertung--breit') ? alle.filter((h) => h.art !== 'oft' && h.art !== 'selten') : alle
+}
+
 /** Was die Rechnung für diesen Zustand ergibt — dieselben Eingaben wie die Seite. */
 function rechnung(s: AppState) {
   return auswerten({
@@ -363,6 +372,25 @@ describe('Ab dem Tablet: alles auf einer Seite', () => {
     expect(container.querySelector('.aw-matrix')).toBeNull()
   })
 
+  it('„Was auffällt" nennt „zu oft" und „zu selten" nicht noch einmal — die stehen gleich daneben (T195)', () => {
+    const s = zustand(JAHR)
+    const oftTitel = (c: HTMLElement) =>
+      [...c.querySelectorAll(`section[aria-label="${t.awWasAuffaellt}"] .aw-hinweis-titel`)]
+        .map((e) => e.textContent ?? '')
+        .filter((x) => x.startsWith(fill(t.awHinweisOft, { name: '' })) || x.startsWith(fill(t.awHinweisSelten, { name: '' })))
+    expect(rechnung(s).hinweise.some((h) => h.art === 'oft'), 'die Probe braucht jemanden, der zu oft dran ist').toBe(true)
+    breite('tablet')
+    const breit = zeige(s).container
+    fireEvent.click(knopf(breit, t.awAlleHinweise) ?? breit)
+    expect(oftTitel(breit)).toEqual([])
+    cleanup()
+    // Gegenprobe: Am Handy ist es die Zusammenfassung vor den Kacheln — dort stehen sie.
+    breite('handy')
+    const schmal = zeige(s).container
+    fireEvent.click(knopf(schmal, t.awAlleHinweise) ?? schmal)
+    expect(oftTitel(schmal).length).toBeGreaterThan(0)
+  })
+
   it('ab dem Desktop die Tabelle Person × Bereich statt der Karten', () => {
     breite('desktop')
     const { container } = zeige(zustand())
@@ -616,7 +644,7 @@ describe('Absagen (T126)', () => {
   const prozent = (anteil: number) => new Intl.NumberFormat(LOCALES.de, { style: 'percent', maximumFractionDigits: 1 }).format(anteil)
   /** Der Hinweis auf die Absagen — „Alle Hinweise" gedrückt, wenn er hinter den ersten sechs steht. */
   const absagenHinweis = (c: HTMLElement, s: AppState) => {
-    const i = rechnung(s).hinweise.findIndex((h) => h.art === 'absagen')
+    const i = gezeigteHinweise(c, s).findIndex((h) => h.art === 'absagen')
     expect(i, 'kein Hinweis auf die Absagen').toBeGreaterThan(-1)
     if (i >= HINWEISE_SICHTBAR) fireEvent.click(knopf(c, t.awAlleHinweise))
     return c.querySelectorAll<HTMLElement>('.aw-hinweis')[i]!
@@ -807,7 +835,7 @@ describe('Wartezeiten: geplant und abwesend', () => {
 
   /** Der erste Hinweis „Lange Wartezeit" — „Alle Hinweise" gedrückt, wenn er hinter den ersten sechs steht. */
   function warteHinweis(c: HTMLElement, s: AppState): { knopf: HTMLElement; bereich: string } {
-    const liste = rechnung(s).hinweise
+    const liste = gezeigteHinweise(c, s)
     const i = liste.findIndex((h) => h.art === 'wartet')
     const h = liste[i]
     if (h?.art !== 'wartet') throw new Error('kein Hinweis „Lange Wartezeit"')

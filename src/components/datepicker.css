@@ -99,7 +99,7 @@
 
 .dp-weekdays span {
   text-align: center;
-  font-size: calc(10px * var(--fs));
+  font-size: calc(11px * var(--fs));
   font-weight: 600;
   color: var(--text2);
   padding: 2px 0;

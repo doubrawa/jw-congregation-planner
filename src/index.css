@@ -45,6 +45,20 @@ figure {
   margin: 0;
 }
 
+/* Umbruch (T196): Absätze ohne ein einzelnes Wort in der letzten Zeile,
+   Überschriften mit gleich langen Zeilen („Nach geistigen Schätzen / graben"
+   stand mit einem Wort unten). Wo ein Browser beides nicht kennt, bricht er
+   wie bisher. */
+p {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
 /* Buttons sind im Design durchgehend eigene Pillen/Chips — nackter Reset */
 button {
   font: inherit;

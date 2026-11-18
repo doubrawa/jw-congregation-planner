@@ -11686,6 +11686,25 @@ Umgesetzt wird in Paketen. Vor jedem Push laufen ein Review und ein Verify
   - Klebend: am Tablet bei 68 px, am Desktop bei 0.
   - Fünf Handbuchbilder sind neu aufgenommen.
 
+**Paket 4 ✅ umgesetzt (18. November 2026): T191, T192, T193, T195 und T196.**
+Damit sind alle 17 Aufgaben aus Audit und Critique erledigt.
+- **T191:** Nichts auf dem Bildschirm steht mehr unter 11 px. Mit 11 px stehen
+  Beschriftungen, Abzeichen und Rasterköpfe, alles Übrige hat mindestens 12 px.
+  Ausnahme ist die App-Zeichnung im Film „Erste Schritte"; sie ist eine
+  Abbildung.
+- **T192:** Im Profil stehen am Desktop links Darstellung und Abwesenheiten.
+- **T193:** Die Anrede ist eine Vorlage `anrede` (ar/fa mit „،"), Zeitspannen
+  stehen in einem Stück (`Zeitspanne`, `nowrap` + `unicode-bidi: isolate`).
+- **T195:**
+  - „Was auffällt" lässt ab dem Tablet „zu oft"/„zu selten" weg, weil
+    „Zu oft, zu selten" daneben steht.
+  - Bleibt nichts übrig, fällt der Abschnitt weg. Am Handy bleibt alles, wie
+    es war.
+  - „erwartet" heißt jetzt „üblich" (vier Schlüssel, zwölf Sprachen).
+- **T196:** `p { text-wrap: pretty }`, `h1–h3 { text-wrap: balance }`.
+- **Geprüft:** Laufzeit-Messung, Satz voll mit axe, 732 Läufe, kein Befund.
+  Alle 29 Handbuchbilder sind neu aufgenommen.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
