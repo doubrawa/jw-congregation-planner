@@ -94,10 +94,12 @@ Wichtigste zusammen.
   darunter **Bestätigen** und **Ich kann nicht**, bei einem Hilfsdienst auch
   **Tauschen**, daneben das **S‑89**.
 - **Der Saal** darüber zeigt, wie weit die Zusammenkunft besetzt ist: ein Punkt
-  je Platz, **voll** heißt zugesagt, **blass** wartet noch auf Zusage, **rot**
-  ist abgesagt, **gestrichelt** noch offen. Dein eigener Platz trägt einen Ring;
-  der Punkt darin ist blass, bis du bestätigst – dann füllt er sich in Minze.
-  Hast du abgesagt, ist er rot.
+  je Platz, **voll** heißt zugesagt, **blass** wartet noch, **gestrichelt** ist
+  noch offen. Darunter steht es in Worten („Besetzung: 20/23 · dein Platz ist
+  markiert"). Dein eigener Platz trägt einen Ring; der Punkt darin ist blass,
+  bis du bestätigst – dann füllt er sich in Minze. Hast du abgesagt, ist er
+  rot. Hat ein anderer abgesagt, steht sein Platz blass da: Darum kümmert
+  sich, wer plant.
 - Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
   die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
   [Trolley-Termine](#trolleys) („Trolley · 09:00–11:00"); ein Tipp darauf
@@ -413,9 +415,11 @@ ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
 
 Unter den Aufgaben stehen deine **Trolley-Termine** im eigenen Abschnitt
 **Trolley**: je Termin „Trolley 3 · mit Jonas Berger" (oder „Trolley 3 ·
-Partner gesucht"), darunter „Sa., 19. Sept. · 09:00–11:00 · verabredet, ohne
-Zusage". Einen Haken gibt es dort nicht – wer sich eingetragen hat, hat sich
-verabredet. Ein Tipp führt zu den [Trolleys](#trolleys).
+Partner gesucht"), darunter Tag und Zeit („Sa., 19. Sept. · 09:00–11:00"). Der
+Punkt davor ist voll, wenn ihr zu zweit seid, und gestrichelt, solange ein
+Partner gesucht wird – wie in der Trolley-Ansicht. Einen Haken gibt es dort
+nicht – wer sich eingetragen hat, hat sich verabredet. Ein Tipp führt zu den
+[Trolleys](#trolleys).
 
 > **Tipp:** Bestätige zeitnah. Der Planer sieht offene Bestätigungen und
 > weiß dann, dass alles steht.

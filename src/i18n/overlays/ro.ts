@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Programările viitoare vor fi eliminate.",
   "trolleyDelBescheid": "Persoanele înscrise vor primi o înștiințare.",
   "trolleyEntfernen": "Elimină căruciorul cu literatură",
-  "trolleyOhneZusage": "de comun acord, fără confirmare",
   "gruppenUndTrolleys": "Grupe și cărucioare cu literatură",
   "trolleysN": "Cărucioare cu literatură: {n}",
   "gruppeTrolleyBeiPerson": "Stabilești în datele persoanei din ce grupă face parte și dacă are permisiunea să meargă cu căruciorul.",

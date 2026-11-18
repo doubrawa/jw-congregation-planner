@@ -546,6 +546,21 @@
   height: auto;
 }
 
+/* Der Saal mit sichtbarer Zahl darunter (T188). */
+.saal-figur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.saal-zahl {
+  color: var(--text2);
+  font-size: calc(13px * var(--fs));
+  text-align: center;
+}
+
 .saal-platz.is-voll {
   fill: var(--text);
 }

@@ -219,8 +219,6 @@ export const DE = {
     trolleyDelTermine: 'Die kommenden Termine entfallen.',
     trolleyDelBescheid: 'Wer eingetragen ist, bekommt Bescheid.',
     trolleyEntfernen: 'Trolley entfernen',
-    // Der eigene Termin in „Meine Aufgaben" (Entwurf `GAufgaben`): verabredet, keine Zusage.
-    trolleyOhneZusage: 'verabredet, ohne Zusage',
     // Weitere Pläne (T120, Phase 5): Ankündigungen ohne Zuteilung. Ein Plan
     // heißt „Königreichssaal" wie `saal`; gemessen am od Kap. 11 Abs. 10 („Im
     // Allgemeinen wechseln sich die Predigtdienstgruppen mit der Saalreinigung

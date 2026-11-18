@@ -279,21 +279,30 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     return { woche, meine: task({ id: platzKey(woche), at: inTagen(1) }) }
   }
 
-  it('mit Worten für Vorleseprogramme: wie viele Plätze besetzt sind, und dass der eigene markiert ist', () => {
+  it('mit Worten, sichtbar unter dem Bild: wie viele Plätze besetzt sind, und dass der eigene markiert ist (T188)', () => {
     const { woche, meine } = meinAbend()
     const { container } = zeige({ weeks: [woche], myTasks: [meine] })
-    const saal = container.querySelector('svg.saal')
-    expect(saal?.getAttribute('role')).toBe('img')
     // Bibellesung (ich) + Mikrofon 1 besetzt, Mikrofon 2 offen.
-    expect(saal?.getAttribute('aria-label')).toBe(`${zahlBinden(`${t.saalBesetzung}: 2/3`)} · ${t.saalDeinPlatz}`)
+    expect(container.querySelector('.saal-figur figcaption')?.textContent).toBe(
+      `${zahlBinden(`${t.saalBesetzung}: 2/3`)} · ${t.saalDeinPlatz}`,
+    )
+    // Das Bild ist dann still — sonst läse ein Vorleseprogramm die Zahl zweimal.
+    expect(container.querySelector('svg.saal')?.getAttribute('aria-hidden')).toBe('true')
     expect(container.querySelectorAll('.saal-du')).toHaveLength(1)
   })
 
-  it('eine Absage im Abend steht rot im Saal', () => {
+  it('die Absage eines anderen steht blass im Saal, nicht rot — man kann sie nicht beheben (T188)', () => {
     const { woche, meine } = meinAbend()
     const confirmations: ConfirmationMap = { [helferKey(woche.start, 'mid', 'mik', 0)]: 'verhindert' }
     const { container } = zeige({ weeks: [woche], myTasks: [meine], confirmations })
-    expect(container.querySelectorAll('.saal-platz.is-problem').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.saal-platz.is-problem')).toHaveLength(0)
+    expect(container.querySelectorAll('.saal-platz.is-wartet').length).toBeGreaterThan(0)
+  })
+
+  it('Gegenprobe: die eigene Absage bleibt rot — am eigenen Platz', () => {
+    const { woche, meine } = meinAbend()
+    const { container } = zeige({ weeks: [woche], myTasks: [{ ...meine, status: 'verhindert' }] })
+    expect(container.querySelector('.saal-du.is-problem')).toBeTruthy()
   })
 
   /*

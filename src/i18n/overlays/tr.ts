@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Yaklaşan kayıtlar kaldırılacak.",
   "trolleyDelBescheid": "Kaydı olan herkes haber alacak.",
   "trolleyEntfernen": "Yayın arabasını kaldır",
-  "trolleyOhneZusage": "kararlaştırıldı, onay gerekmez",
   "gruppenUndTrolleys": "Gruplar ve yayın arabaları",
   "trolleysN": "{n} yayın arabası",
   "gruppeTrolleyBeiPerson": "Kimin hangi gruba ait olduğunu ve kimin yayın arabasıyla hizmet edebileceğini kişinin sayfasında belirlersin.",

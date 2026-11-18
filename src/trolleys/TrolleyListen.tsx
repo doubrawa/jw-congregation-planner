@@ -37,7 +37,8 @@ export function DeineTermine({
         ]
         return (
           <button key={termin.id} type="button" className="trolley-zeile" onClick={() => onTermin(termin)}>
-            <Punkt art="du" />
+            {/* Derselbe Punkt wie unter „Meine Aufgaben" (T194): voll mit Partner, gestrichelt, solange einer gesucht wird. */}
+            <Punkt art={termin.partner ? 'voll' : 'offen'} />
             <span className="trolley-zeile-text">
               <span className="trolley-zeile-titel">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)}`}</span>
               <span className="klein-text" dir="auto">

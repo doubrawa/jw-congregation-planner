@@ -10,6 +10,11 @@ import { besetzungText, useT } from '../i18n/useT'
  * mit dem eigenen Platz — oder `null`, wo es keine Zusammenkunft gibt
  * (Treffpunkt, Trolley) oder ihre Woche nicht geladen ist. `du` ist der Stand
  * der eigenen Zusage: Mit ihr füllt sich der eigene Platz (29.10.2026).
+ *
+ * **Die Probleme anderer zeigt er blass, wie „wartet"** (T188): Ein roter
+ * Punkt neben dem eigenen Platz verunsicherte — man hielt ihn für den eigenen
+ * Fehler und kann ihn doch nicht beheben. Rot bleibt nur der eigene Platz nach
+ * einer Absage; die Probleme sieht, wer plant.
  */
 export function useSaal(task: MyTask | undefined): { lagen: SaalLage[]; label: string; du: DuLage } | null {
   const { state } = useApp()
@@ -21,6 +26,7 @@ export function useSaal(task: MyTask | undefined): { lagen: SaalLage[]; label: s
     const b = besetzung(week[ort.tab], state.services, state.confirmations, state.persoenlich, ort.woche, ort.tab, task.id)
     const { besetzt, gesamt } = besetztVon(b)
     const label = [besetzungText(t, besetzt, gesamt), b.du ? t.saalDeinPlatz : ''].filter(Boolean).join(' · ')
-    return { lagen: saalLagen(b), label, du: LAGE_DER_ZUSAGE[task.status] }
+    const ohneFremdeProbleme = { ...b, wartet: b.wartet + b.problem, problem: 0 }
+    return { lagen: saalLagen(ohneFremdeProbleme), label, du: LAGE_DER_ZUSAGE[task.status] }
   }, [task, state.weeks, state.services, state.confirmations, state.persoenlich, t])
 }

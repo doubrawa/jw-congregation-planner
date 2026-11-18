@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "I prossimi turni verranno eliminati.",
   "trolleyDelBescheid": "Chi ha un turno riceverà un avviso.",
   "trolleyEntfernen": "Rimuovi espositore mobile",
-  "trolleyOhneZusage": "concordato, senza conferma",
   "gruppenUndTrolleys": "Gruppi ed espositori mobili",
   "trolleysN": "Espositori mobili: {n}",
   "gruppeTrolleyBeiPerson": "Chi appartiene a quale gruppo e chi ha l’autorizzazione a uscire con l’espositore lo imposti nella scheda della persona.",

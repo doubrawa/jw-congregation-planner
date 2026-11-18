@@ -2,7 +2,8 @@ import { useT } from '../i18n/useT'
 
 /**
  * **Eine Person an einem Platz** (T121): Punkt, Name, Rolle — der eigene Platz
- * als „Du", mit dem Punkt in Minze. Dieselbe Zeile im Programm und an den
+ * als „Du", mit dem Punkt in Minze; die anderen ohne sichtbaren Punkt (T197,
+ * `programm.css`). Dieselbe Zeile im Programm und an den
  * Treffpunkten; ab dem Tablet ohne Punkt, „Du" als Pille (`programm.css`).
  *
  * **Wem der Platz gehört, entscheidet der Aufrufer** — „Id vor Name", wie

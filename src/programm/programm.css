@@ -204,12 +204,15 @@
   min-width: 0;
 }
 
+/* Der Punkt steht nur am eigenen Platz (Minze) und an einem offenen
+   (gestrichelt). Bei den anderen hält er nur die Spalte (T197): Voll heißt in
+   der Punktsprache „zugesagt", und ob jemand zugesagt hat, zeigt das Programm
+   nicht. */
 .prog-person-punkt {
   flex: none;
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--text);
 }
 
 .prog-person.is-du .prog-person-punkt {

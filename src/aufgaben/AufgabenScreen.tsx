@@ -114,7 +114,7 @@ function TrolleyTermine() {
               <span className="aufgaben-zeile-titel" dir="auto">
                 {`${trolleyNameVon(state.trolleys, termin.trolleyId)} · ${mitWem(termin, ich, state.persons, t)}`}
               </span>
-              <span className="klein-text">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)} · ${t.trolleyOhneZusage}`}</span>
+              <span className="klein-text">{`${tagKurz(termin.datum, state.lang)} · ${zeitSpanne(termin)}`}</span>
             </button>
             <span className="aufgaben-zeile-pfeil">
               <Zeichen name="weiter" />

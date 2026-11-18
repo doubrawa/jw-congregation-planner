@@ -37,7 +37,7 @@ export function AufgabeBlatt({ task }: { task: MyTask }) {
       <div className="sheet-inhalt">
         {/* Je Aufgabe ein eigener Saal, wie in der großen Karte: Der Übergang
             gehört nur zum Bestätigen, nicht zum Wechsel der Aufgabe. */}
-        {saal && <Saal key={task.id} lagen={saal.lagen} label={saal.label} du={saal.du} />}
+        {saal && <Saal key={task.id} lagen={saal.lagen} label={saal.label} du={saal.du} sichtbar />}
         <AufgabeHandlungen task={task} />
       </div>
     </Sheet>

@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "ستُلغى المواعيد القادمة.",
   "trolleyDelBescheid": "سيصل إشعار إلى كل من لديه موعد.",
   "trolleyEntfernen": "إزالة عربة المطبوعات",
-  "trolleyOhneZusage": "بالاتفاق، دون تأكيد",
   "gruppenUndTrolleys": "الفرق وعربات المطبوعات",
   "trolleysN": "عربات المطبوعات: {n}",
   "gruppeTrolleyBeiPerson": "يُحدَّد في صفحة الشخص إلى أي فريق ينتمي وهل يُسمح له بالخدمة على عربة المطبوعات.",

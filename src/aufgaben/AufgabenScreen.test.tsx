@@ -189,7 +189,7 @@ describe('Trolley', () => {
     expect(bereich(container)).toBeNull()
   })
 
-  it('je Termin: Trolley und mit wem, darunter Tag und Zeit — verabredet, ohne Zusage, ohne Haken', () => {
+  it('je Termin: Trolley und mit wem, darunter Tag und Zeit — ohne Haken, ohne eigenen Wortlaut (T194)', () => {
     const { container } = mit([termin(), termin({ id: 'r2', datum: tag(7), pid: 'p-a', partner: null, gemeinsam: false })])
     const b = bereich(container)!
     expect(b.querySelector('h2')?.textContent).toBe(t.privZeugnis)
@@ -197,8 +197,13 @@ describe('Trolley', () => {
       'Trolley 3 · mit Jonas Berger',
       `Trolley 3 · ${t.trolleyPartnerGesucht}`,
     ])
-    expect(b.querySelector('.aufgaben-zeile .klein-text')?.textContent).toMatch(/ · 09:00–11:00 · verabredet, ohne Zusage$/)
+    expect(b.querySelector('.aufgaben-zeile .klein-text')?.textContent).toMatch(/ · 09:00–11:00$/)
     expect(b.querySelector('.knopf-haken')).toBeNull()
+    // Derselbe Punkt wie in der Trolley-Ansicht: voll mit Partner, gestrichelt ohne.
+    expect([...b.querySelectorAll('.punkt')].map((p) => p.getAttribute('class'))).toEqual([
+      expect.stringContaining('voll'),
+      expect.stringContaining('offen'),
+    ])
   })
 
   it('ein Tipp führt zu den Trolleys', () => {

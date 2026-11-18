@@ -95,6 +95,8 @@ describe('oben: die eigenen Termine und wer einen Partner sucht', () => {
     expect(deine.textContent).toContain('Trolley 3')
     expect(deine.textContent).toContain(fill(t.trolleyMit, { name: 'Jonas Berger' }))
     expect(deine.textContent).toContain(fill(t.trolleyBeideEingetragen, { name: 'Jonas' }))
+    // Derselbe Punkt wie unter „Meine Aufgaben" (T194): mit Partner voll.
+    expect(deine.querySelector('.trolley-zeile .punkt')?.getAttribute('class')).toBe('punkt is-voll')
   })
 
   it('Jonas sucht einen Partner — „Dazukommen" trägt Simon ein und legt die Antwort in den Zustand', async () => {

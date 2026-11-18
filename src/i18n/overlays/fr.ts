@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Les créneaux à venir sont supprimés.",
   "trolleyDelBescheid": "Les personnes inscrites recevront un avis.",
   "trolleyEntfernen": "Supprimer le présentoir mobile",
-  "trolleyOhneZusage": "convenu, sans confirmation",
   "gruppenUndTrolleys": "Groupes et présentoirs mobiles",
   "trolleysN": "Présentoirs mobiles\u00a0: {n}",
   "gruppeTrolleyBeiPerson": "Qui appartient à quel groupe et qui a l’autorisation de sortir avec le présentoir, tu le définis dans la fiche de la personne.",

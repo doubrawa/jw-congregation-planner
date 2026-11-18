@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "The upcoming bookings will be removed.",
   "trolleyDelBescheid": "Everyone who is signed up will be told.",
   "trolleyEntfernen": "Remove literature cart",
-  "trolleyOhneZusage": "arranged, no confirmation needed",
   "gruppenUndTrolleys": "Groups and literature carts",
   "trolleysN": "Literature carts: {n}",
   "gruppeTrolleyBeiPerson": "On the person’s page, you set who belongs to which group and who may go out with the cart.",

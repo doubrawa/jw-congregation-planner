@@ -11650,6 +11650,19 @@ Umgesetzt wird in Paketen. Vor jedem Push laufen ein Review und ein Verify
   und „Übernehmen" aus der Glocke (keine Testmitteilung „Ersatz gesucht").
   Beides decken die Komponententests.
 
+**Paket 2 ✅ umgesetzt (18. November 2026): T188, T194 und T197.**
+- **T188:** `useSaal` zeigt die Probleme anderer als „wartet"; rot bleibt nur
+  der eigene Platz.
+- **T188:** `Saal` mit `sichtbar` steht als `figure` mit der Zahl darunter.
+  Das Bild ist dann `aria-hidden`, damit die Zahl nicht zweimal vorgelesen
+  wird.
+- **T194:** „verabredet, ohne Zusage" (`trolleyOhneZusage`) ist aus allen
+  zwölf Sprachen fort. In der Trolley-Ansicht steht derselbe Punkt wie unter
+  „Meine Aufgaben".
+- **T197:** Der Punkt im Programm hält bei den anderen nur die Spalte.
+- **Geprüft:** Laufzeit-Messung kern mit axe, 168 Läufe, kein Befund. Neun
+  Handbuchbilder sind neu aufgenommen.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |

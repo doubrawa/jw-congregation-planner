@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Nadchodzące terminy zostaną usunięte.",
   "trolleyDelBescheid": "Zapisane osoby dostaną powiadomienie.",
   "trolleyEntfernen": "Usuń wózek z literaturą",
-  "trolleyOhneZusage": "umówione, bez potwierdzenia",
   "gruppenUndTrolleys": "Grupy i wózki z literaturą",
   "trolleysN": "Wózki z literaturą: {n}",
   "gruppeTrolleyBeiPerson": "Kto należy do której grupy i kto ma pozwolenie na służbę przy wózku, ustawiasz w danych osoby.",

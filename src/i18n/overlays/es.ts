@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Se eliminarán los próximos turnos.",
   "trolleyDelBescheid": "Quienes tengan turno recibirán un aviso.",
   "trolleyEntfernen": "Eliminar carrito de publicaciones",
-  "trolleyOhneZusage": "acordado, sin confirmación",
   "gruppenUndTrolleys": "Grupos y carritos de publicaciones",
   "trolleysN": "Carritos de publicaciones: {n}",
   "gruppeTrolleyBeiPerson": "Quién pertenece a qué grupo y quién tiene permiso para salir con el carrito lo indicas en los datos de la persona.",

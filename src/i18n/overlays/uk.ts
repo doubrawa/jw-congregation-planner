@@ -684,7 +684,6 @@ export default {
   "trolleyDelTermine": "Майбутні записи буде видалено.",
   "trolleyDelBescheid": "Усі записані отримають сповіщення.",
   "trolleyEntfernen": "Видалити стенд з літературою",
-  "trolleyOhneZusage": "за домовленістю, без підтвердження",
   "gruppenUndTrolleys": "Групи й стенди з літературою",
   "trolleysN": "Стендів: {n}",
   "gruppeTrolleyBeiPerson": "Хто в якій групі й кому дозволено брати участь у служінні зі стендом, ви вказуєте в даних людини.",

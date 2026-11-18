@@ -10,8 +10,8 @@
   padding-block-start: 12px;
 }
 
-.aufgabe-karte .saal,
-.sheet .saal {
+.aufgabe-karte .saal-figur,
+.sheet .saal-figur {
   align-self: center;
   margin-block-end: 10px;
 }

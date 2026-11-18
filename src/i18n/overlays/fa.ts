@@ -683,7 +683,6 @@ export default {
   "trolleyDelTermine": "نوبت‌های آینده حذف می‌شوند.",
   "trolleyDelBescheid": "کسانی که ثبت‌نام کرده‌اند باخبر می‌شوند.",
   "trolleyEntfernen": "حذف چرخ‌دستی",
-  "trolleyOhneZusage": "با قرار قبلی، بدون تأیید",
   "gruppenUndTrolleys": "گروه‌ها و چرخ‌دستی‌ها",
   "trolleysN": "{n} چرخ‌دستی",
   "gruppeTrolleyBeiPerson": "در صفحهٔ فرد تعیین می‌کنید که هر کس در کدام گروه است و چه کسی اجازه دارد با چرخ‌دستی موعظه کند.",

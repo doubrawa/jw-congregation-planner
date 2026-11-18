@@ -29,7 +29,7 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
       {/* Je Aufgabe ein eigener Saal: Wechselt die Aufgabe (die nächste ist über
           Nacht eine andere), füllt sich ihr Platz nicht, als hätte man eben
           bestätigt — der Übergang gehört nur zum Bestätigen. */}
-      {besetzung && <Saal key={task.id} lagen={besetzung.lagen} label={besetzung.label} du={besetzung.du} />}
+      {besetzung && <Saal key={task.id} lagen={besetzung.lagen} label={besetzung.label} du={besetzung.du} sichtbar />}
       <div className="aufgabe-wann">
         <Punkt art="du" />
         <span>
