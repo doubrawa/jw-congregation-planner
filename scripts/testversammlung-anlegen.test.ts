@@ -508,7 +508,7 @@ describe('Die Konten: je Rechte-Stufe eines (seit 4.10.2026)', () => {
   it('es bleibt eine Gruppe, die keines der drei Konten leitet — die „fremde" der Probe', () => {
     // Die Gruppe eines Aufsehers oder Gehilfen ist die seines `g` (siehe das
     // Anlegen: `groups.overseer_id`/`assistant_id`). Ohne eine freie Gruppe
-    // blieben die Fälle 42–61 der Probe ungemessen.
+    // blieben die Fälle 42–60 und 118 der Probe ungemessen.
     const geleitet = new Set(
       [stufe('Gruppenaufseher'), stufe('Planer'), stufe('Mitglied')]
         .map(person)

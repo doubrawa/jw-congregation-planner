@@ -1307,6 +1307,13 @@ $$;
 -- Wartungsskript) — die prüft selbst. Admin und Planer dürfen alles. Ein
 -- Upsert kommt als INSERT an, auch wenn die Woche schon besteht; verglichen
 -- wird dann mit der bestehenden.
+--
+-- **Die Woche bleibt, wo sie ist.** Verglichen wird die Zeile mit sich selbst,
+-- und das trägt nur, solange sie dieselbe Woche bleibt. Verschöbe der
+-- Gruppenaufseher sie auf einen anderen Montag, wäre an keinem fremden
+-- Treffpunkt etwas „geändert" — und an ihre Stelle legte er eine neue Zeile, in
+-- der die Treffpunkte der anderen fehlen. Montag und Versammlung der Zeile
+-- wechselt deshalb nur, wer alles darf.
 create or replace function public.fs_weeks_pruefen()
 returns trigger
 language plpgsql security definer
@@ -1320,6 +1327,9 @@ begin
     return new;
   end if;
   if tg_op = 'UPDATE' then
+    if new.start <> old.start or new.congregation_id <> old.congregation_id then
+      raise exception 'woche-bleibt' using errcode = '42501';
+    end if;
     vorher := old.data;
   else
     select f.data into vorher
@@ -1807,11 +1817,10 @@ grant execute on function public.abwesenheit_gruende() to authenticated;
 
 -- Mitteilungen sind personalisiert (je Empfänger eine Zeile): jeder sieht/ändert/
 -- löscht nur die eigenen. Unmittelbar schreibt nur der Admin — und die App
--- nie: Was sie meldet (eine Verhinderung, ein geholtes Programm), geht über
--- `notify_planners` weiter unten an alle, die planen. Ein Verkündiger sieht
--- sie nicht (members_select) und könnte sie nicht adressieren. Der
--- frühere Zweig „jedes Mitglied darf 'verhindert' an Planer schreiben" war
--- deshalb nie erreichbar: Die App fand keinen Empfänger und schrieb nichts.
+-- nie: Was sie meldet (ein geholtes Programm), geht über `notify_planners`
+-- weiter unten an alle, die planen; eine Absage meldet die Function
+-- `substitute`. Ein Konto ohne Admin-Recht sieht die anderen nicht
+-- (members_select) und könnte sie nicht adressieren.
 drop policy if exists notifications_select on public.notifications;
 create policy notifications_select on public.notifications
   for select using (
@@ -2305,28 +2314,26 @@ create policy geraete_fehler_select on public.geraete_fehler
   for select using (congregation_id = public.my_congregation_id() and public.ist_admin());
 
 -- ---------------------------------------------------------------------------
--- Mitteilung an die Planer der eigenen Versammlung — je Planer eine Zeile mit
--- eigenem Gelesen-/Lösch-Status.
+-- Mitteilung an alle, die planen — je Admin und Planer der eigenen
+-- Versammlung eine Zeile mit eigenem Gelesen-/Lösch-Status.
 --
--- Security definer, weil die **Empfänger** nur die Datenbank kennt: Ein
--- Verkündiger sieht in `members` allein die eigene Zeile (members_select). Bis
--- zum 24.9.2026 suchte die App die Planer im Client — für jede Verhinderung
--- eine leere Empfängerliste, und der Schreiber brach still ab. Kein Planer hat
--- je eine Verhinderung erhalten, obwohl der Toast es versprach.
+-- Security definer, weil die **Empfänger** nur die Datenbank kennt: In
+-- `members` sieht ein Konto ohne Admin-Recht allein die eigene Zeile
+-- (members_select) — die App eines Planers fände die anderen nicht.
 --
--- Melden darf jedes Mitglied nur eine Verhinderung; Import und „Plan gesendet"
--- bleiben Admins und Planern vorbehalten (S3/T89). Die Art prüft zusätzlich die
--- check-Bedingung der Tabelle.
+-- **Nur wer plant, meldet** (Admin und Planer, `darf_zuteilen()`) — so sagt die
+-- App allen, dass ein Programm geholt ist. Titel, Rumpf und Schlüssel schreibt
+-- die Funktion in fremde Glocken, wie der Aufrufer sie mitgibt, ohne Absender.
+-- Dürfte das jedes Mitglied, stünde dort eine Absage im Namen eines anderen.
+-- Eine Absage meldet deshalb die Function `substitute` (Aufruf 'absage'): Sie
+-- prüft, dass der Platz dem Absagenden gehört, und baut den Text selbst. Die
+-- Art prüft zusätzlich die check-Bedingung der Tabelle.
 --
--- Empfänger sind seit dem 4.10.2026 Admins **und** Planer: Wer zuteilt, sucht
--- auch den Ersatz, wenn jemand absagt.
---
--- `task` (seit 4.10.2026): der Schlüssel der abgesagten Aufgabe. Ein Tipp auf
--- die Zeile führt den Planer in ihre Woche. Er ist nur ein Wegweiser — er
--- gibt kein Recht, und eine Bestätigung bietet die Glocke an einer Absage
--- nicht an —, darum genügt es, ihn zu kürzen. Mit Vorgabe, damit Aufrufe ohne
--- ihn (Import, ältere App-Stände) weiter passen; die alte Fassung mit drei
--- Parametern muss dafür weg, sonst wäre ein solcher Aufruf mehrdeutig.
+-- `task`: der Schlüssel der Aufgabe, um die es geht. Ein Tipp auf die Zeile
+-- führt in ihre Woche. Er ist nur ein Wegweiser — er gibt kein Recht —, darum
+-- genügt es, ihn zu kürzen. Mit Vorgabe, damit Aufrufe ohne ihn weiter passen;
+-- stünde eine Fassung mit drei Parametern daneben, wäre ein solcher Aufruf
+-- mehrdeutig.
 -- ---------------------------------------------------------------------------
 
 drop function if exists public.notify_planners(text, text, text);
@@ -2337,8 +2344,8 @@ language plpgsql security definer
 set search_path = public
 as $$
 begin
-  if kind <> 'verhindert' and not public.darf_zuteilen() then
-    raise exception 'nur eine Verhinderung darf jedes Mitglied melden';
+  if not public.darf_zuteilen() then
+    raise exception 'nur-wer-zuteilt' using errcode = '42501';
   end if;
   insert into public.notifications (congregation_id, user_id, type, title, body, task_key)
   select m.congregation_id, m.user_id, kind, subject, message, nullif(left(task, 300), '')

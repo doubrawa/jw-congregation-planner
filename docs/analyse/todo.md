@@ -11705,6 +11705,75 @@ Damit sind alle 17 Aufgaben aus Audit und Critique erledigt.
 - **Geprüft:** Laufzeit-Messung, Satz voll mit axe, 732 Läufe, kein Befund.
   Alle 29 Handbuchbilder sind neu aufgenommen.
 
+## Aufgenommen am 19. November 2026 — Sicherheits-Review des ganzen Repos
+
+Am 19. November ging der ganze Stand (`d0af2d15`) unter Sicherheitsblick durch
+(Betreiber: „das ganze repo prüfen"), allein und nacheinander: `schema.sql` mit
+allen Richtlinien, Rechten und Funktionen, die acht Edge Functions, der Service
+Worker, die Anmeldung, die CI und die Skripte. Kein hoher Befund; einer mittel,
+zwei niedrig, alle drei vorab in PGlite nachgestellt. Behoben sind Nr. 1 und 2
+(Betreiber: „Ja, 1 und 2").
+
+1. **Eine Treffpunkt-Woche bleibt, wo sie ist** (mittel). `fs_weeks_pruefen`
+   verglich beim Gruppenaufseher nur die Treffpunkte (`data`) alt gegen neu;
+   den Montag der Zeile prüfte niemand. Er konnte die Woche auf einen anderen
+   Montag verschieben und an ihre Stelle eine leere legen — die Treffpunkte der
+   anderen Gruppen und der Versammlung waren für diese Woche fort, an
+   „nur-eigene-gruppe" vorbei. Der Trigger weist jetzt ein Ändern ab, das
+   Montag oder Versammlung der Zeile wechselt (`woche-bleibt`, 42501; Migration
+   `20261119100000_treffpunkt-woche-bleibt.sql`).
+2. **An alle, die planen, meldet nur, wer selbst plant** (niedrig).
+   `notify_planners` nahm von jedem Mitglied eine „Verhinderung" an und schrieb
+   Titel, Rumpf und Aufgaben-Schlüssel ungeprüft in die Glocken von Admin und
+   Planern — eine Absage im Namen eines anderen, ohne Absender. Die Funktion
+   verlangt jetzt für jede Art `darf_zuteilen()` (`nur-wer-zuteilt`, 42501;
+   Migration `20261119110000_meldung-nur-wer-plant.sql`). **Das nimmt die
+   Entscheidung aus T175 zurück**, den Weg „für Geräte mit altem Stand" offen
+   zu lassen: Eine App von vor dem 13. November meldet ihre Absage nicht mehr
+   in die Glocke. Die App selbst schickt über die Funktion nur noch „Programm
+   importiert", vom Admin oder Planer.
+3. **Nicht beauftragt** (niedrig): Der Endpunkt eines Push-Abos ist frei
+   wählbar (`push_subscriptions_own`), und `zustellen` ruft ihn ungeprüft auf —
+   ein blinder HTTPS-Aufruf aus der Function an einen beliebigen Host. Abhilfe
+   wäre eine Liste der bekannten Push-Dienste; fehlt dort einer, verliert
+   dessen Browser still den Push.
+
+**Nicht aus dem Repo entscheidbar:** ob sich ein angemeldetes Konto in Supabase
+Auth selbst ein Kennwort setzen kann. Die Anmeldung mit Adresse und Kennwort
+ist im Projekt an (so meldet sich die Mitgliedsrechte-Probe an); könnte ein
+Konto sich eines geben, überstünde jemand mit einer gestohlenen Sitzung
+„Zugang erneuern". Im Dashboard nachsehen.
+
+**Geprüft:** `supabase/treffpunkt-woche-rechte.test.ts` und
+`supabase/planer-meldung-rechte.test.ts` messen beide Regeln an einer echten
+Postgres, als Rolle `authenticated` — am Stand davor sechs Fälle rot, die elf
+Gegenproben grün. `migrationen.test.ts` hält die zwei Migrationen gegen
+`schema.sql`. Die Mitgliedsrechte-Probe misst es live: (6) erwartet jetzt die
+Abweisung, neu sind (118) (die Woche verschieben) und (119) (die Meldung des
+Planers kommt an); (6b) und (61) sind frei. **Noch nicht ausgerollt, die Probe
+noch nicht gefahren** — gegen den Stand davor meldet sie (6) und (118) als
+offen.
+
+**Nach `/simplify` und `/code-review max`** (selber Tag, allein und
+nacheinander): `alsKonto` und `fehlercode` stehen einmal in
+`scripts/pglite-postgres.mjs` statt in fünf Proben; die Attrappe hält fest,
+welches Konto ruft (`Aufruf.wer`), und die Tests zu (6), (118) und (119) prüfen
+es. Zwei Lücken, die das Review dabei bemerkte, sind am selben Tag
+geschlossen (Betreiber: „Do this task here"):
+
+- **Die Mitgliedsrechte-Probe misst die Absage wieder — auf dem Weg der App.**
+  (6) und (61) maßen den alten über `notify_planners`; die Function
+  `substitute` (Aufruf 'absage') maß die Probe nie. Neu: (120) das Mitglied
+  sagt einen eigenen Platz ab, und die Zeile steht beim Admin; (121) für einen
+  fremden Platz weist die Function ab (`not-assigned`). Gemessen an einer
+  eigenen Woche im Jahr 2099 und an einem Hilfsdienst — so geht kein Push
+  hinaus. Die Tests fahren dafür die echte Function gegen die Attrappe.
+- **Die Tests unmittelbar unter `supabase/` sind typgeprüft**
+  (`tsconfig.scripts.json`). Sie standen in keinem `tsc`-Projekt; 17 Fehler in
+  `migrationen.test.ts` und `schema.test.ts` sind behoben, der Katalog hat
+  seinen Typ jetzt an der Quelle (`Katalog`, `Abschnitt` in
+  `scripts/katalog.mjs`).
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |

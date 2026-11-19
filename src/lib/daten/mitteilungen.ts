@@ -119,16 +119,20 @@ export async function loadNotifications(
 }
 
 /**
- * Mitteilung an die Planer der Versammlung (`notify_planners`, security
- * definer): je Planer eine eigene Zeile → eigener Gelesen-/Lösch-Status.
- * Erinnerungen erzeugt die Edge Function selbst; Client-Mitteilungen sind
- * Import und „Plan gesendet". Eine Verhinderung meldet die Function
- * `substitute` (`absageMelden` in `daten/zusagen.ts`) — sie braucht einen Push.
+ * Mitteilung an alle, die planen (`notify_planners`, security definer): je
+ * Admin und Planer eine eigene Zeile → eigener Gelesen-/Lösch-Status.
  *
- * Die Empfänger bestimmt die Datenbank, nicht der Client. Ein Verkündiger
- * sieht in `members` nur die eigene Zeile (`members_select`) — wer die Planer
- * aus `state.members` herausfilterte, bekäme eine leere Liste und schriebe
- * still nichts.
+ * **Nur für Admin und Planer.** Die Funktion schreibt Titel und Rumpf in
+ * fremde Glocken, wie sie kommen, und weist deshalb jeden anderen ab (403).
+ * Aus der App geht so nur „Programm importiert" hinaus. Was ein Mitglied
+ * meldet, braucht einen Weg, der prüft, was es behauptet: Eine Verhinderung
+ * meldet die Function `substitute` (`absageMelden` in `daten/zusagen.ts`) —
+ * sie braucht ohnehin einen Push.
+ *
+ * Die Empfänger bestimmt die Datenbank, nicht der Client. Ein Konto ohne
+ * Admin-Recht sieht in `members` nur die eigene Zeile (`members_select`) — wer
+ * die Planer aus `state.members` herausfilterte, bekäme eine leere Liste und
+ * schriebe still nichts.
  *
  * `taskKey`: die Aufgabe, um die es geht, wo die Mitteilung eine nennt — daran
  * findet ein Tipp in der Glocke ihre Woche. Ohne ihn geht der Aufruf mit drei

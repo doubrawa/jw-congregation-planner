@@ -162,6 +162,8 @@ export interface Aufruf {
   body?: unknown
   /** Der `Prefer`-Kopf, etwa `return=minimal` — ob mit oder ohne `RETURNING` geschrieben wurde. */
   prefer?: string
+  /** Das angemeldete Konto, das ruft (seine Kennung) — ohne Anmeldung fehlt es. */
+  wer?: string
 }
 
 /** Parameter in der Adresse, die keine Spalte nennen. */
@@ -382,7 +384,7 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       // Die eine Funktion, die ein Skript aufruft, so weit nachgestellt, dass
       // die Probe ihr Ergebnis sieht: je Admin und Planer der Versammlung eine
       // Mitteilung (seit 4.10.2026 auch an `zuteiler`, wie in `schema.sql`).
-      // Ihre Prüfung (nur Verhinderungen) bleibt außen vor — wie alle Richtlinien.
+      // Ihre Prüfung (nur wer plant) bleibt außen vor — wie alle Richtlinien.
       if (tabelle === 'rpc/notify_planners' && wer) {
         const { kind, subject, message, task } = rumpf as { kind: string; subject: string; message: string; task?: string }
         const mitglieder = tabellen.members ?? []
@@ -511,7 +513,8 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
 
     if (url.pathname.startsWith('/rest/v1/')) {
       const tabelle = decodeURIComponent(url.pathname.slice('/rest/v1/'.length))
-      const aufruf = { pfad: `${tabelle}${url.search}`, method, body: rumpf, prefer: kopf.get('Prefer') ?? undefined }
+      const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))?.id
+      const aufruf = { pfad: `${tabelle}${url.search}`, method, body: rumpf, prefer: kopf.get('Prefer') ?? undefined, wer }
       aufrufe.push(aufruf)
       const gestoert = stoerung?.(aufruf)
       if (gestoert) return antwort(gestoert.status ?? 400, gestoert.json ?? {})

@@ -34,7 +34,7 @@ const schema = readFileSync(join(dir, 'schema.sql'), 'utf8')
 
 /** Alle Vorkommen der ersten Gruppe eines globalen Musters. */
 function treffer(sql: string, muster: RegExp): string[] {
-  return [...sql.matchAll(muster)].map((m) => m[1].toLowerCase())
+  return [...sql.matchAll(muster)].map((m) => m[1]!.toLowerCase())
 }
 
 const TABELLEN = /create table if not exists public\.(\w+)/g
@@ -67,7 +67,7 @@ function tabelle(name: string): string {
 function richtlinien(sql: string): Map<string, string> {
   const m = new Map<string, string>()
   for (const [, name, tabelle, rumpf] of sql.matchAll(RICHTLINIE)) {
-    m.set(name, normiert(`${tabelle} ${rumpf}`))
+    m.set(name!, normiert(`${tabelle} ${rumpf}`))
   }
   return m
 }
@@ -75,7 +75,7 @@ function richtlinien(sql: string): Map<string, string> {
 function funktionsRuempfe(sql: string): Map<string, string> {
   const m = new Map<string, string>()
   for (const [, name, kopf, rumpf] of sql.matchAll(FUNKTIONS_RUMPF)) {
-    m.set(name, normiert(`${kopf} § ${rumpf}`))
+    m.set(name!, normiert(`${kopf} § ${rumpf}`))
   }
   return m
 }
@@ -218,18 +218,19 @@ describe('die Rechteprüfungen stehen im Schema', () => {
     )
   })
 
-  it('eine Verhinderungs-Meldung geht an Admins und Planer (T89, 4.10.2026)', () => {
-    // Seit dem 24.9.2026 legt `notify_planners` die Zeilen an: Ein Verkündiger
-    // sieht in `members` nur sich selbst und kann die Planer nicht adressieren.
+  it('an alle, die planen, meldet nur, wer selbst plant — die Zeilen gehen an Admins und Planer', () => {
+    // `notify_planners` legt die Zeilen an: Ein Konto ohne Admin-Recht sieht in
+    // `members` nur sich selbst und könnte die anderen nicht adressieren.
     const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
     expect(fn).toContain('security definer')
-    // Wer zuteilt, sucht auch den Ersatz.
     expect(fn).toContain('and (m.admin or m.zuteiler)')
-    // Alles außer der Verhinderung bleibt Admins und Planern vorbehalten.
-    expect(fn).toContain("kind <> 'verhindert' and not public.darf_zuteilen()")
+    // Für jede Art: Die Funktion schreibt in fremde Glocken, was der Aufrufer
+    // mitgibt. Wie sie abweist, misst `planer-meldung-rechte.test.ts`.
+    expect(fn).toContain("if not public.darf_zuteilen() then raise exception 'nur-wer-zuteilt' using errcode = '42501';")
+    expect(fn).not.toContain("kind <> 'verhindert'")
   })
 
-  it('die Verhinderung trägt ihren Aufgaben-Schlüssel — gekürzt, mit Vorgabe, ohne alte Fassung daneben (4.10.2026)', () => {
+  it('die Meldung trägt ihren Aufgaben-Schlüssel — gekürzt, mit Vorgabe, ohne alte Fassung daneben', () => {
     const fn = funktionsRuempfe(schema).get('notify_planners') ?? ''
     // Ein Wegweiser für den Tipp in der Glocke, kein Recht: gekürzt genügt.
     expect(fn).toContain("nullif(left(task, 300), '')")
@@ -322,6 +323,9 @@ describe('die Rechteprüfungen stehen im Schema', () => {
       expect(pruefen).toContain('where f.congregation_id = new.congregation_id and f.start = new.start;')
       expect(pruefen).toContain("raise exception 'nur-eigene-gruppe' using errcode = '42501';")
       expect(pruefen).toContain('public.fs_fremde(coalesce(vorher, \'[]\'::jsonb), eigene) is distinct from public.fs_fremde(new.data, eigene)')
+      // Verglichen wird die Zeile mit sich selbst — also bleibt sie dieselbe
+      // Woche (gemessen in `treffpunkt-woche-rechte.test.ts`).
+      expect(pruefen).toContain("if new.start <> old.start or new.congregation_id <> old.congregation_id then raise exception 'woche-bleibt' using errcode = '42501';")
       const fremde = fn('fs_fremde')
       // Verglichen wird alles außer der nachgetragenen Person — der ganze
       // Ausdruck: Ein Abzug mehr (`- 'time'`) enthielte den Teil weiterhin.

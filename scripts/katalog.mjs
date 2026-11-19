@@ -75,10 +75,28 @@ export const ABFRAGEN = {
     order by 1, 2`,
 }
 
-/** Die Abschnitte — abgeleitet aus `ABFRAGEN`, damit kein neuer fehlt. */
-export const ABSCHNITTE = Object.keys(ABFRAGEN)
+/**
+ * Ein Abschnitt des Katalogs — einer der Namen aus `ABFRAGEN`.
+ *
+ * @typedef {keyof typeof ABFRAGEN} Abschnitt
+ */
 
-/** Der Katalog einer Datenbank: jede Abfrage aus `ABFRAGEN`, der Reihe nach. */
+/**
+ * Der Katalog einer Datenbank: je Abschnitt seine Zeilen. **Jeder** Abschnitt
+ * ist da — wer einen liest, muss nicht fragen, ob es ihn gibt.
+ *
+ * @typedef {Record<Abschnitt, Record<string, unknown>[]>} Katalog
+ */
+
+/** Die Abschnitte — abgeleitet aus `ABFRAGEN`, damit kein neuer fehlt. */
+export const ABSCHNITTE = /** @type {Abschnitt[]} */ (Object.keys(ABFRAGEN))
+
+/**
+ * Der Katalog einer Datenbank: jede Abfrage aus `ABFRAGEN`, der Reihe nach.
+ *
+ * @param {{ query: (sql: string) => Promise<{ rows: unknown[] }> }} db
+ * @returns {Promise<Katalog>}
+ */
 export async function katalog(db) {
   const out = {}
   for (const abschnitt of ABSCHNITTE) out[abschnitt] = (await db.query(ABFRAGEN[abschnitt])).rows

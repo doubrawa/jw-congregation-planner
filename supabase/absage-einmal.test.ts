@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { leerePostgres } from '../scripts/pglite-postgres.mjs'
+import { alsKonto, leerePostgres } from '../scripts/pglite-postgres.mjs'
 import { TITEL_ABGESAGT, TITEL_GESUCHT } from './functions/substitute/texte.ts'
 
 /**
@@ -46,16 +46,7 @@ type DB = {
 let db: DB
 
 /** Etwas als dieses Konto tun — Rolle und Anspruch wie bei PostgREST. */
-async function als<T>(konto: string, tun: () => Promise<T>): Promise<T> {
-  await db.exec(`set role postgres`)
-  await db.exec(`set request.jwt.claim.sub = '${konto}'`)
-  await db.exec(`set role authenticated`)
-  try {
-    return await tun()
-  } finally {
-    await db.exec('set role postgres')
-  }
-}
+const als = <T>(konto: string, tun: () => Promise<T>): Promise<T> => alsKonto(db, konto, tun)
 
 /** Die Zusage eines Kontos setzen, wie die App es tut (Upsert auf Versammlung, Platz und Konto). */
 const zusage = (konto: string, platz: string, status: 'bestätigt' | 'verhindert') =>

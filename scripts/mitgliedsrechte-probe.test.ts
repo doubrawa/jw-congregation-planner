@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PROBE_DATEI, probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import {
+  absageAnlage,
   abwesenheitAnlage,
   bewerteSicht,
   bewerteVersuch,
@@ -32,14 +33,14 @@ import {
   zuteilungAenderung,
 } from './mitgliedsrechte-probe.mjs'
 import { TEST_KONTEN } from './testversammlung-anlegen.mjs'
-import { helferKey, punktKey } from '../supabase/functions/_shared/aufgaben-schluessel.ts'
+import { helferKey, punktKey, schluesselTeile } from '../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { isQualified, serviceQualKey } from '../src/data/helpers'
 import type { PartItem, Person } from '../src/data/types'
 import { pidsNachtragen } from '../src/data/namensbindung'
 import { stehtImDienst, uebernahmeHindernis } from '../supabase/functions/_shared/freie-plaetze.ts'
 import { heuteUtc, STANDARD_ZEITEN } from '../supabase/functions/_shared/planung.ts'
 import { ueberschneiden, zeitraumGueltig } from '../supabase/functions/_shared/trolley.ts'
-import { offeneDerWoche, type Week } from '../supabase/functions/_shared/zuteilungen.ts'
+import { offeneDerWoche, pendingOfMeeting, type Week } from '../supabase/functions/_shared/zuteilungen.ts'
 import { type Lage, tagDerZusammenkunft, tauschAngebote, tauschPruefen } from '../supabase/functions/tauschen/regeln.ts'
 import { TITEL_ABGELEHNT, TITEL_ANGEFRAGT, TITEL_GETAUSCHT } from '../supabase/functions/tauschen/texte.ts'
 import { buildDemoWeeks, DEMO_PERSONS } from '../tests/testdaten/testdaten'
@@ -631,6 +632,13 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
     expect(a.besuch.woche >= a.fsStart).toBe(true)
   })
 
+  it('(118) zielt auf einen anderen Montag — sonst wiese die Datenbank ab, nicht die Regel', () => {
+    // Kein Montag: die check-Bedingung (ein 400). Derselbe Montag: nichts
+    // geändert, und „nicht verschoben" sähe aus wie die Regel, die greift.
+    expect(wochentag(a.fsZiel)).toBe(1)
+    expect(a.fsZiel > a.fsStart).toBe(true)
+  })
+
   it('jede Kennung trägt das Kennzeichen — daran findet das Aufräumen genau diese Zeilen', () => {
     const zeilen = [
       ...a.treffpunkte, ...Object.values(a.regeln), a.besuch, a.besuchVersuche.neu, a.plan, a.planEintrag, a.eintragVersuch, a.planVersuch,
@@ -638,7 +646,6 @@ describe('Rechte-Stufen: die Anlage — jeder Versuch trifft genau eine Regel', 
     const ids = zeilen.map((z) => z.id)
     expect(ids.every((id) => id.startsWith('PROBE-1-'))).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
-    expect(a.absage.startsWith('PROBE-1 ')).toBe(true)
   })
 })
 
@@ -712,6 +719,52 @@ describe('(9) an der eigenen Woche: `take` bleibt nur „not-sought"', () => {
     expect(hindernis(a.woche.start)).toBeNull()
     // Die Wochen einer Testversammlung veralten: Dort wiese `take` mit „past" ab.
     expect(hindernis('2026-10-12')).toBe('past')
+  })
+})
+
+describe('(120)–(121) an der eigenen Woche: die Absage findet beide Plätze', () => {
+  /*
+    Die Function `substitute` (Aufruf 'absage') sucht den Platz in der Woche,
+    mit derselben Aufzählung wie „Plan senden" (`pendingOfMeeting`). Fände sie
+    ihn dort nicht, wiese sie mit „slot-not-found" ab — die Probe meldete
+    „kaputt" statt eines Urteils darüber, wem der Platz gehört.
+  */
+  const tag0 = ersterMontagAb('2099-01-01')
+  const mitglied = { name: 'PROBE-1', pid: 'p-mitglied' }
+  const fremd = { name: 'Probe Fremd', pid: 'p-fremd' }
+  const a = absageAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc: 'mik', mitglied, fremder: fremd })
+  /** Die Plätze einer Zusammenkunft, wie die Function sie aufzählt — für einen Dienst mit `plaetze` Plätzen. */
+  const aufgezaehlt = (tab: 'mid' | 'we', plaetze: number) =>
+    pendingOfMeeting(a.woche.start, tab, (a.woche.data as Week)[tab]!, [{ key: 'mik', name: 'Mikrofone', count: plaetze, groups: false }], new Map()).map((p) => [p.key, p.pid])
+
+  it('ein Montag, den keine andere Woche der Probe belegt — mit dem Kennzeichen im Zeitraum', () => {
+    expect(wochentag(a.woche.start)).toBe(1)
+    const verwaltung = verwaltungAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, personId: 'x' }).woche.start
+    const uebernahme = uebernahmeAnlage({ marke: 'PROBE-1', versammlung: 'c', tag0, svc: 'mik', inhaber: fremd }).woche.start
+    const tausch = tauschAnlage({
+      marke: 'PROBE-1', versammlung: 'c', tag0, svc: 'mik', vorbei: null, mitglied: { id: 'p-mitglied', name: 'Probe Mitglied', uid: 'u' }, aufseher: { id: 'p-a', name: 'A' }, ohneKontoId: 'o', anfrageId: 'q',
+    }).wochen
+    const starts = [verwaltung, uebernahme, ...Object.values(tausch).flatMap((w) => (w ? [w.start] : []))]
+    expect(starts).not.toContain(a.woche.start)
+    expect(a.woche.data.range).toBe('PROBE-1')
+    expect(a.woche.data.start).toBe(a.woche.start)
+  })
+
+  it('das Mitglied steht unter der Woche, die fremde Person am Wochenende — unter den Schlüsseln der App', () => {
+    expect(a.eigener).toBe(helferKey(a.woche.start, 'mid', 'mik', 0))
+    expect(a.fremder).toBe(helferKey(a.woche.start, 'we', 'mik', 0))
+    expect(aufgezaehlt('mid', 2)).toEqual([[a.eigener, 'p-mitglied']])
+    expect(aufgezaehlt('we', 2)).toEqual([[a.fremder, 'p-fremd']])
+  })
+
+  it('auch bei einem Dienst mit einem einzigen Platz: Beide stehen an Platz 0', () => {
+    // An Platz 1 zählte die Function die fremde Person dann nicht mehr auf.
+    expect(aufgezaehlt('mid', 1)).toEqual([[a.eigener, 'p-mitglied']])
+    expect(aufgezaehlt('we', 1)).toEqual([[a.fremder, 'p-fremd']])
+  })
+
+  it('beides sind Hilfsdienste — deren Absage geht nur in die Glocken, nicht als Push', () => {
+    expect([a.eigener, a.fremder].map((key) => schluesselTeile(key)?.art)).toEqual(['helper', 'helper'])
   })
 })
 

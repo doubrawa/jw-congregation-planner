@@ -23,7 +23,7 @@ import {
 } from './schema-attrappe'
 import { probeDateiText, wertAusEnvText } from './gemeinsam.mjs'
 import { AUSGENOMMEN, tabellenAusSchema } from './sicherung.mjs'
-import { eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, uebernahmeAnlage, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
+import { absageAnlage, eigeneSlots, ersterMontagAb, fremdeSlots, montagVon, stufenAnlage, tagPlus, uebernahmeAnlage, vorbeiKandidaten } from './mitgliedsrechte-probe.mjs'
 import { uuid5 } from './wochenplanung-importieren.mjs'
 import { abschnitt, tabelle, wochenKopf, wochenuebersichtDocx } from './wochenuebersicht-attrappe'
 import { LABEL_WT_STUDIUM } from '../src/data/constants'
@@ -255,10 +255,14 @@ function trolleyFunktion(
  * Attrappe — nach dem Aufrufer fragt sie `/auth/v1/user`, die Tabellen schreibt
  * sie mit der Dienstrolle. Ihre REST-Aufrufe stehen damit ebenfalls unter der
  * Prüfung gegen schema.sql. Ohne VAPID-Schlüssel geht kein Push hinaus.
+ *
+ * Dazu `substitute` für den Aufruf 'absage' (120, 121): Wem ein Platz gehört,
+ * urteilt dort die Function selbst, an der Woche.
  */
 const ECHTE_FUNCTIONS = {
   tauschen: () => import('../supabase/functions/tauschen/index.ts'),
   'send-plan': () => import('../supabase/functions/send-plan/index.ts'),
+  substitute: () => import('../supabase/functions/substitute/index.ts'),
 }
 const echteHandler = new Map<string, (req: Request) => Promise<Response>>()
 beforeAll(async () => {
@@ -798,7 +802,7 @@ const LAEUFE: Record<string, Lauf[]> = {
             { id: P4, congregation_id: C, fn: 'Probe', ln: 'Aufseher', priv: {} },
           ],
           // Ohne Gruppe blieben die Gruppenbesuche (11, 12) ungemessen, ohne
-          // die zweite — die keines der Probekonten leitet — die Fälle 42–61.
+          // die zweite — die keines der Probekonten leitet — die Fälle 42–60 und 118.
           groups: [
             { id: G1, congregation_id: C, name: 'Probe', position: 0, overseer_id: P4 },
             { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
@@ -826,7 +830,10 @@ const LAEUFE: Record<string, Lauf[]> = {
           ],
         },
         funktionen: {
-          substitute: () => ({ status: 403, json: { error: 'nicht erlaubt' } }),
+          // Die Absage echt (120, 121); `take` und `seek` bleiben an der
+          // nachgestellten Tür, die jeden abweist.
+          substitute: (rumpf, kontext) =>
+            rumpf.action === 'absage' ? echt('substitute')(rumpf, kontext) : { status: 403, json: { error: 'nicht erlaubt' } },
           // Echt, seit das Tauschen gesendete Wochen braucht (31.10.2026): die
           // Tür aus (36), „Plan senden" für die Probewochen, der Entzug beim
           // Aufräumen. Bis dahin stand hier nur die Tür nachgestellt.
@@ -841,7 +848,7 @@ const LAEUFE: Record<string, Lauf[]> = {
         // T120: die Anlage des Admins, die Versuche des Mitglieds, das Aufräumen.
         'POST gruppenbesuche', 'GET gruppenbesuche', 'DELETE gruppenbesuche',
         'POST plaene', 'GET plaene', 'DELETE plaene', 'POST plan_eintraege', 'GET plan_eintraege', 'DELETE plan_eintraege',
-        // (6) und (6b): der Meldeweg eines Mitglieds seit dem 24.9.2026.
+        // (6) und (119): die Meldung an alle, die planen — vom Mitglied und vom Planer.
         'POST rpc/notify_planners',
         // Die Rechte-Stufen (4.10.2026, seit dem 15.10.2026 „Alles Planen"):
         // Woche, neue Woche, Konto, Treffpunkte, Grundplan, Besuche, Person und
@@ -858,6 +865,9 @@ const LAEUFE: Record<string, Lauf[]> = {
         // Anfragen über `tauschen`, das Tagebuch über den Entzug von `send-plan`.
         'GET services', 'POST tausch_anfragen', 'GET tausch_anfragen', 'DELETE tausch_anfragen', 'GET assignment_log',
         'POST rpc/wochen_tauschen', 'DELETE assignment_log', 'GET confirmations', 'DELETE persons',
+        // Die Absage über die echte Function `substitute` (120): ihr Blick, ob
+        // schon gemeldet ist, und ihr Vermerk an der Absage.
+        'GET absagen', 'PATCH absagen',
       ],
     },
   ],
@@ -1151,25 +1161,224 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/alles mit Kennzeichen PROBE-\d+ wieder entfernt/)
   })
 
-  it('mitgliedsrechte-probe: die Absage geht über notify_planners an die Planer, und sie wird wieder gelöscht', async () => {
-    // Bis zum 3.10.2026 schrieb (6) die Mitteilung selbst — die Richtlinie
-    // lässt das seit dem 24.9.2026 nur Planern, und die Probe meldete
-    // „ZU STRENG", obwohl die App längst den anderen Weg geht.
+  /** Ein Aufruf von `notify_planners` mit dieser Art: (6) schickt als Mitglied 'verhindert', (119) als Planer 'import'. */
+  const meldung = (art: string) => (a: Aufruf) => tabelleVon(a) === 'rpc/notify_planners' && (a.body as { kind?: string }).kind === art
+  const absageDesMitglieds = meldung('verhindert')
+  const desPlaners = meldung('import')
+
+  it('mitgliedsrechte-probe: (6) kommt die „Absage" eines Mitglieds über notify_planners durch, steht S3 wieder offen — und sie wird gelöscht', async () => {
+    // Die Attrappe kennt die Prüfung der Funktion nicht: Dort kommt die Zeile
+    // an, wie in einer Datenbank, deren Funktion jedes Mitglied durchließe.
     const { ausgabe, aufrufe, tabellen } = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
     const text = ausgabe.join('\n')
-    expect(text).toMatch(/\(6\) Absage an die Planer über notify_planners \(der legitime Weg\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
+    expect(text).toMatch(/! \(6\) eine Absage über notify_planners in die Glocken der Planer schreiben\n.*ANGEKOMMEN \(HTTP 204\) — S3 STEHT WIEDER OFFEN/)
+    expect(text).toMatch(/Abweichend von der Erwartung: .*\(6\)/)
+    // Als Mitglied: Dem Admin oder dem Planer steht die Funktion zu, und nichts wäre gemessen.
+    expect(aufrufe.filter(absageDesMitglieds).map((a) => a.wer)).toEqual([U2])
+    // Über die Funktion, nicht als eigene Zeile — und nichts bleibt stehen.
     expect(aufrufe.some((a) => a.method === 'POST' && tabelleVon(a) === 'notifications' && (a.body as { title?: string }).title?.includes('Absage'))).toBe(false)
     expect((tabellen.notifications ?? []).filter((z) => String(z.title).startsWith('PROBE-'))).toEqual([])
   })
 
-  it('mitgliedsrechte-probe: (6b) zählt nur die Ausnahme von notify_planners als Abweisung', async () => {
-    const nurVerhinderung = { status: 400, json: { code: 'P0001', message: 'nur eine Verhinderung darf jedes Mitglied melden' } }
-    const zuteilung = (a: Aufruf) => tabelleVon(a) === 'rpc/notify_planners' && (a.body as { kind?: string }).kind === 'zuteilung'
-    const abgewiesen = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? nurVerhinderung : undefined))
-    expect(abgewiesen.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Admin und Planer\)\n.*nicht angekommen \(HTTP 400\) — abgewiesen — notify_planners reicht nur Verhinderungen weiter/)
+  it('mitgliedsrechte-probe: (6) zählt nur das Urteil der Funktion als Abweisung', async () => {
+    // 42501 kommt bei PostgREST als 403 — das Urteil.
+    const nurWerPlant = { status: 403, json: { code: '42501', message: 'nur-wer-zuteilt' } }
+    const abgewiesen = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (absageDesMitglieds(a) ? nurWerPlant : undefined))
+    expect(abgewiesen.ausgabe.join('\n')).toMatch(
+      /· \(6\) eine Absage über notify_planners in die Glocken der Planer schreiben\n.*nicht angekommen \(HTTP 403\) — abgewiesen — über diese Funktion meldet nur, wer plant/,
+    )
     // Gibt es die Funktion nicht (404), ist nichts gemessen.
-    const fehlt = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (zuteilung(a) ? { status: 404, json: { code: 'PGRST202' } } : undefined))
-    expect(fehlt.ausgabe.join('\n')).toMatch(/\(6b\) dieselbe Meldung als Art „zuteilung" \(nur Admin und Planer\)\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 404\)/)
+    const fehlt = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (absageDesMitglieds(a) ? { status: 404, json: { code: 'PGRST202' } } : undefined))
+    expect(fehlt.ausgabe.join('\n')).toMatch(/\(6\) eine Absage über notify_planners in die Glocken der Planer schreiben\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 404\)/)
+  })
+
+  it('mitgliedsrechte-probe: (119) die Meldung des Planers kommt beim Admin an — weist die Funktion auch ihn ab, heißt das „ZU STRENG"', async () => {
+    // Die Gegenprobe zu (6): So schickt die App „Programm importiert".
+    const offen = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    expect(offen.ausgabe.join('\n')).toMatch(/· \(119\) Planer: eine Meldung an alle, die planen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
+    // Als Planer, nicht als Admin: Auch dem stünde sie zu — nur bliebe dann
+    // ungemessen, ob der Planer selbst noch melden kann.
+    expect(offen.aufrufe.filter(desPlaners).map((a) => a.wer)).toEqual([U3])
+    const zu = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (desPlaners(a) ? { status: 403, json: { code: '42501' } } : undefined))
+    expect(zu.ausgabe.join('\n')).toMatch(/! \(119\) Planer: eine Meldung an alle, die planen \(notify_planners\)\n.*nicht angekommen \(HTTP 403\) — ZU STRENG/)
+  })
+
+  /** Die Treffpunkt-Woche der Stufen-Proben und der Montag, auf den (118) sie zu verschieben versucht. */
+  const { fsStart, fsZiel } = stufenAnlage({
+    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, adminName: 'Probe Admin', zuteilerPid: P3, eigeneGruppe: G1, fremdeGruppe: G2,
+  })
+
+  it('mitgliedsrechte-probe: (118) der Gruppenaufseher verschiebt die Treffpunkt-Woche nicht — käme er durch, stellt der Admin sie zurück', async () => {
+    const verschieben = (a: Aufruf) => a.method === 'PATCH' && tabelleVon(a) === 'fs_weeks' && (a.body as { start?: string }).start === fsZiel
+    const was = String.raw`\(118\) Gruppenaufseher: die Treffpunkt-Woche auf einen anderen Montag verschieben`
+
+    // Die Regel greift: 42501 vom Trigger, bei PostgREST ein 403.
+    const abgewiesen = await fahreGestoert('mitgliedsrechte-probe.mjs', (a) => (verschieben(a) ? { status: 403, json: { code: '42501', message: 'woche-bleibt' } } : undefined))
+    expect(abgewiesen.ausgabe.join('\n')).toMatch(new RegExp(`· ${was}\\n.*nicht geändert \\(HTTP 403\\) — die Woche bleibt, wo sie ist`))
+    // Der Gruppenaufseher versucht es, an der Zeile der Woche.
+    expect(abgewiesen.aufrufe.filter(verschieben).map((a) => [a.wer, a.pfad])).toEqual([[U4, `fs_weeks?congregation_id=eq.${C}&start=eq.${fsStart}`]])
+
+    // Die Attrappe kennt den Trigger nicht: Die Woche zieht um, die Probe sagt
+    // es, der Admin stellt sie zurück — und am Ende ist an beiden Montagen nichts mehr.
+    const offen = await fahreGestoert('mitgliedsrechte-probe.mjs', () => undefined)
+    expect(offen.ausgabe.join('\n')).toMatch(new RegExp(`! ${was}\\n.*GEÄNDERT \\(HTTP 204\\) — AUCH DAS!\\n.*\\(wieder zurückgestellt\\)`))
+    const zurueck = offen.aufrufe.filter((a) => a.method === 'PATCH' && tabelleVon(a) === 'fs_weeks' && (a.body as { start?: string }).start === fsStart)
+    expect(zurueck.map((a) => [a.wer, a.pfad])).toEqual([[U1, `fs_weeks?congregation_id=eq.${C}&start=eq.${fsZiel}`]])
+    expect(offen.tabellen.fs_weeks ?? []).toEqual([])
+
+    // Was ein abgebrochener Lauf am Ziel hinterließ, räumt der Admin weg, bevor
+    // der Gruppenaufseher es versucht: An einer Woche dort wiese die
+    // Eindeutigkeit das Verschieben ab (409) — „PROBE KAPUTT" statt eines Urteils.
+    const liegengeblieben = { id: k(119), congregation_id: C, start: fsZiel, data: [{ id: 'PROBE-1-fs-eigen' }] }
+    const uebernommen = await mitBestand({ fs_weeks: [liegengeblieben] })
+    const amZiel = uebernommen.aufrufe.filter((a) => tabelleVon(a) === 'fs_weeks' && a.method !== 'GET' && (verschieben(a) || a.pfad.includes(`start=eq.${fsZiel}`)))
+    expect(amZiel.slice(0, 2).map((a) => `${a.method} ${a.wer}`)).toEqual([`DELETE ${U1}`, `PATCH ${U4}`])
+    expect(uebernommen.tabellen.fs_weeks ?? []).toEqual([])
+
+    // Steht am Ziel schon eine fremde Woche, scheiterte das Verschieben an der
+    // Eindeutigkeit — nicht gemessen, und die fremde Woche bleibt stehen.
+    const fremde = { id: k(118), congregation_id: C, start: fsZiel, data: [{ id: 'echter-treffpunkt' }], updated_at: '2026-08-20T10:00:00+00:00' }
+    const belegt = await mitBestand({ fs_weeks: [fremde] })
+    expect(belegt.ausgabe.join('\n')).toMatch(new RegExp(`${was}\\n.*PROBE KAPUTT — am ${fsZiel} stehen Treffpunkte, die nicht von der Probe sind`))
+    expect(belegt.aufrufe.filter(verschieben)).toEqual([])
+    expect(belegt.tabellen.fs_weeks).toEqual([fremde])
+  })
+
+  /*
+    (120) und (121): die Absage über die Function `substitute`. Im üblichen Lauf
+    urteilt die echte Function — sie liest an der Woche, die die Probe anlegt,
+    wem der Platz gehört. Der Dienst ist der des fremden Platzes im Bestand
+    („mik", besetzt vom Admin).
+  */
+  const absage = absageAnlage({
+    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), svc: 'mik', mitglied: { name: 'PROBE-0', pid: P2 }, fremder: { name: 'Probe Planer', pid: P1 },
+  })
+  const plaetzeDerAbsage = [absage.eigener, absage.fremder]
+  const wasEigen = String.raw`\(120\) Mitglied: einen eigenen Platz absagen \(substitute, Aufruf „absage"\)`
+  const wasFremd = String.raw`\(121\) Mitglied: einen fremden Platz absagen \(Probe Planer\)`
+  type Funktion = NonNullable<Umgebung['funktionen']>[string]
+  /** Der Platz, den ein Aufruf 'absage' nennt. */
+  const platzVon = (rumpf: Record<string, unknown>): string => String((rumpf.taskKeys as string[] | undefined)?.[0])
+  /** Die Probe mit einer anderen Function `substitute` für den Aufruf 'absage' — die übrigen Aufrufe bleiben. */
+  const mitAbsage = async (absagen: (ueblich: Funktion) => Funktion, bestand: NonNullable<Umgebung['bestand']> = {}) => {
+    const l = lauf('mitgliedsrechte-probe.mjs')
+    const modul = (await MODULE['./mitgliedsrechte-probe.mjs']!()) as Record<string, (...a: unknown[]) => Promise<unknown>>
+    const ueblich = l.umgebung!.funktionen!.substitute!
+    const eigene = absagen(ueblich)
+    const substitute: Funktion = (rumpf, kontext) => (rumpf.action === 'absage' ? eigene(rumpf, kontext) : ueblich(rumpf, kontext))
+    return fahre(() => l.fahren(modul, ''), {
+      ...l.umgebung,
+      bestand: { ...l.umgebung!.bestand, ...bestand },
+      funktionen: { ...l.umgebung!.funktionen, substitute },
+    })
+  }
+  /** Die Zeilen in den Glocken zu den beiden Plätzen. */
+  const glockenDerAbsage = (tabellen: Record<string, Zeile[] | undefined>) =>
+    (tabellen.notifications ?? []).filter((z) => plaetzeDerAbsage.includes(String(z.task_key)))
+  /** Was ein früherer Lauf beim Admin stehen ließ, wenn sein Aufräumen scheiterte: die Zeile zum eigenen Platz. */
+  const restImBestand = {
+    notifications: [{ id: k(120), congregation_id: C, user_id: U1, type: 'verhindert', title: 'Verhinderung gemeldet', body: '', task_key: absage.eigener }],
+  }
+
+  it('mitgliedsrechte-probe: (120) die Absage des eigenen Platzes kommt über die Function beim Admin an, (121) den fremden weist sie ab — und nichts bleibt stehen', async () => {
+    const rufe: string[] = []
+    const { ausgabe, aufrufe, tabellen } = await mitAbsage((ueblich) => (rumpf, kontext) => {
+      rufe.push(`${kontext.wer?.id} ${platzVon(rumpf)}`)
+      return ueblich(rumpf, kontext)
+    })
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(new RegExp(`· ${wasEigen}\\n.*ANGEKOMMEN \\(HTTP 200\\) — kommt an`))
+    expect(text).toMatch(new RegExp(`· ${wasFremd}\\n.*abgewiesen \\(HTTP 403\\) — absagen kann nur, wer an dem Platz steht \\(not-assigned\\)`))
+    // Das Mitglied ruft — erst für den eigenen Platz, dann für den fremden.
+    expect(rufe).toEqual([`${U2} ${absage.eigener}`, `${U2} ${absage.fremder}`])
+    // Geschrieben hat die Function, mit der Dienstrolle: je eine Zeile an Admin und Planer, zum eigenen Platz.
+    const gemeldet = aufrufe
+      .filter((a) => a.method === 'POST' && tabelleVon(a) === 'notifications' && a.wer === undefined)
+      .flatMap((a) => (Array.isArray(a.body) ? (a.body as Zeile[]) : [a.body as Zeile]))
+      .filter((z) => plaetzeDerAbsage.includes(String(z.task_key)))
+    expect(gemeldet.map((z) => `${String(z.user_id)} ${String(z.type)} ${String(z.task_key)}`)).toEqual([
+      `${U1} verhindert ${absage.eigener}`,
+      `${U3} verhindert ${absage.eigener}`,
+    ])
+    // Jeder räumt seine Glocke, der Admin die Woche — und nichts bleibt stehen.
+    const geraeumt = aufrufe.filter((a) => a.method === 'DELETE' && tabelleVon(a) === 'notifications' && a.pfad.includes(encodeURIComponent(absage.eigener)))
+    expect(geraeumt.map((a) => a.wer)).toEqual([U1, U3])
+    expect(glockenDerAbsage(tabellen)).toEqual([])
+    expect((tabellen.weeks ?? []).map((w) => w.start)).not.toContain(absage.woche.start)
+  })
+
+  it('mitgliedsrechte-probe: (120) und (121) zählen nur das Urteil der Function — „der Platz gehört dir nicht"', async () => {
+    // Die Function weist auch den eigenen Platz ab: Dann erreichte keine Absage mehr, wer plant.
+    const nichtDeiner: Funktion = () => ({ status: 403, json: { error: 'not-assigned' } })
+    const zuStreng = await mitAbsage(() => nichtDeiner)
+    expect(zuStreng.ausgabe.join('\n')).toMatch(new RegExp(`! ${wasEigen}\\n.*nicht angekommen \\(HTTP 403\\) — ZU STRENG — eine Absage erreicht niemanden, der plant`))
+    // Auch wenn beim Admin noch eine Zeile eines früheren Laufs steht: Angekommen
+    // ist nur, was dieser Aufruf dazulegt — sonst hieße es hier „kommt an".
+    const mitRest = await mitAbsage(() => nichtDeiner, restImBestand)
+    expect(mitRest.ausgabe.join('\n')).toMatch(new RegExp(`! ${wasEigen}\\n.*nicht angekommen \\(HTTP 403\\) — ZU STRENG`))
+    expect(glockenDerAbsage(mitRest.tabellen)).toEqual([])
+    // Findet sie die Woche nicht (404), ist über die Regel nichts gesagt — für keinen der beiden.
+    const ohneWoche = (await mitAbsage(() => () => ({ status: 404, json: { error: 'slot-not-found' } }))).ausgabe.join('\n')
+    expect(ohneWoche).toMatch(new RegExp(`${wasEigen}\\n.*PROBE KAPUTT — Schreiben scheiterte \\(HTTP 404\\)`))
+    expect(ohneWoche).toMatch(new RegExp(`${wasFremd}\\n.*PROBE KAPUTT — Schreiben scheiterte \\(HTTP 404\\)`))
+    expect(ohneWoche).toMatch(/Nicht gemessen — die Probe selbst scheiterte: .*\(120\), \(121\)/)
+  })
+
+  it('mitgliedsrechte-probe: (121) nähme die Function die Absage eines fremden Platzes an, steht es da — und die Zeilen gehen wieder', async () => {
+    // Eine Function ohne die Prüfung „nur der eigene Platz": Sie meldet, was man ihr nennt.
+    const offen: Funktion = (rumpf, { tabellen, wer }) => {
+      const mitglieder = tabellen.members ?? []
+      const cong = mitglieder.find((m) => m.user_id === wer?.id)?.congregation_id
+      for (const m of mitglieder.filter((x) => (x.admin || x.zuteiler) && x.congregation_id === cong)) {
+        ;(tabellen.notifications ??= []).push({
+          id: crypto.randomUUID(), congregation_id: cong, user_id: m.user_id, type: 'verhindert', title: 'Verhinderung gemeldet', body: '', task_key: platzVon(rumpf),
+        })
+      }
+      return { json: { ok: true, gemeldet: 2 } }
+    }
+    const { ausgabe, tabellen } = await mitAbsage(() => offen)
+    const text = ausgabe.join('\n')
+    expect(text).toMatch(new RegExp(`! ${wasFremd}\\n.*DURCHGELASSEN \\(HTTP 200\\) — AUCH DAS!`))
+    expect(text).toMatch(/Abweichend von der Erwartung: .*\(121\)/)
+    expect(glockenDerAbsage(tabellen)).toEqual([])
+  })
+
+  it('mitgliedsrechte-probe: (120) hält die Function die Absage für schon gemeldet, ist nichts gemessen — kein „ZU STRENG"', async () => {
+    // So antwortet sie, wenn eine Meldung der letzten Minuten bei einem weiteren Konto stehen blieb, das plant.
+    const schon: Funktion = (rumpf) =>
+      platzVon(rumpf) === absage.eigener ? { json: { ok: true, gemeldet: 0, schonGemeldet: [absage.eigener] } } : { status: 403, json: { error: 'not-assigned' } }
+    const text = (await mitAbsage(() => schon)).ausgabe.join('\n')
+    expect(text).toMatch(/\? \(120\) Mitglied: einen eigenen Platz absagen .* — die Function hält die Absage für schon gemeldet .*, nicht gemessen/)
+    expect(text).not.toMatch(/ZU STRENG — eine Absage erreicht niemanden/)
+    expect(text).toMatch(new RegExp(`· ${wasFremd}\\n.*abgewiesen \\(HTTP 403\\)`))
+    // Steht die frühere Zeile beim Admin selbst, ist ebenso wenig gemessen — „kommt an" wäre geraten.
+    const mitRest = (await mitAbsage(() => schon, restImBestand)).ausgabe.join('\n')
+    expect(mitRest).toMatch(/\? \(120\) Mitglied: einen eigenen Platz absagen .*, nicht gemessen/)
+    expect(mitRest).not.toMatch(/\(120\) Mitglied: einen eigenen Platz absagen[^\n]*\n[^\n]*kommt an/)
+  })
+
+  it('mitgliedsrechte-probe: (120) und (121) überschreiben keine Woche, die an ihrem Montag schon steht — und ohne fremden Hilfsdienst messen sie nicht', async () => {
+    const rufe: string[] = []
+    const mitgezaehlt = (ueblich: Funktion): Funktion => (rumpf, kontext) => {
+      rufe.push(platzVon(rumpf))
+      return ueblich(rumpf, kontext)
+    }
+    const ueblicheWochen = lauf('mitgliedsrechte-probe.mjs').umgebung!.bestand!.weeks!
+    const fremde = { congregation_id: C, start: absage.woche.start, updated_at: '2026-08-20T10:00:00+00:00', data: { range: 'echt' } }
+    const belegt = await mitAbsage(mitgezaehlt, { weeks: [...ueblicheWochen, fremde] })
+    const text = belegt.ausgabe.join('\n')
+    expect(text).toMatch(new RegExp(`${wasEigen}\\n.*PROBE KAPUTT — in der Woche ${absage.woche.start} steht schon eine — nicht überschrieben`))
+    expect(text).toMatch(/\(121\) Mitglied: einen fremden Platz absagen\n.*PROBE KAPUTT — in der Woche/)
+    expect(rufe).toEqual([])
+    expect(belegt.tabellen.weeks).toContainEqual(fremde)
+
+    // Den Dienst nimmt die Probe vom fremden Hilfsdienst-Platz der geladenen Woche.
+    const ohneDienst = structuredClone(ueblicheWochen) as { data: { mid: { helpers: unknown } } }[]
+    ohneDienst[0]!.data.mid.helpers = {}
+    const ungemessen = (await mitAbsage(mitgezaehlt, { weeks: ohneDienst })).ausgabe.join('\n')
+    expect(ungemessen).toMatch(/\? \(120\) Mitglied: einen eigenen Platz absagen .* — kein fremder Hilfsdienst-Platz in der Woche, nicht gemessen/)
+    expect(ungemessen).toMatch(/\? \(121\) Mitglied: einen fremden Platz absagen — kein fremder Hilfsdienst-Platz in der Woche, nicht gemessen/)
+    expect(rufe).toEqual([])
   })
 
   it('mitgliedsrechte-probe: fehlt die Freischaltung für den Dienst, gibt (9) sie vorübergehend — und nimmt sie wieder', async () => {
@@ -1239,7 +1448,8 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
       const text = ausgabe.join('\n')
       expect(text).toMatch(/^Versammlung und Konten aus .+\.$/m)
       expect(text).toMatch(/Admin: +planer@probe\.invalid/)
-      expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen/)
+      // Bis zum letzten Fall der Stufen, der eine Gruppe braucht.
+      expect(text).toMatch(/\(60\) Planer: einen Plan anlegen/)
     } finally {
       fs.rmSync(datei, { force: true })
     }
@@ -1261,7 +1471,7 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     for (const t of ['fs_rules', 'gruppenbesuche', 'plaene', 'plan_eintraege', 'vortraege']) {
       expect((tabellen[t] ?? []).filter(istProbe), t).toEqual([])
     }
-    // Auch die Absage aus (6), die seit dem 4.10.2026 beim Planer ebenfalls ankommt.
+    // Auch die Meldungen aus (6) und (119), die beim Admin wie beim Planer ankommen.
     expect((tabellen.notifications ?? []).filter((z) => String(z.title).startsWith('PROBE-'))).toEqual([])
     const text = ausgabe.join('\n')
     // Die Attrappe kennt keine Richtlinien: Was in der Datenbank abgewiesen
@@ -1273,12 +1483,11 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     expect(text).toMatch(/\(80\) Planer: eine Person anlegen\n.*ANGEKOMMEN \(HTTP 201\) — AUCH DAS!\n.*\(Zeile wieder gelöscht\)/)
     expect(text).toMatch(/\(81\) Planer: den Namen der Versammlung ändern\n.*GEÄNDERT \(HTTP \d+\) — AUCH DAS!\n.*\(wieder zurückgestellt\)/)
     expect(text).toMatch(/\(47\) Gruppenaufseher: den Ort eines Treffpunkts der eigenen Gruppe ändern\n.*GEÄNDERT \(HTTP 201\) — der Weg steht offen/)
-    expect(text).toMatch(/\(61\) Planer: die Absage eines Mitglieds bekommen \(notify_planners\)\n.*ANGEKOMMEN \(HTTP 204\) — kommt an/)
     expect(text).toMatch(/· \(69\) Planer: einen vorgemerkten Vortrag sehen\n.*SICHTBAR \(HTTP 200\) — er übernimmt den Vortragsplan/)
     expect(text).toMatch(/· \(70\) Planer: einen Vortrag vormerken \(Upsert wie die App\)\n.*ANGEKOMMEN \(HTTP 201\) — der Weg steht offen\n.*\(Zeile wieder gelöscht\)/)
   })
 
-  it('mitgliedsrechte-probe (Rechte-Stufen): leitet der Gruppenaufseher keine Gruppe, bleiben (42)–(61) ungemessen — der Rest misst trotzdem', async () => {
+  it('mitgliedsrechte-probe (Rechte-Stufen): leitet der Gruppenaufseher keine Gruppe, bleiben (42)–(60) und (118) ungemessen — der Rest misst trotzdem', async () => {
     // Seine Versuche mäßen sonst ein anderes Recht als das genannte; ein
     // „abgewiesen" gälte nicht der Regel, um die es geht.
     const ohneAufseher = [
@@ -1286,11 +1495,11 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
       { id: G2, congregation_id: C, name: 'Probe Zwei', position: 1 },
     ]
     const text = (await mitBestand({ groups: ohneAufseher })).ausgabe.join('\n')
-    expect(text).toMatch(/\? \(42–61\) .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen/)
-    for (let nr = 42; nr <= 61; nr++) expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
-    // Die Woche, die Tür, die Vormerkungen, Person und Versammlung und die
-    // Trolleys brauchen keine Gruppe.
-    for (const nr of [35, 36, 38, 39, 40, 41, 65, 70, 71, 79, 80, 81]) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    expect(text).toMatch(/\? \(42–60, 118\) .* — der Gruppenaufseher leitet keine Gruppe, nicht gemessen/)
+    for (const nr of [...Array.from({ length: 19 }, (_, i) => 42 + i), 118]) expect(text, `(${nr})`).not.toMatch(new RegExp(`[·!] \\(${nr}\\) `))
+    // Die Woche, die Tür, die Vormerkungen, Person und Versammlung, die
+    // Meldung des Planers und die Trolleys brauchen keine Gruppe.
+    for (const nr of [35, 36, 38, 39, 40, 41, 65, 70, 71, 79, 80, 81, 119]) expect(text, `(${nr})`).toMatch(new RegExp(`[·!] \\(${nr}\\) `))
   })
 
   it('mitgliedsrechte-probe (Rechte-Stufen): sagt die Function erst hinter der Tür „keine Woche", hat sie durchgelassen', async () => {
@@ -1304,10 +1513,6 @@ describe('Die RLS-Proben zählen eine kaputte Anfrage nicht als Abweisung', () =
     const vorDerTuer = await mitSendPlan({ status: 400, json: { error: 'bad-request' } })
     expect(vorDerTuer.ausgabe.join('\n')).toMatch(/\(36\) Mitglied: „Plan senden"\n.*PROBE KAPUTT — Schreiben scheiterte \(HTTP 400\)/)
   })
-
-  const fsStart = stufenAnlage({
-    marke: 'PROBE-0', versammlung: C, tag0: ersterMontagAb('2099-01-01'), adminPid: P1, adminName: 'Probe Admin', zuteilerPid: P3, eigeneGruppe: G1, fremdeGruppe: G2,
-  }).fsStart
 
   it('mitgliedsrechte-probe (Rechte-Stufen): eine Treffpunkt-Woche, die nicht von der Probe ist, bleibt unberührt', async () => {
     // Mit eigenem Stand: Bliebe nur der Inhalt gleich, wäre trotzdem geschrieben worden.

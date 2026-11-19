@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { leerePostgres } from '../scripts/pglite-postgres.mjs'
+import { alsKonto, leerePostgres } from '../scripts/pglite-postgres.mjs'
 
 /**
  * **Das Versand-Tagebuch folgt einer Umbenennung** (13.11.2026) — gegen eine
@@ -40,16 +40,7 @@ type DB = {
 let db: DB
 
 /** Etwas als dieses Konto tun — Rolle und Anspruch wie bei PostgREST. */
-async function als<T>(konto: string, tun: () => Promise<T>): Promise<T> {
-  await db.exec(`set role postgres`)
-  await db.exec(`set request.jwt.claim.sub = '${konto}'`)
-  await db.exec(`set role authenticated`)
-  try {
-    return await tun()
-  } finally {
-    await db.exec('set role postgres')
-  }
-}
+const als = <T>(konto: string, tun: () => Promise<T>): Promise<T> => alsKonto(db, konto, tun)
 
 /** Eine Zeile ins Tagebuch — als Service-Role, wie `send-plan`. */
 async function gemeldet(cong: string, platz: string, name: string, person: string | null, wann = '2026-11-10T08:00:00Z'): Promise<void> {

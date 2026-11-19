@@ -54,3 +54,50 @@ export async function leerePostgres(stuecke = []) {
   for (const sql of stuecke) await db.exec(sql)
   return db
 }
+
+/**
+ * Etwas **als dieses Konto** tun — Rolle und Anspruch wie bei PostgREST:
+ * `authenticated` mit dem Konto in `request.jwt.claim.sub`, das `auth.uid()`
+ * aus dem Vorspann liest; `null` heißt ohne Anmeldung, als `anon`.
+ *
+ * Danach ist die Sitzung wieder Superuser, **und auch der Anspruch ist fort**:
+ * Ein Trigger, der `auth.uid()` fragt, hielte sonst die Anlage des nächsten
+ * Falls für das Werk dieses Kontos — und wiese sie womöglich ab.
+ *
+ * Nicht verschachteln und nicht nebenläufig rufen: Die Datenbank hat eine
+ * einzige Sitzung. Der innere Aufruf ließe den Rest des äußeren als Superuser
+ * laufen — dann griffe dort keine Richtlinie, und nichts wäre gemessen.
+ *
+ * @template T
+ * @param {{ exec: (sql: string) => Promise<unknown> }} db
+ * @param {string | null} konto
+ * @param {() => Promise<T>} tun
+ * @returns {Promise<T>}
+ */
+export async function alsKonto(db, konto, tun) {
+  await db.exec('set role postgres')
+  await db.exec(`set request.jwt.claim.sub = '${konto ?? ''}'`)
+  await db.exec(`set role ${konto ? 'authenticated' : 'anon'}`)
+  try {
+    return await tun()
+  } finally {
+    await db.exec('set role postgres')
+    await db.exec(`set request.jwt.claim.sub = ''`)
+  }
+}
+
+/**
+ * Was die Datenbank zu einem Versuch sagt: ihr Fehlercode (SQLSTATE, etwa
+ * 42501 für ein fehlendes Recht) — oder `null`, wenn er durchging.
+ *
+ * @param {() => Promise<unknown>} tun
+ * @returns {Promise<string | null>}
+ */
+export async function fehlercode(tun) {
+  try {
+    await tun()
+    return null
+  } catch (err) {
+    return String(err?.code ?? err?.message)
+  }
+}

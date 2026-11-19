@@ -78,7 +78,7 @@ describe('katalogVergleich', () => {
 describe('katalogAbfrage', () => {
   it('fragt jeden Abschnitt in einer Anweisung — für `db query`', () => {
     const sql = katalogAbfrage()
-    for (const a of ABSCHNITTE) expect(sql).toContain(`'${a}', (select coalesce(json_agg(x), '[]'::json) from (${ABFRAGEN[a as keyof typeof ABFRAGEN].trim()}) x)`)
+    for (const a of ABSCHNITTE) expect(sql).toContain(`'${a}', (select coalesce(json_agg(x), '[]'::json) from (${ABFRAGEN[a].trim()}) x)`)
     expect(sql.trim().split(';').filter((s) => s.trim())).toHaveLength(1)
   })
 

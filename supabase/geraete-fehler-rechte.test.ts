@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { leerePostgres } from '../scripts/pglite-postgres.mjs'
+import { alsKonto, fehlercode, leerePostgres } from '../scripts/pglite-postgres.mjs'
 import { ARTEN, BILDSCHIRM_MAX, BROWSER_MAX, MELDUNG_MAX, STAND_MAX, STAPEL_MAX } from '../src/lib/fehler-melden'
 
 /**
@@ -34,33 +34,20 @@ type DB = {
 }
 let db: DB
 
-/** Etwas als dieses Konto tun — Rolle und Anspruch wie bei PostgREST. */
-async function als<T>(konto: string | null, tun: () => Promise<T>): Promise<T> {
-  await db.exec(`set role postgres`)
-  await db.exec(konto ? `set request.jwt.claim.sub = '${konto}'` : `set request.jwt.claim.sub = ''`)
-  await db.exec(`set role ${konto ? 'authenticated' : 'anon'}`)
-  try {
-    return await tun()
-  } finally {
-    await db.exec('set role postgres')
-  }
-}
+/** Etwas als dieses Konto tun — Rolle und Anspruch wie bei PostgREST; `null`: ohne Anmeldung. */
+const als = <T>(konto: string | null, tun: () => Promise<T>): Promise<T> => alsKonto(db, konto, tun)
 
 /** Eine Meldung einfügen — gibt den Fehlercode zurück, oder null. */
-async function melden(konto: string | null, cong: string, meldung = 'kaputt'): Promise<string | null> {
-  return als(konto, async () => {
-    try {
-      await db.query(
+const melden = (konto: string | null, cong: string, meldung = 'kaputt'): Promise<string | null> =>
+  als(konto, () =>
+    fehlercode(() =>
+      db.query(
         `insert into public.geraete_fehler (congregation_id, art, meldung, stand, bildschirm, browser)
          values ($1, 'fehler', $2, 'abc1234', 'planen', 'Chrome 142')`,
         [cong, meldung],
-      )
-      return null
-    } catch (err) {
-      return String((err as { code?: string }).code ?? (err as Error).message)
-    }
-  })
-}
+      ),
+    ),
+  )
 
 beforeAll(async () => {
   db = (await leerePostgres([SCHEMA])) as unknown as DB
@@ -212,14 +199,9 @@ describe('Die Länge', () => {
   })
 
   it('nimmt nur bekannte Arten', async () => {
-    const code = await als(ADMIN_B, async () => {
-      try {
-        await db.query(`insert into public.geraete_fehler (congregation_id, art, meldung) values ($1, 'erfunden', 'x')`, [B])
-        return null
-      } catch (err) {
-        return String((err as { code?: string }).code)
-      }
-    })
+    const code = await als(ADMIN_B, () =>
+      fehlercode(() => db.query(`insert into public.geraete_fehler (congregation_id, art, meldung) values ($1, 'erfunden', 'x')`, [B])),
+    )
     expect(code).toBe('23514')
   })
 })

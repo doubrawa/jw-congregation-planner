@@ -21,6 +21,14 @@
  * Seit dem 31.10.2026 lädt `schema-probe.test.ts` die echten Functions
  * `tauschen` und `send-plan` — mit ihnen kommt ins Programm, was die
  * Edge-Laufzeit mitbringt (`deno.d.ts`: `Deno` und `npm:web-push`).
+ *
+ * **Die Proben unmittelbar unter `supabase/` gehören mit hinein.** Sie laufen
+ * in derselben Umgebung (Node, `node:fs`, PGlite über
+ * `scripts/pglite-postgres.mjs`) und stünden sonst in keinem Projekt:
+ * `tsconfig.edge.json` nimmt nur die Functions, und deren Laufzeit kennt kein
+ * Node. `src/vite-env.d.ts` kommt mit, weil eine von ihnen App-Code lädt, der
+ * `__BUILD_ID__` erwartet — Dateien kommen über die Importe herein, ihre
+ * globalen Erklärungen nicht.
  */
 {
   "extends": "./tsconfig.app.json",
@@ -32,5 +40,5 @@
     // `noUncheckedIndexedAccess` gilt wie in der App (T42, seit 19.10.2026
     // auch hier).
   },
-  "include": ["scripts/**/*.ts", "supabase/functions/deno.d.ts"]
+  "include": ["scripts/**/*.ts", "supabase/*.test.ts", "supabase/functions/deno.d.ts", "src/vite-env.d.ts"]
 }

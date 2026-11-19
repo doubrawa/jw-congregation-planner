@@ -23,16 +23,18 @@
  *   3. `verhindert` an einen Nicht-Planer      → muss **abgewiesen** werden (S3)
  *   4. Mitteilung `zuteilung` (nur Planer)     → muss **abgewiesen** werden
  *   5. **eigene** Aufgabe bestätigen           → muss **durchkommen**
- *   6. Absage an die Planer (legitimer Weg)    → muss **durchkommen**
- *  6b. derselbe Weg mit Art `zuteilung`        → muss **abgewiesen** werden
+ *   6. eine „Absage" über `notify_planners`    → muss **abgewiesen** werden
  *
- * Den legitimen Weg (6) geht ein Mitglied seit dem 24.9.2026 nicht mehr über
- * eine eigene Zeile, sondern über `notify_planners`: Es sieht die Planer
- * nicht und könnte sie nicht adressieren. (6b) misst, dass dieser Weg nur
- * eine Verhinderung durchlässt.
+ * (6) ist S3 auf einem zweiten Weg: `notify_planners` schreibt mit den Rechten
+ * der Datenbank in die Glocken aller, die planen — Titel und Rumpf, wie der
+ * Aufrufer sie mitgibt, ohne Absender. Die Funktion nimmt deshalb nur, wer
+ * selbst plant ((119) ist die Gegenprobe); eine Absage meldet die Function
+ * `substitute`, die den Platz prüft — gemessen in (120) und (121). (6b) maß,
+ * dass derselbe Weg nur eine Verhinderung durchließ — das sagt (6) mit; die
+ * Nummer bleibt frei.
  *
- * Kommt (1) oder (3) durch, steht der jeweilige Befund wieder offen. Scheitert
- * (5) oder (6), ist die Richtlinie zu streng — das wiegt schwerer, weil der
+ * Kommt (1), (3) oder (6) durch, steht der jeweilige Befund wieder offen.
+ * Scheitert (5), ist die Richtlinie zu streng — das wiegt schwerer, weil der
  * Client fire-and-forget schreibt und der Verlust fast lautlos wäre.
  *
  * **Seit dem 24. August 2026 misst sie zusätzlich S10, S11 und S13** — dieselbe
@@ -118,6 +120,8 @@
  *  114. Gruppenaufseher: an einem fremden Treffpunkt eine andere
  *       Person binden, als der Leiter heißt                     → abgewiesen
  *  49. Mitglied: einen Treffpunkt ändern                        → abgewiesen
+ *  118. Gruppenaufseher: die Treffpunkt-Woche auf einen anderen
+ *       Montag verschieben                                      → abgewiesen
  *  50. Planer: eine Regel im Grundplan anlegen                  → durch
  *  51. Gruppenaufseher: eine Regel für eine fremde Gruppe       → abgewiesen
  *  52. Gruppenaufseher: eine Regel für die eigene Gruppe        → durch
@@ -127,7 +131,7 @@
  *  58. Planer: einen Plan im Entwurf sehen                      → sichtbar
  *  59. Planer: eine Woche eines Plans besetzen                  → durch
  *  60. Planer: einen Plan anlegen                               → durch
- *  61. Planer: die Absage eines Mitglieds bekommen              → angekommen
+ *  119. Planer: eine Meldung an alle, die planen                → angekommen
  *  65. Mitglied: einen vorgemerkten Vortrag sehen               → unsichtbar
  *  66. Gruppenaufseher: einen vorgemerkten Vortrag sehen        → unsichtbar
  *  67. Mitglied: einen Vortrag vormerken                        → abgewiesen
@@ -144,6 +148,13 @@
  *  90. Planer: den Grund einer fremden Abwesenheit              → unsichtbar
  *  91. Mitglied: den Grund der eigenen Abwesenheit              → sichtbar
  *  92. Admin: den Grund der Abwesenheit des Mitglieds           → sichtbar
+ *
+ * (118) misst den Weg an (44)–(46) vorbei: An keinem fremden Treffpunkt ist
+ * etwas geändert, die ganze Zeile zieht um — und in der Woche fehlten danach
+ * die Treffpunkte der anderen. (119) ist die Gegenprobe zu (6): So schickt die
+ * App „Programm importiert". (61) maß, dass die Absage eines Mitglieds über
+ * `notify_planners` auch den Planer erreicht; den Weg gibt es nicht mehr, die
+ * Nummer bleibt frei.
  *
  * (86)–(92) kamen am 29.10.2026 dazu, mit dem Sicherheits-Review: Adressen und
  * Gründe las bis dahin jedes Mitglied über die REST-Schnittstelle. Seither
@@ -171,7 +182,7 @@
  * Redners und seiner Versammlung. Die sieht nur, wer zuteilt
  * (`vortraege_zuteilen`); Mitglied und Gruppenaufseher zeigt die Tabelle
  * nichts. Sie brauchen weder Personen noch Gruppen und messen deshalb auch
- * dann, wenn (42)–(61) mangels Gruppe ungemessen bleiben.
+ * dann, wenn (42)–(60) und (118) mangels Gruppe ungemessen bleiben.
  *
  * **Seit dem 14. Oktober 2026 misst sie die Trolleys** (T121, Phase 7) — sie
  * lösten Stand und Schicht ab. Einen Termin schreibt kein Mitglied selbst:
@@ -247,7 +258,25 @@
  *  116. Verkündiger: die Fehlermeldungen lesen                    → unsichtbar
  *  117. Mitglied: in eine fremde Versammlung melden               → abgewiesen
  *
- * Die Anlage legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
+ * **Die Absage über die Function `substitute`** (Aufruf 'absage') — der Weg,
+ * auf dem die App sie meldet (`absageMelden` in `src/lib/daten/zusagen.ts`).
+ * Die Function prüft an der Woche, dass der Platz dem Absagenden gehört, und
+ * schreibt denen, die planen, „Verhinderung gemeldet" in die Glocke.
+ *
+ *  120. Mitglied: einen eigenen Platz absagen                     → angekommen
+ *  121. Mitglied: einen fremden Platz absagen                     → abgewiesen
+ *
+ * Gemessen wird an einer eigenen Woche im Jahr 2099 (`absageAnlage`): unter
+ * der Woche das Mitglied, am Wochenende eine fremde Person, beide im selben
+ * Hilfsdienst. Ein Hilfsdienst, weil dessen Absage nur in die Glocken geht —
+ * bei jedem anderen Platz schickte die Function einen Push an die Geräte
+ * derer, die planen. Eine Zusage schreibt die Probe nicht: Die Function fragt
+ * die Woche, nicht die Zusage, und ohne Zusage entsteht keine Zeile in
+ * `absagen`, die in die Auswertung einginge. Ein Urteil ist neben dem Erfolg
+ * allein `not-assigned` — der Platz gehört dem Aufrufer nicht. Die Zeilen in
+ * ihren Glocken löschen Admin und Planer am Ende selbst.
+ *
+ * Die Anlage des Tauschens legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
  * je einem Platz eines Dienstes und eine Person ohne Konto, das Kennzeichen
  * im Vornamen. Mitglied und Gruppenaufseher schaltet die Probe für den Dienst
  * frei. Getauscht wird erst, wenn der Plan einer Woche hinausging — also
@@ -1042,6 +1071,8 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, adminName,
   const plan ={ id: id('plan-stufe'), congregation_id: c, name: marke, von: montag(6), bis: tagPlus(montag(7), 6), entwurf: true }
   return {
     fsStart: montag(6),
+    // Wohin (118) die Woche zu verschieben versucht.
+    fsZiel: montag(7),
     treffpunkte,
     fsVersuche,
     regeln: {
@@ -1059,7 +1090,6 @@ export function stufenAnlage({ marke, versammlung: c, tag0, adminPid, adminName,
     planEintrag: { id: id('e-stufe'), congregation_id: c, plan_id: plan.id, datum: montag(6), grp: fremdeGruppe },
     eintragVersuch: { id: id('e-planer'), congregation_id: c, plan_id: plan.id, datum: montag(7), grp: fremdeGruppe },
     planVersuch: { ...plan, id: id('plan-planer'), entwurf: false },
-    absage: `${marke} — Absage auch an den Planer`,
   }
 }
 
@@ -1103,6 +1133,24 @@ export function uebernahmeAnlage({ marke, versammlung: c, tag0, svc, inhaber }) 
   return {
     woche: probeWoche(c, start, marke, { mid: { [svc]: [{ name: inhaber.name, pid: inhaber.pid }] } }),
     key: helferSchluessel(start, 'mid', svc, 0),
+  }
+}
+
+/**
+ * Die Woche für (120) und (121), im Jahr 2099 an einem Montag, den die Probe
+ * sonst nicht belegt (26 Wochen nach `tag0`: gleich nach der aus (9)). Im
+ * Dienst `svc` steht unter der Woche das Mitglied und am Wochenende eine
+ * fremde Person — je an Platz 0, damit es nicht darauf ankommt, wie viele
+ * Plätze der Dienst hat. Ein Hilfsdienst, weil die Function dessen Absage nur
+ * in die Glocken schreibt: Bei jedem anderen Platz ginge ein Push an die
+ * Geräte derer, die planen.
+ */
+export function absageAnlage({ marke, versammlung: c, tag0, svc, mitglied, fremder }) {
+  const start = tagPlus(tag0, 7 * 26)
+  return {
+    woche: probeWoche(c, start, marke, { mid: { [svc]: [mitglied] }, we: { [svc]: [fremder] } }),
+    eigener: helferSchluessel(start, 'mid', svc, 0),
+    fremder: helferSchluessel(start, 'we', svc, 0),
   }
 }
 
@@ -1294,6 +1342,12 @@ async function wochenProben(k, woche, neu) {
   })
 }
 
+/** Stehen in einer Treffpunkt-Woche Treffpunkte, die keine Probe angelegt hat? */
+const fremdeTreffpunkte = (data) => Array.isArray(data) && data.some((i) => !String(i?.id ?? '').startsWith('PROBE-'))
+
+/** Die Zeile einer Treffpunkt-Woche — der Pfad, über den sie geändert und gelöscht wird. */
+const fsZeile = (versammlung, start) => `fs_weeks?congregation_id=eq.${versammlung}&start=eq.${start}`
+
 /**
  * (42)–(49) Die Treffpunkte einer Woche — angelegt vom Admin im Jahr 2099,
  * geschrieben als ganze Woche. Die App schreibt seit dem 15.10.2026 mit Stand
@@ -1306,11 +1360,12 @@ async function wochenProben(k, woche, neu) {
  * Vorher wird nachgesehen: Eine Woche mit Treffpunkten, die nicht von einer
  * Probe stammen, wird nicht überschrieben — eine, die ein abgebrochener Lauf
  * hinterließ (nur Kennungen mit „PROBE-"), schon. `merker.treffpunktWoche`
- * sagt dem Aufräumen, ob die Woche der Probe gehört.
+ * sagt dem Aufräumen, ob die Woche der Probe gehört. Zuletzt (118): die Woche
+ * selbst verschieben (`verschiebeVersuch`).
  */
 async function treffpunktProben(k, a, konten, mitgliedLeitet, merker) {
   const { planer, versammlung } = k
-  const zeile = `fs_weeks?congregation_id=eq.${versammlung}&start=eq.${a.fsStart}`
+  const zeile = fsZeile(versammlung, a.fsStart)
   const upsert = (wer, data) => wer.rest('fs_weeks?on_conflict=congregation_id,start', 'POST', { congregation_id: versammlung, start: a.fsStart, data }, UPSERT)
   const lesen = () => planer.rest(`fs_weeks?select=data&start=eq.${a.fsStart}`)
 
@@ -1319,7 +1374,7 @@ async function treffpunktProben(k, a, konten, mitgliedLeitet, merker) {
   let anlage
   if (vorher.status >= 400) {
     anlage = { ok: false, grund: `die Treffpunkt-Woche ${a.fsStart} ist nicht lesbar (HTTP ${vorher.status})` }
-  } else if (Array.isArray(bestand) && bestand.some((i) => !String(i?.id ?? '').startsWith('PROBE-'))) {
+  } else if (fremdeTreffpunkte(bestand)) {
     anlage = { ok: false, grund: `in der Woche ${a.fsStart} stehen Treffpunkte, die nicht von der Probe sind — nicht überschrieben` }
   } else {
     merker.treffpunktWoche = true
@@ -1355,6 +1410,56 @@ async function treffpunktProben(k, a, konten, mitgliedLeitet, merker) {
       folge: v.folge,
     })
   }
+  await verschiebeVersuch(k, a, anlage, konten.aufseher, merker)
+}
+
+/**
+ * (118) Die Woche selbst verschieben. An keinem fremden Treffpunkt ändert der
+ * Gruppenaufseher dabei etwas — die ganze Zeile zieht auf einen anderen Montag,
+ * und in der Woche fehlten danach die Treffpunkte der anderen
+ * (`fs_weeks_pruefen` hält Montag und Versammlung der Zeile fest). Ob es
+ * ankam, steht am Ziel; der Admin stellt die Woche zurück.
+ *
+ * Am Ziel darf nichts stehen: Eine Woche dort wiese das Verschieben an der
+ * Eindeutigkeit ab (409), nicht an der Regel. Was ein abgebrochener Lauf
+ * hinterließ, räumt der Admin vorher weg. `merker.treffpunktZiel` nennt dem
+ * Aufräumen den Montag, sobald er der Probe gehört.
+ */
+async function verschiebeVersuch(k, a, anlage, aufseher, merker) {
+  const { planer, versammlung } = k
+  const nr = 118
+  const was = 'Gruppenaufseher: die Treffpunkt-Woche auf einen anderen Montag verschieben'
+  const lesen = (start) => planer.rest(`fs_weeks?select=data&start=eq.${start}`)
+  if (!anlage.ok) {
+    k.kaputt(nr, was, anlage.grund, false)
+    return
+  }
+  const vorher = await lesen(a.fsZiel)
+  if (vorher.status >= 400 || fremdeTreffpunkte(zeilenVon(vorher)[0]?.data)) {
+    const grund = vorher.status >= 400
+      ? `der Montag ${a.fsZiel} ist nicht lesbar (HTTP ${vorher.status})`
+      : `am ${a.fsZiel} stehen Treffpunkte, die nicht von der Probe sind — nicht überschrieben`
+    k.kaputt(nr, was, grund, false)
+    return
+  }
+  merker.treffpunktZiel = a.fsZiel
+  if (zeilenVon(vorher).length > 0) await planer.rest(fsZeile(versammlung, a.fsZiel), 'DELETE', undefined, 'return=minimal')
+  await aenderVersuch(k, {
+    nr,
+    was,
+    schreiben: () => aufseher.rest(fsZeile(versammlung, a.fsStart), 'PATCH', { start: a.fsZiel }, 'return=minimal'),
+    nachsehen: async () => {
+      const ziel = await lesen(a.fsZiel)
+      const start = await lesen(a.fsStart)
+      const status = Math.max(ziel.status, start.status)
+      const verschoben = zeilenVon(ziel).length > 0
+      const weg = !verschoben && zeilenVon(start).length === 0
+      return { status, angekommen: verschoben, fehlt: status < 400 && weg ? 'die Treffpunkt-Woche ist weg' : null }
+    },
+    zurueck: () => planer.rest(fsZeile(versammlung, a.fsZiel), 'PATCH', { start: a.fsStart }, 'return=minimal'),
+    erwartet: false,
+    folge: ['AUCH DAS!', 'die Woche bleibt, wo sie ist'],
+  })
 }
 
 /** (50)–(52) Der Grundplan: Regeln legen Admin und Planer an — der Gruppenaufseher nur für seine Gruppe. */
@@ -1417,13 +1522,19 @@ async function besetzenProben(k, a) {
   await schreibVersuch(k, 60, 'Planer: einen Plan anlegen', 'plaene', a.planVersuch, true, ['der Weg steht offen', 'ZU STRENG — der Planer kann keine Pläne anlegen'], { wer: zuteiler, prefer: UPSERT })
 }
 
-/** (61) Die Absage eines Mitglieds geht an alle, die zuteilen — seit dem 4.10.2026 auch an den Planer. */
-async function absageProbe(k, a) {
-  const { mitglied, zuteiler } = k
-  const s = await mitglied.rest('rpc/notify_planners', 'POST', { kind: 'verhindert', subject: a.absage, message: '' }, 'return=minimal')
-  const l = await zuteiler.rest(`notifications?select=id&title=eq.${encodeURIComponent(a.absage)}`)
+/**
+ * (119) Wer plant, meldet an alle, die planen (`notify_planners`) — die
+ * Gegenprobe zu (6), wo die Funktion das Mitglied abweist. So schickt die App
+ * „Programm importiert". Nachgesehen wird beim Admin; die Zeilen räumt
+ * `stufenAufraeumen` über das Kennzeichen weg.
+ */
+async function meldungProbe(k) {
+  const { planer, zuteiler, marke } = k
+  const titel = `${marke} — Meldung des Planers`
+  const s = await zuteiler.rest('rpc/notify_planners', 'POST', { kind: 'import', subject: titel, message: '' }, 'return=minimal')
+  const l = await planer.rest(`notifications?select=id&title=eq.${encodeURIComponent(titel)}`)
   const e = bewerteVersuch(s.status, zeilenVon(l).length > 0, true, { leseStatus: l.status })
-  k.ergebnis(61, 'Planer: die Absage eines Mitglieds bekommen (notify_planners)', e, e.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen den Planer nicht')
+  k.ergebnis(119, 'Planer: eine Meldung an alle, die planen (notify_planners)', e, e.durch ? 'kommt an' : 'ZU STRENG — „Programm importiert" erreicht niemanden mehr')
 }
 
 /**
@@ -1518,9 +1629,9 @@ async function spaltenProben(k) {
 /**
  * Alles wieder weg, was die Probe für die Rechte-Stufen angelegt hat — über das
  * Kennzeichen, wie bei T120; die Treffpunkt-Woche nur, wenn sie der Probe
- * gehört. Dazu die Mitteilungen mit dem Kennzeichen beim Planer und beim
- * Admin: auch die aus (6), denn die Absage an die Planer erreicht seit dem
- * 4.10.2026 beide.
+ * gehört, und den Montag, auf den (118) sie zu verschieben versuchte. Dazu die
+ * Mitteilungen mit dem Kennzeichen beim Planer und beim Admin: die aus (119)
+ * — und die aus (6), käme sie durch.
  */
 async function stufenAufraeumen(k, fsStart, merker, neueWoche) {
   const { planer, zuteiler, marke, versammlung } = k
@@ -1539,7 +1650,10 @@ async function stufenAufraeumen(k, fsStart, merker, neueWoche) {
       ? [['die alten Abwesenheiten', () => planer.rest(`absences?id=in.(${merker.abwesenheiten.join(',')})`, 'DELETE', undefined, 'return=minimal')]]
       : []),
     ...(merker.treffpunktWoche
-      ? [['die Treffpunkt-Woche', () => planer.rest(`fs_weeks?congregation_id=eq.${versammlung}&start=eq.${fsStart}`, 'DELETE', undefined, 'return=minimal')]]
+      ? [['die Treffpunkt-Woche', () => planer.rest(fsZeile(versammlung, fsStart), 'DELETE', undefined, 'return=minimal')]]
+      : []),
+    ...(merker.treffpunktZiel
+      ? [['die verschobene Treffpunkt-Woche', () => planer.rest(fsZeile(versammlung, merker.treffpunktZiel), 'DELETE', undefined, 'return=minimal')]]
       : []),
     ...(merker.woche
       ? [['die Woche des Planers', () => planer.rest(`weeks?congregation_id=eq.${versammlung}&start=eq.${neueWoche}`, 'DELETE', undefined, 'return=minimal')]]
@@ -1610,7 +1724,7 @@ async function verwaltungProben(k, neu) {
 async function stufenProben(k, woche) {
   const { planer, mitglied, zuteiler, aufseher, versammlung, marke } = k
   console.log('\nDie Rechte-Stufen (seit 4.10.2026; angelegt als Admin, im Jahr 2099):')
-  const merker = { treffpunktWoche: false, woche: false, abwesenheiten: [] }
+  const merker = { treffpunktWoche: false, treffpunktZiel: null, woche: false, abwesenheiten: [] }
   const tag0 = ersterMontagAb('2099-01-01')
   const verwaltung = verwaltungAnlage({ marke, versammlung, tag0, personId: crypto.randomUUID() })
   let fsStart = null
@@ -1622,6 +1736,7 @@ async function stufenProben(k, woche) {
 
     await wochenProben(k, woche, { woche: verwaltung.woche, merker })
     await verwaltungProben(k, verwaltung)
+    await meldungProbe(k)
     // Vor der Prüfung auf Personen und Gruppen: Die Vormerkungen brauchen keine.
     await vortragProben(k, vortragAnlage({ marke, versammlung, tag0 }))
     // Die alten Abwesenheiten brauchen eine eigene Person je Konto: Teilten
@@ -1652,7 +1767,7 @@ async function stufenProben(k, woche) {
     const ich = fehlt ? null : await planer.rest(`persons?select=fn,ln&id=eq.${planer.pid}`)
     const adminName = ich ? zeilenVon(ich).map((p) => `${p.fn} ${p.ln}`.trim())[0] : undefined
     if (fehlt || !adminName) {
-      k.ungemessen('42–61', 'Treffpunkte, Grundplan, Gruppenbesuche und Pläne der Stufen', fehlt ?? 'die Person des Admins ist nicht lesbar')
+      k.ungemessen('42–60, 118', 'Treffpunkte, Grundplan, Gruppenbesuche und Pläne der Stufen', fehlt ?? 'die Person des Admins ist nicht lesbar')
       return
     }
     const a = stufenAnlage({
@@ -1670,7 +1785,6 @@ async function stufenProben(k, woche) {
     await grundplanProben(k, a)
     await besuchProben(k, a)
     await besetzenProben(k, a)
-    await absageProbe(k, a)
   } finally {
     await stufenAufraeumen(k, fsStart, merker, verwaltung.woche.start)
   }
@@ -2489,6 +2603,96 @@ async function ablehnungProben(k) {
 }
 
 /**
+ * (120)–(121) **Die Absage über die Function `substitute`** (Aufruf 'absage'):
+ * der Weg, auf dem die App eine Absage meldet. Die Function schreibt mit der
+ * Dienstrolle in die Glocken derer, die planen — wem sie das erlaubt, prüft
+ * sie selbst, an der Woche: nur dem, der an dem Platz steht.
+ *
+ * Der Admin legt dafür eine Woche an (`absageAnlage`); steht dort schon eine,
+ * wird nichts überschrieben und nichts gemessen. Ob die eigene Absage ankam,
+ * steht in seiner Glocke, am Schlüssel des Platzes — den gibt es nur in
+ * dieser Woche. Gezählt wird, was der Aufruf **dazulegt**: Eine Zeile, die ein
+ * früherer Lauf dort stehen ließ, ist keine Ankunft. Ein Urteil ist neben dem
+ * Erfolg allein `not-assigned`; „keine Woche", „vorbei" oder ein Fehler der
+ * Function sagen über die Regel nichts.
+ *
+ * Hält die Function die eigene Absage für schon gemeldet, ist nichts gemessen
+ * — sie hat dann nichts geschrieben: Ohne Zusage zählt ihr eine Meldung der
+ * letzten zehn Minuten (`schonGemeldet`), etwa die eines Laufs kurz davor, die
+ * bei einem weiteren Konto stehen blieb, das plant. Die Zeilen bei Admin und
+ * Planer räumt die Probe weg, jeder die seinen.
+ */
+async function absageProben(k, dienst) {
+  const { planer, mitglied, zuteiler, versammlung, marke } = k
+  console.log('\nDie Absage über die Function substitute:')
+  const was = 'Mitglied: einen eigenen Platz absagen (substitute, Aufruf „absage")'
+  const wasFremd = 'Mitglied: einen fremden Platz absagen'
+  /** Beide Fälle auf einmal — wo schon die Voraussetzung fehlt. */
+  const beide = (melden) => {
+    melden(120, was, true)
+    melden(121, wasFremd, false)
+  }
+  const svc = dienst ? dienstAusSchluessel(dienst.key) : null
+  const fehlt = !svc ? 'kein fremder Hilfsdienst-Platz in der Woche' : !mitglied.pid ? 'keine Person mit dem Konto verknüpft' : null
+  if (fehlt) {
+    beide((nr, text) => k.ungemessen(nr, text, fehlt))
+    return
+  }
+  const a = absageAnlage({
+    marke,
+    versammlung,
+    tag0: ersterMontagAb('2099-01-01'),
+    svc,
+    // Der Name im Platz ist das Kennzeichen: Wem er gehört, entscheidet die Person.
+    mitglied: { name: marke, pid: mitglied.pid },
+    fremder: { name: dienst.wer, pid: dienst.pid },
+  })
+  const zeile = `weeks?congregation_id=eq.${versammlung}&start=eq.${a.woche.start}`
+  const vorher = await planer.rest(`weeks?select=start&start=eq.${a.woche.start}`)
+  if (vorher.status >= 400 || zeilenVon(vorher).length > 0) {
+    const grund = vorher.status >= 400 ? `die Woche ist nicht lesbar (HTTP ${vorher.status})` : `in der Woche ${a.woche.start} steht schon eine — nicht überschrieben`
+    beide((nr, text, erwartet) => k.kaputt(nr, text, grund, erwartet))
+    return
+  }
+  const angelegt = await planer.rest('weeks', 'POST', a.woche, 'return=minimal')
+  if (angelegt.status >= 400) {
+    beide((nr, text, erwartet) => k.kaputt(nr, text, `Anlage der Woche ${a.woche.start} scheiterte (HTTP ${angelegt.status})`, erwartet))
+    return
+  }
+  const rumpf = (key) => ({ action: 'absage', taskKeys: [key], nachricht: marke })
+  const glockeDesAdmins = () => planer.rest(`notifications?select=id&task_key=eq.${encodeURIComponent(a.eigener)}`)
+  try {
+    // Angekommen ist, was dieser Aufruf dazulegt: Eine Zeile, die ein früherer
+    // Lauf stehen ließ, sähe sonst aus wie eine Absage, die durchkam.
+    const davor = await glockeDesAdmins()
+    const s = await mitglied.funktion('substitute', rumpf(a.eigener))
+    const l = await glockeDesAdmins()
+    const alte = new Set(zeilenVon(davor).map((z) => z.id))
+    const angekommen = zeilenVon(l).some((z) => !alte.has(z.id))
+    const schon = Array.isArray(s.daten?.schonGemeldet) && s.daten.schonGemeldet.includes(a.eigener)
+    if (s.status < 400 && schon) {
+      k.ungemessen(120, was, 'die Function hält die Absage für schon gemeldet (ein Lauf in den letzten zehn Minuten?)')
+    } else {
+      const e = bewerteVersuch(s.status, angekommen, true, {
+        leseStatus: Math.max(davor.status, l.status),
+        urteil: s.status < 400 || s.daten?.error === 'not-assigned',
+      })
+      k.ergebnis(120, was, e, e.durch ? 'kommt an' : 'ZU STRENG — eine Absage erreicht niemanden, der plant')
+      if (e.kaputt) console.log(`      Die Function antwortete: ${JSON.stringify(s.daten)}`)
+    }
+    // Eine offene Tür schriebe hier in die Glocken — das Aufräumen unten nimmt beide Plätze.
+    await tuerVersuch(k, 121, `${wasFremd} (${dienst.wer})`, mitglied, 'substitute', rumpf(a.fremder), [], 'absagen kann nur, wer an dem Platz steht', 'not-assigned')
+  } finally {
+    const glocke = (wer) => () => wer.rest(`notifications?task_key=in.${liste([a.eigener, a.fremder])}`, 'DELETE', undefined, 'return=minimal')
+    await nacheinanderAufraeumen(marke, [
+      ['die Mitteilungen an den Admin', glocke(planer)],
+      ['die Mitteilungen an den Planer', glocke(zuteiler)],
+      ['die Woche der Absage', () => planer.rest(zeile, 'DELETE', undefined, 'return=minimal')],
+    ])
+  }
+}
+
+/**
  * (115)–(117) **Fehlermeldungen von den Geräten** (T171, `geraete_fehler`):
  * Melden darf jedes angemeldete Mitglied in die eigene Versammlung — sonst
  * wäre das Melden tot. Lesen darf nur der Admin, und in eine fremde
@@ -2790,13 +2994,12 @@ export async function main(arg = process.argv.slice(2)) {
     )
   }
 
-  // ---- 6) und dass der legitime Meldeweg offen bleibt ----------------------
-  // Seit dem 24.9.2026 schreibt ein Mitglied keine Mitteilung mehr selbst: Es
-  // sieht die Planer nicht (members_select) und könnte sie nicht adressieren.
-  // Seine Absage geht über `notify_planners` (security definer) an jeden
-  // Planer — so wie die App es tut (`notifyPlanners` in lib/daten/mitteilungen.ts). Bis zum
-  // 3.10.2026 maß (6) noch die direkte Zeile, die seither jede Richtlinie
-  // abweist, und meldete „ZU STRENG".
+  // ---- 6) S3 auf dem zweiten Weg: eine „Absage" über notify_planners -------
+  // Die Funktion schreibt mit den Rechten der Datenbank in die Glocken aller,
+  // die planen — Titel und Rumpf, wie der Aufrufer sie mitgibt, ohne Absender.
+  // Sie nimmt deshalb nur, wer selbst plant (Gegenprobe: (119)); eine Absage
+  // meldet die Function `substitute`, die den Platz prüft. Ihr Urteil ist ein
+  // 403 (42501) — ein 404, weil es sie nicht gibt, sagt über die Regel nichts.
   const s6 = await mitglied.rest(
     'rpc/notify_planners',
     'POST',
@@ -2804,36 +3007,13 @@ export async function main(arg = process.argv.slice(2)) {
     'return=minimal',
   )
   const angekommen6 = await planer.rest(`notifications?select=id&title=like.${marke}*`)
-  const e6 = bewerteVersuch(s6.status, zeilenVon(angekommen6).length > 0, true, { leseStatus: angekommen6.status })
-  ergebnis(6, 'Absage an die Planer über notify_planners (der legitime Weg)', e6, e6.durch ? 'kommt an' : 'ZU STRENG — Absagen erreichen die Planer nicht mehr')
+  const e6 = bewerteVersuch(s6.status, zeilenVon(angekommen6).length > 0, false, { leseStatus: angekommen6.status })
+  ergebnis(6, 'eine Absage über notify_planners in die Glocken der Planer schreiben', e6, e6.durch ? 'S3 STEHT WIEDER OFFEN' : 'abgewiesen — über diese Funktion meldet nur, wer plant')
+  if (e6.kaputt) console.log(`      Die Datenbank antwortete: ${JSON.stringify(s6.daten)}`)
   for (const z of zeilenVon(angekommen6)) {
     await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
   }
   unaufgeraeumt(angekommen6)
-
-  // ---- 6b) über denselben Weg nur eine Verhinderung -------------------------
-  // `notify_planners` schreibt mit den Rechten der Datenbank; was es
-  // weiterreicht, entscheidet allein seine eigene Prüfung. Import- und
-  // Planmeldungen bleiben Planern vorbehalten (S3/T89).
-  const s6b = await mitglied.rest(
-    'rpc/notify_planners',
-    'POST',
-    { kind: 'zuteilung', subject: `${marke} — als Zuteilung über notify_planners`, message: '' },
-    'return=minimal',
-  )
-  const angekommen6b = await planer.rest(`notifications?select=id&title=like.${marke}*`)
-  const e6b = bewerteVersuch(s6b.status, zeilenVon(angekommen6b).length > 0, false, {
-    leseStatus: angekommen6b.status,
-    // Das Urteil ist die Ausnahme der Funktion selbst (P0001). Ein 404, weil
-    // es sie nicht gibt, sagt über die Regel nichts.
-    urteil: s6b.status < 400 || s6b.daten?.code === 'P0001',
-  })
-  ergebnis('6b', 'dieselbe Meldung als Art „zuteilung" (nur Admin und Planer)', e6b, e6b.durch ? 'AUCH DAS!' : 'abgewiesen — notify_planners reicht nur Verhinderungen weiter')
-  if (e6b.kaputt) console.log(`      Die Datenbank antwortete: ${JSON.stringify(s6b.daten)}`)
-  for (const z of zeilenVon(angekommen6b)) {
-    await planer.rest(`notifications?id=eq.${z.id}`, 'DELETE', undefined, 'return=minimal')
-  }
-  unaufgeraeumt(angekommen6b)
 
   // ---- 7) S11: Abwesenheit auf eine FREMDE Person -------------------------
   // Der Zweig „die Zeile gehört mir" (`user_id = auth.uid()`) sagte nichts über
@@ -2992,6 +3172,9 @@ export async function main(arg = process.argv.slice(2)) {
   // ---- 115) bis 117) Fehlermeldungen von den Geräten (7.11.2026) -----------
   await fehlermeldungProben(k)
 
+  // ---- 120) und 121) Die Absage über die Function substitute ---------------
+  await absageProben(k, dienst)
+
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).
   const verboten = befunde.filter((b) => !b.erwartet)
@@ -3003,7 +3186,7 @@ export async function main(arg = process.argv.slice(2)) {
   if (ueberraschungen.length === 0 && kaputte.length === 0) {
     console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120, die Rechte-Stufen, die Vormerkungen der')
     console.log(`Vorträge, die Trolleys und das Tauschen sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben`)
-    console.log('zeigen, dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Ein- und Austragen, Zuteilen,')
+    console.log('zeigen, dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Melden, Ein- und Austragen, Zuteilen,')
     console.log('Tauschen und Sehen gehen weiter.')
     if (nichtGemessen.length) {
       console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)

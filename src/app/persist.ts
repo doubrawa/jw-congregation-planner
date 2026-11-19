@@ -1210,11 +1210,12 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
   }
 
   /*
-   * Eine hier entstandene Mitteilung (Import, „Plan gesendet") an die Planer
-   * der Versammlung schicken — je Empfänger eine eigene Zeile mit eigenem
-   * Gelesen-/Lösch-Status. Erinnerungen erzeugt die Edge Function selbst
-   * (adressiert an die betroffene Person), und die Absage ebenso
-   * (`absageMelden` oben): Sie braucht einen Push, und bei einem
+   * Eine hier entstandene Mitteilung („Programm importiert") an alle schicken,
+   * die planen — je Empfänger eine eigene Zeile mit eigenem Gelesen-/Lösch-
+   * Status. Das steht nur Admin und Planer zu (`notify_planners` weist jeden
+   * anderen ab). Erinnerungen erzeugt die Edge Function selbst (adressiert an
+   * die betroffene Person), und die Absage ebenso (`absageMelden` oben): Sie
+   * prüft, wem der Platz gehört, braucht einen Push, und bei einem
    * Gruppentreffpunkt erfährt es auch, wer die Gruppe leitet.
    *
    * Erkannt am `local`-Kennzeichen, das der Reducer beim Erzeugen setzt — nicht
@@ -1225,8 +1226,8 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * vergisst, merkt es nie, weil nichts fehlschlägt.
    *
    * **Die Empfänger sucht die Datenbank** (`notify_planners`), nicht der
-   * Client. Ein Verkündiger sieht in `members` nur die eigene Zeile (RLS);
-   * `next.members` enthält für ihn keinen einzigen Planer.
+   * Client. Ein Konto ohne Admin-Recht sieht in `members` nur die eigene Zeile
+   * (RLS) — auch der Planer; `next.members` nennt ihm keinen anderen.
    */
   const neu = next.notifs[0]
   if (neu?.local && neu !== prev.notifs[0] && neu.type !== 'verhindert') {

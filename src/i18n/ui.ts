@@ -159,9 +159,8 @@ export const NOTIF_TITLE_KEY: Record<string, keyof Dict> = {
   // sind. Ging bis T99 nur als Push hinaus — ein Planer ohne Abo bekam sie also
   // nie, obwohl gerade er sie braucht (er muss persönlich erinnern).
   'Unbestätigte Zuteilungen (nicht erreichbar)': 'notifUnerreichbar',
-  // Aus der App selbst an die Planer (Reducer → `notify_planners`): der Import
-  // einer Woche und die Absage einer Aufgabe. Bis zum 4.10.2026 standen beide
-  // unter den abgelegten Titeln — erzeugt werden sie aber nach wie vor.
+  // An alle, die planen: der Import einer Woche aus der App selbst (Reducer →
+  // `notify_planners`), die Absage einer Aufgabe aus der Function `substitute`.
   'Programm importiert': 'notifProgImportiert',
   'Verhinderung gemeldet': 'notifVerhindert',
   // **Abgelegte Titel.** Diese Mitteilungen entstehen seit T99 nicht mehr —

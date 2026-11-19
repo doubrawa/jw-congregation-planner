@@ -837,13 +837,12 @@ export const DE = {
     erinTageVorAufgabe: 'Tage vor der Aufgabe', erinTaeglich: 'Täglich wiederholen', erinBisZusage: 'bis die Zusage da ist',
     remAmTagOption: 'Am Tag', remVorherOption: '{dauer} vorher',
     erinDieAufgabe: 'Die Aufgabe', erinDanachStill: 'Ab hier meldet sich die App nicht mehr.',
-    // Was ohne Einstellung sofort hinausgeht und an wen — am Code gemessen
-    // (14.10.2026): die Absage über `notify_planners` (an jedes Mitglied mit
-    // `admin` oder `zuteiler`, also Admins und Planer — Wortlaut wie
-    // `wpEntwurfHint`), das Ersatzgesuch in `substitute` (nur Hilfsdienste,
-    // ohne die an dem Tag Abwesenden), der Entzug in `send-plan` (eine
-    // Zuteilung, von der die Person wusste: mitgeteilt oder zugesagt — seit dem
-    // 15.10.2026, `entzogeneZuteilungen`).
+    // Was ohne Einstellung sofort hinausgeht und an wen — am Code gemessen: die
+    // Absage in `substitute` (Aufruf 'absage': an jedes Mitglied mit `admin`
+    // oder `zuteiler`, also Admins und Planer — Wortlaut wie `wpEntwurfHint`),
+    // das Ersatzgesuch ebendort (nur Hilfsdienste, ohne die an dem Tag
+    // Abwesenden), der Entzug in `send-plan` (eine Zuteilung, von der die
+    // Person wusste: mitgeteilt oder zugesagt, `entzogeneZuteilungen`).
     erinSofortGemeldet: 'Sofort gemeldet', erinAbsage: 'Absage', erinAnPlaner: 'an Admins und Planer',
     erinErsatzAn: 'nur bei Hilfsdiensten: an alle mit diesem Aufgabenbereich, die an dem Tag nicht abwesend sind',
     erinEntzugAn: 'an die Person, wenn ihr die Zuteilung schon mitgeteilt war oder sie zugesagt hatte',

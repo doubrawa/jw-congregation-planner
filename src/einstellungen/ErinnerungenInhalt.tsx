@@ -17,13 +17,12 @@ import './erinnerungen.css'
  * kommt und dass danach nichts mehr kommt.
  *
  * Darunter, was ohne Einstellung sofort hinausgeht und an wen. **Das ist am
- * Code gemessen, nicht am Entwurf** (14.10.2026): der Rhythmus in `dueKind`
- * (`supabase/functions/_shared/erinnerung.ts`), die Absage über
- * `notify_planners` (`supabase/schema.sql`), das Ersatzgesuch in `substitute`,
- * der Entzug in `send-plan`, die Trolley-Termine in `trolley` (an den anderen
- * im Termin; wird ein Trolley entfernt, an alle Eingetragenen) und am Vortag
- * in `send-reminders`. Ändert sich dort, wer was bekommt, stimmt diese Seite
- * nicht mehr.
+ * Code gemessen, nicht am Entwurf**: der Rhythmus in `dueKind`
+ * (`supabase/functions/_shared/erinnerung.ts`), die Absage und das
+ * Ersatzgesuch in `substitute`, der Entzug in `send-plan`, die Trolley-Termine
+ * in `trolley` (an den anderen im Termin; wird ein Trolley entfernt, an alle
+ * Eingetragenen) und am Vortag in `send-reminders`. Ändert sich dort, wer was
+ * bekommt, stimmt diese Seite nicht mehr.
  *
  * Nur die Karten, ohne Titel: Den setzt der Aufrufer — am Handy
  * `UnteransichtKopf`, am Desktop die Überschrift des Abschnitts.

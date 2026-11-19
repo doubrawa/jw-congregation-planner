@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ABSCHNITTE, katalog as katalogVon, katalogVergleich } from '../scripts/katalog.mjs'
+import { type Abschnitt, ABSCHNITTE, type Katalog, katalog, katalogVergleich } from '../scripts/katalog.mjs'
 import { leerePostgres } from '../scripts/pglite-postgres.mjs'
 
 /**
@@ -47,10 +47,6 @@ function migrationsDateien(ordner = MIGRATIONS): string[] {
  * Ein neuer Abschnitt dort ist von selbst auch hier im Vergleich.
  */
 type Zeile = Record<string, unknown>
-type Katalog = Record<string, Zeile[]>
-
-const katalog = (db: { query: (sql: string) => Promise<{ rows: unknown[] }> }): Promise<Katalog> =>
-  katalogVon(db) as Promise<Katalog>
 
 let ausSchema: Katalog
 let ausMigrationen: Katalog
@@ -120,7 +116,7 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
     // Und keine Abfrage läuft ins Leere: Eine, die nichts findet (vertippter
     // Schemaname, falscher `relkind`), wäre beidseitig leer und damit still
     // grün — die Zahlen darüber fangen nur die, die hier genannt sind.
-    expect(ABSCHNITTE.filter((a) => ausSchema[a]!.length === 0)).toEqual([])
+    expect(ABSCHNITTE.filter((a) => ausSchema[a].length === 0)).toEqual([])
   })
 
   /**
@@ -130,7 +126,7 @@ describe('schema.sql und die Migrationen ergeben dieselbe Datenbank', () => {
    * `schema.sql` nennt sie, wo sie hingehört. Bis E4 (8.11.2026) legte keine
    * Migration eine Spalte an, und der Vergleich der rohen Listen fiel nicht auf.
    */
-  const unterschiede = (links: Katalog, rechts: Katalog, abschnitt: string) =>
+  const unterschiede = (links: Katalog, rechts: Katalog, abschnitt: Abschnitt) =>
     katalogVergleich({ [abschnitt]: links[abschnitt] }, { [abschnitt]: rechts[abschnitt] })
 
   it.each(ABSCHNITTE)('%s sind gleich', (abschnitt) => {
