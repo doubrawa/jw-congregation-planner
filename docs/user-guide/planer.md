@@ -139,7 +139,7 @@ steht der Schalter **Darf planen** an und lässt sich nicht umlegen.
 | **Plan senden** | – | Treffpunkte seiner Gruppe | ✓ | ✓ |
 | Programm holen, **Woche einrichten** (Anlass, Sonderwoche, Termine), Punkte unter „Unser Leben als Christ" anlegen, umbenennen, verschieben, Minuten | – | – | ✓ | ✓ |
 | **Auswertung** der Zuteilungen ansehen | – | – | ✓ | ✓ |
-| Die App mit anderen Rechten ansehen (befristet, im Profil) | – | – | – | ✓ |
+| Die App mit anderen Rechten ansehen (im Profil) | – | – | – | ✓ |
 | Personen, Abwesenheiten anderer, Einstellungen mit Trolleys, Mitglieder, Anmelde-Links | – | – | – | ✓ |
 
 **Gruppenaufseher und Gehilfe** ist, wen du im Blatt seiner
@@ -160,9 +160,9 @@ Unter dem eigenen Namen unten in der Seitenleiste (am Handy im Menü) steht,
 was jemand darf: **Admin**, **Planer**, **Gruppenaufseher** bzw. **Gehilfe**
 einer Gruppe – sonst **Verkündiger**.
 
-### Die App mit anderen Rechten ansehen (befristet)
+### Die App mit anderen Rechten ansehen
 
-Solange die App erprobt wird, kann ein **Admin** sie so ansehen, wie ein
+Ein **Admin** kann die App so ansehen, wie ein
 Planer, ein Gruppenaufseher oder ein Verkündiger sie sieht: im **Profil** unter
 **Ansicht zum Testen** → **Ansehen als**. Als Gruppenaufseher siehst du deine
 eigene Gruppe – ihr Name steht an der Stufe; wer keiner Gruppe angehört,
@@ -176,8 +176,7 @@ ebenso das Neuladen der App.
 - **Was du in der Ansicht tust, ist echt** und geschieht mit deinen eigenen
   Rechten. Die Datenbank kennt nur sie: Was die App einem Verkündiger gar nicht
   schicken würde, hat sie bei dir trotzdem geladen.
-- Planer und Verkündiger sehen die Karte nicht. Nach den Tests kommt sie wieder
-  heraus.
+- Planer und Verkündiger sehen die Karte nicht.
 
 ---
 
@@ -701,10 +700,11 @@ Darunter steht, wann für diese Woche zuletzt etwas hinausging.
 Welche Hilfsdienste der Woche noch unbesetzt sind, sehen sie im Menü unter
 **Freie Plätze** – jeder nur, wofür er einen Aufgabenbereich hat, an dem Tag
 nicht abwesend ist und im selben Dienst noch keinen Platz hat. **Programmpunkte
-bietet die App dort nicht an:** Die teilst du zu. Die Reinigung auch nicht. Wer
-zuerst tippt, ist eingetragen und hat damit zugesagt; eine Mitteilung bekommst
-du dafür nicht, im Plan steht sein Name mit vollem Punkt. Hat er an dem Tag
-schon eine Aufgabe, sagt ihm die App das vorher; übernimmt er trotzdem, steht
+bietet die App dort nicht an:** Die teilst du zu. Die Reinigung auch nicht. Ein
+Tipp auf **Übernehmen** öffnet erst ein kurzes Blatt mit Dienst und Termin; wer
+darin zuerst **Übernehmen** tippt, ist eingetragen und hat damit zugesagt. Eine
+Mitteilung bekommst du dafür nicht, im Plan steht sein Name mit vollem Punkt.
+Hat er an dem Tag schon eine Aufgabe, sagt ihm das Blatt es vorher; übernimmt er trotzdem, steht
 es bei dir als Konflikt „Hilfsdienst und Aufgabe am selben Tag". Willst du
 einen Platz selbst besetzen, tu es vor dem Senden.
 
@@ -1264,7 +1264,7 @@ Unter **Personen** pflegst du alle Mitglieder der Versammlung.
   etwa einer Gruppe nach der anderen ihren Zugang. Es gehen nur die Links
   hinaus; den Plan sendest du wie gewohnt.
 - **E‑Mails schickt die App keine**, und eine E‑Mail‑Adresse speichert sie
-  nicht (seit dem 31. Oktober 2026). Für alle auf einmal geht es nicht: Jeder
+  nicht. Für alle auf einmal geht es nicht: Jeder
   Text meldet genau eine Person an und gehört in ihren persönlichen Chat.
 - Über **Name suchen** findest du schnell eine Person – gesucht wird im
   **Namen**, auch so, wie die Liste ihn zeigt („krüger s").
@@ -1971,8 +1971,7 @@ Ist er eingeschaltet, ändert sich Folgendes:
   gleichzeitig im Hauptsaal und in der Klasse eingeteilt ist.
 - Im **Programm** und im **Ausdruck** stehen beide Räume untereinander, jeder
   mit seiner Überschrift.
-- Auf dem **S‑89‑Formular** steht jetzt der richtige Raum. Vorher stand dort
-  immer „Hauptsaal".
+- Auf dem **S‑89‑Formular** steht der Raum, in dem die Aufgabe stattfindet.
 
 **Ausschalten behält deine Planung.** Die Zuteilungen der Klasse bleiben
 gespeichert und sind wieder da, sobald du den Schalter erneut einschaltest.
@@ -2213,9 +2212,8 @@ war, braucht sie nicht: Den Grund löscht die App schon nach acht Wochen. Und
 sehen müssen das Jahr nur, die die Auswertung sehen: Abwesenheiten, die mehr als
 acht Wochen vorbei sind, zeigt die App nur Admins und Planern – jedem anderen
 nur die eigenen. Den **Grund** einer Abwesenheit sieht nur, wem sie gehört,
-und der Admin; Planer brauchen für die Planung nur den Zeitraum (seit dem
-29. Oktober 2026). E‑Mail‑Adressen speichert die App seit dem 31. Oktober 2026
-gar nicht mehr.
+und der Admin; Planer brauchen für die Planung nur den Zeitraum. E‑Mail‑Adressen
+speichert die App gar nicht.
 
 Personen, Gruppen, Dienste, der Grundplan der Treffpunkte, die Trolleys und die
 Konten haben kein Alter. Sie bleiben, bis du sie änderst oder entfernst.
@@ -2225,7 +2223,7 @@ aus New World Scheduler übernimmt nichts, was älter ist.
 
 ### Wenn bei jemandem etwas klemmt
 
-Seit dem 7. November 2026 meldet die App einen Fehler, der auf einem Gerät
+Die App meldet einen Fehler, der auf einem Gerät
 auftritt, von selbst – sonst erfährt niemand davon, und jeder müsste von Hand
 Bescheid geben. Gemeldet wird nur, was zum Suchen nötig ist:
 
