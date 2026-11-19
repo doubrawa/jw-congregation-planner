@@ -2,6 +2,7 @@ import type { Lang } from '../src/data/types'
 import { APP_LANGS, LOCALES } from '../src/i18n/langs'
 import { langChoices } from '../src/i18n/langnames'
 import { DE, dict } from '../src/i18n/ui'
+import { codeGruppiert } from '../supabase/functions/_shared/anmeldung.ts'
 import { FRAG } from '../supabase/functions/_shared/i18n/translate-data.ts'
 
 /**
@@ -110,9 +111,25 @@ function deutscheWoerter(): Set<string> {
   return deutsch
 }
 
+/** Was wie ein Anmelde-Code aussieht: zwei Gruppen, die erste mit vier Zeichen. */
+export const CODE_FORM = /\b[A-Z0-9]{4} [A-Z0-9]{1,4}\b/g
+
+/**
+ * Anmelde-Codes herausnehmen: Sie stehen in jeder Sprache lateinisch da
+ * („K7RD 2QWM" im Profil, beim Link einer Person, im Feld der Anmeldung) —
+ * zum Abtippen, nicht zum Lesen. Herausgenommen wird nur, was die App selbst
+ * so zeigt (`codeGruppiert`, auch ein angefangener Code im Feld); ein Wort mit
+ * I oder O gehört nie dazu. Dass kein Text der App diese Form hat, hält
+ * `deutsch-erkennen.test.ts` fest.
+ */
+export function ohneCodes(text: string): string {
+  return text.replace(CODE_FORM, (span) => (codeGruppiert(span) === span ? ' ' : span))
+}
+
 /**
  * Ein Prüfer für eine Zielsprache: liefert zu einer Zeile die deutschen Reste.
- * Adressen und Links werden vorher herausgenommen — sie gehören niemandem.
+ * Adressen, Links und Anmelde-Codes werden vorher herausgenommen — sie gehören
+ * niemandem.
  */
 export function deutschFinder(ziel: Exclude<Lang, 'de'>, erfunden: ReadonlySet<string>): (zeile: string) => DeutscherRest[] {
   // Ohne Rücksicht auf Groß und Klein: Das Feld für den Anmelde-Code schreibt
@@ -125,9 +142,9 @@ export function deutschFinder(ziel: Exclude<Lang, 'de'>, erfunden: ReadonlySet<s
   // Türkisch schreibt ö und ü selbst.
   const umlaut = ziel === 'tr' ? /[äßÄ]/ : /[äöüßÄÖÜ]/
   return (zeile) => {
-    const text = zeile
-      .replace(/[\w.+-]+@[\w.-]+/g, ' ')
-      .replace(/https?:\/\/\S+|localhost:\d+\S*/g, ' ')
+    const text = ohneCodes(
+      zeile.replace(/[\w.+-]+@[\w.-]+/g, ' ').replace(/https?:\/\/\S+|localhost:\d+\S*/g, ' '),
+    )
     if (!deutsch) {
       return (text.match(/[A-Za-zÀ-ɏ]{2,}/g) ?? []).filter(frei).map((wort) => ({ wort, zeile }))
     }
