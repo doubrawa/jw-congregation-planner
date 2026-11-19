@@ -12391,10 +12391,31 @@ gepusht):
 - `8bd9e316` — **Handbücher**: die Ansicht zum Testen unbefristet, bei Freie
   Plätze erst das Blatt, vier Chronik-Reste fort, Manifest und `blatt=` in der
   README. Alle 29 Bilder neu aufgenommen, alle pixelgleich mit dem Stand davor.
+- `d1100b40` — **README** (Entwickler): Der Absatz „das Schema hat genau eine
+  Quelle … die Datenbank wird neu aufgesetzt" war seit T169/T170 falsch; dazu
+  der alte Import-Knopf, die Projektstruktur (neun Ordner fehlten, „login/
+  simuliert") und das Fenster der Strichliste (±2, nicht ±3).
+- `b2e706f2` — **Handbuch Planer**: Die Glocke hält Mitteilungen 30 Tage (der
+  tägliche Erinnerungslauf räumt sie ab), nicht acht Wochen. Alle übrigen
+  Zahlen im Handbuch stimmen mit den Konstanten im Code; alle 137 Links und
+  Anker führen ans Ziel.
+- `63b175f3` — **Sprach-Durchgang** (T123, von Hand, alle elf Sprachen, drei
+  Ebenen, 88 Minuten): acht Sprachen ohne Befund; ru, uk, ar und fa meldeten
+  nur Anmelde-Codes („KXZC SC2M") — seit „Code anzeigen" (T166) stehen sie in
+  der Oberfläche. Der Detektor nimmt jetzt genau die Code-Form heraus, eine
+  Wache hält fest, dass kein Text der App so aussieht. Danach lief der
+  Durchgang für die vier Sprachen noch einmal (26 Minuten): ohne Befund.
+- Ohne Befund: der Bedeutungswandel (62 seit T123 unveränderte Schlüssel an
+  neuen Stellen), die Push-Texte aller sechs Functions (jede der elf Sprachen,
+  gleich der Glocke), lateinische Satzzeichen in Arabisch und Persisch.
 - Geprüft: Suite 8679 grün (zwei rote Proben in `vi-mock-pfade.test.ts` nur
   im Worktree, im Hauptcheckout grün), `tsc -b`, oxlint, Build, Laufzeit-Messung
   Satz voll mit axe (732 Läufe, kein Befund), Spannen auf Italienisch im Pane.
   `/simplify` und `/code-review max` stehen aus.
+- Beobachtet: In der Beta gingen bisher nur drei Trolley-Erinnerungen hinaus.
+  Die erste „Erinnerung: Zuteilung bestätigen" ist ab etwa 24. November fällig
+  (erste Erinnerung 7 Tage vorher, der Dezember ist am 14. November gesendet) —
+  dann im Erinnerungs-Tagebuch nachsehen, ob sie kam.
 
 **Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
 und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, keiner
