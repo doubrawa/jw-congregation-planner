@@ -11807,7 +11807,7 @@ kamen durch, alle 42 Gegenproben gingen durch, nichts blieb ungemessen — (6),
 
 ## Fortschritt
 
-Stand 13. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 19. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -11820,10 +11820,12 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☑☑☑☑☑
+13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑
 
-**Alle 184 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
-Begründung als „kein Mangel" zurückgewiesen. Als letzte am 14. November
+**Alle 201 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf und
+T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
+stehen (alle vier Pakete umgesetzt und ausgerollt). Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
 echten Gerät). **T183** ist am selben Tag entschieden:
@@ -11891,6 +11893,11 @@ Zeichenzeile.
 > `grep -cE '^### T[0-9]+ ' docs/analyse/todo.md` zählt die Aufgaben,
 > `grep -E '^### T[0-9]+ ' docs/analyse/todo.md | grep -vE '✅|⛔'` lässt die
 > offenen übrig.
+
+**Nachgesehen am 19. November 2026, abends:** Die Produktion steht auf dem
+Stand von `origin/main` (`218f5239`, `shell-218f523`); Functions, Zeitpläne
+und `disable_signup` wie unter „Was offen ist und warum" (Stand 19. November,
+Schritt 4). Der Absatz darunter ist der Stand vom 6. November.
 
 **Der Betrieb steht auf dem Stand von `main` (nachgesehen am 6. November
 2026, mittags):** Das Frontend geht mit jedem Push hinaus; vor diesem Eintrag
@@ -12316,6 +12323,77 @@ zurückgenommen und der Testlauf wiederholt wurde.
 
 ### Was offen ist und warum
 
+**Stand 19. November 2026, abends — Prüfung vor dem Livegang** (alle sieben
+Schritte gemessen, nicht abgeschrieben):
+
+1. **Köpfe:** 184, keiner offen. T185–T201 vom 18. November stehen als Tabelle
+   ohne eigene Köpfe; alle vier Pakete sind umgesetzt und ausgerollt. Das
+   Zählen über `### T` sieht sie nicht — die Tabelle mitlesen.
+2. **Bewusst offen:** aus dem Sicherheits-Review Nr. 3 (nicht beauftragt) und
+   der Blick ins Dashboard — beides jetzt in der Tabelle.
+3. **Zweige:** Auf GitHub steht nur `main` (`218f5239`), keine PR, kein Issue.
+   Der lokale `main` steht einen Doku-Commit davor (`0e60f100`, todo.md),
+   nicht gepusht.
+4. **Betrieb:** `ausrollen-pruefen.mjs` grün — 13 Migrationen eingespielt,
+   Katalog gleich, 8 Functions aktiv, Rauchtest bestanden. Live läuft
+   `shell-218f523`, der Stand von `origin/main`. Die Functions stehen seit dem
+   14. November, 17:34 Uhr (`anmelden` v26, `import-week` v67, `send-invite`
+   v38, `send-plan` v48, `send-reminders` v74, `substitute` v58, `tauschen`
+   v14, `trolley` v19); seither hat kein Commit `supabase/functions` berührt.
+   Die Erinnerungen liefen zuletzt am 19. November um 08:00 UTC, das Aufräumen
+   am 16. November um 03:30 UTC, kein Fehlschlag in 14 Tagen.
+   `disable_signup` steht auf `true`. Die echte Versammlung hat 62 Wochen, vom
+   17. November 2025 bis zum 18. Januar 2027; jw.org führt Arbeitshefte bis
+   März/April 2027. Gerätefehler in 14 Tagen: zweimal „Script error." (Safari
+   27, 9. November, Mitteilungen, ohne Stapel — ein Skript fremder Herkunft,
+   nicht zuzuordnen) und zwei Proben. Die Sicherung läuft wöchentlich, zuletzt
+   am 16. November, grün.
+5. **Nur im Memory:** nichts Offenes; ein veralteter Vermerk (der Tipp außerhalb
+   beim Zwei-Tipp-Löschen sei „nicht gebaut" — er ist es) ist berichtigt.
+6. **Sitzungen:** Im laufenden Profil keine weitere zu diesem Repo; die
+   Protokolle vom 13. bis 19. November liegen auf diesem Rechner nicht vor.
+7. **Commits seit der letzten Übersicht** (`114c485d`): „Offen:" steht nur in
+   `c330ddc2` (Geräteproben, in der Tabelle) und in `f5e058a8` (Nr. 5 und
+   `gemeldet_am` — beide in `bf5ce53f` umgesetzt). Am 14. November „bemerkt,
+   nicht beauftragt": die italienischen Spannen mit führender Null (in der
+   Prüfung behoben, `479a80e9`) und die Ziffern in Persisch (jetzt in der
+   Tabelle).
+
+Dazu die Werkzeuge des Livegangs, beide ohne Schreiben: Die **Sicherung vor
+der Beta** spielt `rueckspielprobe.mjs` vollständig in das heutige Schema
+zurück (alle Tabellen gleich, 5 Konten; die Gegenprobe misst). Der
+**Trockenlauf** von `versammlung-auf-sicherung.mjs` gegen die echte
+Versammlung rechnet durch und warnt erwartungsgemäß, dass die Sicherung von
+einem älteren `schema.sql` stammt (geschrieben würden nur ihre Spalten).
+Zurückzusetzen wäre bisher wenig: von den Wochen 1 zu löschen (die in der Beta
+geholte vom 18. Januar), 2 einzufügen (die ältesten, die das Aufräumen
+inzwischen nach einem Jahr entfernt hat — es nimmt sie am nächsten Montag
+wieder) und 6 zu ändern; 40 Mitteilungen, 32 Zusagen und 5 Absagen zu
+löschen, im Versand-Tagebuch 23 Zeilen zu löschen und 48 einzufügen. Konten:
+1 wie in der Sicherung, 3 seither dazu.
+
+Neu in der Tabelle: **Sicherheit 19.11.** und **Ziffern fa/ar**; Beta und
+Livegang tragen den gemessenen Stand.
+
+**In dieser Prüfung umgesetzt** (Zweig `claude/livegang-pruefung-8b2951`, nicht
+gepusht):
+
+- `479a80e9` — **Übersetzungen**: Die 306 Schlüssel, die sich seit T123
+  geändert haben, sind in allen zwölf Sprachen gelesen; die übrigen sind seit
+  T123 unverändert. Dazu Mechanik über alle 1011. 20 Werte in ar, fr, it, ro,
+  ru und uk berichtigt (Genus, Mehrdeutiges, Grammatik, ein fehlendes
+  Leerzeichen, ein Escape), die italienischen Spannen ohne führende Null. Beim
+  Ausrollen gehen `send-plan` und `send-reminders` neu hinaus
+  (`_shared/i18n/translate.ts` exportiert jetzt `spanneOhneNull`); ihr
+  Verhalten bleibt gleich.
+- `8bd9e316` — **Handbücher**: die Ansicht zum Testen unbefristet, bei Freie
+  Plätze erst das Blatt, vier Chronik-Reste fort, Manifest und `blatt=` in der
+  README. Alle 29 Bilder neu aufgenommen, alle pixelgleich mit dem Stand davor.
+- Geprüft: Suite 8679 grün (zwei rote Proben in `vi-mock-pfade.test.ts` nur
+  im Worktree, im Hauptcheckout grün), `tsc -b`, oxlint, Build, Laufzeit-Messung
+  Satz voll mit axe (732 Läufe, kein Befund), Spannen auf Italienisch im Pane.
+  `/simplify` und `/code-review max` stehen aus.
+
 **Nachtrag vom 13. November 2026** (keine neue Übersicht — Zweige, Sitzungen
 und der Betrieb sind an diesem Tag nicht nachgemessen): 184 Köpfe, keiner
 offen — T183 ist am 14. November entschieden (nichts in der App). Neu in der
@@ -12353,8 +12431,10 @@ bleibt, braucht NWS-Exporte oder den Neuaufbau.
 | **T180** | Nachladen bei der Rückkehr am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`757b7098`): Die offene App lädt bei der Rückkehr still nach, frühestens fünf Minuten nach dem letzten Laden, nicht bei offenem Blatt oder Eingabefeld. App im Hintergrund lassen, nach über fünf Minuten zurück — was ein Planer inzwischen geändert hat, ist ohne Neustart da. Die Entwicklerseite zeigt es nicht (kein Konto, keine Datenbank). |
 | **T184** | Zahl am App-Symbol am echten Gerät ansehen (Betreiber) | Seit dem 14. November ausgerollt (`c330ddc2`). Android (je nach Startbildschirm Zahl oder Punkt) und iPhone (nur mit erlaubten Mitteilungen) — die Entwicklerseite zeigt kein Symbol. |
 | **Review 14.11., Nr. 5 und Absage-Sperre** | am echten Gerät ansehen (Betreiber) | Am 14. November umgesetzt und ausgerollt (`bf5ce53f`, Abschnitt vom 14. November): Ein Push hebt die Frist des Nachladens auf, und ob eine Absage gemeldet ist, steht an ihr (`absagen.gemeldet_am`). Am Gerät: App offen lassen, sich etwas zuteilen lassen — Liste und Zahl am Symbol stimmen gleich; eine Absage zweimal melden lassen — ein Push. |
-| **Beta** | vor den Links der vier Tester | **Die Sicherung vor der Beta liegt** (8. November abends, siehe Livegang). Die **Mitgliedsrechte-Probe** lief am 8. November abends nach E4 grün: 0 von 49 verbotenen Versuchen kamen durch, alle 42 Gegenproben gingen, nichts blieb ungemessen — zum ersten Mal live auch (115)–(117) für die Fehlermeldungen der Geräte. **Push auf den eigenen Geräten** neu einschalten: Der Neuaufbau hat alle Abos geleert. „Plan senden" für Dezember erst bei sich selbst ansehen. **Tester einweisen**: am iPhone in Safari öffnen, zum Home-Bildschirm, dort mit „Code eintippen" anmelden (Handbuch Verkündiger, Abschnitt 8). Nicht mehr in der echten Versammlung ausprobieren — ab jetzt erreicht jede Änderung echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
-| **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (bisher bis 11. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"). **Einladen in Wellen**, nicht alle auf einmal |
+| **Sicherheit 19.11.** | Kennwort im Dashboard nachsehen (Betreiber); Nr. 3 entscheiden | Ob sich ein angemeldetes Konto in Supabase Auth selbst ein Kennwort setzen kann, steht nicht im Repo. Die Anmeldung mit Adresse und Kennwort ist im Projekt an (so meldet sich die Mitgliedsrechte-Probe an); könnte ein Konto sich eines geben, überstünde jemand mit einer gestohlenen Sitzung „Zugang erneuern". Nr. 3 (niedrig, nicht beauftragt): Der Endpunkt eines Push-Abos ist frei wählbar, `zustellen` ruft ihn ungeprüft auf; Abhilfe wäre eine Liste der bekannten Push-Dienste, mit dem Risiko, dass ein fehlender Dienst still keinen Push mehr bekommt |
+| **Ziffern fa/ar** | Entscheidung (Betreiber) | Datumsangaben kommen aus `Intl` in der Ziffernschrift der Sprache (Persisch persisch, Arabisch arabisch-indisch), Uhrzeiten stehen überall als „19:30" in lateinischen Ziffern — in einer Zeile wie unter „Geplante Änderungen" stehen beide nebeneinander. Entweder alles in der Schrift der Sprache (Uhrzeiten über `Intl`) oder alles lateinisch (`-u-nu-latn` am Sprach-Tag). Eine Frage des Stils, bemerkt am 14. November |
+| **Beta** | läuft seit dem 8. November | **Gemessen am 19. November:** Die echte Versammlung hat 4 Konten, alle 4 haben sich seit dem 8. angemeldet; Push haben 2 Konten (3 Geräte); „Plan senden" lief am 14. November (1813 Zeilen im Versand-Tagebuch seit dem 8.). Die Mitgliedsrechte-Probe lief zuletzt am 19. November grün (0 von 51, 42 von 42). Die Sicherung vor der Beta liegt (siehe Livegang). Nicht in der echten Versammlung ausprobieren — jede Änderung erreicht echte Geräte. Optional: die Wochen 3. August (Kongress) und 12. Oktober (Kreiskongress) in der App als Sonderwochen markieren — sonst zählt die Auswertung dort den festen WT-Leiter |
+| **Livegang** | in ein bis zwei Monaten | **Zurück auf den Stand vor der Beta**, dann ein **letzter NWS-Import** nur für die Monate ab dem Livegang (Betreiber 8.11. abends: Die Tester probieren in der echten Versammlung aus, deshalb läuft die Datenbank nicht einfach weiter; geplant wird monatsweise, Altdaten zählen nur für Auswertung und Automatik, „es müssen ja nur die daten der zukunft vom livegang aus passen"). Die Sicherung dafür hat der Betreiber am 8.11. um 20:11 angelegt, im eigenen Ordner `jw-sicherungen\vor-der-beta` (die Wochenreihe löscht dort nichts): `sicherung-2026-11-08_201105.json`, 1527 KB, 2511 Zeilen in 28 Tabellen und 5 Konten. Die Rückspielprobe spielte jede Tabelle gleich zurück, und der Trockenlauf von `versammlung-auf-sicherung.mjs` gegen die echte Versammlung meldete gleich danach „nichts zu tun" — der erste Lauf des Werkzeugs gegen echte Daten; mit `--wirklich` lief es noch nie. Nach dem Livegang löschen (T125). **Offen: eine Kopie davon außer Haus** (Stick o. ä., Betreiber) — der Livegang hängt an dieser einen Datei, und jede spätere Wochensicherung enthält schon die Beta. **Das Werkzeug für den Weg zurück ist gebaut** (8.11. abends): `scripts/versammlung-auf-sicherung.mjs <sicherung> --cong <id> [--trocken]` setzt eine Versammlung auf die Sicherung zurück, ohne leere Datenbank; Mitgliedschaften, Push-Abos, Anmelde-Links, Einmal-Codes und Gerätefehler bleiben, ebenso jede Person mit Konto oder Link. Geprüft gegen PGlite mit einer ganzen nachgestellten Beta, acht Sabotagen je rot; ablesen in der README („Eine Versammlung auf eine Sicherung zurücksetzen"). **Offen: einmal an der Testversammlung üben** (Betreiber, schreibt in die Produktion): Sicherung nach `jw-sicherungen\uebung`, etwas ändern (Mitgliedsrechte-Probe, Name der Testversammlung im Dashboard), erst ohne, dann mit `--wirklich` (ohne rechnet es nur), danach die Mitgliedsrechte-Probe noch einmal grün, zuletzt den Übungsordner löschen. Während des Laufs benutzt niemand die App. Nach dem Review vom 8.11. abends hält es vor dem ersten Schreiben an, wenn eine Person mit Konto oder Link den Namen einer Person aus der Sicherung trägt, und verknüpft ein Konto wieder, dessen Person in der Beta gelöscht wurde. (`zurueckspielen.mjs` taugt dafür nicht: nur leere Datenbank, nie gegen ein echtes Projekt gelaufen.) Was der Betreiber während der Beta in der echten Versammlung ändert, geht beim Zurücksetzen verloren — notieren oder gleich in NWS. Danach: die jw.org-Wochen der neuen Monate holen (gemessen am 19. November: bis 18. Januar); Wochenübersicht und Leben-und-Dienst für Januar, Februar falls geplant, Dezember nur bei einem Livegang im Dezember; Treffpunkte erst mit `--trocken` (ein NWS-Termin ohne passende Regel im Grundplan wird ein eigener Treffpunkt nur für diese Woche; was ein früherer Export-Lauf angelegt hat und NWS nicht mehr führt, entfernt der Import); „Person Abwesenheiten" mit `--nws-gilt` (nach dem Zurücksetzen steht kein Eintrag der Tester mehr darin; was jemand in der App eingetragen hat, bleibt ohnehin — gelöscht nur mit `--auch-eingetragene`); den Vortragsplan neu einlesen (XML, Planung › Vortragsplan) — die Sicherung vor der Beta hat keinen; zuletzt `nur-in-der-app.mjs` (liest nur) und `abwesend-eingeteilt.mjs` für dieselben Monate, beide in `nws-export/neuaufbau-werkzeug`. **Sicherung** täglich statt wöchentlich und eine Kopie außer Haus — bisher liegt sie nur auf diesem Rechner. **Admins und Planer** einstellen (mehrere, Betreiber: „das wird dann alles final beim livegang eingestellt"; gemessen am 19. November: alle vier Konten sind Admin, keines nur Planer). **Einladen in Wellen**, nicht alle auf einmal |
 | **Daten** | Zuteilungen ab dem 4. Januar; Vortragsplan | Beim Neuaufbau am 8. November kamen die Wochen bis zum 11. Januar neu von jw.org und die NWS-Zuteilungen bis zum 28. Dezember aus den Exporten vom selben Tag. Für den 4. und 11. Januar fehlen die Exporte — sobald NWS den Januar plant: Wochenübersicht und Programm der Leben-und-Dienst-Zusammenkunft für Januar, dann `wochenplanung-importieren.mjs` und `treffpunkte-importieren.mjs` (beide mit `--wochenuebersicht` und `--personen`, schreiben nur geänderte Wochen). Abwesenheiten aus dem Bericht „Person Abwesenheiten" mit `abwesenheiten-importieren.mjs --abwesenheiten … --personen … --nws-gilt` (am 8. November eingespielt). Den Vortragsplan liest der Betreiber zum Livegang ein, nach dem Zurücksetzen (XML, Planung › Vortragsplan): Das Zurücksetzen vom 8. November hat `vortraege` geleert, die Sicherung vor der Beta hat keinen, und was während der Beta eingelesen wird, nimmt das Zurücksetzen wieder mit |
 | **Neuaufbau** | E4 aus dem Gesamt-Review | **Die Daten zum Echtbetrieb sind am 8. November neu aufgebaut** (unter der Tabelle). **E3 ist umgesetzt** (T169, am 7. November abends ohne Neuaufbau umgestellt): Die Produktion folgt den Migrationen, `schema.sql` ist der Gesamtstand ohne Einmal-Blöcke, der Neuaufbau lässt den Verlauf stehen. **E4 ist T174** (`planner` → `admin`): beide Schritte am 8. November umgesetzt und ausgerollt (`f8b4e0bd`, `815a58b6`); die Mitgliedsrechte-Probe lief danach grün (siehe Beta). Nicht mehr offen |
 | **T168** | — | **erledigt am 7. November**; der Rest (Anmelden und Mitgliedsrechte-Probe nach einem Rückspielen) **entfällt**, weil es kein Staging-Projekt gibt (Betreiber, abends). Dafür hält die Rückspielprobe seit dem Abend jede Spalte gegen den Katalog, so streng wie PostgREST — sie hatte `persons.dn` übersehen, an dem das echte Zurückspielen gescheitert wäre. Nicht mehr offen |
