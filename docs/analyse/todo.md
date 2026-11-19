@@ -11750,9 +11750,8 @@ Postgres, als Rolle `authenticated` — am Stand davor sechs Fälle rot, die elf
 Gegenproben grün. `migrationen.test.ts` hält die zwei Migrationen gegen
 `schema.sql`. Die Mitgliedsrechte-Probe misst es live: (6) erwartet jetzt die
 Abweisung, neu sind (118) (die Woche verschieben) und (119) (die Meldung des
-Planers kommt an); (6b) und (61) sind frei. **Noch nicht ausgerollt, die Probe
-noch nicht gefahren** — gegen den Stand davor meldet sie (6) und (118) als
-offen.
+Planers kommt an); (6b) und (61) sind frei. Gegen den Stand davor meldet sie
+(6) und (118) als offen.
 
 **Nach `/simplify` und `/code-review max`** (selber Tag, allein und
 nacheinander): `alsKonto` und `fehlercode` stehen einmal in
@@ -11773,6 +11772,13 @@ geschlossen (Betreiber: „Do this task here"):
   `migrationen.test.ts` und `schema.test.ts` sind behoben, der Katalog hat
   seinen Typ jetzt an der Quelle (`Katalog`, `Abschnitt` in
   `scripts/katalog.mjs`).
+
+**Ausgerollt und live gemessen am 19. November 2026** (`218f5239`): Der Lauf der
+CI spielte beide Migrationen ein, `scripts/ausrollen-pruefen.mjs` meldet die
+Produktion auf dem Stand des Commits. Danach fuhr der Betreiber die
+Mitgliedsrechte-Probe gegen die Testversammlung: 0 von 51 verbotenen Versuchen
+kamen durch, alle 42 Gegenproben gingen durch, nichts blieb ungemessen — (6),
+(118), (119), (120) und (121) zum ersten Mal gegen die echte Datenbank.
 
 ## Was bewusst offen bleibt
 
