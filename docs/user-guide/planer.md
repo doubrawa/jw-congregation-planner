@@ -2194,7 +2194,8 @@ Montag der laufenden Woche, nicht auf den Tag genau:
 | Was | Wie lange |
 | --- | --- |
 | Wochenpläne mit allen Zuteilungen, Treffpunkte, Zusagen und Absagen, wer benachrichtigt wurde, Gruppenbesuche, vorgemerkte Vorträge, Weitere Pläne, Anwesende, Abwesenheiten (ab ihrem Ende) | **ein Jahr** |
-| Mitteilungen in der Glocke, Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
+| Mitteilungen in der Glocke (der tägliche Erinnerungslauf räumt sie ab) | **30 Tage** |
+| Erinnerungen, der Grund einer Abwesenheit (ab ihrem Ende), Trolley-Termine, abgelaufene Anmelde-Links | **acht Wochen** |
 | Die Anmeldung eines Geräts, das ein Jahr nicht in der App war | **ein Jahr** – danach braucht es einen neuen Link |
 | Eine Anfrage zum Tauschen, die niemand beantwortet hat | bis zum früheren der beiden Tage |
 | Fehlermeldungen von den Geräten (siehe unten) | **acht Wochen** |
