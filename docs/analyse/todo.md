@@ -12382,10 +12382,12 @@ gepusht):
   geändert haben, sind in allen zwölf Sprachen gelesen; die übrigen sind seit
   T123 unverändert. Dazu Mechanik über alle 1011. 20 Werte in ar, fr, it, ro,
   ru und uk berichtigt (Genus, Mehrdeutiges, Grammatik, ein fehlendes
-  Leerzeichen, ein Escape), die italienischen Spannen ohne führende Null. Beim
-  Ausrollen gehen `send-plan` und `send-reminders` neu hinaus
-  (`_shared/i18n/translate.ts` exportiert jetzt `spanneOhneNull`); ihr
-  Verhalten bleibt gleich.
+  Leerzeichen, ein Escape), die italienischen Spannen ohne führende Null. Weil
+  sich Code unter `supabase/functions/` ändert (`_shared/i18n/translate.ts`
+  exportiert jetzt `spanneOhneNull`), rollt die CI beim nächsten Push **alle
+  acht** Functions neu aus (`ausrollen-plan.mjs`); ihr Verhalten bleibt
+  gleich. Die Commit-Nachricht nennt fälschlich nur `send-plan` und
+  `send-reminders`.
 - `8bd9e316` — **Handbücher**: die Ansicht zum Testen unbefristet, bei Freie
   Plätze erst das Blatt, vier Chronik-Reste fort, Manifest und `blatt=` in der
   README. Alle 29 Bilder neu aufgenommen, alle pixelgleich mit dem Stand davor.

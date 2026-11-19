@@ -171,15 +171,24 @@ src/
     langs.ts        jw.org-Sprachliste (Versammlungssprache) + App-Sprachen
     useT.ts         Hook: t (UI), tu (App-Sprache), tp (Versammlungssprache)
   lib/
-    supabase.ts     Supabase-Client + Auth-Helfer (signIn/Logout/Reset)
+    supabase.ts     Supabase-Client (auf der Entwicklerseite keiner)
     daten/          Daten-Zugriff: Versammlungsdaten laden, Änderungen zurückschreiben, je Fachbereich ein Modul
-  aufgaben/         Meine Aufgaben (persönlicher Bereich) + Aufgaben-Ableitung
+  anwesenheit/      Anwesende eintragen, Verlauf und Bogen für den Bericht
+  aufgaben/         Meine Aufgaben, Freie Plätze, Blatt beim Öffnen, Übernehmen
   auswertung/       Auswertung der Zuteilungen (T126; gerechnet in data/auswertung.ts)
-  einstellungen/    Einstellungen (Hilfsdienste, Programm-Import)
-  login/            Login (simuliert, wie im Prototyp)
-  personen/         Personenliste + Detail (Stammdaten, Rolle, Aufgabenbereiche)
-  programm/         Programm-Screen (Startscreen)
-  planen/           Planen-Screen + Zuteilungs-Sheet
+  bausteine/        Bausteine des Designs (Saal, Spur, Punkt, Wahl, Logo …)
+  dashboard/        Start mit der Planungs-Karte
+  druck/            Druckbögen auf A4: Programm, Treffpunkte, Trolleys, Pläne, S-89
+  einstellungen/    Einstellungen (Versammlung, Zusammenkünfte, Hilfsdienste, Gruppen, Trolleys, Erinnerungen)
+  erste-schritte/   Film „Erste Schritte" (der Clip ist Code)
+  login/            Anmelden per Link oder Code, Zettel scannen
+  mitteilungen/     Glocke und Mitteilungen
+  personen/         Personenliste + Detail (Stammdaten, Rolle, Aufgabenbereiche, Konto)
+  profil/           Profil: Darstellung, Anmeldung, Handbuch, Ansicht zum Testen
+  programm/         Zusammenkünfte und Predigtdienst ansehen, Drucken
+  planen/           Planen (Zusammenkünfte, Treffpunkte, Gruppenbesuche, Weitere Pläne), Zuteilen, Holen, Plan senden
+  tauschen/         Einen Hilfsdienst tauschen
+  trolleys/         Trolley-Kalender und Eintragen
   styles/
     tokens.css      Alle Design-Tokens, hell + dunkel ([data-theme])
   App.tsx           Einstieg: AppProvider + AppShell
@@ -451,7 +460,7 @@ node scripts/neuaufbau-fahren.mjs `
 
 Er ruft die sechs Einzelskripte in der Reihenfolge auf, die die Daten verlangen,
 und holt dabei **acht Wochenprogramme** von jw.org (`--wochen N` ändert das) —
-in der App wäre das achtmal „Nächste Woche importieren". Zuerst mit `--trocken`;
+in der App wäre das achtmal **Holen**. Zuerst mit `--trocken`;
 steigt ein Schritt aus, nennt der Lauf die Nummer zum Fortsetzen
 (`--ab-schritt N`), damit Schritt 1 nicht eine zweite Versammlung anlegt. Steht
 eine zweite Versammlung daneben (die Testversammlung), gehört zum Fortsetzen
@@ -885,8 +894,8 @@ Mitgliedsrechte-Probe noch einmal (sie muss grün bleiben), zuletzt den
 
 ## Arbeitsheft-Import (Edge Function)
 
-Der Import „NÄCHSTE WOCHE IMPORTIEREN" (Einstellungen → Programm-Import) holt
-das Programm der Leben-und-Dienst-Zusammenkunft aus dem Arbeitsheft auf jw.org.
+**Holen** (Planung › Zusammenkünfte, bei den Wochen) holt das Programm der
+Leben-und-Dienst-Zusammenkunft aus dem Arbeitsheft auf jw.org.
 Da der Browser jw.org **nicht** direkt abrufen kann (CORS), läuft der Abruf +
 das Parsen serverseitig in einer **Supabase Edge Function**
 ([`supabase/functions/import-week/`](supabase/functions/import-week/)). Sie
@@ -953,7 +962,7 @@ npx supabase functions deploy import-week --remote=<project-ref> --use-api --yes
 > Unter Windows PowerShell `curl.exe` schreiben — `curl` ist dort ein Alias für
 > `Invoke-WebRequest` und versteht die Optionen nicht.
 
-Danach funktioniert der Import-Button direkt (die App ruft die Function per
+Danach funktioniert **Holen** direkt (die App ruft die Function per
 `functions.invoke` mit der Nutzer-Session auf). Die Function prüft selbst, wer
 fragt: ein Mitglied einer Versammlung oder ein Wartungsskript mit
 Secret-Schlüssel im `apikey`-Kopf. `verify_jwt` allein genügt dafür nicht — es
@@ -973,10 +982,9 @@ weiterverbreitet. Beachte die Nutzungsbedingungen von jw.org.
 Nachricht oder einem Zettel mit QR-Code und Code (Function `anmelden`); eine
 bestehende Session überspringt den Login. Nach dem Login werden alle Versammlungsdaten geladen (Rolle/
 Versammlung aus `members`), Änderungen sofort zurückgeschrieben; eine leere
-Versammlung zeigt Verkündigern den Hinweis auf den Koordinator, Planer füllen
-sie über Personen und „Nächste Woche importieren" (angelegt wird sie mit
-`scripts/versammlung-anlegen.mjs`, Demo-Daten gibt es dort seit dem 13.8.2026
-nicht mehr, in der App seit dem 2.10.2026 gar keine). „Meine Aufgaben" entstehen aus den Zuteilungen der über
+Versammlung sagt, dass noch keine Wochen geladen sind; wer plant, füllt sie über
+Personen und **Holen** (angelegt wird sie mit `scripts/versammlung-anlegen.mjs`;
+Demo-Daten gibt es weder dort noch in der App). „Meine Aufgaben" entstehen aus den Zuteilungen der über
 `members.person_id` verknüpften Person; Bestätigungen landen in
 `confirmations`, Erinnerungen und Versammlungssprache in eigenen Spalten von
 `congregations`. **Konten & Anmelde-Links laufen
@@ -991,13 +999,13 @@ Adresse unter `.invalid`, kein Kennwort), mit den vorgemerkten Rechten. Die
 erste Versammlung samt erstem Admin legt `scripts/versammlung-anlegen.mjs` an;
 den Notzugang stellt `scripts/zugang-ausstellen.mjs` aus.
 
-**Das Schema hat genau eine Quelle: [`supabase/schema.sql`](supabase/schema.sql).**
-Daneben lag bis zum 17. September 2026 eine Kette von 25 Migrationen, und jede
-versicherte im Kopf „Neuinstallationen brauchen diese Datei nicht". Zwei Quellen
-für dieselbe Sache laufen auseinander — was sie auch taten. Die Kette ist
-gestrichen: Wer die Datenbank aufsetzt, führt `schema.sql` aus, sonst nichts.
-Änderungen am Schema kommen dort hinein, und die Datenbank wird neu aufgesetzt
-(die App ist noch nicht ausgerollt).
+**Das Schema steht an zwei Stellen, mit festen Rollen:**
+[`supabase/schema.sql`](supabase/schema.sql) ist der Gesamtstand — die Datei
+zum Lesen und für eine frische Datenbank —, die Produktion folgt den
+Migrationen in [`supabase/migrations/`](supabase/migrations). Eine Änderung
+kommt in beide; wie, steht unter „Migrationen" oben, und
+`supabase/migrationen.test.ts` hält sie gleich. Die laufende Datenbank wird
+dafür nie neu aufgesetzt.
 
 ### Auto-Zuteilung (Regeln)
 
@@ -1008,8 +1016,10 @@ Tag**; die Verteilung bleibt über eine mitlaufende **Strichliste** ausgeglichen
 der **Wachtturm-Studium-Leiter** ist fest (Aufgabenbereich der Person), sein
 **Vertreter** springt bei Abwesenheit ein; nicht besetzbare Slots (z. B. alle
 Qualifizierten abwesend) bleiben **offen**. Die Strichliste zählt nur ein
-**gleitendes Fenster** (3 Wochen davor + 3 danach), damit uralte Einteilungen
-nicht ewig nachwirken. **Aufgaben** werden dabei unabhängig von den
+**gleitendes Fenster** (2 Wochen davor + 2 danach, `LOAD_RADIUS` in
+`src/data/auslastung.ts` — dieselben fünf Wochen, die das Zuteilen-Blatt
+zeigt), damit uralte Einteilungen nicht ewig nachwirken; bei Gleichstand
+kommt zuerst, wer am längsten nicht dran war. **Aufgaben** werden dabei unabhängig von den
 Hilfsdiensten verteilt (bleiben regelmäßig), **Hilfsdienste** dagegen nach der
 Gesamtlast — wer viele Aufgaben hat, bekommt weniger Hilfsdienste, aber nicht
 umgekehrt. Die Regeln sind in
@@ -1025,9 +1035,10 @@ umgekehrt. Die Regeln sind in
 3. Mitteilungs-Versand: **umgesetzt als Web-Push** — Edge Function
    `send-reminders` (Browser-Benachrichtigungen + Glocken-Mitteilungen) +
    Cron-Template (siehe unten); Konfiguration/Aktivierung pro Projekt nötig
-4. Konfliktprüfungen über Wochen hinweg: **umgesetzt** — Warn-Banner im Planen
-   (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft, Wochen-Serie,
-   sowie **Hilfsdienst + Programmpunkt am selben Tag**)
+4. Konfliktprüfungen: **umgesetzt** — beim Planen unter der Karte
+   **Besetzung** (abwesend trotz Zuteilung, mehrfach in einer Zusammenkunft,
+   **Hilfsdienst + Programmpunkt am selben Tag**, ein Paar, das nicht passt);
+   mehrere Wochen hintereinander meldet die App bewusst nicht (T81)
 
 ## App-Sprachen (12)
 
