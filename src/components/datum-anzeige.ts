@@ -11,6 +11,7 @@
 import { fromIso, tagNach } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
 import { LOCALES } from '../i18n/langs'
+import { spanneOhneNull } from '../i18n/translate'
 import { NBSP, zahlBinden } from '../i18n/zahl-binden'
 
 const FORMATE = {
@@ -86,11 +87,12 @@ export function gebundenesDatum(datum: Date, lang: string, format: DatumsFormat)
  * Ein Zeitraum von Tag zu Tag (beide ISO) in Worten — ein einzelner Tag
  * einmal, nicht „1.–1. November". Für Abwesenheiten im Profil und im
  * Zuteilen-Blatt. Tag und Monat bleiben zusammen (`zahlBinden`, T128: „So.,
- * 4.|Oktober" im Profil bei Stufe 1,3).
+ * 4.|Oktober" im Profil bei Stufe 1,3), der Tag ohne führende Null
+ * (`spanneOhneNull`: Italienisch „2–8 novembre", nicht „02–08").
  */
 export function tageSpanne(von: string, bis: string, lang: string, format: DatumsFormat): string {
   const fmt = datumsFormat(lang, format)
-  return zahlBinden(von === bis ? fmt.format(fromIso(von)) : fmt.formatRange(fromIso(von), fromIso(bis)))
+  return zahlBinden(von === bis ? fmt.format(fromIso(von)) : spanneOhneNull(fmt, fromIso(von), fromIso(bis)))
 }
 
 /**
@@ -114,12 +116,12 @@ export function kopfzeilenTag(datum: Date, lang: string): string {
 /**
  * Eine Woche in Worten, Montag bis Sonntag: „7.–13. September" — aus `Intl`,
  * nicht aus dem Arbeitsheft (`Week.range`): für Wochen, deren Programm noch
- * nicht da ist (Gruppenbesuche, Trolleys, „Holen"). Stand bis Phase 10 von
- * T121 zweimal gleich da (`besuchsWocheText`, `wochenSpanne` der Trolleys).
- * Tag und Monat bleiben zusammen (`zahlBinden`, T128: „5–11|octobre").
+ * nicht da ist (Gruppenbesuche, Trolleys, „Holen").
+ * Tag und Monat bleiben zusammen (`zahlBinden`, T128: „5–11|octobre"), der Tag
+ * ohne führende Null wie im Wochenkopf von jw.org (`spanneOhneNull`).
  */
 export function wochenSpanne(montag: string, lang: string): string {
-  return zahlBinden(datumsFormat(lang, 'tagMonat').formatRange(fromIso(montag), fromIso(tagNach(montag, 6))))
+  return zahlBinden(spanneOhneNull(datumsFormat(lang, 'tagMonat'), fromIso(montag), fromIso(tagNach(montag, 6))))
 }
 
 /**

@@ -99,13 +99,14 @@ function intlWeekdayShort(locale: string, weekdayIdx: number): string {
  *
  * ICU setzt sie im Italienischen in jede Spanne, obwohl `day: 'numeric'`
  * verlangt ist: „07–13 settembre", „28 settembre – 04 ottobre". jw.org schreibt
- * „7-13 settembre". Bis zum 16.10.2026 trug so jeder italienische Wochenkopf
- * eine Null (T123). Weg kommt nur eine Null, vor der keine Ziffer steht und
- * hinter der genau eine — die Jahreszahl „2025" bleibt, wie sie ist. Ohne
- * Lookbehind, den ältere Safari nicht lesen: Dort wäre das ganze Modul nicht
- * geladen worden.
+ * „7-13 settembre". Gilt für jede Spanne der App — die übersetzten Wochenköpfe
+ * hier wie die Spannen, die der Client direkt aus `Intl` baut
+ * (`src/components/datum-anzeige.ts`). Weg kommt nur eine Null, vor der keine
+ * Ziffer steht und hinter der genau eine — die Jahreszahl „2025" bleibt, wie
+ * sie ist. Ohne Lookbehind, den ältere Safari nicht lesen: Dort wäre das ganze
+ * Modul nicht geladen worden.
  */
-function spanneOhneNull(fmt: Intl.DateTimeFormat, a: Date, b: Date): string {
+export function spanneOhneNull(fmt: Intl.DateTimeFormat, a: Date, b: Date): string {
   return fmt.formatRange(a, b).replace(/(^|\P{Nd})0(\p{Nd})(?!\p{Nd})/gu, '$1$2')
 }
 
