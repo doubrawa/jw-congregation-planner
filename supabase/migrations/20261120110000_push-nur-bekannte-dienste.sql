@@ -7,14 +7,22 @@
 -- Microsoft. Begründung und Einzelheiten stehen am selben Block in `schema.sql`.
 --
 -- Ein Abo bei einem anderen Dienst bekäme danach ohnehin nichts mehr; es geht
--- vor der Regel heraus, sonst scheiterte die Migration daran. Gemessen am
--- 20. November: 3 Abos, alle bei Google oder Apple — es trifft keins.
+-- heraus, bevor die Regel die Zeilen prüft, sonst scheiterte die Migration
+-- daran. Gemessen am 20. November: 3 Abos, alle bei Google oder Apple — es
+-- trifft keins.
+--
+-- Die Regel kommt dabei zuerst, `not valid`: Vom ersten Schritt an nimmt die
+-- Tabelle kein fremdes Abo mehr an. Stünde das Aufräumen vorn, könnte eines
+-- zwischen Aufräumen und Regel hereinkommen, und die Prüfung der Regel
+-- scheiterte daran.
 -- =============================================================================
-
-delete from public.push_subscriptions
- where endpoint !~ '^https://(fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)+notify\.windows\.com)/';
 
 alter table public.push_subscriptions
   add constraint push_subscriptions_dienst check (
     endpoint ~ '^https://(fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)+notify\.windows\.com)/'
-  );
+  ) not valid;
+
+delete from public.push_subscriptions
+ where endpoint !~ '^https://(fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)+notify\.windows\.com)/';
+
+alter table public.push_subscriptions validate constraint push_subscriptions_dienst;

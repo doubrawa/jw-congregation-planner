@@ -130,3 +130,40 @@ describe('die Migration räumt vorher ab, was die Regel nicht annähme', () => {
     expect(await eintragen(db, FREMD[1] as string)).toBe('23514')
   })
 })
+
+describe('die Migration lässt zwischen Aufräumen und Regel nichts herein', () => {
+  let db: DB
+  beforeAll(async () => {
+    db = (await leerePostgres(migrationen(DIESE_MIGRATION))) as unknown as DB
+    await grundstock(db)
+  })
+  afterAll(async () => {
+    await db.close()
+  })
+
+  /** Die Anweisungen der Migration einzeln — ohne die Kommentare, die selbst ein „;" tragen. */
+  const schritte = () =>
+    fs
+      .readFileSync(path.join(MIGRATIONEN, DIESE_MIGRATION), 'utf8')
+      .split('\n')
+      .filter((zeile) => !zeile.trimStart().startsWith('--'))
+      .join('\n')
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean)
+
+  it('schon nach dem ersten Schritt weist die Tabelle ein fremdes Abo ab, obwohl das alte noch dasteht', async () => {
+    // Stünde das Aufräumen vorn, käme ein Abo, das ein Gerät genau dann
+    // einträgt, noch durch — und die Prüfung der Regel danach scheiterte.
+    expect(await eintragen(db, FREMD[0] as string)).toBeNull()
+    const [erster, ...rest] = schritte()
+    expect(rest).toHaveLength(2)
+    await db.exec(erster as string)
+    expect(await eintragen(db, FREMD[1] as string)).toBe('23514')
+    const alt = await db.query('select count(*)::int as n from public.push_subscriptions where endpoint = $1', [FREMD[0]])
+    expect(alt.rows[0]?.n).toBe(1)
+    for (const schritt of rest) await db.exec(schritt)
+    const { rows } = await db.query('select endpoint from public.push_subscriptions')
+    expect(rows).toEqual([])
+  })
+})

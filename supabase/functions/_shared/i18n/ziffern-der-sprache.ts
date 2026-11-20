@@ -40,6 +40,18 @@ export function ziffernSatz(code: string): readonly string[] | null {
   return satz
 }
 
+/** Nur Ziffern 0–9 und was eine Zahl, Uhrzeit oder Spanne sonst trägt. */
+const NUR_ZAHL = /^[\d\s:./–-]+$/
+
+/**
+ * Steht hier nur eine Zahl („19:30", „20/23", „7–13")? Die schreibt die App,
+ * sie bekommt die Ziffern der Sprache. Ein Text mit Buchstaben gehört jemandem
+ * — ein Ort, ein Dienstname, ein Anmelde-Code — und bleibt, wie er ist.
+ */
+export function nurZahl(text: string): boolean {
+  return NUR_ZAHL.test(text)
+}
+
 /** Die Ziffern 0–9 eines Texts (oder einer Zahl) in die der Sprache übertragen; jedes andere Zeichen bleibt. */
 export function ziffernDerSprache(text: string | number, code: string): string {
   const satz = ziffernSatz(code)

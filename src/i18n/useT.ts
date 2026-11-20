@@ -14,7 +14,7 @@ import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import { meetingDateText } from '../data/meeting-dates'
 import type { MeetingKey, MeetingTimes, Week } from '../data/types'
-import { anzeigeSpracheSetzen, inAnzeigeZiffern } from './anzeige-ziffern'
+import { anzeigeSpracheSetzen, inAnzeigeZiffern, nurZahl } from './anzeige-ziffern'
 import { APP_TO_JW, congAppCode, versammlungsSprache } from './langs'
 import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
@@ -173,13 +173,10 @@ export function fill(template: string, params: Record<string, string | number>):
   return zahlBinden(template.replace(/\{(\w+)\}/g, (_, key: string) => platzhalterWert(params[key])))
 }
 
-/** Nur Ziffern und was eine Zahl, Uhrzeit oder Spanne sonst trägt. */
-const NUR_ZAHL = /^[\d\s:./–-]+$/
-
 function platzhalterWert(wert: string | number | undefined): string {
   if (wert == null) return ''
   const text = String(wert)
-  return typeof wert === 'number' || NUR_ZAHL.test(text) ? inAnzeigeZiffern(text) : text
+  return typeof wert === 'number' || nurZahl(text) ? inAnzeigeZiffern(text) : text
 }
 
 /**

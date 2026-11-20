@@ -10,6 +10,7 @@ import { LABEL_ABSCHLUSS, LABEL_EROEFFNUNG } from '../data/constants'
 import { genFsWeek } from '../data/fs'
 import type { FsInstance, FsRule, PartItem, PlanEintrag, Section, Service, Week, WeitererPlan } from '../data/types'
 import { spannenText, zeitraumText } from '../components/weitere-plaene-anzeige'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { Bogen } from './Bogen'
@@ -416,6 +417,19 @@ describe('Der Bogen der Treffpunkte', () => {
     expect(texte(container, '.druck-anders-zeile')).toContainEqual(
       expect.stringContaining(fill(t.druckStatt, { alt: 'Sa., 12.9. · 09:30 · Bei Familie A' })),
     )
+  })
+
+  it('in Persisch stehen die Uhrzeiten in denselben Ziffern wie der Tag daneben — auch hinter „statt"', () => {
+    const tFa = dict('fa')
+    const [erste, ...rest] = fsWeeks()
+    const verlegt = [erste!.map((inst) => (inst.id === 'r1' ? { ...inst, wd: 5 } : inst)), ...rest]
+    const { container } = zeigeBogen({ admin: true, lang: 'fa', fsWeeks: verlegt })
+    const zeit = (uhrzeit: string) => ziffernDerSprache(uhrzeit, 'fa')
+    expect(zellen(tabelle(container, tFa.druckVersammlungstreffpunkte)).map((z) => z[1])).toEqual([zeit('09:30'), zeit('09:30')])
+    expect(tabelle(container, tFa.druckGruppentreffpunkte).map((z) => z.children[1]?.textContent)).toEqual([zeit('09:30'), zeit('10:00'), zeit('09:30')])
+    const zeilen = texte(container, '.druck-tabelle-zeile, .druck-anders-zeile')
+    expect(zeilen.some((z) => z.includes(zeit('09:30')))).toBe(true)
+    expect(zeilen.filter((z) => /[0-9]/.test(z))).toEqual([])
   })
 
   it('ohne Ort kein Strich am Ende — weder beim Treffpunkt noch bei dem, was sonst gilt', () => {

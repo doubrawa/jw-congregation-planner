@@ -5,6 +5,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { Sheet } from '../components/Sheet'
 import { displayName } from '../data/helpers'
 import type { Person } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { useNachrichtWeitergeben, type Weitergabe } from './useNachrichtWeitergeben'
 import { useZettelDruck } from './useZettelDruck'
@@ -87,16 +88,16 @@ export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: read
         <Spur
           label={t.standDerAnmeldung}
           schritte={[
-            { name: t.spurAngelegt, wert: String(zahlen.angelegt), lage: 'voll' },
-            { name: t.standLink, wert: String(zahlen.link), lage: 'jetzt' },
-            { name: t.standAngemeldet, wert: String(zahlen.angemeldet), lage: zahlen.angemeldet > 0 ? 'teil' : 'leer' },
+            { name: t.spurAngelegt, wert: inAnzeigeZiffern(zahlen.angelegt), lage: 'voll' },
+            { name: t.standLink, wert: inAnzeigeZiffern(zahlen.link), lage: 'jetzt' },
+            { name: t.standAngemeldet, wert: inAnzeigeZiffern(zahlen.angemeldet), lage: zahlen.angemeldet > 0 ? 'teil' : 'leer' },
           ]}
         />
         <p className="klein-text">{t.linksSendenIntro}</p>
 
         <section className="link-weg" aria-labelledby="links-per-nachricht">
           <h3 id="links-per-nachricht" className="link-weg-titel">
-            {t.perNachricht} · {liste.length}
+            {t.perNachricht} · {inAnzeigeZiffern(liste.length)}
           </h3>
           <p className="klein-text">{t.linksNachrichtHint}</p>
           <ul className="link-liste">
@@ -146,7 +147,7 @@ export function LinksSendenBlatt({ personen, zahlen, onClose }: { personen: read
         {offen.length > 0 && (
           <section className="link-weg" aria-labelledby="links-auf-zetteln">
             <h3 id="links-auf-zetteln" className="link-weg-titel">
-              {t.aufZetteln} · {offen.length}
+              {t.aufZetteln} · {inAnzeigeZiffern(offen.length)}
             </h3>
             <p className="klein-text">{t.zettelListeHint}</p>
             <div className="konto-knoepfe">

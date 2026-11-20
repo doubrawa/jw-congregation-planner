@@ -1,11 +1,16 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { alsFreitext } from '../../supabase/functions/_shared/i18n/freitext.ts'
 import { ziffernDerSprache, ziffernSatz } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 import { anzeigeSpracheSetzen } from './anzeige-ziffern'
 import { APP_LANGS, LOCALES } from './langs'
-import { makeTr } from './translate'
+import { bibelbuecherLaden, makeTr } from './translate'
 import { fill } from './useT'
 import { NBSP } from './zahl-binden'
+
+// Die Buch-Regel kennt die Bibelbücher erst nach dem Laden — ohne sie bliebe
+// „Jeremia 32" ein unbekanntes Atom, und die Probe des verschluckten Namens
+// träfe die Regel gar nicht.
+await bibelbuecherLaden()
 
 /**
  * **Jede Zahl in der Schrift der Sprache** (Entscheidung des Betreibers,
@@ -65,14 +70,24 @@ describe('Der Übersetzer schreibt die Ziffern der Sprache — Namen ausgenommen
     expect(text).toContain(persisch('32'))
   })
 
+  it('Daten der Versammlung behalten ihre Ziffern — ein Ort, ein eigener Dienstname', () => {
+    // Was der Übersetzer nicht kennt und Buchstaben trägt, hat jemand so
+    // eingegeben; er lässt es stehen wie `fill`. Tag und Uhrzeit daneben
+    // schreibt die App, die nehmen die Ziffern der Sprache.
+    const termin = makeTr('fa')('Samstag, 12. September · 09:30 · Hauptstraße 12')
+    expect(termin.split(' · ')).toEqual([expect.stringContaining(persisch('12')), persisch('09:30'), 'Hauptstraße 12'])
+    expect(makeTr('fa')('Ordner 2')).toBe('Ordner 2')
+    // Gegenprobe: Was er kennt, übersetzt er samt Ziffern — „Gruppe 2" ist ein Wort der App.
+    expect(makeTr('fa')('Gruppe 2')).toContain(persisch('2'))
+    expect(makeTr('fa')('Gruppe 2')).not.toMatch(/[0-9]/)
+  })
+
   it('Gegenprobe: Deutsch bleibt bei 0–9', () => {
     expect(makeTr('de')('Lied 5 · Ende ca. 20:45')).toBe('Lied 5 · Ende ca. 20:45')
   })
 })
 
 describe('fill: Zahlen in den Ziffern der Oberflächensprache', () => {
-  afterEach(() => anzeigeSpracheSetzen('de'))
-
   it('Persisch: eine Zahl und ein Text nur aus Ziffern („19:30", „20/23")', () => {
     anzeigeSpracheSetzen('fa')
     expect(fill('{n} نفر', { n: 3 })).toBe(`${persisch('3')}${NBSP}نفر`)
@@ -94,5 +109,16 @@ describe('fill: Zahlen in den Ziffern der Oberflächensprache', () => {
   it('Gegenprobe: Deutsch bleibt bei 0–9', () => {
     anzeigeSpracheSetzen('de')
     expect(fill('{n} Personen', { n: 3 })).toBe(`3${NBSP}Personen`)
+  })
+})
+
+describe('Nach jeder Probe zeigt die Oberfläche wieder Deutsch (tests/anzeige-sprache.ts)', () => {
+  it('eine Probe stellt Persisch ein …', () => {
+    anzeigeSpracheSetzen('fa')
+    expect(fill('{n}', { n: 3 })).toBe(persisch('3'))
+  })
+
+  it('… und die nächste schreibt wieder 0–9, ohne selbst zurückzustellen', () => {
+    expect(fill('{n}', { n: 3 })).toBe('3')
   })
 })

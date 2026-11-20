@@ -33,6 +33,7 @@ import { rangfolgeFuer } from '../data/planung/automatik'
 import { passtAufPlatz } from '../data/planung/eignung'
 import { assignmentsInMeeting, zuletztImBereich } from '../data/planung/zuteilen'
 import type { Absence, MeetingAssignment, MeetingKey, Person, SlotSelection } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
@@ -140,7 +141,7 @@ function fsKandidaten(
       // andere leitet — und ein Freitext-Leiter (`lext`) ist nicht diese
       // Person, er heißt nur so (`fsLeiterZuteilung`).
       if (!gehoertZu(fsLeiterZuteilung(o), person)) continue
-      out.push({ text: `${o.time} · ${treffpunktTitel(o, state.groups, { t, tu })}`, lang: 'u' })
+      out.push({ text: `${ziffernDerSprache(o.time, state.lang)} · ${treffpunktTitel(o, state.groups, { t, tu })}`, lang: 'u' })
     }
     return out
   }

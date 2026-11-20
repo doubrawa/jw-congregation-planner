@@ -10,10 +10,10 @@
  * Wechsel ein. `fill` liest sie für seine Zahlen-Platzhalter.
  */
 
-import { ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
+import { nurZahl, ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 
 /** Wo die Sprache ohnehin zur Hand ist (`lang`), die reine Form — ohne den Zustand hier. */
-export { ziffernDerSprache }
+export { nurZahl, ziffernDerSprache }
 
 let sprache = 'de'
 

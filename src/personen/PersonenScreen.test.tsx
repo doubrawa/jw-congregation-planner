@@ -13,6 +13,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications, serviceQualKey } from '../data/helpers'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import type { Absence, AnmeldeLink, Group, Member, Person, Qualifications, Service } from '../data/types'
@@ -687,6 +688,11 @@ describe('Hinweis: ohne Predigtdienstgruppe', () => {
     expect(chips(container)).toHaveLength(2)
   })
 
+  it('in Persisch steht die Zahl in den Ziffern der Sprache', () => {
+    const { container } = zeige({ lang: 'fa' })
+    expect([...container.querySelectorAll('.personen-hinweis-zahl')].map((z) => z.textContent)).toEqual([ziffernDerSprache('2', 'fa')])
+  })
+
   it('ohne angelegte Gruppen gibt es nichts zu melden', () => {
     expect(ohne(zeige({ groups: [] }).container)).toBeUndefined()
   })
@@ -754,6 +760,19 @@ describe('Links senden', () => {
     const { container } = zeige({ members: BRAND_KONTO, anmeldeLinks: [link('p-c', -1)] })
     fireEvent.click(stand(container, t.standOhneLink))
     expect(namen(container)).toEqual(['Alt, Anton', 'Cohn, Clara'])
+  })
+
+  it('in Persisch stehen die Zahlen in den Ziffern der Sprache — im Stand oben und an beiden Wegen', () => {
+    const tFa = dict('fa')
+    const { container } = zeige({ ...MIT_STAENDEN, persons: [...PERSONEN, DAHL, ERNST], lang: 'fa' })
+    fireEvent.click(stand(container, tFa.standOhneLink))
+    fireEvent.click(knopf(container, tFa.linksSenden))
+    const b = document.querySelector<HTMLElement>(`[role="dialog"][aria-label="${tFa.linksSenden}"]`)!
+    const drei = ziffernDerSprache('3', 'fa')
+    expect([...b.querySelectorAll('.link-weg-titel')].map((x) => x.textContent)).toEqual([`${tFa.perNachricht} · ${drei}`, `${tFa.aufZetteln} · ${drei}`])
+    const zahlenDesStands = [...b.querySelectorAll('.spur-wert')].map((x) => x.textContent)
+    expect(zahlenDesStands).toHaveLength(3)
+    expect(zahlenDesStands.join(' ')).not.toMatch(/[0-9]/)
   })
 
   it('zwei Wege, jeweils mit Zahl: per Nachricht mit einer Zeile je Person, und auf Zetteln — keine E-Mail mehr', () => {

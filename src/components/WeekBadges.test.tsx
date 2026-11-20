@@ -10,6 +10,7 @@ import {
   useStaticStore,
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { dict, loadOverlay } from '../i18n/ui'
 import type { Week } from '../data/types'
 import { AusfallBanner, TerminListe } from './WeekBadges'
@@ -134,6 +135,15 @@ describe('Weitere Termine der Woche (T63)', () => {
     expect(zeilen[0]!.querySelector('.termin-wann')?.textContent).toBe('Montag · 18:00')
     expect(zeilen[0]!.querySelector('.termin-ort')).toBeNull()
     expect(zeilen[1]!.querySelector('.termin-ort')?.textContent).toBe('Saal')
+  })
+
+  it('in Persisch steht die Uhrzeit in den Ziffern der Sprache — Bezeichnung und Ort, wie der Planer sie geschrieben hat', () => {
+    const w = woche({ termine: [{ id: 'x1', title: 'Besprechung 2', wd: 1, time: '18:00', place: 'Hauptstraße 12' }] } as Partial<Week>)
+    const zeile = buehne('termine', <TerminListe week={w} />, { lang: 'fa' }).container.querySelector('.termin-zeile')!
+    expect(zeile.querySelector('.termin-wann')?.textContent).toContain(ziffernDerSprache('18:00', 'fa'))
+    expect(zeile.querySelector('.termin-wann')?.textContent).not.toMatch(/[0-9]/)
+    expect(zeile.querySelector('.termin-was')?.textContent).toBe('Besprechung 2')
+    expect(zeile.querySelector('.termin-ort')?.textContent).toBe('Hauptstraße 12')
   })
 
   it('die Bezeichnung bleibt in ihrer eigenen Leserichtung — sie ist unübersetzter Freitext', () => {

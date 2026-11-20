@@ -27,7 +27,7 @@
 /* eslint-disable */
 import { ausserhalbFreitext, istFreitext, ohneAlleMarken } from './freitext.ts'
 import { LOCALE_JE_CODE as LOCALES } from './locales.ts'
-import { ziffernDerSprache, ziffernSatz } from './ziffern-der-sprache.ts'
+import { nurZahl, ziffernDerSprache, ziffernSatz } from './ziffern-der-sprache.ts'
 import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, REF, WD, WDA, type DateDict, type Extra, type RefDict } from './translate-data.ts'
 
 /* ---- Bibelbücher (nachgeladen) ------------------------------------------- */
@@ -375,19 +375,22 @@ function buchRegeln(code: string): Rule[] {
  * an „ · “ (und rekursiv an „ — “) in Segmente geteilt und je Segment ein
  * exakter Treffer bzw. die erste passende Regel angewandt, Unbekanntes bleibt.
  *
- * Zuletzt kommen die Ziffern in die Schrift der Sprache (`ziffernDerSprache`)
- * — außer in den Namen: Freitext behält seine Marke bis dahin.
+ * Die Ziffern kommen in die Schrift der Sprache (`ziffernDerSprache`), wo der
+ * Übersetzer etwas übersetzt hat und wo nur eine Zahl steht („19:30"). Was er
+ * nicht kennt und Buchstaben trägt, bleibt samt seinen Ziffern, wie es ist:
+ * ein Ort („Hauptstraße 12"), ein eigener Dienstname — Daten der Versammlung,
+ * die `fill` im Client ebenso stehen lässt. Namen (Freitext) bleiben ohnehin.
  */
 function buildTranslator(M: Record<string, string>, rules: Rule[], code: string): (s: string) => string {
   // Nur wo die Sprache eigene Ziffern hat (heute Persisch) — sonst liefe jede
-  // Übersetzung einmal ohne Wirkung durch den Text.
+  // Übersetzung einmal ohne Wirkung durch den Text. An den Namen vorbei: Eine
+  // Regel kann einen samt seinem Atom verschlucken („Jeremia 32 — <Name>").
   const ziffern = ziffernSatz(code)
     ? (s: string) => ausserhalbFreitext(s, (teil) => ziffernDerSprache(teil, code))
     : (s: string) => s
   const one = (f: string): string => {
     // Gekennzeichneter Freitext (Personenname): bleibt, wie er ist, samt
-    // Marke — die geht erst ganz am Ende herunter, nachdem die Ziffern der
-    // Sprache den Namen ausgelassen haben.
+    // Marke — die geht erst ganz am Ende herunter (`ohneAlleMarken`).
     //
     // **Vor** dem Wörterbuch-Treffer, nicht danach: Die Falle sind nicht nur
     // die Regeln. Wer „Ton" heißt, stünde sonst als „Sound" in der Glocke,
@@ -395,8 +398,8 @@ function buildTranslator(M: Record<string, string>, rules: Rule[], code: string)
     // `displayName`) als „Mark 2". Siehe `freitext.ts`.
     if (istFreitext(f)) return f
     const treffer = M[f]
-    if (treffer != null) return treffer
-    for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
+    if (treffer != null) return ziffern(treffer)
+    for (const [re, fn] of rules) { const m = f.match(re); if (m) return ziffern(fn(m)) }
     if (f.includes(' — ')) return f.split(' — ').map(one).join(' — ')
     /*
      * **Termin und Bezeichnung, mit „: " verbunden.** So steht eine Zeile von
@@ -410,15 +413,16 @@ function buildTranslator(M: Record<string, string>, rules: Rule[], code: string)
      * eine Uhrzeit trägt keinen Doppelpunkt mit Leerzeichen und bleibt heil.
      */
     if (f.includes(': ')) return f.split(': ').map(one).join(': ')
-    return f
+    // Unbekannt: Eine bloße Zahl bekommt die Ziffern der Sprache, alles mit Buchstaben bleibt.
+    return nurZahl(f) ? ziffern(f) : f
   }
   return (s: string): string => {
     if (s == null || s === '') return s
-    const uebersetzt = M[s] ?? s.split(' · ').map(one).join(' · ')
+    const ganz = M[s]
     // Am Ende die Marken pauschal herunter — siehe `ohneAlleMarken`: Eine Regel
     // kann ein Atom samt eingebettetem Namen verschluckt haben, bevor es zur
-    // Teilung kam. Davor die Ziffern, an den Namen vorbei.
-    return ohneAlleMarken(ziffern(uebersetzt))
+    // Teilung kam.
+    return ohneAlleMarken(ganz != null ? ziffern(ganz) : s.split(' · ').map(one).join(' · '))
   }
 }
 

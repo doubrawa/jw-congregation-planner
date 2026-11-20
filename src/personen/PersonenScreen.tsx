@@ -370,7 +370,7 @@ function Hinweis({
       <h2 className="abschnitt-titel karte-titel">
         <Punkt art="problem" />
         <span className="personen-hinweis-titel">{titel}</span>
-        <span className="personen-hinweis-zahl">{zahl}</span>
+        <span className="personen-hinweis-zahl">{inAnzeigeZiffern(zahl)}</span>
       </h2>
       <p className="klein-text personen-hinweis-text">{text}</p>
       {children}

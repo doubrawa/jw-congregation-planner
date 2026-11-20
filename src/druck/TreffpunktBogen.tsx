@@ -9,6 +9,7 @@ import { besuchStand } from '../data/gruppenbesuche'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import type { FsInstance, FsRule } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { Bogen, type DruckBlock } from './Bogen'
@@ -43,12 +44,14 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
     const tag = fsTag(kennung, wd)
     return tag ? datumsFormat(state.lang, 'wochentagZahl').format(tag) : ''
   }
+  // In denselben Ziffern wie der Tag daneben.
+  const zeit = (uhrzeit: string) => ziffernDerSprache(uhrzeit, state.lang)
   const leiter = (inst: FsInstance) => (inst.leader ? inst.leader : <Offen breite={140} />)
   // Wie es der Grundplan sonst hat — mit dem Tag, wenn er ein anderer ist:
   // Sonst stünde bei einem verlegten Tag „statt" vor denselben Angaben. Der Ort
   // ist frei und darf fehlen, auch einer aus Leerzeichen gilt als keiner.
   const sonst = (kennung: string, inst: FsInstance, regel: FsRule) =>
-    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', regel.time, tu(regel.place).trim()].filter(Boolean).join(' · ')
+    [regel.wd !== inst.wd ? tagText(kennung, regel.wd) : '', zeit(regel.time), tu(regel.place).trim()].filter(Boolean).join(' · ')
 
   // Je Woche in der Reihenfolge des Bildschirms: die Gruppen nach ihrem Namen.
   const reihe = fsAnzeigeSort(state.groups)
@@ -62,13 +65,13 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
     .filter(({ inst }) => inst.grp == null)
     .map(({ kennung, inst }) => ({
       key: `${kennung}|${inst.id}`,
-      zellen: [tagText(kennung, inst.wd), inst.time, tu(inst.place), leiter(inst)],
+      zellen: [tagText(kennung, inst.wd), zeit(inst.time), tu(inst.place), leiter(inst)],
     }))
   const gruppen: DruckZeile[] = termine
     .filter(({ inst }) => inst.grp != null)
     .map(({ kennung, inst }) => ({
       key: `${kennung}|${inst.id}`,
-      zellen: [tagText(kennung, inst.wd), inst.time, treffpunktTitel(inst, state.groups, i18n), tu(inst.place), leiter(inst)],
+      zellen: [tagText(kennung, inst.wd), zeit(inst.time), treffpunktTitel(inst, state.groups, i18n), tu(inst.place), leiter(inst)],
     }))
 
   const kennungen = new Set(wochen.map((wi) => state.weeks[wi]?.start ?? ''))
@@ -88,7 +91,7 @@ export function TreffpunktBogen({ wochen, zeitraum }: { wochen: readonly number[
             // Blatt der Gruppe und beim Zuteilen eines Treffpunkts.
             [
               treffpunktTitel(inst, state.groups, i18n),
-              ...(art === 'entfaellt' ? [t.druckEntfaellt] : [inst.time, tu(inst.place).trim()]),
+              ...(art === 'entfaellt' ? [t.druckEntfaellt] : [zeit(inst.time), tu(inst.place).trim()]),
               ...(art === 'zusaetzlich' ? [t.druckZusaetzlich] : []),
               ...(art === 'anders' && regel ? [fill(t.druckStatt, { alt: sonst(kennung, inst, regel) })] : []),
             ]

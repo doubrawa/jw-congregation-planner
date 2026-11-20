@@ -128,8 +128,9 @@ export default defineConfig(({ command }) => ({
     // Vorgabe — dort gibt es zwei bis vier Kerne.
     maxWorkers: process.env.CI ? undefined : '50%',
     // Die Bildschirm-Proben laufen unter happy-dom (Docblock je Datei); was die
-    // App dort anders vorfände als unter jsdom, gleicht diese Datei an.
-    setupFiles: ['./tests/dom-umgebung.ts'],
+    // App dort anders vorfände als unter jsdom, gleicht die erste Datei an. Die
+    // zweite stellt nach jeder Probe die Anzeigesprache zurück.
+    setupFiles: ['./tests/dom-umgebung.ts', './tests/anzeige-sprache.ts'],
     // Ein `<script src>`, das eine Probe einhängt (die Fassungsprüfung liest
     // das Bündel daraus), lädt happy-dom nicht — und schrieb dafür je Skript
     // einen Fehler samt Stapel auf die Konsole. jsdom lud es ebenso wenig, still.

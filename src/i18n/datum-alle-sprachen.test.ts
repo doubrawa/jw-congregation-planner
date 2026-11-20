@@ -220,8 +220,8 @@ describe('Es wird überhaupt übersetzt', () => {
       Regel nachträgt, macht diesen Test rot — und streicht dabei die Zeile,
       die die Lücke behauptet. Wer eine **zweite** Lücke einführt, ebenso.
     */
-    // Unübersetzt bis auf die Ziffern: Die schreibt der Übersetzer immer in der Schrift der Sprache.
-    const fehlt = FREMD.filter((c) => makeTr(c)('Studienartikel 28') === ziffernDerSprache('Studienartikel 28', c))
+    // Unübersetzt heißt: ganz, wie er ist — ein unbekanntes Atom behält auch seine Ziffern.
+    const fehlt = FREMD.filter((c) => makeTr(c)('Studienartikel 28') === 'Studienartikel 28')
     expect(fehlt.sort()).toEqual(FREMD.filter((c) => !MIT_ARTIKEL_REGEL.includes(c)).sort())
   })
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { KEINE_ABWESENHEIT, buildAbsences } from '../data/absence'
 import { syncAuxSlots } from '../data/aux-class'
 import { emptyQualifications } from '../data/helpers'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { DE } from '../i18n/de'
 import { kandidaten, type KandidatenDaten } from './kandidaten'
 import type { Absence, PartItem, Person, Qualifications, Service, SlotSelection, Week } from '../data/types'
@@ -432,6 +433,12 @@ describe('Treffpunkt-Leiter: eigene Liste, eigene Regeln', () => {
     const emil = liste('a', fsDaten(belegt))[0]!
     expect(emil.name).toBe('Emil Ernst')
     expect(emil.today.map((h) => h.text)).toEqual([`14:00 · ${DE.fsVers}`])
+  })
+
+  it('„schon heute" in Persisch: die Uhrzeit in den Ziffern der Sprache, wie im Kopf des Blatts', () => {
+    const belegt = TREFFPUNKTE.map((i) => (i.id === 'b' ? { ...i, leader: 'Emil Ernst' } : i))
+    const emil = liste('a', { ...fsDaten(belegt), lang: 'fa' })[0]!
+    expect(emil.today.map((h) => h.text)).toEqual([`${ziffernDerSprache('14:00', 'fa')} · ${DE.fsVers}`])
   })
 
   it('ein Treffpunkt an einem ANDEREN Wochentag zählt nicht dazu', () => {

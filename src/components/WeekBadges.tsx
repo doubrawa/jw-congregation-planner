@@ -5,6 +5,7 @@ import { abweichungsGrund, istAusgefallen } from '../data/helpers'
 import { versatzAbMontag } from '../data/meeting-dates'
 import { termineVon } from '../data/termine'
 import type { MeetingKey, Week } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { wochentagName } from '../planen/wochentage'
 import './components.css'
 
@@ -48,8 +49,8 @@ export function AusfallBanner({ week, tab }: { week: Week | undefined; tab: Meet
  *
  * Aufgebaut wie das Ausfall-Banner darüber und aus demselben Grund: Der Text
  * gehört dem Planer. Übersetzt wird nur, was gemessen vorliegt — der Wochentag
- * kommt aus `Intl`, alles andere (Bezeichnung, Ort) steht so da, wie er es
- * geschrieben hat. Ein Kopf wie „WEITERE TERMINE" wäre ein erfundenes Wort in
+ * kommt aus `Intl`, die Uhrzeit in den Ziffern der Sprache, alles andere
+ * (Bezeichnung, Ort) steht so da, wie er es geschrieben hat. Ein Kopf wie „WEITERE TERMINE" wäre ein erfundenes Wort in
  * jeder anderen Sprache; die Zeilen tragen ihre Bedeutung selbst.
  */
 export function TerminListe({ week }: { week: Week | undefined }) {
@@ -61,7 +62,7 @@ export function TerminListe({ week }: { week: Week | undefined }) {
       {termine.map((termin) => {
         const wann = [
           termin.wd == null ? '' : wochentagName(versatzAbMontag(termin.wd), state.lang),
-          termin.time ?? '',
+          ziffernDerSprache(termin.time ?? '', state.lang),
         ]
           .filter(Boolean)
           .join(' · ')
