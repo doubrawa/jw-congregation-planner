@@ -140,7 +140,7 @@ function ProgrammAbschnitt({
         const inhalt = (
           <>
             <span className="programm-titel" lang={sprache}>
-              {item.num != null && <span className="prog-num">{item.num} </span>}
+              {item.num != null && <span className="prog-num">{tpw(String(item.num))} </span>}
               {tpw(item.title)}
             </span>
             {dauer && (

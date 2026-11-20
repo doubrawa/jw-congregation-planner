@@ -29,9 +29,11 @@ describe('Von Hand gebaute „Bezeichnung: Wert"-Zeilen', () => {
   })
 
   it('es gibt sie — sonst prüfte die Probe nichts', () => {
-    // Vier seit T173: „Schon an diesem Tag: …" beim Zuteilen setzt seine
-    // Zuteilungen als Elemente, je mit ihrem `lang` (`ZuteilungenText` bindet selbst).
-    expect(treffer.length).toBeGreaterThanOrEqual(4)
+    // Mindestens zwei: „Schon an diesem Tag: …" beim Zuteilen setzt seine
+    // Zuteilungen als Elemente, je mit ihrem `lang` (`ZuteilungenText` bindet
+    // selbst), und „Zu bestätigen: 3" baut `wortMitZahl` (useT.ts), das die
+    // Zahl selbst bindet und in den Ziffern der Sprache schreibt.
+    expect(treffer.length).toBeGreaterThanOrEqual(2)
   })
 
   it('jede geht durch zahlBinden — die Zahl bricht nicht von ihrer Bezeichnung ab', () => {

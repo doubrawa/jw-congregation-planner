@@ -5,6 +5,7 @@ import { Punkt } from '../bausteine/Punkt'
 import { Sheet } from '../components/Sheet'
 import { istZusammenkunft } from '../data/helpers'
 import type { OffeneWochenMeldung } from '../data/plan-versand'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { relativeZeit } from '../i18n/zeit'
 import { fill, useT } from '../i18n/useT'
 import type { VersandStand } from './wochen-versand'
@@ -117,7 +118,7 @@ export function PlanSendenBlatt({
       <div className="sheet-fuss sheet-fuss--haupt">
         <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft || n === 0} onTipp={() => void senden()}>
           {laeuft ? tu('…') : t.planSenden}
-          {!laeuft && n > 0 && <span className="zahl-marke">{n}</span>}
+          {!laeuft && n > 0 && <span className="zahl-marke">{inAnzeigeZiffern(String(n))}</span>}
         </GesperrterKnopf>
         <button type="button" className="knopf-leise" onClick={onClose}>
           {n > 0 ? t.spaeter : t.fertig}

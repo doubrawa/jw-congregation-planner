@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS } from './langs'
 import { EXTRA, EXTRA_EN, FRAG, REF, type RefDict } from '../../supabase/functions/_shared/i18n/translate-data.ts'
+import { ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 import { makeTr } from './translate'
 
 /**
@@ -276,12 +277,13 @@ describe('REF — jede Vorlage reicht ihre Werte auch wirklich durch', () => {
       // Die Regel muss auf die echte Eingabe greifen — nicht bloß existieren.
       // Verglichen wird gegen die Vorlage selbst statt gegen „ungleich der
       // Eingabe": Dänisch und Norwegisch sagen ebenfalls „Gruppe", und dort
-      // ist ein unverändertes Ergebnis richtig, nicht ein Durchfall.
+      // ist ein unverändertes Ergebnis richtig, nicht ein Durchfall. Die
+      // Ziffern stehen in der Schrift der Sprache (`ziffernDerSprache`).
       expect(aus, `${code}.${feld}: die Regel greift nicht auf „${eingabe}"`).toBe(
-        direkt(ref, feld, teile),
+        ziffernDerSprache(direkt(ref, feld, teile), code),
       )
       for (const teil of teile) {
-        expect(aus, `${code}.${feld}: „${teil}" fehlt in „${aus}"`).toContain(teil)
+        expect(aus, `${code}.${feld}: „${teil}" fehlt in „${aus}"`).toContain(ziffernDerSprache(teil, code))
       }
     }
   })

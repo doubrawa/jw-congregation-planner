@@ -72,3 +72,23 @@ export function ohneMarke(s: string): string {
 export function ohneAlleMarken(s: string): string {
   return s.split(AUF).join('').split(ZU).join('')
 }
+
+/**
+ * `fn` auf alles anwenden, was **kein** gekennzeichneter Freitext ist — die
+ * Namen darin bleiben, wie sie sind. Für die Ziffern der Sprache
+ * (`ziffernDerSprache`): Der Zusatz gegen Namensgleichheit („Paul Beispiel 1“)
+ * gehört zum Namen.
+ */
+export function ausserhalbFreitext(s: string, fn: (teil: string) => string): string {
+  let aus = ''
+  let i = 0
+  while (i < s.length) {
+    const auf = s.indexOf(AUF, i)
+    if (auf < 0) return aus + fn(s.slice(i))
+    const zu = s.indexOf(ZU, auf + AUF.length)
+    if (zu < 0) return aus + fn(s.slice(i, auf)) + s.slice(auf)
+    aus += fn(s.slice(i, auf)) + s.slice(auf, zu + ZU.length)
+    i = zu + ZU.length
+  }
+  return aus
+}

@@ -2,6 +2,7 @@ import { useApp } from '../app/context'
 import { Zeichen } from '../bausteine/Zeichen'
 import { istAusgefallen, MEETING_TABS } from '../data/helpers'
 import { meetingDate, meetingTime, regelzeit, versatzAbMontag, wirktAb } from '../data/meeting-dates'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import type { MeetingTab, Week } from '../data/types'
 import { datumsFormat } from './datum-anzeige'
@@ -63,14 +64,14 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
         if (week) {
           // Verlegte Woche → ihr echter Tag (T30), sonst der Rhythmus dieser Woche.
           datum = meetingDate(week, key, zeiten)
-          wann = `${tagZahl.format(datum)} · ${meetingTime(week, key, zeiten)}`
+          wann = `${tagZahl.format(datum)} · ${ziffernDerSprache(meetingTime(week, key, zeiten), state.lang)}`
         } else {
           // Ohne Woche gilt, was heute gilt — nicht die Grundzeit von vor einem
           // Wechsel. Der Wochentag gezählt vom Montag, 1. Januar 2024, örtlich
           // zur Mittagszeit, damit keine Zeitzone ihn verschiebt.
           const heute = regelzeit(zeiten, key, wirktAb())
           datum = new Date(2024, 0, 1 + versatzAbMontag(heute.wd), 12)
-          wann = heute.time
+          wann = ziffernDerSprache(heute.time, state.lang)
         }
         const name = tagName.format(datum)
         const aus = istAusgefallen(week, key)

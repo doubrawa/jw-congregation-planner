@@ -9,6 +9,7 @@ import { treffpunktTagLabel, treffpunktTitel } from '../components/treffpunkt-be
 import { fsInGruppe, fsKonfliktVon, fsWeekConflicts, nachWochentag, NEUER_TREFFPUNKT } from '../data/fs'
 import { rechteVon, treffpunktGruppe } from '../data/rechte'
 import type { FsInstance } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { istGewaehlt } from './planen-raster'
 import { leiterAnzeige } from './platz-anzeige'
@@ -136,7 +137,7 @@ function TreffpunktKopf({
           onChange={(time) => aendere({ time })}
         />
       ) : (
-        <span className="treff-zeit-pille">{inst.time}</span>
+        <span className="treff-zeit-pille">{inAnzeigeZiffern(inst.time)}</span>
       )}
       <div className="treff-text">
         <div className="treff-titel">{titel}</div>

@@ -241,7 +241,7 @@ export function MeetingSection({
                 // `lang` an den Texten selbst, nicht an der Zeile: Daneben steht der
                 // Knopf „Partner" in der Sprache des Lesers.
                 <div className="prog-title" lang={sprache}>
-                  {item.num != null && <span className="prog-num">{item.num} </span>}
+                  {item.num != null && <span className="prog-num">{tpw(String(item.num))} </span>}
                   {song ? rest : tpw(item.title)}
                 </div>
               )}

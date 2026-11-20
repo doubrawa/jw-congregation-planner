@@ -14,6 +14,7 @@ import { useAppSelector } from '../app/context'
 import { localizedWeek } from '../data/localize'
 import { meetingDateText } from '../data/meeting-dates'
 import type { MeetingKey, MeetingTimes, Week } from '../data/types'
+import { anzeigeSpracheSetzen, inAnzeigeZiffern } from './anzeige-ziffern'
 import { APP_TO_JW, congAppCode, versammlungsSprache } from './langs'
 import { bibelbuecherGeladen, makeTr, ohneMarken } from './translate'
 import { dict, overlayGeneration, type Dict } from './ui'
@@ -130,7 +131,17 @@ export function aufgabenTitelSprache(task: { title: string; lesersprache?: boole
  * ausgeschrieben.
  */
 export function besetzungText(t: Pick<Dict, 'saalBesetzung'>, besetzt: number, gesamt: number): string {
-  return zahlBinden(`${t.saalBesetzung}: ${besetzt}/${gesamt}`)
+  return zahlBinden(`${t.saalBesetzung}: ${anteilText(besetzt, gesamt)}`)
+}
+
+/** „20/23" in den Ziffern der Oberflächensprache — die Zahl der Besetzung, auch ohne ihr Wort. */
+export function anteilText(teil: number, ganz: number): string {
+  return inAnzeigeZiffern(`${teil}/${ganz}`)
+}
+
+/** „Zu bestätigen: 3" — die Zahl an ihr Wort gebunden, in den Ziffern der Oberflächensprache. */
+export function wortMitZahl(wort: string, n: number): string {
+  return zahlBinden(`${wort}: ${inAnzeigeZiffern(String(n))}`)
 }
 
 /**
@@ -152,9 +163,23 @@ export function platzName(name: string, gruppe: boolean, i18n: Pick<I18n, 'tu'>)
  * jede Zahl bei ihrer Bezeichnung (`zahlBinden`, T128). Hier statt in den
  * Wörterbüchern: Das deckt alle zwölf Sprachen und auch Werte aus `Intl` („1 Tag"),
  * ohne dass jeder neue Text daran denken muss.
+ *
+ * Eine Zahl kommt in den Ziffern der Oberflächensprache hinein
+ * (`inAnzeigeZiffern`) — ebenso ein Text, der nur aus Ziffern und ihren
+ * Zeichen besteht („19:30", „20/23"). Alles mit einem Buchstaben bleibt, wie
+ * es ist: ein Name, ein Anmelde-Code.
  */
 export function fill(template: string, params: Record<string, string | number>): string {
-  return zahlBinden(template.replace(/\{(\w+)\}/g, (_, key: string) => String(params[key] ?? '')))
+  return zahlBinden(template.replace(/\{(\w+)\}/g, (_, key: string) => platzhalterWert(params[key])))
+}
+
+/** Nur Ziffern und was eine Zahl, Uhrzeit oder Spanne sonst trägt. */
+const NUR_ZAHL = /^[\d\s:./–-]+$/
+
+function platzhalterWert(wert: string | number | undefined): string {
+  if (wert == null) return ''
+  const text = String(wert)
+  return typeof wert === 'number' || NUR_ZAHL.test(text) ? inAnzeigeZiffern(text) : text
 }
 
 /**
@@ -186,6 +211,8 @@ export function useT(): I18n {
   const buecher = bibelbuecherGeladen()
   return useMemo(() => {
     const congCode = congAppCode(congLang)
+    // Vor den Kindern: Was sie mit `fill` zusammensetzen, nimmt diese Ziffern.
+    anzeigeSpracheSetzen(lang)
     return {
       t: dict(lang),
       tu: lang === 'de' ? identity : makeTr(lang),

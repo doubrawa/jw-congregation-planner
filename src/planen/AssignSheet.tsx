@@ -15,6 +15,7 @@ import { platzDerAuswahl } from '../data/plaetze'
 import { buildS89ForSlot } from '../data/planung/s89'
 import { rechteVon } from '../data/rechte'
 import type { S89Payload, SlotAssignment, SlotSelection, Week } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { versammlungsSprache } from '../i18n/langs'
 import { wochenHer } from '../i18n/relative-time'
 import { fill, platzName, useProgWeek, useT, type I18n } from '../i18n/useT'
@@ -134,7 +135,7 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
     const inst = state.fsWeeks[sel.wi]?.find((i) => i.id === sel.instId)
     const label = mitRolle(tu(sel.label))
     // Der Ort ist frei und darf fehlen — dann nur die Zeit, ohne Punkt am Ende.
-    return { label, titel: label, sub: inst ? [inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ') : '' }
+    return { label, titel: label, sub: inst ? [inAnzeigeZiffern(inst.time), tu(inst.place).trim()].filter(Boolean).join(' · ') : '' }
   }
 
   const datum = rawWeek ? gebundenesDatum(meetingDate(rawWeek, sel.tab, state.congregation.times), state.lang, 'tag') : ''
@@ -164,7 +165,7 @@ function useZuteilenKopf(sel: SlotSelection): Kopf {
     // in der Sprache der Versammlung.
     titel: (
       <>
-        {item?.num != null && <span className="prog-num">{item.num} </span>}
+        {item?.num != null && <span className="prog-num">{tpw(String(item.num))} </span>}
         <span lang={item ? sprache : versammlungsSprache(state.congLang)}>{punkt}</span>
         {label.slice(punkt.length)}
       </>

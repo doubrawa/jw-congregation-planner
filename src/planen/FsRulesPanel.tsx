@@ -7,6 +7,7 @@ import { Sheet } from '../components/Sheet'
 import { treffpunktHaeufigkeit, treffpunktTitel } from '../components/treffpunkt-beschriftung'
 import { nachWochentag, neueRegel } from '../data/fs'
 import type { FsRule } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import {
   AusserVersammlungFeld,
@@ -60,7 +61,7 @@ export function FsRulesPanel({ onlyGroup = null }: { onlyGroup?: string | null }
           </div>
           {tag.items.map((regel) => (
             <button key={regel.id} type="button" className="regel-zeile" onClick={() => setOffen({ id: regel.id })}>
-              <span className="treff-zeit-pille">{regel.time}</span>
+              <span className="treff-zeit-pille">{inAnzeigeZiffern(regel.time)}</span>
               <span className="treff-text">
                 <span className="treff-titel">{treffpunktTitel(regel, state.groups, i18n)}</span>
                 {regel.place && (

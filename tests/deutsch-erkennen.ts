@@ -4,6 +4,7 @@ import { langChoices } from '../src/i18n/langnames'
 import { DE, dict } from '../src/i18n/ui'
 import { codeGruppiert } from '../supabase/functions/_shared/anmeldung.ts'
 import { FRAG } from '../supabase/functions/_shared/i18n/translate-data.ts'
+import { ziffernSatz } from '../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 
 /**
  * **Deutsch in einer fremdsprachigen Oberfläche finden** (T123) — zwei Wege,
@@ -131,6 +132,29 @@ export function ohneCodes(text: string): string {
   return text.replace(CODE_FORM, (span) => (codeGruppiert(span) === span ? ' ' : span))
 }
 
+/** E-Mail-Adressen und Links herausnehmen — sie gehören niemandem. */
+function ohneAdressen(zeile: string): string {
+  return zeile.replace(/[\w.+-]+@[\w.-]+/g, ' ').replace(/https?:\/\/\S+|localhost:\d+\S*/g, ' ')
+}
+
+/**
+ * **Ziffern 0–9 in einer Sprache mit eigenen** (heute Persisch, `ziffernSatz`).
+ * Dort steht jede Zahl der Oberfläche in den Ziffern der Sprache, wie das Datum
+ * aus `Intl` daneben (Betreiber, 20.11.2026). Lateinisch bleiben darf, was man
+ * abtippt oder aufruft statt liest — Adressen, Links, Anmelde-Codes —, die
+ * Formularnummer „S-89" und eine Zahl, die zu einem Datum des Bestands gehört
+ * (`daten`: eine erfundene Folge samt Zahl, etwa die Anschrift des Saals): Daten
+ * stehen da, wie jemand sie eingegeben hat. `null` für Sprachen mit 0–9.
+ */
+export function ziffernFinder(ziel: Lang, daten: RegExp): ((zeile: string) => DeutscherRest[]) | null {
+  if (!ziffernSatz(ziel)) return null
+  const datenMitZahl = new RegExp(`(?:${daten.source})\\s*[0-9]+`, 'g')
+  return (zeile) => {
+    const text = ohneCodes(ohneAdressen(zeile)).replace(/\bS-89\b/g, ' ').replace(datenMitZahl, ' ')
+    return (text.match(/[0-9]+/g) ?? []).map((wort) => ({ wort, zeile }))
+  }
+}
+
 /**
  * Ein Prüfer für eine Zielsprache: liefert zu einer Zeile die deutschen Reste.
  * Adressen, Links und Anmelde-Codes werden vorher herausgenommen — sie gehören
@@ -147,9 +171,7 @@ export function deutschFinder(ziel: Exclude<Lang, 'de'>, erfunden: ReadonlySet<s
   // Türkisch schreibt ö und ü selbst.
   const umlaut = ziel === 'tr' ? /[äßÄ]/ : /[äöüßÄÖÜ]/
   return (zeile) => {
-    const text = ohneCodes(
-      zeile.replace(/[\w.+-]+@[\w.-]+/g, ' ').replace(/https?:\/\/\S+|localhost:\d+\S*/g, ' '),
-    )
+    const text = ohneCodes(ohneAdressen(zeile))
     if (!deutsch) {
       return (text.match(/[A-Za-zÀ-ɏ]{2,}/g) ?? []).filter(frei).map((wort) => ({ wort, zeile }))
     }
@@ -180,7 +202,7 @@ const ATTRIBUTE = ['aria-label', 'title', 'placeholder', 'alt', 'aria-descriptio
  * langsamsten Proben. Reihenfolge und Auswahl sind dieselben geblieben: erst
  * die Texte, dann die Attribute, dann die Felder.
  */
-export function sichtbareTexte(wurzel: ParentNode = document.body): string[] {
+export function sichtbareTexte(wurzel: ParentNode = document.body, { felder: mitFeldern = true } = {}): string[] {
   const texte: string[] = []
   const attribute: string[] = []
   if (!(wurzel as Element).closest?.(NICHT_ABLESEN)) {
@@ -200,10 +222,14 @@ export function sichtbareTexte(wurzel: ParentNode = document.body): string[] {
       }
     }
   }
+  // Die Werte der Felder lässt aus, wer nur prüft, was die App selbst schreibt
+  // (die Ziffern): In einem Feld steht, was jemand getippt hat.
   const felder: string[] = []
-  for (const feld of wurzel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), input[type="search"], textarea')) {
-    const wert = feld.value.trim()
-    if (wert) felder.push(wert)
+  if (mitFeldern) {
+    for (const feld of wurzel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), input[type="search"], textarea')) {
+      const wert = feld.value.trim()
+      if (wert) felder.push(wert)
+    }
   }
   return [...texte, ...attribute, ...felder]
 }

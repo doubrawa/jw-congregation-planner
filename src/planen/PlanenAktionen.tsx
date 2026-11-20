@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useApp } from '../app/context'
 import { useKalendertag } from '../app/useKalendertag'
 import { Zeichen } from '../bausteine/Zeichen'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { AutomatischBlatt } from './AutomatischBlatt'
 import type { PlanArt } from './planen-raster'
@@ -52,7 +53,7 @@ export function PlanenAktionen({ art, leiste = false }: { art: PlanArt; leiste?:
       {umfang && (
         <button type="button" className="aktion-haupt" onClick={() => setOffen('senden')}>
           {t.planSenden}
-          {meldungen.length > 0 && <span className="zahl-marke">{meldungen.length}</span>}
+          {meldungen.length > 0 && <span className="zahl-marke">{inAnzeigeZiffern(String(meldungen.length))}</span>}
         </button>
       )}
       {offen === 'automatisch' &&

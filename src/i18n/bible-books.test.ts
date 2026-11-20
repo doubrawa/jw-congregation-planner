@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buchTabelle } from '../../supabase/functions/_shared/i18n/bible-books.ts'
+import { ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 import { APP_LANGS } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { dict, loadOverlay } from './ui'
@@ -35,9 +36,10 @@ describe('Bibelbücher', () => {
   it('schreibt die Bibellesung so, wie das Heft der Sprache sie schreibt', () => {
     // Gemessen an der Zeile „(4 Min.) Jer 36:1-13" der Woche 21.–27.9.2026:
     // die Kurzform ist je Sprache eine andere WOL-Form, Persisch kürzt gar nicht.
+    // Die Ziffern in der Schrift der Sprache (`ziffernDerSprache`, eigene Probe).
     expect(makeTr('it')('Jer 36:1-13')).toBe('Ger 36:1-13')
-    expect(makeTr('ar')('Jer 36:1-13')).toBe('إر 36:1-13')
-    expect(makeTr('fa')('Jer 36:1-13')).toBe('اِرْمیا 36:1-13')
+    expect(makeTr('ar')('Jer 36:1-13')).toBe(`إر ${ziffernDerSprache('36:1-13', 'ar')}`)
+    expect(makeTr('fa')('Jer 36:1-13')).toBe(`اِرْمیا ${ziffernDerSprache('36:1-13', 'fa')}`)
     expect(makeTr('ru')('1Pe 5:2')).toBe('1Пт 5:2')
     expect(makeTr('en')('Jer 36:1-13')).toBe('Jer 36:1-13')
   })

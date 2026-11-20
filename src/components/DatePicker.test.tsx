@@ -5,6 +5,7 @@
 // Weitergabe misst „Der Datumswähler in einer Marke".
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { dict } from '../i18n/ui'
 import { DatePicker } from './DatePicker'
 import { useEscape } from './useEscape'
@@ -262,9 +263,10 @@ describe('Der Datumswähler in anderen Sprachen', () => {
     const { container } = oeffne(locale, '2026-03-15')
     const tage = [...container.querySelectorAll('.dp-day')]
     expect(tage.length, locale).toBe(42)
-    // Der erste Tag des Rasters für März 2026 ist Montag, der 23. Februar.
+    // Der erste Tag des Rasters für März 2026 ist Montag, der 23. Februar —
+    // geschrieben in den Ziffern der Sprache (Persisch „۲۳").
     const ersterTitel = tage[0]?.textContent ?? ''
-    expect(ersterTitel, `${locale}: ${ersterTitel}`).toMatch(/23/)
+    expect(ersterTitel, `${locale}: ${ersterTitel}`).toBe(ziffernDerSprache('23', locale))
   })
 
   it('auf Deutsch ist der erste Rasterplatz derselbe — die Sprache verschiebt nichts', () => {

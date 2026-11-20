@@ -1,6 +1,7 @@
 import { mitAbstand } from '../aufgaben/aufgabe-anzeige'
 import { gebundenesDatum, kopfzeilenTag } from '../components/datum-anzeige'
 import type { Lang } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { relativeZeit } from '../i18n/zeit'
@@ -60,7 +61,7 @@ export function filmInhalt(
     kopfDatum: kopfzeilenTag(jetzt, lang),
     kopfVersammlung: versammlung ? fill(t.congLabel, { name: versammlung }) : 'Versammlung.app',
     gruss: `${gruss}, ${name}`,
-    wann: mitAbstand(`${datum} · ${UHRZEIT}`, morgenAt, lang, jetzt.getTime()),
+    wann: mitAbstand(`${datum} · ${ziffernDerSprache(UHRZEIT, lang)}`, morgenAt, lang, jetzt.getTime()),
     aufgabeZeile: `${t.privBibellesung} · ${datum}`,
     vorKurzem: relativeZeit(new Date(jetzt.getTime() - 12 * 60_000).toISOString(), lang, jetzt.getTime()),
     zeilen: [5, 12].map((n) => gebundenesDatum(tag(n), lang, 'wochentagZahl')),

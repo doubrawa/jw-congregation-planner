@@ -1,6 +1,7 @@
 import { useApp } from '../app/context'
 import { FS_TIME_OPTIONS } from '../data/fs'
 import { zeitenZurWahl } from '../data/helpers'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { WOCHENTAGE_AB_MONTAG, wochentagNameAusWd } from './wochentage'
 
 /*
@@ -26,7 +27,7 @@ export function ZeitWahl({
     <select className={className} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
       {zeitenZurWahl(FS_TIME_OPTIONS, value).map((tm) => (
         <option key={tm} value={tm}>
-          {tm}
+          {inAnzeigeZiffern(tm)}
         </option>
       ))}
     </select>

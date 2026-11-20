@@ -13,7 +13,7 @@ import { fromIso, isoVonKalendertag } from '../data/meeting-dates'
 import { planungsstand, problemeDerWoche, type Wochenstand } from '../data/planungsstand'
 import { besetztVon, type Besetzung } from '../data/saal'
 import type { FsBereich } from '../data/types'
-import { besetzungText, fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
+import { anteilText, besetzungText, fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { besetzungDerWoche } from '../planen/plan-spur'
 import { HolenKnopf } from '../planen/ProgrammHolen'
 import { konflikteVon } from '../planen/useKonflikte'
@@ -293,7 +293,7 @@ function WochenBalken({ besetzung }: { besetzung: Besetzung }) {
     <span className="dash-plan-besetzung">
       <SaalBalken besetzung={besetzung} label={besetzungText(t, besetzt, gesamt)} />
       <span className="dash-plan-zahl" aria-hidden="true">
-        {besetzt}/{gesamt}
+        {anteilText(besetzt, gesamt)}
       </span>
     </span>
   )

@@ -1,4 +1,5 @@
 import type { Lang } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { gebundenesDatum } from './datum-anzeige'
 
 /**
@@ -74,12 +75,13 @@ export function markiereAbwesenheiten<T extends BandZeile>(
 /**
  * Die Datumszeile einer Leiste: Wochentag, Tag und Monat in der Sprache des
  * Lesers, dazu die Uhrzeit, sofern es eine gibt („Dienstag, 8. September ·
- * 19:00"). Eine Abwesenheit hat keine. Tag und Monat bleiben zusammen (T128:
+ * 19:00") — in denselben Ziffern wie das Datum (`ziffernDerSprache`). Eine
+ * Abwesenheit hat keine. Tag und Monat bleiben zusammen (T128:
  * „воскресенье, 20 |сентября" bei 320 px und Stufe 1,3).
  */
 export function zeitleisteDatum(datum: Date, lang: Lang, zeit = ''): string {
   const tag = gebundenesDatum(datum, lang, 'tag')
-  return zeit ? `${tag} · ${zeit}` : tag
+  return zeit ? `${tag} · ${ziffernDerSprache(zeit, lang)}` : tag
 }
 
 /**

@@ -18,6 +18,8 @@ import type {
   ZeitWechsel,
 } from '../data/types'
 import { kommendeWechsel } from '../data/zeit-wechsel'
+import { zahl } from '../data/ziffern'
+import { inAnzeigeZiffern, ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { wochentagNameAusWd } from '../planen/wochentage'
@@ -29,11 +31,12 @@ import { wochentagNameAusWd } from '../planen/wochentage'
  */
 
 /**
- * „Dienstag 19:00" — der Name des Tages aus `Intl`, in der Sprache des Lesers.
- * Für eine Zusammenkunft ebenso wie für einen Treffpunkt (`FsRule`).
+ * „Dienstag 19:00" — der Name des Tages aus `Intl`, in der Sprache des Lesers,
+ * die Uhrzeit in ihren Ziffern. Für eine Zusammenkunft ebenso wie für einen
+ * Treffpunkt (`FsRule`).
  */
 export function zusammenkunftText(zeit: Pick<MeetingTime, 'wd' | 'time'>, lang: Lang): string {
-  return `${wochentagNameAusWd(zeit.wd, lang)} ${zeit.time}`
+  return `${wochentagNameAusWd(zeit.wd, lang)} ${ziffernDerSprache(zeit.time, lang)}`
 }
 
 /**
@@ -53,7 +56,7 @@ export function zusammenkunftJetzt(zeiten: MeetingTimes, tab: MeetingKey, lang: 
  */
 export function wechselText(wechsel: ZeitWechsel, t: Pick<Dict, 'wpAbDatum'>, lang: Lang): string {
   const ersterTag = fromIso(tagNach(wechsel.ab, versatzAbMontag(wechsel.wd)))
-  return `${fill(t.wpAbDatum, { datum: gebundenesDatum(ersterTag, lang, 'kurzerWochentag') })} · ${wechsel.time}`
+  return `${fill(t.wpAbDatum, { datum: gebundenesDatum(ersterTag, lang, 'kurzerWochentag') })} · ${ziffernDerSprache(wechsel.time, lang)}`
 }
 
 /** Der nächste bevorstehende Wechsel als Text — unter der Zeile der Einstellungen; ohne einen `undefined`. */
@@ -111,10 +114,11 @@ export function uebernehmenText(t: Dict, service: Service, n: number): string {
  * und „Gruppe 3" schon stehen. Jede Zahl eines Namens zählt für sich; ein Name
  * ohne Zahl (sie sind frei, entschieden am 11.10.2026) zählt als 0. Bis zum
  * 16.10.2026 wurden die Ziffern eines Namens aneinandergehängt: Aus
- * „Gruppe 1 (Nord 2)" wurde 12, und die nächste hieß „Gruppe 13".
+ * „Gruppe 1 (Nord 2)" wurde 12, und die nächste hieß „Gruppe 13". Ziffern
+ * jeder Schrift zählen (`zahl`): In Persisch heißt ein Trolley „چرخ‌دستی ۲".
  */
 function naechsteZahl(liste: readonly { name: string }[]): number {
-  return liste.reduce((m, x) => Math.max(m, ...(x.name.match(/\d+/g) ?? []).map(Number)), 0) + 1
+  return liste.reduce((m, x) => Math.max(m, ...(x.name.match(/\p{Nd}+/gu) ?? []).map(zahl)), 0) + 1
 }
 
 /**
@@ -127,11 +131,12 @@ export function neuerGruppenName(groups: readonly Pick<Group, 'name'>[]): string
 
 /**
  * Der Name eines neuen Trolleys: das Wort der Oberfläche (`wort`, „Trolley")
- * mit der nächsten Zahl. Anders als die Gruppe wird er nicht übersetzt — die
- * Versammlung nennt ihre Trolleys, wie sie will, und so steht er da.
+ * mit der nächsten Zahl, in den Ziffern der Oberfläche. Anders als die Gruppe
+ * wird er nicht übersetzt — die Versammlung nennt ihre Trolleys, wie sie will,
+ * und so steht er da.
  */
 export function neuerTrolleyName(trolleys: readonly Pick<Trolley, 'name'>[], wort: string): string {
-  return `${wort} ${naechsteZahl(trolleys)}`
+  return `${wort} ${inAnzeigeZiffern(String(naechsteZahl(trolleys)))}`
 }
 
 /**

@@ -3,6 +3,7 @@ import { APP_LANGS, LOCALES } from './langs'
 import { bibelbuecherLaden, makeTr } from './translate'
 import { buchTabelle } from '../../supabase/functions/_shared/i18n/bible-books.ts'
 import { D, EXTRA, REF } from '../../supabase/functions/_shared/i18n/translate-data.ts'
+import { ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 import { ersteZahl, zahl } from '../data/ziffern'
 import type { Lang } from '../data/types'
 
@@ -219,7 +220,8 @@ describe('Es wird überhaupt übersetzt', () => {
       Regel nachträgt, macht diesen Test rot — und streicht dabei die Zeile,
       die die Lücke behauptet. Wer eine **zweite** Lücke einführt, ebenso.
     */
-    const fehlt = FREMD.filter((c) => makeTr(c)('Studienartikel 28') === 'Studienartikel 28')
+    // Unübersetzt bis auf die Ziffern: Die schreibt der Übersetzer immer in der Schrift der Sprache.
+    const fehlt = FREMD.filter((c) => makeTr(c)('Studienartikel 28') === ziffernDerSprache('Studienartikel 28', c))
     expect(fehlt.sort()).toEqual(FREMD.filter((c) => !MIT_ARTIKEL_REGEL.includes(c)).sort())
   })
 
@@ -236,15 +238,16 @@ describe('Die Uhrzeit ist kein Datum', () => {
    * „Di 19:00" ist Wochentag **und** Uhrzeit. Übersetzt wird nur der Wochentag;
    * 19:00 bleibt 19:00 — auch in Sprachen, deren Locale eine 12-Stunden-Uhr
    * vorzieht. Sonst stünde in der Einstellung „Di 19:00" und im Programm
-   * „Tue 7:00 PM", und niemand wüsste, ob das dasselbe ist.
+   * „Tue 7:00 PM", und niemand wüsste, ob das dasselbe ist. Geschrieben in den
+   * Ziffern der Sprache, wie das Datum daneben (Persisch „۱۹:۰۰").
    */
   it.each(FREMD)('%s: „Di 19:00" behält seine Uhrzeit', (code) => {
     const text = makeTr(code)('Di 19:00')
-    expect(text, code).toContain('19:00')
+    expect(text, code).toContain(ziffernDerSprache('19:00', code))
   })
 
   it.each(FREMD)('%s: „Ende ca. 20:45" behält seine Uhrzeit', (code) => {
-    expect(makeTr(code)('Ende ca. 20:45'), code).toContain('20:45')
+    expect(makeTr(code)('Ende ca. 20:45'), code).toContain(ziffernDerSprache('20:45', code))
   })
 })
 

@@ -13,6 +13,7 @@ import {
 } from '../components/kalender'
 import { fromIso, isoDay } from '../data/meeting-dates'
 import type { Lang } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { LOCALES } from '../i18n/langs'
 import { useT } from '../i18n/useT'
 import { Zeichen } from './Zeichen'
@@ -114,7 +115,7 @@ export function ZeitraumKalender({
             aria-pressed={imZeitraum(tag, von, bis)}
             onClick={() => tippen(tag)}
           >
-            {Number(tag.slice(8))}
+            {ziffernDerSprache(String(Number(tag.slice(8))), lang)}
           </button>
         ))}
       </div>

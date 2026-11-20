@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { fromIso, isoDay } from '../data/meeting-dates'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { Chevron } from './Chevron'
 import { gebundenesDatum } from './datum-anzeige'
 import { imMonat, monatPlus, monatsRaster, monatVon, wochentagKuerzel } from './kalender'
@@ -122,7 +123,7 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
                     setOpen(false)
                   }}
                 >
-                  {Number(di.slice(8))}
+                  {ziffernDerSprache(String(Number(di.slice(8))), locale)}
                 </button>
               )
             })}

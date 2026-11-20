@@ -16,7 +16,7 @@ import type {
 } from '../data/types'
 import type { PlanStand } from '../data/weitere-plaene'
 import type { Dict } from '../i18n/ui'
-import { fill } from '../i18n/useT'
+import { anteilText, fill } from '../i18n/useT'
 
 /** Die Zahlen hinter der Spur einer Woche beim Planen. */
 export interface WochenZahlen {
@@ -156,11 +156,11 @@ export function spurDerWoche(
         ? 'teil'
         : 'leer'
   return [
-    { name: t.spurZuteilen, wert: `${z.besetzt}/${z.gesamt}`, lage: zuteilen, ziel: ziele.zuteilen },
+    { name: t.spurZuteilen, wert: anteilText(z.besetzt, z.gesamt), lage: zuteilen, ziel: ziele.zuteilen },
     { name: t.spurSenden, wert: z.neu > 0 ? fill(t.neuN, { n: z.neu }) : undefined, lage: senden },
     {
       name: t.spurZusagen,
-      wert: z.zuBestaetigen > 0 ? `${z.bestaetigt}/${z.zuBestaetigen}` : undefined,
+      wert: z.zuBestaetigen > 0 ? anteilText(z.bestaetigt, z.zuBestaetigen) : undefined,
       lage: zusagen,
       ziel: ziele.zusagen,
     },

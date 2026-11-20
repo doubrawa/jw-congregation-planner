@@ -8,6 +8,7 @@ import { wochenSpanne } from '../components/datum-anzeige'
 import { montagNach, regelzeit, wirktAb } from '../data/meeting-dates'
 import type { MeetingKey, MeetingTime } from '../data/types'
 import { kommendeWechsel, ohneWechsel, zeitAb, type Regelzeit } from '../data/zeit-wechsel'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { WochentagFeld } from '../planen/TreffpunktFelder'
 import { wechselText } from './einstellungen-anzeige'
@@ -64,7 +65,7 @@ export function ZusammenkunftBlatt({ welche, titel, onClose }: { welche: Meeting
           <select className="feld-wahl" value={wert.time} onChange={(e) => waehle({ time: e.target.value })}>
             {timeOptions(wert.time).map((uhrzeit) => (
               <option key={uhrzeit} value={uhrzeit}>
-                {uhrzeit}
+                {inAnzeigeZiffern(uhrzeit)}
               </option>
             ))}
           </select>

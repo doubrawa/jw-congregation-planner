@@ -7,6 +7,7 @@ import { eigeneGruppen, fsLeiterZuteilung, fsVisible, nachWochentag } from '../d
 import { gehoertZu } from '../data/helpers'
 import { rechteVon } from '../data/rechte'
 import type { FsInstance, Person } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { PersonZeile } from './PersonZeile'
 
@@ -97,7 +98,7 @@ function Treffpunkt({
   const i18n = useT()
   return (
     <div className="treff-punkt">
-      <span className="treff-zeit">{inst.time}</span>
+      <span className="treff-zeit">{inAnzeigeZiffern(inst.time)}</span>
       <div className="treff-text">
         <div className="treff-titel">{treffpunktTitel(inst, state.groups, i18n)}</div>
         {/* Der Ort ist Freitext, aber der Vorgabewert („Königreichssaal")

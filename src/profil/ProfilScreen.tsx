@@ -12,6 +12,7 @@ import type { Lang } from '../data/types'
 import { ErsteSchritteKnopf } from '../erste-schritte/ErsteSchritteKarte'
 import { APP_LANGS_SORTED } from '../i18n/langs'
 import type { Dict } from '../i18n/ui'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
@@ -169,7 +170,7 @@ export function ProfilScreen() {
               <button type="button" className="profil-zeile profil-verweis" onClick={() => dispatch({ type: 'navigate', screen: 'personen' })}>
                 <span>{t.navPersonen}</span>
                 <span className="profil-verweis-wert">
-                  {state.persons.length}
+                  {inAnzeigeZiffern(String(state.persons.length))}
                   <Zeichen name="weiter" />
                 </span>
               </button>

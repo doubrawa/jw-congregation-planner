@@ -6,6 +6,7 @@ import { allePlaetze, leerVorOrt } from '../data/plaetze'
 import type { Week } from '../data/types'
 import { anlassName } from '../components/anlass-name'
 import { gebundenesDatum } from '../components/datum-anzeige'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { fill, programmSpanne, useProgWeeks, useT } from '../i18n/useT'
 import { monatsName, wochenDesMonats, wochenZeitraum } from '../programm/druck'
 import { Bogen } from './Bogen'
@@ -143,7 +144,7 @@ function KongressZeilen({ wi }: { wi: number }) {
           {fill(t.naechsteZusammenkunft, {
             wann: [
               gebundenesDatum(meetingDate(naechste.week, naechste.tab, zeiten), state.lang, 'tag'),
-              meetingTime(naechste.week, naechste.tab, zeiten),
+              ziffernDerSprache(meetingTime(naechste.week, naechste.tab, zeiten), state.lang),
             ]
               .filter(Boolean)
               .join(' · '),

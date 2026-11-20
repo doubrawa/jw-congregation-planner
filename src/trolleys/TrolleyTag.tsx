@@ -3,6 +3,7 @@ import { useApp } from '../app/context'
 import { datumsFormat } from '../components/datum-anzeige'
 import { fromIso } from '../data/meeting-dates'
 import type { Trolley, TrolleyTermin } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { versammlungsSprache } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import {
@@ -117,7 +118,7 @@ export function TrolleyTag({
         <div className="trolley-uhr" aria-hidden="true">
           {PLAN_STUNDEN.map((h) => (
             <span key={h} style={{ top: `${anteilVon(`${String(h).padStart(2, '0')}:00`) * 100}%` }}>
-              {String(h).padStart(2, '0')}
+              {inAnzeigeZiffern(String(h).padStart(2, '0'))}
             </span>
           ))}
         </div>

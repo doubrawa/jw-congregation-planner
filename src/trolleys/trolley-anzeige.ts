@@ -11,6 +11,7 @@ import { displayName, nameVon } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { minuten, uhrzeit } from '../data/trolleys'
 import type { Lang, Person, Trolley, TrolleyTermin } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 
@@ -37,9 +38,9 @@ export function tagKurz(datum: string, lang: Lang): string {
   return gebundenesDatum(fromIso(datum), lang, 'kurzerTag')
 }
 
-/** Die Zeit eines Termins: „09:00–11:00". */
+/** Die Zeit eines Termins: „09:00–11:00" — in den Ziffern der Oberflächensprache. */
 export function zeitSpanne(t: Pick<TrolleyTermin, 'von' | 'bis'>): string {
-  return `${t.von}–${t.bis}`
+  return inAnzeigeZiffern(`${t.von}–${t.bis}`)
 }
 
 /** Der andere im Termin, von einem selbst aus gesehen — `null`, wenn man allein steht. */

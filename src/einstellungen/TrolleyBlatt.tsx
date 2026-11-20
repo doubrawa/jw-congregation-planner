@@ -9,6 +9,7 @@ import { useUebernehmen } from '../components/useUebernehmen'
 import { fromIso } from '../data/meeting-dates'
 import { kommendeTermine } from '../data/trolleys'
 import type { Trolley } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { fill, useT } from '../i18n/useT'
 import { zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { trolleyFehlerText, useTrolleyAktion } from '../trolleys/useTrolleyAktion'
@@ -107,7 +108,7 @@ export function TrolleyBlatt({ trolley, onClose }: { trolley: Trolley; onClose: 
         <BlattFeld marke={t.trolleyHinweisLbl}>{textFeld('hinweis')}</BlattFeld>
         <EinstellZeile
           name={t.trolleyKommende}
-          wert={String(kommende)}
+          wert={inAnzeigeZiffern(String(kommende))}
           onTipp={() => {
             schliessen()
             zuDenTrolleys(dispatch)

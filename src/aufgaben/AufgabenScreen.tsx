@@ -6,8 +6,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { fromIso } from '../data/meeting-dates'
 import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { eigeneTermine } from '../data/trolleys'
-import { aufgabenLabel, fill, useT } from '../i18n/useT'
-import { zahlBinden } from '../i18n/zahl-binden'
+import { aufgabenLabel, fill, useT, wortMitZahl } from '../i18n/useT'
 import { mitWem, tagKurz, trolleyNameVon, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { Zeitspanne } from '../trolleys/Zeitspanne'
 import { AufgabeKarte } from './AufgabeKarte'
@@ -38,7 +37,7 @@ export function AufgabenScreen() {
         <h1 className="seitentitel seitentitel--gross">{t.navAufgabenLong}</h1>
         {zuBestaetigen > 0 && (
           <div className="aufgaben-zusage">
-            <span className="klein-text">{zahlBinden(`${t.dashZuBest}: ${zuBestaetigen}`)}</span>
+            <span className="klein-text">{wortMitZahl(t.dashZuBest, zuBestaetigen)}</span>
             {zuBestaetigen > 1 && (
               <button type="button" className="knopf-pille" onClick={() => dispatch({ type: 'confirmAll' })}>
                 {fill(t.alleNBestaetigen, { n: zuBestaetigen })}

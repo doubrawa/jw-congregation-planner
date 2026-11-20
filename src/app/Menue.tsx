@@ -15,6 +15,7 @@ import { Zeichen, type ZeichenName } from '../bausteine/Zeichen'
 import { useBackDismiss } from '../components/useBackDismiss'
 import { useDialogFocus } from '../components/useDialogFocus'
 import { useEscape } from '../components/useEscape'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import './menue.css'
 
@@ -108,7 +109,7 @@ export function Seitenmenue({
             >
               <Zeichen name={e.zeichen} />
               <span className="menue-eintrag-text">{e.label}</span>
-              {e.zahl ? <span className="menue-zahl">{e.zahl}</span> : null}
+              {e.zahl ? <span className="menue-zahl">{inAnzeigeZiffern(String(e.zahl))}</span> : null}
             </button>
           ))}
         </div>
@@ -209,7 +210,7 @@ export function SchmaleLeiste({
                 <Zeichen name={e.zeichen} />
               </span>
               <span className="leisten-text">{e.kurz ?? e.label}</span>
-              {e.zahl ? <span className="leisten-zahl">{e.zahl}</span> : null}
+              {e.zahl ? <span className="leisten-zahl">{inAnzeigeZiffern(String(e.zahl))}</span> : null}
             </button>
           ))}
         </div>

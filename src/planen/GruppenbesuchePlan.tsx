@@ -25,6 +25,7 @@ import { leitetTreffpunkte } from '../data/planung/eignung'
 import { fromIso, montagNach, montagVon } from '../data/meeting-dates'
 import { zusageStatus } from '../data/planung/aufgaben'
 import type { Gruppenbesuch, Person } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
 import { ZUSAGE_LABEL } from './useZusage'
@@ -158,7 +159,7 @@ function BesuchZeile({
   const erster = stand.treffpunkte[0]
   const datum = erster ? fsTag(besuch.woche, erster.wd) : null
   // Tag und Monat gebunden (T128: „السبت، 19|سبتمبر" bei 320 px).
-  const termin = [datum ? gebundenesDatum(datum, state.lang, 'kurzerTag') : '', erster?.time ?? '']
+  const termin = [datum ? gebundenesDatum(datum, state.lang, 'kurzerTag') : '', ziffernDerSprache(erster?.time ?? '', state.lang)]
   const marke = vorbei ? t.gbVorbei : stand.art === 'vorgemerkt' ? t.gbVorgemerkt : ''
   const unterzeile = [...termin, marke].filter(Boolean).join(' · ')
   const problem = probleme(besuch, stand, t, state.persons)[0]

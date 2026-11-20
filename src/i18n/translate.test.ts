@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { APP_LANGS, congAppCode } from './langs'
+import { ziffernDerSprache } from '../../supabase/functions/_shared/i18n/ziffern-der-sprache.ts'
 import { bibelbuecherLaden, makeTr } from './translate'
 
 // Die Bibelbuch-Tabellen liegen in einem nachgeladenen Modul und müssen da
@@ -184,10 +185,12 @@ describe('Rollen und Verweise — auch in den Zusatz-Sprachen', () => {
     // Die RTL-Sprachen schreiben nicht „th", sondern ein eigenes Kürzel — und
     // je Publikation ein anderes. Eine gemeinsame Regel für alle Buch-Kürzel
     // setzte hier das falsche ein.
-    expect(makeTr('fa')('th Lektion 11')).toBe('ب-تعلیم درس 11')
-    expect(makeTr('ar')('lmd Lektion 1 Punkt 5')).toBe('أن الدرس 1 النقطة 5')
+    // Die Ziffern in der Schrift der Sprache (`ziffernDerSprache`, eigene Probe).
+    const z = ziffernDerSprache
+    expect(makeTr('fa')('th Lektion 11')).toBe(`ب-تعلیم درس ${z('11', 'fa')}`)
+    expect(makeTr('ar')('lmd Lektion 1 Punkt 5')).toBe(`أن الدرس ${z('1', 'ar')} النقطة ${z('5', 'ar')}`)
     // th und wcg sind verschiedene Publikationen → verschiedene Kürzel
-    expect(makeTr('fa')('wcg Kap. 16')).toBe('ک-شجاع فصل 16')
+    expect(makeTr('fa')('wcg Kap. 16')).toBe(`ک-شجاع فصل ${z('16', 'fa')}`)
     expect(makeTr('fa')('th Lektion 16')).not.toContain(makeTr('fa')('wcg Kap. 16').split(' ')[0])
   })
 })

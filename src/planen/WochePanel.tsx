@@ -9,6 +9,7 @@ import { anlassArt } from '../data/anlass'
 import { istAusgefallen, MEETING_TABS, weichtAb } from '../data/helpers'
 import { meetingDate, meetingTime } from '../data/meeting-dates'
 import type { Anlass, AnlassArt, MeetingKey } from '../data/types'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import type { Dict } from '../i18n/ui'
 import { LOCALES } from '../i18n/langs'
 import { useProgWeek, useT } from '../i18n/useT'
@@ -184,7 +185,7 @@ function ZusammenkunftZeile({ tab }: { tab: MeetingKey }) {
   const [offen, setOffen] = useState(() => weichtAb(week, tab))
   if (!week) return null
   const zeiten = state.congregation.times
-  const wann = `${gebundenesDatum(meetingDate(week, tab, zeiten), state.lang, 'tag')} · ${meetingTime(week, tab, zeiten)}`
+  const wann = `${gebundenesDatum(meetingDate(week, tab, zeiten), state.lang, 'tag')} · ${ziffernDerSprache(meetingTime(week, tab, zeiten), state.lang)}`
   return (
     <div className="einrichten-zusammenkunft">
       <div className="einrichten-zeile">

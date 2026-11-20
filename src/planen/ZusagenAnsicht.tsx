@@ -15,6 +15,7 @@ import { fromIso, meetingDate, meetingDateMs } from '../data/meeting-dates'
 import { platzAuswahl } from '../data/offene-plaetze'
 import { naechsteErinnerung, zusagenDerWoche, type ZusagePlatz } from '../data/zusagen'
 import type { Lang, MeetingKey, Week } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { relativeDayLabel } from '../i18n/relative-time'
 import type { Dict } from '../i18n/ui'
 import { fill, useT } from '../i18n/useT'
@@ -153,7 +154,7 @@ function ZusagenKarte({
     <section className="karte zusagen-karte">
       <h2 className="abschnitt-titel karte-titel">
         <Punkt art={punkt} />
-        {`${titel} · ${anzahl}`}
+        {`${titel} · ${inAnzeigeZiffern(String(anzahl))}`}
       </h2>
       {children}
     </section>

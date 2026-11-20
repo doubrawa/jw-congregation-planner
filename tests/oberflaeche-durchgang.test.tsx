@@ -7,7 +7,7 @@ import type { Lang } from '../src/data/types'
 import { loadLangNames } from '../src/i18n/langnames'
 import { APP_LANGS } from '../src/i18n/langs'
 import { loadOverlay } from '../src/i18n/ui'
-import { deutschFinder, sichtbareTexte } from './deutsch-erkennen'
+import { deutschFinder, sichtbareTexte, ziffernFinder } from './deutsch-erkennen'
 import { ERFUNDEN_MUSTER, fremdsprachigerBestand, type FremdBestand } from './fremdsprachiger-bestand'
 
 /**
@@ -34,7 +34,9 @@ import { ERFUNDEN_MUSTER, fremdsprachigerBestand, type FremdBestand } from './fr
  *     Start, im Rahmen (Menü, Kopf) einmal überhaupt.
  *  3. Jede Ansicht wird abgelesen wie in `deutsch-erkennen.ts` beschrieben —
  *     Text, `aria-label`, `title`, `placeholder`, `alt`, Feldwerte, unter
- *     `body`, also samt Blättern, Toasts und Druckbögen.
+ *     `body`, also samt Blättern, Toasts und Druckbögen. In einer Sprache mit
+ *     eigenen Ziffern (Persisch) dazu jede Ziffer 0–9, die die App selbst
+ *     schreibt (`ziffernFinder`, ohne die Feldwerte).
  *
  * **In der Suite läuft er auf Ukrainisch, eine Ebene tief.** Ukrainisch, weil
  * dort jedes lateinische Wort auffällt — Deutsch wie Englisch, nicht nur
@@ -197,6 +199,8 @@ interface Ergebnis {
 
 async function durchgang(lang: Fremd, bestand: FremdBestand, tiefe: number, starts = STARTS): Promise<Ergebnis> {
   const finde = deutschFinder(lang, bestand.erfunden)
+  // In Sprachen mit eigenen Ziffern (Persisch) zusätzlich: keine Ziffer 0–9, die die App selbst schreibt.
+  const ziffern = ziffernFinder(lang, ERFUNDEN_MUSTER)
   const gewollt = GEWOLLT[lang] ?? {}
   const befunde = new Map<string, string>()
   const blaetter = new Set<string>()
@@ -238,6 +242,14 @@ async function durchgang(lang: Fremd, bestand: FremdBestand, tiefe: number, star
         for (const rest of finde(zeile)) {
           const schluessel = `„${rest.wort}" in „${zeile.slice(0, 120)}"`
           if (!befunde.has(schluessel)) befunde.set(schluessel, wo)
+        }
+      }
+      if (ziffern) {
+        for (const zeile of sichtbareTexte(document.body, { felder: false })) {
+          for (const rest of ziffern(zeile)) {
+            const schluessel = `Ziffer „${rest.wort}" in „${zeile.slice(0, 120)}"`
+            if (!befunde.has(schluessel)) befunde.set(schluessel, wo)
+          }
         }
       }
       document.body.querySelectorAll('[role="dialog"]').forEach((d) => blaetter.add(normal(d.getAttribute('aria-label') ?? '')))
@@ -296,6 +308,27 @@ describe('Durchgang durch die ganze Oberfläche (T123)', () => {
     }
     expect(befunde).toEqual([])
   }, 900_000)
+
+  it('fa: jede Zahl in persischen Ziffern — auf jedem Start, ohne Tipp', async () => {
+    // Die Wache für die Ziffern der Sprache (Betreiber, 20.11.2026) in der
+    // Suite: Persisch, weil es als einzige App-Sprache eigene Ziffern schreibt,
+    // jeder Start ohne Tipp, weil das schnell geht. Blätter und Felder sieht
+    // der Durchgang von Hand (`T123_SPRACHEN=fa`).
+    const { befunde, ansichten } = await durchgang('fa', bestand, 0, STARTS)
+    expect(ansichten, 'kaum eine Ansicht gesehen').toBeGreaterThan(STARTS.length / 2)
+    expect(befunde).toEqual([])
+  }, 300_000)
+
+  it('Gegenprobe: Der Ziffern-Prüfer sieht lateinische Ziffern, wo die App sie schreibt', () => {
+    // Dieselbe Ansicht auf Deutsch, gelesen mit den Augen der persischen
+    // Prüfung: Uhrzeiten, Nummern und Zählungen stehen dort in 0–9.
+    render(<App start={() => ({ ...structuredClone(bestand.zustand), lang: 'de', congLang: 'de', screen: 'programm', tab: 'mid', terminGewaehlt: true })} />)
+    const finde = ziffernFinder('fa', ERFUNDEN_MUSTER)
+    expect(finde, 'Persisch hat eigene Ziffern').not.toBeNull()
+    expect(sichtbareTexte(document.body, { felder: false }).flatMap((z) => finde?.(z) ?? []).length).toBeGreaterThan(5)
+    // Und eine Sprache mit 0–9 bekommt keinen.
+    expect(ziffernFinder('uk', ERFUNDEN_MUSTER)).toBeNull()
+  })
 
   it('der Durchgang findet ein eingeschmuggeltes deutsches Wort', async () => {
     /*

@@ -17,6 +17,7 @@ import type { MyTask, TrolleyTermin } from '../data/types'
 import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { fill, useT } from '../i18n/useT'
 import { zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { Zeitspanne } from '../trolleys/Zeitspanne'
@@ -182,7 +183,7 @@ function DieseWoche({ termine }: { termine: readonly Termin[] }) {
           <div key={termin.key} className="start-zeile start-termin">
             <span className="start-zeile-inhalt">
               <span className="start-zeile-tag">{kurz.format(termin.tag)}</span>
-              <span className="start-zeile-tag start-zeile-zeit">{termin.zeit}</span>
+              <span className="start-zeile-tag start-zeile-zeit">{inAnzeigeZiffern(termin.zeit)}</span>
               <span className="start-zeile-text">{was(termin)}</span>
             </span>
           </div>

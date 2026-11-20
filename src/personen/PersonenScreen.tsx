@@ -9,6 +9,7 @@ import { useBackDismiss } from '../components/useBackDismiss'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
 import { displayName, doppelteFesteRollen, listName, ohneGruppe, personCompare } from '../data/helpers'
 import { ROLE_KEY, type Dict } from '../i18n/ui'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { fill, useT } from '../i18n/useT'
 import { LinksSendenBlatt } from './LinksSendenBlatt'
 import { NamenKnoepfe } from './NamenKnoepfe'
@@ -131,7 +132,7 @@ function PersonList({
       onClick={() => waehle(auswahl)}
     >
       {text}
-      <span className="personen-auswahl-zahl">{zahl(auswahl)}</span>
+      <span className="personen-auswahl-zahl">{inAnzeigeZiffern(String(zahl(auswahl)))}</span>
     </button>
   )
 
@@ -210,7 +211,7 @@ function PersonList({
                 <Punkt art={PUNKT_DES_STANDS[stand]} />
                 <span className="personen-stand-linie" />
               </span>
-              <span className="personen-stand-zahl">{zahl(stand)}</span>
+              <span className="personen-stand-zahl">{inAnzeigeZiffern(String(zahl(stand)))}</span>
               <span className="klein-text">{t[STAND_KEY[stand]]}</span>
             </button>
           ))}
@@ -233,7 +234,7 @@ function PersonList({
           onClick={() => setBlatt('filter')}
         >
           {t.filterWeitere}
-          {blattfilter > 0 && <span className="personen-auswahl-zahl">{blattfilter}</span>}
+          {blattfilter > 0 && <span className="personen-auswahl-zahl">{inAnzeigeZiffern(String(blattfilter))}</span>}
         </button>
       </div>
 

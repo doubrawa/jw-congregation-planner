@@ -10,9 +10,13 @@
 
 import type { FsInstance, Group, Gruppenbesuch, Lang, Person } from '../data/types'
 import { displayName } from '../data/helpers'
+import { ziffernDerSprache } from '../i18n/anzeige-ziffern'
 import { treffpunktTagLabel } from './treffpunkt-beschriftung'
 
-/** Ein Treffpunkt der Besuchswoche: „Samstag, 17. Oktober · 09:15 · Königreichssaal". */
+/**
+ * Ein Treffpunkt der Besuchswoche: „Samstag, 17. Oktober · 09:15 ·
+ * Königreichssaal" — die Uhrzeit in den Ziffern der Sprache, wie das Datum.
+ */
 export function besuchsTreffpunktText(
   woche: string,
   inst: Pick<FsInstance, 'wd' | 'time' | 'place'>,
@@ -20,7 +24,7 @@ export function besuchsTreffpunktText(
   tu: (s: string) => string,
 ): string {
   // Der Ort ist frei und darf fehlen — auch einer aus Leerzeichen gilt als keiner.
-  return [treffpunktTagLabel(woche, inst.wd, lang), inst.time, tu(inst.place).trim()].filter(Boolean).join(' · ')
+  return [treffpunktTagLabel(woche, inst.wd, lang), ziffernDerSprache(inst.time, lang), tu(inst.place).trim()].filter(Boolean).join(' · ')
 }
 
 /** Name der besuchten Gruppe (übersetzt) — die rohe Id, falls es sie nicht mehr gibt. */

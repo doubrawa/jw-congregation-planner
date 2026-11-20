@@ -10,6 +10,7 @@ import { personLabel } from '../data/helpers'
 import { fromIso, tagNach } from '../data/meeting-dates'
 import { eintragenHindernis, moeglichePartner, TROLLEY_ZEITEN, trolleysSortiert } from '../data/trolleys'
 import type { TrolleyTermin } from '../data/types'
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { LOCALES } from '../i18n/langs'
 import { fill, useT } from '../i18n/useT'
 import { type Eingabe, TROLLEY_WOCHEN, vornameVon } from './trolley-anzeige'
@@ -82,7 +83,7 @@ export function EintragenFormular({
     <select className="feld-wahl" value={wert} onChange={(e) => onWahl(e.target.value)}>
       {TROLLEY_ZEITEN.map((z) => (
         <option key={z} value={z}>
-          {z}
+          {inAnzeigeZiffern(z)}
         </option>
       ))}
     </select>

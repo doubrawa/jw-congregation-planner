@@ -25,8 +25,9 @@
  */
 
 /* eslint-disable */
-import { istFreitext, ohneAlleMarken, ohneMarke } from './freitext.ts'
+import { ausserhalbFreitext, istFreitext, ohneAlleMarken } from './freitext.ts'
 import { LOCALE_JE_CODE as LOCALES } from './locales.ts'
+import { ziffernDerSprache } from './ziffern-der-sprache.ts'
 import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, REF, WD, WDA, type DateDict, type Extra, type RefDict } from './translate-data.ts'
 
 /* ---- Bibelbücher (nachgeladen) ------------------------------------------- */
@@ -373,16 +374,21 @@ function buchRegeln(code: string): Rule[] {
  * Funktion. Ganze Strings mit exaktem Treffer werden direkt ersetzt; sonst wird
  * an „ · “ (und rekursiv an „ — “) in Segmente geteilt und je Segment ein
  * exakter Treffer bzw. die erste passende Regel angewandt, Unbekanntes bleibt.
+ *
+ * Zuletzt kommen die Ziffern in die Schrift der Sprache (`ziffernDerSprache`)
+ * — außer in den Namen: Freitext behält seine Marke bis dahin.
  */
-function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) => string {
+function buildTranslator(M: Record<string, string>, rules: Rule[], code: string): (s: string) => string {
   const one = (f: string): string => {
-    // Gekennzeichneter Freitext (Personenname): Marke ab, sonst nichts.
+    // Gekennzeichneter Freitext (Personenname): bleibt, wie er ist, samt
+    // Marke — die geht erst ganz am Ende herunter, nachdem die Ziffern der
+    // Sprache den Namen ausgelassen haben.
     //
     // **Vor** dem Wörterbuch-Treffer, nicht danach: Die Falle sind nicht nur
     // die Regeln. Wer „Ton" heißt, stünde sonst als „Sound" in der Glocke,
     // und „Markus 2" (die Schreibweise für Namensgleiche, siehe
     // `displayName`) als „Mark 2". Siehe `freitext.ts`.
-    if (istFreitext(f)) return ohneMarke(f)
+    if (istFreitext(f)) return f
     const treffer = M[f]
     if (treffer != null) return treffer
     for (const [re, fn] of rules) { const m = f.match(re); if (m) return fn(m) }
@@ -403,10 +409,11 @@ function buildTranslator(M: Record<string, string>, rules: Rule[]): (s: string) 
   }
   return (s: string): string => {
     if (s == null || s === '') return s
+    const uebersetzt = M[s] ?? s.split(' · ').map(one).join(' · ')
     // Am Ende die Marken pauschal herunter — siehe `ohneAlleMarken`: Eine Regel
     // kann ein Atom samt eingebettetem Namen verschluckt haben, bevor es zur
-    // Teilung kam.
-    return ohneAlleMarken(M[s] ?? s.split(' · ').map(one).join(' · '))
+    // Teilung kam. Davor die Ziffern, an den Namen vorbei.
+    return ohneAlleMarken(ausserhalbFreitext(uebersetzt, (teil) => ziffernDerSprache(teil, code)))
   }
 }
 
@@ -449,7 +456,7 @@ function makeTrIntl(code: string): (s: string) => string {
     ...verweisRegeln(code),
     ...buchRegeln(code),
   ]
-  return buildTranslator(M, rules)
+  return buildTranslator(M, rules, code)
 }
 
 /**
@@ -533,5 +540,5 @@ function baueTr(code: string): (s: string) => string {
     [/^in (\d+) Tagen$/, m => L.tage(g(m, 1))],
     [/^(\d+) Zuteilungen$/, m => L.zut(g(m, 1))],
   ]
-  return buildTranslator(M, rules)
+  return buildTranslator(M, rules, code)
 }

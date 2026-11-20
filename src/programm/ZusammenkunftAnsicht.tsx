@@ -132,7 +132,7 @@ function Tag({
   const { state } = useApp()
   const zeiten = state.congregation.times
   const meeting = week[tab]
-  const uhrzeit = [meetingTime(rawWeek, tab, zeiten), tpw(meeting.end)].filter(Boolean).join(' · ')
+  const uhrzeit = [tpw(meetingTime(rawWeek, tab, zeiten)), tpw(meeting.end)].filter(Boolean).join(' · ')
   const titelId = useId()
   return (
     <section className="prog-tag" aria-labelledby={titelId}>
@@ -314,7 +314,7 @@ function ProgramRow({
     <div className="prog-row">
       <div className="prog-row-text" lang={sprache}>
         <div className="prog-title">
-          {item.num != null && <span className="prog-num">{item.num} </span>}
+          {item.num != null && <span className="prog-num">{tpw(String(item.num))} </span>}
           {title ?? tpw(item.title)}
         </div>
         {rest && <div className="prog-item-meta">{tpw(rest)}</div>}

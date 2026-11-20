@@ -1,3 +1,4 @@
+import { inAnzeigeZiffern } from '../i18n/anzeige-ziffern'
 import { useT } from '../i18n/useT'
 import { GesperrterKnopf } from './GesperrterKnopf'
 import { Zeichen } from './Zeichen'
@@ -15,7 +16,7 @@ export function PlusMinus({
   min,
   max,
   label,
-  anzeige = String(wert),
+  anzeige = inAnzeigeZiffern(String(wert)),
   anzeigeSprache,
   onWert,
 }: {

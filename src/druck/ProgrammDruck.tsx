@@ -35,7 +35,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
   const meeting = week[tab]
   const rawMeeting = rawWeek[tab]
   const zeiten = state.congregation.times
-  const uhrzeit = [meetingTime(rawWeek, tab, zeiten), tpw(meeting.end)].filter(Boolean).join(' · ')
+  const uhrzeit = [tpw(meetingTime(rawWeek, tab, zeiten)), tpw(meeting.end)].filter(Boolean).join(' · ')
   const mitAux = hatAuxKlasse(rawMeeting)
   const ausgefallen = istAusgefallen(rawWeek, tab)
   return (
@@ -62,7 +62,7 @@ export function TagVoll({ tab, week, rawWeek, tpw }: DruckTag) {
                   const zweiRaeume = mitAux && item.aux != null
                   return (
                     <div key={item.iid} className="druck-punkt">
-                      <span className="druck-punkt-nr">{item.num ?? ''}</span>
+                      <span className="druck-punkt-nr">{item.num != null ? tpw(String(item.num)) : ''}</span>
                       <span className="druck-punkt-text">
                         <span className="druck-punkt-kopf">
                           <span className="druck-punkt-titel">{title ?? tpw(item.title)}</span>
