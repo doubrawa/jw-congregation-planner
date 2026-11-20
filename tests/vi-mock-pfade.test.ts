@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
-import { join, posix } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { tmpdir } from 'node:os'
+import { dirname, join, posix } from 'node:path'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { quelldateien, WURZEL } from './quelldateien'
 
 /**
@@ -23,7 +24,9 @@ import { quelldateien, WURZEL } from './quelldateien'
  * auch ein Import weglassen darf — und **in der Schreibweise des Dateisystems**:
  * Unter Windows fände `../lib/Supabase` die Datei, die CI unter Linux nicht
  * (siehe `modulnamen-gross-klein.test.ts`). Node-Module und Pakete zählen, wenn
- * es sie gibt.
+ * es sie gibt. Pakete sucht die Probe wie Node im `node_modules` der Wurzel und
+ * darüber: Ein Worktree unter `.claude/worktrees/` hat keins und nimmt das des
+ * Hauptcheckouts.
  */
 
 /** Endungen, die ein Import weglassen darf. */
@@ -45,30 +48,40 @@ function aufrufe(datei: string, text: string): Aufruf[] {
   return [...text.matchAll(AUFRUF)].map((m) => ({ datei, pfad: m[2] ?? null }))
 }
 
-/** Verzeichnisinhalte, relativ zur Wurzel und mit `/` — einmal gelesen je Lauf. */
+/** Verzeichnisinhalte je Ordner (absoluter Pfad) — einmal gelesen je Lauf. */
 const inhalte = new Map<string, Set<string>>()
-function inhalt(ort: string): Set<string> {
-  let namen = inhalte.get(ort)
+function inhalt(ordner: string): Set<string> {
+  let namen = inhalte.get(ordner)
   if (!namen) {
     try {
-      namen = new Set(readdirSync(join(WURZEL, ort)))
+      namen = new Set(readdirSync(ordner))
     } catch {
       namen = new Set()
     }
-    inhalte.set(ort, namen)
+    inhalte.set(ordner, namen)
   }
   return namen
 }
 
-/** Gibt es diese Datei (relativ zur Wurzel, mit `/`) — in genau dieser Schreibweise? */
-function istDatei(rel: string): boolean {
+/** Gibt es diese Datei (relativ zu `basis`, mit `/`) — in genau dieser Schreibweise? */
+function istDateiUnter(basis: string, rel: string): boolean {
   if (rel.startsWith('..') || posix.isAbsolute(rel)) return false
-  let ort = ''
+  let ordner = basis
   for (const teil of rel.split('/')) {
-    if (!inhalt(ort).has(teil)) return false
-    ort = ort ? `${ort}/${teil}` : teil
+    if (!inhalt(ordner).has(teil)) return false
+    ordner = join(ordner, teil)
   }
-  return statSync(join(WURZEL, rel)).isFile()
+  return statSync(ordner).isFile()
+}
+
+const istDatei = (rel: string): boolean => istDateiUnter(WURZEL, rel)
+
+/** Liegt das Paket im `node_modules` der Wurzel oder eines Ordners darüber? */
+function paketDa(paket: string, wurzel = WURZEL): boolean {
+  for (let ordner = wurzel; ; ordner = dirname(ordner)) {
+    if (istDateiUnter(ordner, `node_modules/${paket}/package.json`)) return true
+    if (dirname(ordner) === ordner) return false
+  }
 }
 
 /** Löst `pfad` aus `datei` auf, wie vitest es täte? */
@@ -82,7 +95,7 @@ function trifft(datei: string, pfad: string): boolean {
   if (pfad.startsWith('node:')) return builtinModules.includes(pfad.slice('node:'.length))
   const teile = pfad.split('/')
   const paket = pfad.startsWith('@') ? teile.slice(0, 2).join('/') : (teile[0] ?? '')
-  return istDatei(`node_modules/${paket}/package.json`)
+  return paketDa(paket)
 }
 
 describe('Jeder vi.mock-Pfad trifft eine Datei', () => {
@@ -133,5 +146,49 @@ describe('Jeder vi.mock-Pfad trifft eine Datei', () => {
     ])
     const daneben = gefunden.filter((a) => a.pfad !== null && !trifft(a.datei, a.pfad)).map((a) => a.pfad)
     expect(daneben).toEqual(['../data/planning', '../lib/supabse', '../lib/Supabase', './gibt-es-nicht', '@supabase/supabase-jss'])
+  })
+})
+
+describe('Pakete sucht die Probe wie Node, von der Wurzel aufwärts', () => {
+  // Ein nachgebauter Hauptcheckout mit `node_modules`, darin ein Worktree
+  // ohne eigenes — so liegt jeder Worktree unter `.claude/worktrees/`. Die
+  // Paketnamen gibt es sonst nirgends: Die Suche geht bis zum Laufwerk hinauf,
+  // und ein `node_modules` über dem Temp-Ordner darf nicht mitzählen.
+  let temp = ''
+  let haupt = ''
+  let zweig = ''
+  beforeAll(() => {
+    temp = mkdtempSync(join(tmpdir(), 'vi-mock-pfade-'))
+    haupt = join(temp, 'haupt')
+    zweig = join(haupt, '.claude', 'worktrees', 'zweig')
+    const pakete: [string, string][] = [
+      [haupt, 'vi-mock-probe-oben'],
+      [haupt, '@vi-mock-probe/bereich'],
+      [zweig, 'vi-mock-probe-hier'],
+    ]
+    for (const [unter, name] of pakete) {
+      const ordner = join(unter, 'node_modules', ...name.split('/'))
+      mkdirSync(ordner, { recursive: true })
+      writeFileSync(join(ordner, 'package.json'), '{}')
+    }
+  })
+  afterAll(() => rmSync(temp, { recursive: true, force: true }))
+
+  it('ein Paket im node_modules darüber zählt: Der Worktree nimmt das des Hauptcheckouts', () => {
+    expect(paketDa('vi-mock-probe-oben', zweig)).toBe(true)
+    expect(paketDa('@vi-mock-probe/bereich', zweig)).toBe(true)
+  })
+
+  it('das node_modules der Wurzel selbst zählt, wie in der CI', () => {
+    expect(paketDa('vi-mock-probe-hier', zweig)).toBe(true)
+  })
+
+  it('ein fehlendes, falsch geschriebenes oder tiefer liegendes Paket zählt nicht', () => {
+    expect(paketDa('vi-mock-probe-fehlt', zweig)).toBe(false)
+    // Unter Windows fände das Dateisystem beide, Linux in der CI nicht.
+    expect(paketDa('Vi-mock-probe-oben', zweig)).toBe(false)
+    expect(paketDa('@vi-mock-probe/Bereich', zweig)).toBe(false)
+    // Node sucht nur aufwärts: Was im Worktree liegt, sieht der Hauptcheckout nicht.
+    expect(paketDa('vi-mock-probe-hier', haupt)).toBe(false)
   })
 })
