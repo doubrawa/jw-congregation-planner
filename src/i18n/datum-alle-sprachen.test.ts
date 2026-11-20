@@ -430,10 +430,11 @@ describe('Jede Locale ist der Laufzeit bekannt', () => {
  * Arabisch bekommt von CLDR westliche — anders als die Wochenseite: dort
  * steht „(١٠ دق)".
  *
- * Nicht stillschweigend geändert: `ar-u-nu-arab` zu erzwingen hieße, für alle
- * arabischsprachigen Gegenden zu entscheiden — der Maghreb schreibt westlich,
- * und CLDR hat die Vorgabe für das allgemeine `ar` aus genau diesem Grund
- * einmal umgestellt. Die Entscheidung gehört dem Betreiber; die Messung hierher.
+ * **So bleibt es** (Betreiber, 20.11.2026: „Westlich lassen"): `ar-u-nu-arab`
+ * zu erzwingen hieße, für alle arabischsprachigen Gegenden zu entscheiden — der
+ * Maghreb schreibt westlich, und CLDR hat die Vorgabe für das allgemeine `ar`
+ * aus genau diesem Grund einmal umgestellt. Die übrigen Zahlen der App folgen
+ * dem Datum (`ziffernDerSprache`): in Persisch persisch, in Arabisch westlich.
  */
 describe('Ziffernsätze der Anzeige', () => {
   const ziffernSatz = (code: Lang): string =>
