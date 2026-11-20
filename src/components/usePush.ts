@@ -60,7 +60,12 @@ export function usePush(): PushState {
       dispatch({ type: 'showToast', text: t.toastPushVerweigert })
       return false
     }
-    savePushSubscription(state.congregationId, state.userId, fields, state.lang)
+    if ((await savePushSubscription(state.congregationId, state.userId, fields, state.lang)) === 'dienst-unbekannt') {
+      // Ohne Zeile in der Datenbank käme über dieses Abo nie etwas an.
+      await sub?.unsubscribe().catch(() => false)
+      dispatch({ type: 'showToast', text: t.toastPushDienstUnbekannt })
+      return false
+    }
     setSubscribed(true)
     dispatch({ type: 'showToast', text: t.toastPushAn })
     return true

@@ -528,6 +528,7 @@ export const DE = {
     toastPushAn: 'Push-Mitteilungen aktiviert',
     toastPushAus: 'Push-Mitteilungen deaktiviert',
     toastPushVerweigert: 'Push-Mitteilungen wurden nicht erlaubt',
+    toastPushDienstUnbekannt: 'Push-Mitteilungen gehen in diesem Browser nicht: Seinen Push-Dienst kennt die App nicht. Mit Chrome, Edge, Firefox oder Safari geht es.',
     keineWochenTitel: 'KEIN PROGRAMM GELADEN',
     keineWochenHinweis: 'Es sind noch keine Wochen geladen. Wer plant, holt das Programm unter „Planung“ mit „Holen“.',
     rolle: 'Rolle', aufgabenbereiche: 'Aufgabenbereiche',

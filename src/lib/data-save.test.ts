@@ -919,6 +919,8 @@ describe('Weitere Schreiber mit Gegenfall', () => {
   function antworten(...folge: Array<{ data?: unknown; error?: unknown }>) {
     chain.then = (resolve: (v: unknown) => void) => resolve({ data: null, error: null, ...folge.shift() })
   }
+  /** So meldet Postgres die Regel `push_subscriptions_dienst` (schema.sql) — gemessen in `supabase/push-dienste.test.ts`. */
+  const DIENST_UNBEKANNT = 'new row for relation "push_subscriptions" violates check constraint "push_subscriptions_dienst"'
 
   const ANWESEND = { woche: '2026-09-07', tab: 'mid' as const, saal: 42, video: 7, pid: 'p1' }
 
@@ -1012,9 +1014,28 @@ describe('Weitere Schreiber mit Gegenfall', () => {
     expect(chain.insert).toHaveBeenCalledWith({ congregation_id: 'c1', user_id: 'u1', endpoint: 'e1', p256dh: 'p', auth: 'a', lang: 'de' })
     antworten({ error: { message: 'doppelt', code: '23505' } })
     expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('fremd')
+    antworten({ error: { message: DIENST_UNBEKANNT, code: '23514' } })
+    expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('dienst-unbekannt')
     antworten({ error: { message: 'Netz', code: '' } })
     expect(await pushAboEintragen('c1', 'u1', abo, 'de')).toBe('fehler')
     expect(chain.upsert).not.toHaveBeenCalled()
+  })
+
+  it('savePushSubscription: Einen unbekannten Push-Dienst sagt sie dem Aufrufer, statt ihn als Schreibfehler zu melden — jeder andere Fehler bleibt eine Meldung', async () => {
+    const melder = vi.fn()
+    setSchreibfehlerMelder(melder)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const abo = { endpoint: 'https://beliebig.example/x', p256dh: 'p', auth: 'a' }
+    antworten({ error: { message: DIENST_UNBEKANNT, code: '23514' } })
+    expect(await savePushSubscription('c1', 'u1', abo, 'de')).toBe('dienst-unbekannt')
+    expect(melder).not.toHaveBeenCalled()
+    // Gegenprobe: eine andere verletzte Regel ist kein unbekannter Dienst.
+    antworten({ error: { message: 'violates check constraint "andere_regel"', code: '23514' } })
+    expect(await savePushSubscription('c1', 'u1', abo, 'de')).toBe('ok')
+    expect(melder).toHaveBeenCalledTimes(1)
+    antworten({})
+    expect(await savePushSubscription('c1', 'u1', abo, 'de')).toBe('ok')
+    expect(melder).toHaveBeenCalledTimes(1)
   })
 
   it('sendPlan: Antwort der Function, fehlende Zahlen als null bzw. leer — gescheitert null', async () => {

@@ -6,7 +6,7 @@
 import { taskKeyVorbei } from '../../data/planung/schluessel'
 import type { MeetingTimes, Notification, NotificationType, Week } from '../../data/types'
 import { supabase } from '../supabase'
-import { run } from './schreibweg'
+import { run, type Zeilenfehler } from './schreibweg'
 
 export interface NotificationRow {
   id: string
@@ -193,31 +193,51 @@ export function deleteNotifications(congregationId: string, userId: string): voi
 }
 
 /**
+ * Nimmt die Datenbank den Push-Dienst nicht an? Ein Abo trägt sie nur von den
+ * bekannten Diensten ein (`push_subscriptions_dienst` in schema.sql) — die
+ * Functions rufen jeden eingetragenen Endpoint auf.
+ */
+function dienstUnbekannt(error: Zeilenfehler): boolean {
+  return error.code === '23514' && error.message.includes('push_subscriptions_dienst')
+}
+
+/**
  * Push-Abo dieses Geräts speichern (Endpoint ist eindeutig → Upsert).
  *
  * `lang` ist die App-Sprache dieses Geräts: der Text einer Push-Nachricht
  * entsteht beim Versand und lässt sich danach nicht mehr übersetzen.
+ *
+ * `'dienst-unbekannt'`: Den Push-Dienst des Browsers nimmt die Datenbank nicht
+ * an — das sagt der Aufrufer dem Nutzer selbst. Jeden anderen Fehler meldet
+ * der Schreibweg wie überall.
  */
-export function savePushSubscription(
+export async function savePushSubscription(
   congregationId: string,
   userId: string,
   sub: { endpoint: string; p256dh: string; auth: string },
   lang: string,
-): void {
-  if (!supabase) return
-  void run(
-    supabase.from('push_subscriptions').upsert(
-      {
-        congregation_id: congregationId,
-        user_id: userId,
-        endpoint: sub.endpoint,
-        p256dh: sub.p256dh,
-        auth: sub.auth,
-        lang,
-      },
-      { onConflict: 'endpoint' },
-    ),
+): Promise<'ok' | 'dienst-unbekannt'> {
+  if (!supabase) return 'ok'
+  let antwort: 'ok' | 'dienst-unbekannt' = 'ok'
+  const speichern = supabase.from('push_subscriptions').upsert(
+    {
+      congregation_id: congregationId,
+      user_id: userId,
+      endpoint: sub.endpoint,
+      p256dh: sub.p256dh,
+      auth: sub.auth,
+      lang,
+    },
+    { onConflict: 'endpoint' },
   )
+  await run(
+    Promise.resolve(speichern).then(({ error }) => {
+      if (!error || !dienstUnbekannt(error)) return { error }
+      antwort = 'dienst-unbekannt'
+      return { error: null }
+    }),
+  )
+  return antwort
 }
 
 /**
@@ -251,14 +271,15 @@ export async function pushAboEigen(endpoint: string): Promise<boolean | null> {
  * Ein Abo neu eintragen, **ohne** eine bestehende Zeile anzufassen. `fremd`:
  * Den Endpoint führt schon eine Zeile, die nicht die eigene ist — sie gehört
  * dem, der vorher auf diesem Gerät angemeldet war (`push_subscriptions.endpoint`
- * ist eindeutig).
+ * ist eindeutig). `dienst-unbekannt`: Den Push-Dienst nimmt die Datenbank nicht
+ * an (`dienstUnbekannt`).
  */
 export async function pushAboEintragen(
   congregationId: string,
   userId: string,
   sub: { endpoint: string; p256dh: string; auth: string },
   lang: string,
-): Promise<'eingetragen' | 'fremd' | 'fehler'> {
+): Promise<'eingetragen' | 'fremd' | 'dienst-unbekannt' | 'fehler'> {
   if (!supabase) return 'fehler'
   const { error } = await supabase.from('push_subscriptions').insert({
     congregation_id: congregationId,
@@ -269,5 +290,6 @@ export async function pushAboEintragen(
     lang,
   })
   if (!error) return 'eingetragen'
-  return error.code === '23505' ? 'fremd' : 'fehler'
+  if (error.code === '23505') return 'fremd'
+  return dienstUnbekannt(error) ? 'dienst-unbekannt' : 'fehler'
 }

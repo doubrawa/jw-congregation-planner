@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Anlık bildirimler açık",
   "toastPushAus": "Anlık bildirimler kapalı",
   "toastPushVerweigert": "Anlık bildirimlere izin verilmedi",
+  "toastPushDienstUnbekannt": "Anlık bildirimler bu tarayıcıda çalışmıyor: Uygulama bu tarayıcının bildirim hizmetini tanımıyor. Chrome, Edge, Firefox veya Safari ile çalışır.",
   "keineWochenTitel": "PROGRAM YÜKLENMEDİ",
   "keineWochenHinweis": "Henüz yüklenmiş hafta yok. Planlayanlar programı “Planlama” bölümünde “Getir” ile getirir.",
   "eigenerBereich": "Kendi görev alanı",

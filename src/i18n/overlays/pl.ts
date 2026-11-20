@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Powiadomienia push włączone",
   "toastPushAus": "Powiadomienia push wyłączone",
   "toastPushVerweigert": "Nie zezwolono na powiadomienia push",
+  "toastPushDienstUnbekannt": "Powiadomienia push nie działają w tej przeglądarce: aplikacja nie zna jej usługi push. Działają w przeglądarkach Chrome, Edge, Firefox i Safari.",
   "keineWochenTitel": "NIE WCZYTANO PROGRAMU",
   "keineWochenHinweis": "Nie wczytano jeszcze żadnych tygodni. Planujący pobierają program w sekcji „Planowanie” przyciskiem „Pobierz”.",
   "eigenerBereich": "Własne uprawnienie",

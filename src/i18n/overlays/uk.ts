@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Push-сповіщення ввімкнено",
   "toastPushAus": "Push-сповіщення вимкнено",
   "toastPushVerweigert": "Push-сповіщення не дозволено",
+  "toastPushDienstUnbekannt": "Push-сповіщення не працюють у цьому браузері: застосунку невідомий його push-сервіс. Вони працюють у Chrome, Edge, Firefox і Safari.",
   "keineWochenTitel": "ПРОГРАМУ НЕ ЗАВАНТАЖЕНО",
   "keineWochenHinweis": "Тижні ще не завантажено. Ті, хто планує, завантажують програму в розділі «Планування» кнопкою «Завантажити».",
   "eigenerBereich": "Окремий обов’язок",

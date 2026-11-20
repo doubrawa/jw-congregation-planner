@@ -61,7 +61,7 @@ const OHNE_DATENBANK: Record<string, [() => unknown, unknown]> = {
   savePersonGroup: [() => personen.savePersonGroup(person), undefined],
   saveFamily: [() => personen.saveFamily('c1', 'h1', [person]), undefined],
   deleteHouseholdRow: [() => personen.deleteHouseholdRow('h1'), undefined],
-  savePushSubscription: [() => mitteilungen.savePushSubscription('c1', 'u1', abo, 'de'), undefined],
+  savePushSubscription: [() => mitteilungen.savePushSubscription('c1', 'u1', abo, 'de'), 'ok'],
   savePushLanguage: [() => mitteilungen.savePushLanguage('e1', 'de'), undefined],
   deletePushSubscription: [() => mitteilungen.deletePushSubscription('e1'), undefined],
   pushAboEigen: [() => mitteilungen.pushAboEigen('e1'), null],

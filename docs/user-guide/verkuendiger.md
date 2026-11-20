@@ -780,7 +780,10 @@ Wo dein Gerät es unterstützt, kannst du Erinnerungen an anstehende Aufgaben al
 Push‑Nachricht erhalten – über **Aktivieren** auf der Karte oben in den
 **Mitteilungen** oder den Schalter **Push‑Mitteilungen** unter **Profil**.
 Beides erscheint nur, wenn dein Browser Push unterstützt; hat er die Erlaubnis
-schon einmal verweigert, gibst du sie in seinen Einstellungen wieder frei. Auf dem iPhone
+schon einmal verweigert, gibst du sie in seinen Einstellungen wieder frei. Die
+App nimmt Push über die Dienste von Google, Apple, Mozilla und Microsoft an –
+damit gehen Chrome, Edge, Firefox und Safari. Nutzt dein Browser einen anderen,
+sagt sie es beim Aktivieren, und der Schalter bleibt aus. Auf dem iPhone
 funktioniert das
 **nur aus der installierten App** – im normalen Safari‑Tab kommen keine
 Benachrichtigungen an. **Erinnerungen kommen ausschließlich als Push‑Nachricht –

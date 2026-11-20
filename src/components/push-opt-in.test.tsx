@@ -152,6 +152,20 @@ describe('Einschalten fragt die Berechtigung — und erst dann', () => {
     expect(result.current.subscribed).toBe(true)
   })
 
+  it('kennt die Datenbank den Push-Dienst nicht, sagt es das, beendet das Abo im Browser und bleibt aus', async () => {
+    const unsubscribe = vi.fn(() => Promise.resolve(true))
+    push.subscribePush.mockResolvedValue({ endpoint: 'https://beliebig.example/abo', unsubscribe })
+    savePushSubscription.mockResolvedValueOnce('dienst-unbekannt')
+    const { result, dispatch } = hook()
+    await act(async () => {
+      expect(await result.current.enable()).toBe(false)
+    })
+    expect(unsubscribe).toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastPushDienstUnbekannt })
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'showToast', text: t.toastPushAn })
+    expect(result.current.subscribed).toBe(false)
+  })
+
   it('eine verweigerte Berechtigung sagt es und speichert nichts', async () => {
     push.subscribePush.mockResolvedValue(null)
     const { result, dispatch } = hook()

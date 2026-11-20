@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Notificări push activate",
   "toastPushAus": "Notificări push dezactivate",
   "toastPushVerweigert": "Notificările push nu au fost permise",
+  "toastPushDienstUnbekannt": "Notificările push nu funcționează în acest browser: aplicația nu cunoaște serviciul său de push. Funcționează în Chrome, Edge, Firefox sau Safari.",
   "keineWochenTitel": "NICIUN PROGRAM ÎNCĂRCAT",
   "keineWochenHinweis": "Încă nu există săptămâni încărcate. Cei care planifică preiau programul în „Planificare” cu „Preia”.",
   "eigenerBereich": "Domeniu de însărcinare propriu",

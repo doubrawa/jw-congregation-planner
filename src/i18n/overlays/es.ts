@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Notificaciones push activadas",
   "toastPushAus": "Notificaciones push desactivadas",
   "toastPushVerweigert": "No se permitieron las notificaciones push",
+  "toastPushDienstUnbekannt": "Las notificaciones push no funcionan en este navegador: la app no conoce su servicio push. Funcionan en Chrome, Edge, Firefox o Safari.",
   "keineWochenTitel": "SIN PROGRAMA CARGADO",
   "keineWochenHinweis": "Todavía no hay semanas cargadas. Quien planifica obtiene el programa en “Planificación” con “Obtener”.",
   "eigenerBereich": "Área de asignación propia",

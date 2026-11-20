@@ -48,6 +48,11 @@ const LATEIN_ERLAUBT: Record<string, string> = {
   Android: 'Name des Betriebssystems',
   iPhone: 'Name des Geräts',
   Safari: 'Name des Browsers',
+  // Wo Push geht, wenn die App den Push-Dienst eines Browsers nicht kennt
+  // (`toastPushDienstUnbekannt`) — auf Russisch und Ukrainisch lateinisch wie Safari.
+  Chrome: 'Name des Browsers',
+  Edge: 'Name des Browsers',
+  Firefox: 'Name des Browsers',
   S: 'Formularnummer „S-89"',
   Zoom: 'Name des Dienstes (Zoom-Ordner)',
   // „Per Nachricht" im Blatt „Link senden" (24.10.2026): die Dienste, wie sie

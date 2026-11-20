@@ -82,6 +82,24 @@ describe('pushAboAbgleichen', () => {
     expect(a.unsubscribe).toHaveBeenCalled()
   })
 
+  it('nimmt die Datenbank seinen Push-Dienst nicht an, endet es im Browser — sonst stünde der Schalter auf „an", und es käme nie etwas', async () => {
+    const a = abo('https://beliebig.example/abc')
+    browser.abo = a
+    daten.pushAboEigen.mockResolvedValue(false)
+    daten.pushAboEintragen.mockResolvedValue('dienst-unbekannt')
+    await pushAboAbgleichen('c1', 'uB', 'de')
+    expect(a.unsubscribe).toHaveBeenCalled()
+  })
+
+  it('Gegenprobe: scheitert das Eintragen sonst (Netz), bleibt das Abo — beim nächsten Anmelden wird wieder gefragt', async () => {
+    const a = abo()
+    browser.abo = a
+    daten.pushAboEigen.mockResolvedValue(false)
+    daten.pushAboEintragen.mockResolvedValue('fehler')
+    await pushAboAbgleichen('c1', 'uB', 'de')
+    expect(a.unsubscribe).not.toHaveBeenCalled()
+  })
+
   it('geht die Frage nicht durch, bleibt alles, wie es ist', async () => {
     const a = abo()
     browser.abo = a

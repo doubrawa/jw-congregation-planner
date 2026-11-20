@@ -200,6 +200,7 @@ export default {
   "toastPushAn": "Push notifications enabled",
   "toastPushAus": "Push notifications disabled",
   "toastPushVerweigert": "Push notifications were not allowed",
+  "toastPushDienstUnbekannt": "Push notifications don’t work in this browser: the app doesn’t know its push service. They work in Chrome, Edge, Firefox or Safari.",
   "keineWochenTitel": "NO PROGRAM LOADED",
   "keineWochenHinweis": "No weeks are loaded yet. Planners fetch the program under “Planning” with “Fetch”.",
   "rolle": "Role",

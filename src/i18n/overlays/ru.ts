@@ -339,6 +339,7 @@ export default {
   "toastPushAn": "Push-уведомления включены",
   "toastPushAus": "Push-уведомления отключены",
   "toastPushVerweigert": "Push-уведомления не разрешены",
+  "toastPushDienstUnbekannt": "Push-уведомления не работают в этом браузере: приложению неизвестен его push-сервис. Они работают в Chrome, Edge, Firefox и Safari.",
   "keineWochenTitel": "ПРОГРАММА НЕ ЗАГРУЖЕНА",
   "keineWochenHinweis": "Недели ещё не загружены. Те, кто планирует, загружают программу в разделе «Планирование» кнопкой «Загрузить».",
   "eigenerBereich": "Отдельная обязанность",

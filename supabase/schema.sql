@@ -506,7 +506,19 @@ create table if not exists public.push_subscriptions (
   -- App-Sprache dieses Geräts: Push-Text entsteht beim Versand und kann später
   -- nicht mehr übersetzt werden. null = Deutsch.
   lang            text,
-  created_at      timestamptz not null default now()
+  created_at      timestamptz not null default now(),
+
+  -- **Nur die bekannten Push-Dienste.** Die Functions rufen jeden eingetragenen
+  -- Endpoint auf (`zustellen`, `_shared/push.ts`); frei wählbar wäre er ein
+  -- blinder Aufruf aus der Function an einen beliebigen Host. Google (Chrome,
+  -- Android), Apple (Safari), Mozilla (Firefox), Microsoft (Edge unter
+  -- Windows). Fehlt ein Dienst, sagt es die App beim Einschalten
+  -- (`toastPushDienstUnbekannt`), statt still keinen Push zu bekommen. Nach
+  -- dem Host muss ein `/` stehen: Ein Dienstname als Vorsilbe eines fremden
+  -- Hosts, als Benutzername oder mit Port trifft nicht.
+  constraint push_subscriptions_dienst check (
+    endpoint ~ '^https://(fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)+notify\.windows\.com)/'
+  )
 );
 
 create index if not exists push_subscriptions_congregation_idx

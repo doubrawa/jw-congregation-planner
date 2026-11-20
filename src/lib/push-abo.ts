@@ -30,6 +30,8 @@ export async function pushAboLoesen(): Promise<void> {
  *    zeigt dann „aus", und ein neues Abo bekommt einen neuen Endpoint. Die
  *    alte Zeile räumt der Versand ab, sobald der Dienst den Endpoint nicht mehr
  *    kennt (404/410, `_shared/push.ts`).
+ *  - Die Datenbank kennt seinen Push-Dienst nicht: ebenso beenden. Sonst
+ *    stünde der Schalter auf „an", und es käme nie etwas.
  *
  * Geht eine Frage nicht durch (Netz), bleibt alles, wie es ist — beim
  * nächsten Anmelden wird wieder gefragt.
@@ -40,7 +42,8 @@ export async function pushAboAbgleichen(congregationId: string, userId: string, 
     const felder = abo && subscriptionFields(abo)
     if (!abo || !felder) return
     if ((await pushAboEigen(felder.endpoint)) !== false) return
-    if ((await pushAboEintragen(congregationId, userId, felder, lang)) === 'fremd') await abo.unsubscribe()
+    const eingetragen = await pushAboEintragen(congregationId, userId, felder, lang)
+    if (eingetragen === 'fremd' || eingetragen === 'dienst-unbekannt') await abo.unsubscribe()
   } catch (err) {
     console.error('[push] Abo abgleichen', err)
   }
