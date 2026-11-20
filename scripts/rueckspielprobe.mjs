@@ -49,7 +49,7 @@ export async function main(argv = process.argv.slice(2)) {
   console.log('schema.sql in eine leere Postgres eingespielt, ohne Fehler.')
 
   // Die Konten zuerst — `members.user_id` zeigt auf `auth.users`.
-  await db.query('insert into auth.users (id, email) select * from json_populate_recordset(null::auth.users, $1::json)', [
+  await db.query('insert into auth.users (id, email) select id, email from json_populate_recordset(null::auth.users, $1::json)', [
     JSON.stringify((sicherung.konten ?? []).map((k) => ({ id: k.id, email: k.email }))),
   ])
 

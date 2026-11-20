@@ -29,7 +29,7 @@ create role anon;
 create role authenticated;
 create role service_role bypassrls;
 create schema if not exists auth;
-create table auth.users (id uuid primary key, email text);
+create table auth.users (id uuid primary key, email text, encrypted_password varchar(255));
 create table auth.sessions (id uuid primary key default gen_random_uuid(), updated_at timestamptz default now());
 create table auth.audit_log_entries (id uuid primary key default gen_random_uuid(), created_at timestamptz default now());
 create or replace function auth.uid() returns uuid language sql stable as

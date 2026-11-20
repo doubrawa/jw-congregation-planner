@@ -1055,6 +1055,27 @@ revoke all on function public.anmelde_versuch(text, integer, integer) from publi
 revoke all on function public.anmelde_versuch(text, integer, integer) from anon, authenticated;
 grant execute on function public.anmelde_versuch(text, integer, integer) to service_role;
 
+-- **„Zugang erneuern" nimmt auch ein Kennwort weg.** Ein Konto mit Sitzung kann
+-- sich bei Supabase Auth selbst ein Kennwort geben (`PUT /auth/v1/user`), und
+-- die Anmeldung mit Adresse und Kennwort ist im Projekt an — die
+-- Mitgliedsrechte-Probe meldet sich so an. Wer eine Sitzung gestohlen hat, käme
+-- mit einem so gesetzten Kennwort auch nach dem Erneuern wieder hinein. Die
+-- Function `anmelden` ruft das hier beim Sperren mit auf, neben Link und
+-- Einmal-Code. Über die Admin-Schnittstelle von Auth ginge es nicht schonend:
+-- Ein neues Kennwort meldet dort jedes Gerät ab, auch das, das gerade erneuert.
+-- Leer heißt für Auth „kein Kennwort"; die Anmeldung per Link braucht keins.
+create or replace function public.kennwort_entfernen(konto uuid)
+returns void
+language sql security definer
+set search_path = public
+as $$
+  update auth.users set encrypted_password = '' where id = konto;
+$$;
+
+revoke all on function public.kennwort_entfernen(uuid) from public;
+revoke all on function public.kennwort_entfernen(uuid) from anon, authenticated;
+grant execute on function public.kennwort_entfernen(uuid) to service_role;
+
 -- ---------------------------------------------------------------------------
 -- Fehlermeldungen von den Geräten (T171)
 -- ---------------------------------------------------------------------------

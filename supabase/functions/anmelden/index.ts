@@ -15,8 +15,8 @@
 // **Mit Sitzung** dazu der eigene Zugang, im Profil: ein Einmal-Code
 // fürs nächste Gerät — kurz gültig, einmal einzulösen, im selben Feld wie der
 // Code vom Zettel — und „Zugang erneuern": Link und Zettel gelten danach nicht
-// mehr, alle übrigen Geräte werden abgemeldet. Die Person kommt dabei allein aus
-// der Sitzung, nie aus der Anfrage.
+// mehr, ein Kennwort ist fort, alle übrigen Geräte werden abgemeldet. Konto und
+// Person kommen dabei allein aus der Sitzung, nie aus der Anfrage.
 //
 // Request (supabase.functions.invoke):
 //   { aktion: 'link', token }                  Anmelde-Link (Nachricht)
@@ -24,8 +24,9 @@
 //                                              oder getippt); `pruefen`: nur Name
 //                                              und Versammlung
 //   { aktion: 'einmalcode' }                   mit Sitzung: ein Code fürs nächste Gerät
-//   { aktion: 'erneuern' }                     mit Sitzung: Link und Zettel sperren,
-//                                              die übrigen Geräte abmelden
+//   { aktion: 'erneuern' }                     mit Sitzung: Link, Zettel und ein
+//                                              Kennwort sperren, die übrigen
+//                                              Geräte abmelden
 // Response:
 //   200 { ok: true, sitzung: { access_token, refresh_token } }   angemeldet
 //   200 { ok: true, name, versammlung }                          geprüft
@@ -298,18 +299,18 @@ async function mitCode(req: Request, roh: unknown, pruefen: boolean, jetzt: numb
 }
 
 /** Wer im Profil fragt: das Konto aus der Sitzung und seine Person. */
-type Eigene = { personId: string; congregationId: string }
+type Eigene = { kontoId: string; personId: string; congregationId: string }
 
 async function eigenePerson(req: Request): Promise<Eigene | Response> {
-  const userId = await rest.userId(req)
-  if (!userId) return json({ error: 'unauthorized' }, 401)
+  const kontoId = await rest.userId(req)
+  if (!kontoId) return json({ error: 'unauthorized' }, 401)
   const mitglied = await rest.get<{ person_id: string | null; congregation_id: string }[]>(
-    `members?select=person_id,congregation_id&user_id=eq.${wert(userId)}`,
+    `members?select=person_id,congregation_id&user_id=eq.${wert(kontoId)}`,
   )
   const m = mitglied[0]
   // Ein Konto ohne Person (der Betreiber) hat keinen Zettel und keinen Code.
   if (!m?.person_id) return json({ error: 'forbidden' }, 403)
-  return { personId: m.person_id, congregationId: m.congregation_id }
+  return { kontoId, personId: m.person_id, congregationId: m.congregation_id }
 }
 
 /**
@@ -341,10 +342,12 @@ async function einmalCode(req: Request, jetzt: number): Promise<Response> {
 
 /**
  * **Zugang erneuern**: Link und Zettel (und ein offener Einmal-Code) gelten
- * danach nicht mehr, und die übrigen Geräte werden abgemeldet; dieses bleibt.
- * Erst sperren, dann abmelden — andersherum könnte sich mit dem alten Code
- * dazwischen noch ein Gerät anmelden. Scheitert ein Schritt, sagt es die
- * Antwort; ein zweiter Versuch macht beides noch einmal.
+ * danach nicht mehr, ein Kennwort des Kontos ist fort (`kennwort_entfernen` in
+ * schema.sql: Mit einer gestohlenen Sitzung ließe sich eines setzen), und die
+ * übrigen Geräte werden abgemeldet; dieses bleibt. Erst sperren, dann abmelden
+ * — andersherum könnte sich mit dem alten Code oder dem Kennwort dazwischen
+ * noch ein Gerät anmelden. Scheitert ein Schritt, sagt es die Antwort; ein
+ * zweiter Versuch macht alles noch einmal.
  */
 async function erneuern(req: Request): Promise<Response> {
   const wer = await eigenePerson(req)
@@ -352,6 +355,7 @@ async function erneuern(req: Request): Promise<Response> {
   const gesperrt = await Promise.all([
     rest.zeilenSchreiben('DELETE', `anmelde_links?person_id=eq.${wert(wer.personId)}`),
     rest.zeilenSchreiben('DELETE', `anmelde_einmalcodes?person_id=eq.${wert(wer.personId)}`),
+    rest.zeilenSchreiben('POST', 'rpc/kennwort_entfernen', { konto: wer.kontoId }),
   ])
   if (gesperrt.includes(null)) return json({ error: 'server-error' }, 500)
   if (!(await konten.andereAbmelden(req.headers.get('Authorization') ?? ''))) return json({ error: 'server-error' }, 500)

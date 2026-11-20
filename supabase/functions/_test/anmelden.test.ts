@@ -63,6 +63,10 @@ let einmal: Array<{ person_id: string; congregation_id: string; code_hash: strin
 let abgemeldet: string[]
 /** Supabase Auth meldet die übrigen Geräte nicht ab. */
 let abmeldenKaputt: boolean
+/** Für welche Konten `kennwort_entfernen` lief — je Aufruf. */
+let kennwortEntfernt: string[]
+/** Die Datenbank nimmt das Kennwort nicht weg. */
+let kennwortKaputt: boolean
 /** Jeder Aufruf an Auth und REST, in Reihenfolge: „METHODE pfad". */
 let protokoll: string[]
 /** Das Lesen eines Einmal-Codes sieht ihn noch gültig — er läuft erst danach ab. */
@@ -222,6 +226,12 @@ const fakeFetch = async (input: unknown, init?: { method?: string; body?: unknow
     fehlversuche.push({ id, ip: body.p_ip, at: new Date().toISOString() })
     return jsonRes([{ id }])
   }
+  // Wie `kennwort_entfernen` in schema.sql: eine Funktion ohne Rückgabe — 204.
+  if (path.startsWith('rpc/kennwort_entfernen') && method === 'POST') {
+    if (kennwortKaputt) return new Response('{"message":"kaputt"}', { status: 500 })
+    kennwortEntfernt.push(body.konto)
+    return new Response(null, { status: 204 })
+  }
   if (path.startsWith('anmelde_fehlversuche') && method === 'DELETE') {
     const id = Number(filterWert(path, 'id'))
     fehlversuche = fehlversuche.filter((f) => f.id !== id)
@@ -302,6 +312,8 @@ beforeEach(async () => {
   einmal = []
   abgemeldet = []
   abmeldenKaputt = false
+  kennwortEntfernt = []
+  kennwortKaputt = false
   protokoll = []
   einmalLaeuftGleichAb = false
   einloesenKaputt = false
@@ -701,19 +713,34 @@ describe('anmelden: Zugang erneuern', () => {
     links.push(await linkZeile(P_BERT, 'B'.repeat(43), 'Q2LF6JXD'))
   })
 
-  it('ohne Sitzung → 401: nichts gesperrt, niemand abgemeldet', async () => {
+  it('ohne Sitzung → 401: nichts gesperrt, kein Kennwort weg, niemand abgemeldet', async () => {
     expect((await call({ aktion: 'erneuern' })).status).toBe(401)
     expect(links.map((l) => l.person_id).sort()).toEqual([P_ANNA, P_BERT].sort())
+    expect(kennwortEntfernt).toEqual([])
     expect(abgemeldet).toEqual([])
   })
 
-  it('sperrt Link und offenen Einmal-Code der eigenen Person und meldet die übrigen Geräte ab — mit der eigenen Sitzung', async () => {
+  it('sperrt Link, offenen Einmal-Code und Kennwort und meldet die übrigen Geräte ab — mit der eigenen Sitzung', async () => {
     await call({ aktion: 'einmalcode' }, BERT)
     const r = await call({ aktion: 'erneuern' }, BERT)
     expect(r.body).toEqual({ ok: true })
     expect(links.map((l) => l.person_id)).toEqual([P_ANNA])
     expect(einmal).toEqual([])
+    expect(kennwortEntfernt).toEqual(['konto-bert'])
     expect(abgemeldet).toEqual(['Bearer sitzung:konto-bert'])
+  })
+
+  it('nimmt das Kennwort des eigenen Kontos — ein mitgeschicktes fremdes zählt nicht', async () => {
+    konten.set('konto-anna', 'anna@example.org')
+    await call({ aktion: 'erneuern', konto: 'konto-anna', kontoId: 'konto-anna' }, BERT)
+    expect(kennwortEntfernt).toEqual(['konto-bert'])
+  })
+
+  it('ein Konto ohne Person (der Betreiber) → 403: kein Kennwort weg, niemand abgemeldet', async () => {
+    members.push({ user_id: 'konto-betrieb', congregation_id: CONG, person_id: null, admin: true, zuteiler: false, email: '' })
+    expect((await call({ aktion: 'erneuern' }, { sitzung: 'konto-betrieb' })).status).toBe(403)
+    expect(kennwortEntfernt).toEqual([])
+    expect(abgemeldet).toEqual([])
   })
 
   it('danach meldet der alte Zettel niemanden mehr an', async () => {
@@ -722,12 +749,29 @@ describe('anmelden: Zugang erneuern', () => {
     expect((await call({ aktion: 'link', token: 'B'.repeat(43) })).status).toBe(404)
   })
 
-  it('erst sperren, dann abmelden — dazwischen meldet sich mit dem alten Code niemand mehr an', async () => {
+  it('erst sperren, dann abmelden — dazwischen meldet sich mit dem alten Code oder dem Kennwort niemand mehr an', async () => {
     await call({ aktion: 'erneuern' }, BERT)
-    const sperren = protokoll.findIndex((z) => z.startsWith('DELETE anmelde_links'))
     const abmelden = protokoll.findIndex((z) => z.startsWith('POST logout'))
-    expect(sperren).toBeGreaterThanOrEqual(0)
-    expect(abmelden).toBeGreaterThan(sperren)
+    for (const sperren of ['DELETE anmelde_links', 'DELETE anmelde_einmalcodes', 'POST rpc/kennwort_entfernen']) {
+      const i = protokoll.findIndex((z) => z.startsWith(sperren))
+      expect(i, sperren).toBeGreaterThanOrEqual(0)
+      expect(abmelden, sperren).toBeGreaterThan(i)
+    }
+  })
+
+  it('scheitert das Entfernen des Kennworts → 500 und niemand abgemeldet; ein zweiter Versuch holt alles nach', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      kennwortKaputt = true
+      expect((await call({ aktion: 'erneuern' }, BERT)).status).toBe(500)
+      expect(abgemeldet).toEqual([])
+      kennwortKaputt = false
+      expect((await call({ aktion: 'erneuern' }, BERT)).body).toEqual({ ok: true })
+      expect(kennwortEntfernt).toEqual(['konto-bert'])
+      expect(abgemeldet).toEqual(['Bearer sitzung:konto-bert'])
+    } finally {
+      err.mockRestore()
+    }
   })
 
   it('scheitert das Abmelden, sagt es die Antwort (500) — ein zweiter Versuch meldet ab', async () => {
