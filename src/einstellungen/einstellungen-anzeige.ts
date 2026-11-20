@@ -136,7 +136,7 @@ export function neuerGruppenName(groups: readonly Pick<Group, 'name'>[]): string
  * und so steht er da.
  */
 export function neuerTrolleyName(trolleys: readonly Pick<Trolley, 'name'>[], wort: string): string {
-  return `${wort} ${inAnzeigeZiffern(String(naechsteZahl(trolleys)))}`
+  return `${wort} ${inAnzeigeZiffern(naechsteZahl(trolleys))}`
 }
 
 /**

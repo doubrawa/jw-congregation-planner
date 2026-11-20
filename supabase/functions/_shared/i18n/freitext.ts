@@ -52,11 +52,6 @@ export function istFreitext(s: string): boolean {
   return s.startsWith(AUF) && s.endsWith(ZU) && s.length > AUF.length + ZU.length
 }
 
-/** Die Marke wieder abnehmen (der Übersetzer gibt den Namen unverändert weiter). */
-export function ohneMarke(s: string): string {
-  return istFreitext(s) ? s.slice(AUF.length, -ZU.length) : s
-}
-
 /**
  * **Sicherheitsnetz**: jede Marke abnehmen, wo immer sie steht.
  *

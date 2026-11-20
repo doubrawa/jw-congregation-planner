@@ -53,7 +53,7 @@ export function PlanenAktionen({ art, leiste = false }: { art: PlanArt; leiste?:
       {umfang && (
         <button type="button" className="aktion-haupt" onClick={() => setOffen('senden')}>
           {t.planSenden}
-          {meldungen.length > 0 && <span className="zahl-marke">{inAnzeigeZiffern(String(meldungen.length))}</span>}
+          {meldungen.length > 0 && <span className="zahl-marke">{inAnzeigeZiffern(meldungen.length)}</span>}
         </button>
       )}
       {offen === 'automatisch' &&

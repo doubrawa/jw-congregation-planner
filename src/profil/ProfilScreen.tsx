@@ -170,7 +170,7 @@ export function ProfilScreen() {
               <button type="button" className="profil-zeile profil-verweis" onClick={() => dispatch({ type: 'navigate', screen: 'personen' })}>
                 <span>{t.navPersonen}</span>
                 <span className="profil-verweis-wert">
-                  {inAnzeigeZiffern(String(state.persons.length))}
+                  {inAnzeigeZiffern(state.persons.length)}
                   <Zeichen name="weiter" />
                 </span>
               </button>

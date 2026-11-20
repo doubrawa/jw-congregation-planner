@@ -141,7 +141,7 @@ export function anteilText(teil: number, ganz: number): string {
 
 /** „Zu bestätigen: 3" — die Zahl an ihr Wort gebunden, in den Ziffern der Oberflächensprache. */
 export function wortMitZahl(wort: string, n: number): string {
-  return zahlBinden(`${wort}: ${inAnzeigeZiffern(String(n))}`)
+  return zahlBinden(`${wort}: ${inAnzeigeZiffern(n)}`)
 }
 
 /**

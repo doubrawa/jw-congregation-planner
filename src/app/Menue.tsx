@@ -109,7 +109,7 @@ export function Seitenmenue({
             >
               <Zeichen name={e.zeichen} />
               <span className="menue-eintrag-text">{e.label}</span>
-              {e.zahl ? <span className="menue-zahl">{inAnzeigeZiffern(String(e.zahl))}</span> : null}
+              {e.zahl ? <span className="menue-zahl">{inAnzeigeZiffern(e.zahl)}</span> : null}
             </button>
           ))}
         </div>
@@ -210,7 +210,7 @@ export function SchmaleLeiste({
                 <Zeichen name={e.zeichen} />
               </span>
               <span className="leisten-text">{e.kurz ?? e.label}</span>
-              {e.zahl ? <span className="leisten-zahl">{inAnzeigeZiffern(String(e.zahl))}</span> : null}
+              {e.zahl ? <span className="leisten-zahl">{inAnzeigeZiffern(e.zahl)}</span> : null}
             </button>
           ))}
         </div>

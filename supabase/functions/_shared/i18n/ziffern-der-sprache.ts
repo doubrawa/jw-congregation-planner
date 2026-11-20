@@ -40,8 +40,9 @@ export function ziffernSatz(code: string): readonly string[] | null {
   return satz
 }
 
-/** Die Ziffern 0–9 eines Texts in die der Sprache übertragen; jedes andere Zeichen bleibt. */
-export function ziffernDerSprache(text: string, code: string): string {
+/** Die Ziffern 0–9 eines Texts (oder einer Zahl) in die der Sprache übertragen; jedes andere Zeichen bleibt. */
+export function ziffernDerSprache(text: string | number, code: string): string {
   const satz = ziffernSatz(code)
-  return satz && text ? text.replace(/[0-9]/g, (d) => satz[Number(d)] ?? d) : text
+  const roh = String(text)
+  return satz ? roh.replace(/[0-9]/g, (d) => satz[Number(d)] ?? d) : roh
 }

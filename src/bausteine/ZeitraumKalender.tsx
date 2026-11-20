@@ -115,7 +115,7 @@ export function ZeitraumKalender({
             aria-pressed={imZeitraum(tag, von, bis)}
             onClick={() => tippen(tag)}
           >
-            {ziffernDerSprache(String(Number(tag.slice(8))), lang)}
+            {ziffernDerSprache(Number(tag.slice(8)), lang)}
           </button>
         ))}
       </div>

@@ -27,7 +27,7 @@
 /* eslint-disable */
 import { ausserhalbFreitext, istFreitext, ohneAlleMarken } from './freitext.ts'
 import { LOCALE_JE_CODE as LOCALES } from './locales.ts'
-import { ziffernDerSprache } from './ziffern-der-sprache.ts'
+import { ziffernDerSprache, ziffernSatz } from './ziffern-der-sprache.ts'
 import { D, EXTRA, EXTRA_EN, FRAG, MON, MONA, REF, WD, WDA, type DateDict, type Extra, type RefDict } from './translate-data.ts'
 
 /* ---- Bibelbücher (nachgeladen) ------------------------------------------- */
@@ -379,6 +379,11 @@ function buchRegeln(code: string): Rule[] {
  * — außer in den Namen: Freitext behält seine Marke bis dahin.
  */
 function buildTranslator(M: Record<string, string>, rules: Rule[], code: string): (s: string) => string {
+  // Nur wo die Sprache eigene Ziffern hat (heute Persisch) — sonst liefe jede
+  // Übersetzung einmal ohne Wirkung durch den Text.
+  const ziffern = ziffernSatz(code)
+    ? (s: string) => ausserhalbFreitext(s, (teil) => ziffernDerSprache(teil, code))
+    : (s: string) => s
   const one = (f: string): string => {
     // Gekennzeichneter Freitext (Personenname): bleibt, wie er ist, samt
     // Marke — die geht erst ganz am Ende herunter, nachdem die Ziffern der
@@ -413,7 +418,7 @@ function buildTranslator(M: Record<string, string>, rules: Rule[], code: string)
     // Am Ende die Marken pauschal herunter — siehe `ohneAlleMarken`: Eine Regel
     // kann ein Atom samt eingebettetem Namen verschluckt haben, bevor es zur
     // Teilung kam. Davor die Ziffern, an den Namen vorbei.
-    return ohneAlleMarken(ausserhalbFreitext(uebersetzt, (teil) => ziffernDerSprache(teil, code)))
+    return ohneAlleMarken(ziffern(uebersetzt))
   }
 }
 

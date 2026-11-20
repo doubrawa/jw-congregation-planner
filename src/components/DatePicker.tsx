@@ -123,7 +123,7 @@ export function DatePicker({ value, onChange, locale, min, max, placeholder, ari
                     setOpen(false)
                   }}
                 >
-                  {ziffernDerSprache(String(Number(di.slice(8))), locale)}
+                  {ziffernDerSprache(Number(di.slice(8)), locale)}
                 </button>
               )
             })}

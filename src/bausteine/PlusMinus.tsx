@@ -16,7 +16,7 @@ export function PlusMinus({
   min,
   max,
   label,
-  anzeige = inAnzeigeZiffern(String(wert)),
+  anzeige = inAnzeigeZiffern(wert),
   anzeigeSprache,
   onWert,
 }: {

@@ -154,7 +154,7 @@ function ZusagenKarte({
     <section className="karte zusagen-karte">
       <h2 className="abschnitt-titel karte-titel">
         <Punkt art={punkt} />
-        {`${titel} · ${inAnzeigeZiffern(String(anzahl))}`}
+        {`${titel} · ${inAnzeigeZiffern(anzahl)}`}
       </h2>
       {children}
     </section>

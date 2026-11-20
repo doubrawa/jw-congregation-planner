@@ -108,7 +108,7 @@ export function TrolleyBlatt({ trolley, onClose }: { trolley: Trolley; onClose: 
         <BlattFeld marke={t.trolleyHinweisLbl}>{textFeld('hinweis')}</BlattFeld>
         <EinstellZeile
           name={t.trolleyKommende}
-          wert={inAnzeigeZiffern(String(kommende))}
+          wert={inAnzeigeZiffern(kommende)}
           onTipp={() => {
             schliessen()
             zuDenTrolleys(dispatch)

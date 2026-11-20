@@ -85,8 +85,8 @@ function EinstellungenHandy() {
       {/* Gruppen und Trolleys stehen in einer Unteransicht — zwei Zeilen, ein Ziel. */}
       <section className="karte einst-karte">
         <h2 className="abschnitt-titel karte-titel">{t.tabFs}</h2>
-        <EinstellZeile name={t.gruppenTitel} wert={inAnzeigeZiffern(String(state.groups.length))} onTipp={() => setOffen('gruppen')} />
-        <EinstellZeile name={t.fsTrolleysTab} wert={inAnzeigeZiffern(String(state.trolleys.length))} onTipp={() => setOffen('gruppen')} />
+        <EinstellZeile name={t.gruppenTitel} wert={inAnzeigeZiffern(state.groups.length)} onTipp={() => setOffen('gruppen')} />
+        <EinstellZeile name={t.fsTrolleysTab} wert={inAnzeigeZiffern(state.trolleys.length)} onTipp={() => setOffen('gruppen')} />
       </section>
       <section className="karte einst-karte">
         <h2 className="abschnitt-titel karte-titel">{t.mitteilungen}</h2>
@@ -244,7 +244,7 @@ function ZusammenkuenfteKarte({ onHilfsdienste, mitTitel = true }: { onHilfsdien
         </span>
         <Switch on={state.auxClass} label={t.auxKlasse} onToggle={() => dispatch({ type: 'setAuxClass', on: !state.auxClass })} />
       </div>
-      {onHilfsdienste && <EinstellZeile name={t.hilfsdienste} wert={inAnzeigeZiffern(String(state.services.length))} onTipp={onHilfsdienste} />}
+      {onHilfsdienste && <EinstellZeile name={t.hilfsdienste} wert={inAnzeigeZiffern(state.services.length)} onTipp={onHilfsdienste} />}
       {blatt && (
         <ZusammenkunftBlatt welche={blatt} titel={blatt === 'mid' ? t.unterDerWoche : t.amWochenende} onClose={() => setBlatt(null)} />
       )}

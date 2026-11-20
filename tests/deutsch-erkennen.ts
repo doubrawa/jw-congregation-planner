@@ -224,12 +224,15 @@ export function sichtbareTexte(wurzel: ParentNode = document.body, { felder: mit
   }
   // Die Werte der Felder lässt aus, wer nur prüft, was die App selbst schreibt
   // (die Ziffern): In einem Feld steht, was jemand getippt hat.
+  return [...texte, ...attribute, ...(mitFeldern ? feldWerte(wurzel) : [])]
+}
+
+/** Die Werte der Textfelder — was jemand getippt hat; `sichtbareTexte` hängt sie hinten an. */
+export function feldWerte(wurzel: ParentNode = document.body): string[] {
   const felder: string[] = []
-  if (mitFeldern) {
-    for (const feld of wurzel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), input[type="search"], textarea')) {
-      const wert = feld.value.trim()
-      if (wert) felder.push(wert)
-    }
+  for (const feld of wurzel.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), input[type="search"], textarea')) {
+    const wert = feld.value.trim()
+    if (wert) felder.push(wert)
   }
-  return [...texte, ...attribute, ...felder]
+  return felder
 }

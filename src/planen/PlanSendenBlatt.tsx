@@ -118,7 +118,7 @@ export function PlanSendenBlatt({
       <div className="sheet-fuss sheet-fuss--haupt">
         <GesperrterKnopf className="knopf-haupt" gesperrt={laeuft || n === 0} onTipp={() => void senden()}>
           {laeuft ? tu('…') : t.planSenden}
-          {!laeuft && n > 0 && <span className="zahl-marke">{inAnzeigeZiffern(String(n))}</span>}
+          {!laeuft && n > 0 && <span className="zahl-marke">{inAnzeigeZiffern(n)}</span>}
         </GesperrterKnopf>
         <button type="button" className="knopf-leise" onClick={onClose}>
           {n > 0 ? t.spaeter : t.fertig}

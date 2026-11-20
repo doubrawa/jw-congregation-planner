@@ -7,7 +7,7 @@ import type { Lang } from '../src/data/types'
 import { loadLangNames } from '../src/i18n/langnames'
 import { APP_LANGS } from '../src/i18n/langs'
 import { loadOverlay } from '../src/i18n/ui'
-import { deutschFinder, sichtbareTexte, ziffernFinder } from './deutsch-erkennen'
+import { deutschFinder, feldWerte, sichtbareTexte, ziffernFinder } from './deutsch-erkennen'
 import { ERFUNDEN_MUSTER, fremdsprachigerBestand, type FremdBestand } from './fremdsprachiger-bestand'
 
 /**
@@ -237,7 +237,9 @@ async function durchgang(lang: Fremd, bestand: FremdBestand, tiefe: number, star
     try {
       if (!(await zeige(over, pfad))) continue
       const wo = [name, ...pfad.map((s) => ('tippe' in s ? s.tippe : 'fuelle' in s ? `feld ${s.fuelle}` : `wahl ${s.waehle}.${s.option}`))].join(' › ')
-      for (const zeile of sichtbareTexte()) {
+      // Ein Gang durch die Ansicht für beide Prüfer; die Feldwerte sieht nur der deutsche.
+      const ohneFelder = sichtbareTexte(document.body, { felder: false })
+      for (const zeile of [...ohneFelder, ...feldWerte()]) {
         if (zeile in gewollt) continue
         for (const rest of finde(zeile)) {
           const schluessel = `„${rest.wort}" in „${zeile.slice(0, 120)}"`
@@ -245,7 +247,7 @@ async function durchgang(lang: Fremd, bestand: FremdBestand, tiefe: number, star
         }
       }
       if (ziffern) {
-        for (const zeile of sichtbareTexte(document.body, { felder: false })) {
+        for (const zeile of ohneFelder) {
           for (const rest of ziffern(zeile)) {
             const schluessel = `Ziffer „${rest.wort}" in „${zeile.slice(0, 120)}"`
             if (!befunde.has(schluessel)) befunde.set(schluessel, wo)

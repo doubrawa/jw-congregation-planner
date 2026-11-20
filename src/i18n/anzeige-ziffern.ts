@@ -22,7 +22,7 @@ export function anzeigeSpracheSetzen(lang: string): void {
   sprache = lang
 }
 
-/** Die Ziffern 0–9 eines Texts in die der Oberflächensprache. */
-export function inAnzeigeZiffern(text: string): string {
+/** Die Ziffern 0–9 eines Texts (oder einer Zahl) in die der Oberflächensprache. */
+export function inAnzeigeZiffern(text: string | number): string {
   return ziffernDerSprache(text, sprache)
 }

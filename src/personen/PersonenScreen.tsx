@@ -132,7 +132,7 @@ function PersonList({
       onClick={() => waehle(auswahl)}
     >
       {text}
-      <span className="personen-auswahl-zahl">{inAnzeigeZiffern(String(zahl(auswahl)))}</span>
+      <span className="personen-auswahl-zahl">{inAnzeigeZiffern(zahl(auswahl))}</span>
     </button>
   )
 
@@ -211,7 +211,7 @@ function PersonList({
                 <Punkt art={PUNKT_DES_STANDS[stand]} />
                 <span className="personen-stand-linie" />
               </span>
-              <span className="personen-stand-zahl">{inAnzeigeZiffern(String(zahl(stand)))}</span>
+              <span className="personen-stand-zahl">{inAnzeigeZiffern(zahl(stand))}</span>
               <span className="klein-text">{t[STAND_KEY[stand]]}</span>
             </button>
           ))}
@@ -234,7 +234,7 @@ function PersonList({
           onClick={() => setBlatt('filter')}
         >
           {t.filterWeitere}
-          {blattfilter > 0 && <span className="personen-auswahl-zahl">{inAnzeigeZiffern(String(blattfilter))}</span>}
+          {blattfilter > 0 && <span className="personen-auswahl-zahl">{inAnzeigeZiffern(blattfilter)}</span>}
         </button>
       </div>
 
