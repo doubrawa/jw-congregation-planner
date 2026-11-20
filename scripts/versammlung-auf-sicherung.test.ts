@@ -81,7 +81,7 @@ insert into public.confirmations (id, congregation_id, user_id, task_key, status
 -- Die Absage zu K4 kennt die Sicherung nicht (wie von der Aufbewahrung geräumt):
 -- Fügt das Zurücksetzen K4 wieder ein, legt der Trigger sie neu an, und sie muss wieder gehen.
 delete from public.absagen where congregation_id = '${C}';
-insert into public.push_subscriptions (id, congregation_id, user_id, endpoint, p256dh, auth) values ('${PS2}', '${C}', '${U2}', 'https://push.invalid/2', 'k', 'a');
+insert into public.push_subscriptions (id, congregation_id, user_id, endpoint, p256dh, auth) values ('${PS2}', '${C}', '${U2}', 'https://fcm.googleapis.com/fcm/send/2', 'k', 'a');
 insert into public.fs_rules (id, congregation_id, grp, wd, time) values ('r1', '${C}', '${G1}', 3, '17:00');
 insert into public.fs_weeks (id, congregation_id, start, data) values ('${FW1}', '${C}', '2099-01-05', '[]');
 insert into public.trolleys (id, congregation_id, name) values ('t1', '${C}', 'Trolley');
@@ -100,7 +100,7 @@ insert into public.persons (id, congregation_id, fn, ln) values
 insert into public.members (user_id, congregation_id, person_id) values ('${U4}', '${C}', '${P5}');
 update public.members set admin = true where user_id = '${U2}';
 insert into public.anmelde_links (person_id, congregation_id, token_hash, code_hash, gueltig_bis) values ('${P7}', '${C}', 'h7', 'c7', '2100-01-01');
-insert into public.push_subscriptions (id, congregation_id, user_id, endpoint, p256dh, auth) values ('${PS4}', '${C}', '${U4}', 'https://push.invalid/4', 'k', 'a');
+insert into public.push_subscriptions (id, congregation_id, user_id, endpoint, p256dh, auth) values ('${PS4}', '${C}', '${U4}', 'https://fcm.googleapis.com/fcm/send/4', 'k', 'a');
 insert into public.geraete_fehler (congregation_id, art, meldung) values ('${C}', 'fehler', 'Probe');
 update public.congregations set name = 'Probe neu' where id = '${C}';
 -- Eine neue Gruppe, in die eine Person und eine Treffpunkt-Regel wandern; ein anderer Aufseher.
