@@ -169,6 +169,21 @@ export interface Aufruf {
 /** Parameter in der Adresse, die keine Spalte nennen. */
 const KEINE_SPALTE = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'])
 
+/**
+ * Die Teile eines Oder-Filters: `or=(a.eq.1,b.eq.2)` → `[['a', 'eq.1'], ['b',
+ * 'eq.2']]`. Nur so weit, wie die Functions ihn schreiben (Trolley-Schichten als
+ * Person oder Partner) — ohne `in.(…)` oder ein verschachteltes `and` darin.
+ */
+function oderTeile(v: string): [string, string][] {
+  return v
+    .replace(/^\(|\)$/g, '')
+    .split(',')
+    .map((teil): [string, string] => {
+      const punkt = teil.indexOf('.')
+      return [teil.slice(0, punkt), teil.slice(punkt + 1)]
+    })
+}
+
 /** Die Tabelle eines Aufrufs. */
 export const tabelleVon = (a: Aufruf): string => a.pfad.split('?')[0] ?? ''
 
@@ -193,6 +208,7 @@ export function schemaFehler({ pfad, method, body }: Aufruf, schema = SCHEMA_SQL
     const genannt =
       k === 'select' ? v.split(',').filter((s) => s !== '*')
       : k === 'order' ? v.split(',').map((s) => s.split('.')[0] ?? '')
+      : k === 'or' ? oderTeile(v).map(([s]) => s)
       : KEINE_SPALTE.has(k) ? []
       : [k]
     for (const s of genannt) if (!spalten.has(s)) nenne(s, 'gibt es nicht')
@@ -256,10 +272,12 @@ export interface Konto {
   email: string
 }
 
-/** Antwort einer Edge Function: Status (Vorgabe 200) und JSON-Rumpf. */
+/** Antwort einer Edge Function: Status (Vorgabe 200) und JSON-Rumpf — oder Text mit Typ (der Kalender). */
 export interface FunktionsAntwort {
   status?: number
   json?: unknown
+  text?: string
+  typ?: string
 }
 
 /**
@@ -273,6 +291,10 @@ export interface FunktionsKontext {
   tabellen: Bestand
   wer?: Konto
   kopf: Headers
+  /** GET (der Abruf eines Kalenders) oder POST. */
+  methode: string
+  /** Die ganze Adresse samt Abfrage — beim Kalender steht dort der Link (`?t=`). */
+  adresse: URL
 }
 
 export interface Umgebung {
@@ -376,7 +398,8 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
     const siehtMitglied = (z: Zeile): boolean =>
       !wer || z.user_id === wer.id || (Boolean(meineZeile?.admin) && z.congregation_id === meineZeile?.congregation_id)
     const trifft = (z: Zeile): boolean =>
-      filter.every(([k, v]) => passtFilter(z[k], v)) && (tabelle !== 'members' || siehtMitglied(z))
+      filter.every(([k, v]) => (k === 'or' ? oderTeile(v).some(([s, a]) => passtFilter(z[s], a)) : passtFilter(z[k], v))) &&
+      (tabelle !== 'members' || siehtMitglied(z))
     const vorgabe = kopf.get('Prefer') ?? ''
     const zeigen = vorgabe.includes('return=representation')
 
@@ -556,8 +579,9 @@ export function attrappe({ bestand = {}, konten = [], funktionen = {}, stoerung 
       const funktion = funktionen[name]
       if (!funktion) throw new Error(`Attrappe: keine Function ${name}`)
       const wer = angemeldet.get((kopf.get('Authorization') ?? '').replace(/^Bearer /, ''))
-      const { status = 200, json = {} } = await funktion((rumpf ?? {}) as Record<string, unknown>, { tabellen, wer, kopf })
-      return antwort(status, json)
+      const kontext = { tabellen, wer, kopf, methode: method, adresse: url }
+      const { status = 200, json = {}, text, typ } = await funktion((rumpf ?? {}) as Record<string, unknown>, kontext)
+      return text === undefined ? antwort(status, json) : new Response(text, { status, headers: { 'Content-Type': typ ?? 'text/plain; charset=utf-8' } })
     }
     throw new Error(`Attrappe: unbekannte Adresse ${method} ${url.pathname}`)
   }

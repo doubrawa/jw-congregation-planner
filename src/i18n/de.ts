@@ -493,6 +493,29 @@ export const DE = {
     zugangErneuernSicher: 'Wirklich erneuern?',
     zugangErneuert: 'Zugang erneuert. Die anderen Geräte werden abgemeldet.',
     zugangFehler: 'Das hat nicht geklappt. Versuche es bitte noch einmal.',
+    // Profil, Karte „Kalender" (Kalender-Abo): ein geheimer Link,
+    // den die Kalender-App abonniert. {knopf} ist `kalenderOeffnen`; {tag} und
+    // {zeit} sind Tag und Uhrzeit des letzten Abrufs. Die Wege je Gerät nennen
+    // keine Knöpfe fremder Apps — deren Wortlaut ändert sich mit jeder Fassung.
+    kalenderKarte: 'Kalender',
+    kalenderText: 'Deine Aufgaben als Termine im Kalender deines Handys. Sie kommen, sobald der Plan gesendet ist, und bleiben von selbst aktuell.',
+    kalenderHinweis: 'Bestätigen und absagen geht weiter hier in der App.',
+    kalenderAbonnieren: 'Kalender abonnieren',
+    kalenderBlattText: 'Dein Kalender holt deine Aufgaben über deinen eigenen Link.',
+    kalenderOeffnen: 'Im Kalender öffnen',
+    kalenderApple: 'iPhone, iPad, Mac: „{knopf}“, dann das Abonnieren bestätigen.',
+    kalenderGoogle: 'Android: den Link kopieren und am Computer in Google Kalender als Kalender per URL hinzufügen.',
+    kalenderOutlook: 'Outlook: den Link kopieren und als Kalender aus dem Internet abonnieren.',
+    kalenderGeheim: 'Der Link gehört nur dir. Wer ihn hat, sieht deine Aufgaben – gib ihn nicht weiter.',
+    kalenderTakt: 'Google holt Änderungen nur etwa einmal am Tag. Was eilt, meldet dir die App.',
+    kalenderAbonniert: 'Abonniert',
+    kalenderZuletzt: 'Dein Kalender hat zuletzt am {tag} um {zeit} nachgesehen.',
+    kalenderNochNie: 'Dein Kalender hat noch nicht nachgesehen.',
+    kalenderNeuText: 'Link verloren oder weitergegeben? Ein neuer Link ersetzt den alten; dein Kalender braucht ihn dann neu.',
+    kalenderNeuerLink: 'Neuer Link',
+    kalenderNeuerLinkSicher: 'Alten Link sperren?',
+    kalenderBeenden: 'Abo beenden',
+    kalenderBeendenSicher: 'Wirklich beenden?',
     familieLabel: 'Familie',
     // Amtlicher Wortlaut aus Absatz 7 der jw.org-„Anweisungen" — in jeder
     // Sprache der dortige Satz, statt einer eigenen Umschreibung. Zuletzt

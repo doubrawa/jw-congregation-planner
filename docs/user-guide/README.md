@@ -74,7 +74,7 @@ Ende automatisch auf; du musst nichts extra tun.
 | `verkuendiger-aufgaben.png` | `s=aufgaben&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-freie-plaetze.png` | `s=freie&pl=0&me=p7` | verkuendiger |
 | `verkuendiger-uebernehmen.png` | `s=freie&pl=0&me=p9&blatt=uebernehmen` | verkuendiger |
-| `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` (Höhe 1480) | verkuendiger |
+| `verkuendiger-profil.png` | `s=profil&pl=0&me=p9` (Höhe 1700) | verkuendiger |
 | `verkuendiger-treffpunkte.png` | `s=programm&tab=fs&pl=0&me=p9` | verkuendiger |
 | `verkuendiger-gruppenaufseher.png` | `s=planen&tab=fs&pl=0&me=p1` | verkuendiger |
 | `verkuendiger-gruppenbesuche.png` | `s=programm&tab=fs&fb=gruppenbesuche&pl=0&me=p9` | verkuendiger |

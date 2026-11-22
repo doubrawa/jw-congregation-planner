@@ -257,12 +257,14 @@ function trolleyFunktion(
  * Prüfung gegen schema.sql. Ohne VAPID-Schlüssel geht kein Push hinaus.
  *
  * Dazu `substitute` für den Aufruf 'absage' (120, 121): Wem ein Platz gehört,
- * urteilt dort die Function selbst, an der Woche.
+ * urteilt dort die Function selbst, an der Woche. Und `kalender` (122–126): Ihr
+ * Abruf ist ein GET ohne Anmeldung, die Antwort ein Kalender als Text.
  */
 const ECHTE_FUNCTIONS = {
   tauschen: () => import('../supabase/functions/tauschen/index.ts'),
   'send-plan': () => import('../supabase/functions/send-plan/index.ts'),
   substitute: () => import('../supabase/functions/substitute/index.ts'),
+  kalender: () => import('../supabase/functions/kalender/index.ts'),
 }
 const echteHandler = new Map<string, (req: Request) => Promise<Response>>()
 beforeAll(async () => {
@@ -281,13 +283,18 @@ beforeAll(async () => {
   }
 })
 
-/** Eine echte Function als Function der Attrappe: derselbe Rumpf, dieselben Kopfzeilen. */
+/**
+ * Eine echte Function als Function der Attrappe: dieselbe Methode, dieselbe
+ * Adresse, dieselben Kopfzeilen, derselbe Rumpf. Was nicht JSON ist, kommt als
+ * Text samt Typ zurück.
+ */
 const echt =
   (name: keyof typeof ECHTE_FUNCTIONS) =>
-  async (rumpf: Record<string, unknown>, { kopf }: FunktionsKontext): Promise<FunktionsAntwort> => {
-    const anfrage = new Request(`${ATTRAPPE_URL}/functions/v1/${name}`, { method: 'POST', headers: kopf, body: JSON.stringify(rumpf) })
+  async (rumpf: Record<string, unknown>, { kopf, methode, adresse }: FunktionsKontext): Promise<FunktionsAntwort> => {
+    const anfrage = new Request(adresse, { method: methode, headers: kopf, body: methode === 'GET' ? undefined : JSON.stringify(rumpf) })
     const antwort = await echteHandler.get(name)!(anfrage)
-    return { status: antwort.status, json: await antwort.json() }
+    const typ = antwort.headers.get('Content-Type') ?? ''
+    return typ.includes('json') ? { status: antwort.status, json: await antwort.json() } : { status: antwort.status, text: await antwort.text(), typ }
   }
 
 const LAEUFE: Record<string, Lauf[]> = {
@@ -840,6 +847,7 @@ const LAEUFE: Record<string, Lauf[]> = {
           'send-plan': echt('send-plan'),
           tauschen: echt('tauschen'),
           trolley: trolleyFunktion,
+          kalender: echt('kalender'),
         },
       },
       erwartet: [
@@ -868,6 +876,9 @@ const LAEUFE: Record<string, Lauf[]> = {
         // Die Absage über die echte Function `substitute` (120): ihr Blick, ob
         // schon gemeldet ist, und ihr Vermerk an der Absage.
         'GET absagen', 'PATCH absagen',
+        // Das Kalender-Abo (122–126): Ausstellen, Abruf samt Vermerk, der Blick
+        // des Mitglieds in die Tabelle, sein untergeschobenes Abo und das Beenden.
+        'POST kalender_abos', 'GET kalender_abos', 'PATCH kalender_abos', 'DELETE kalender_abos',
       ],
     },
   ],

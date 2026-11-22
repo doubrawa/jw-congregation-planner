@@ -1027,6 +1027,28 @@ create table if not exists public.anmelde_einmalcodes (
     references public.persons (id, congregation_id) on delete cascade
 );
 
+-- Das Kalender-Abo: je Person ein geheimer Link, den die Kalender-App
+-- abonniert (Function `kalender`). Wie bei `anmelde_links` steht der Link nur
+-- als SHA-256 da; ein neuer ersetzt den alten, und kein Client darf die Tabelle
+-- lesen oder schreiben (unten) — den Stand des eigenen Abos fragt die App über
+-- die Function. `sprache` ist die der App beim Ausstellen: In ihr stehen die
+-- Texte im Kalender. `abgerufen_at` setzt jeder Abruf — daran sieht das
+-- Profil, ob das Abo trägt.
+create table if not exists public.kalender_abos (
+  person_id       uuid primary key,
+  congregation_id uuid not null references public.congregations (id) on delete cascade,
+  token_hash      text not null unique,
+  sprache         text not null default 'de' check (sprache ~ '^[a-z]{2}$'),
+  erstellt_at     timestamptz not null default now(),
+  abgerufen_at    timestamptz,
+
+  constraint kalender_abos_person_fk foreign key (person_id, congregation_id)
+    references public.persons (id, congregation_id) on delete cascade
+);
+
+create index if not exists kalender_abos_congregation_idx
+  on public.kalender_abos (congregation_id);
+
 -- Fehlgeschlagene Anmeldeversuche mit einem Code — die Bremse gegen Raten
 -- (`anmelden`): je Absender und insgesamt eine Grenze je Stunde. Nur die
 -- Function liest und schreibt; ältere Zeilen räumt sie selbst ab.
@@ -2271,6 +2293,10 @@ create policy anmelde_links_select on public.anmelde_links
 drop policy if exists anmelde_links_delete on public.anmelde_links;
 create policy anmelde_links_delete on public.anmelde_links
   for delete using (congregation_id = public.my_congregation_id() and public.ist_admin());
+
+-- Kalender-Abos: nur die Function `kalender` — kein Recht, keine Richtlinie.
+alter table public.kalender_abos enable row level security;
+revoke all on public.kalender_abos from anon, authenticated;
 
 -- Weitere Pläne: Plan und Gruppen darin pflegen Admin und Planer (der Planer
 -- den Plan selbst seit dem 15.10.2026; bis dahin verteilte er nur die Gruppen).

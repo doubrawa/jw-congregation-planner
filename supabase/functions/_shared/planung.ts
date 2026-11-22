@@ -262,6 +262,25 @@ export const STANDARD_ZEITEN: MeetingTimes = {
   we: { wd: 0, time: '10:00' },
 }
 
+/**
+ * **Wie lange eine Zusammenkunft dauert**, in Minuten — unter der Woche wie am
+ * Wochenende (19:00 → 20:45, 10:00 → 11:45). Die App rechnet daraus das Ende im
+ * Programmkopf (`endeAusStartzeit`), das Kalender-Abo das Ende des Termins.
+ */
+export const ZUSAMMENKUNFT_MINUTEN = 105
+
+/**
+ * Eine Uhrzeit „HH:MM" plus Minuten, wieder als „HH:MM" — `null`, wenn keine
+ * Uhrzeit dasteht oder das Ende über Mitternacht fiele.
+ */
+export function uhrzeitPlus(zeit: string, minuten: number): string | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(zeit)
+  if (!m) return null
+  const gesamt = Number(m[1]) * 60 + Number(m[2]) + minuten
+  if (gesamt >= 24 * 60) return null
+  return `${String(Math.floor(gesamt / 60)).padStart(2, '0')}:${String(gesamt % 60).padStart(2, '0')}`
+}
+
 /** Die Spalten der Regeltermine, wie PostgREST sie liefert (`ZEITEN_SPALTEN`). */
 export interface ZeitenRow {
   mid_wd: number

@@ -119,6 +119,8 @@ export const RLS_TABELLEN = [
   { name: 'anmelde_links', spalte: 'congregation_id' },
   // Einmal-Codes: kein Recht für irgendeinen Client — nur `anmelden`.
   { name: 'anmelde_einmalcodes', spalte: 'congregation_id', keinZugriff: true },
+  // Kalender-Abos: ebenso — nur `kalender`.
+  { name: 'kalender_abos', spalte: 'congregation_id', keinZugriff: true },
   // Fehlversuche beim Anmelden: kein Recht für irgendeinen Client, nicht einmal
   // Lesen — abgewiesen ist hier das Ergebnis, nicht der Fehler (`keinZugriff`).
   { name: 'anmelde_fehlversuche', spalte: 'id', keinZugriff: true },

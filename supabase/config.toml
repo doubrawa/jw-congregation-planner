@@ -57,8 +57,16 @@ verify_jwt = true
 
 # Ruft der Cron-Job auf, der kein Nutzer-Login hat. Die Funktion schützt sich
 # stattdessen selbst mit dem CRON_SECRET im Authorization-Header; ohne das
-# Geheimnis antwortet sie 401. Deshalb hier - und nur hier - false.
+# Geheimnis antwortet sie 401. Deshalb false — wie sonst nur `kalender`.
 [functions.send-reminders]
+verify_jwt = false
+
+# Das Kalender-Abo: Eine Kalender-App holt den Kalender ohne jeden Schlüssel —
+# der geheime Link ist der Ausweis (nur als Prüfsumme gespeichert). Die
+# Funktion schützt sich selbst: der Abruf (GET) allein über die Prüfsumme,
+# Ausstellen und Beenden (POST) über /auth/v1/user und die Mitgliedszeile.
+# Deshalb false.
+[functions.kalender]
 verify_jwt = false
 
 # Prüft ebenfalls selbst über /auth/v1/user, wer da ruft — und verlangt darüber

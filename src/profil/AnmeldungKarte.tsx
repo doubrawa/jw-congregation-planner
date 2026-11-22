@@ -7,6 +7,7 @@ import { useZweiTipp } from '../components/useZweiTipp'
 import { fill, useT } from '../i18n/useT'
 import type { QrBild } from '../lib/qr-bild'
 import { einmalCodeHolen, type EinmalCode, sichtbarMs, zugangErneuern } from '../lib/zugang'
+import { useWaehrenddessen } from './useWaehrenddessen'
 
 /**
  * **Anmeldung**: ein weiteres Gerät anmelden und den Zugang erneuern —
@@ -27,7 +28,7 @@ export function AnmeldungKarte() {
   const { state, dispatch } = useApp()
   const { t } = useT()
   const [code, setCode] = useState<{ einmal: EinmalCode; qr: QrBild } | null>(null)
-  const [laeuft, setLaeuft] = useState(false)
+  const { laeuft, waehrenddessen } = useWaehrenddessen('zugang')
 
   // Abgelaufen: weg damit — er meldet ohnehin niemanden mehr an.
   useEffect(() => {
@@ -38,44 +39,19 @@ export function AnmeldungKarte() {
 
   const erneuern = useZweiTipp(() => void erneuernJetzt())
 
-  /** Offline geht keins von beiden — die Function ist nicht zu erreichen. */
-  const online = (): boolean => {
-    if (!state.staleAt) return true
-    dispatch({ type: 'showToast', text: t.offlineReadOnly })
-    return false
-  }
-
-  /**
-   * Einmal sperren, solange gefragt wird — und auch nach einem Wurf wieder
-   * frei: Ein fehlendes Bündel nach einem Deploy (`qr-bild`) ließe den Knopf
-   * sonst für immer grau.
-   */
-  const waehrenddessen = async (arbeit: () => unknown) => {
-    if (laeuft || !online()) return
-    setLaeuft(true)
-    try {
-      await arbeit()
-    } catch (err) {
-      console.error('[zugang]', err instanceof Error ? err.message : String(err))
-      dispatch({ type: 'showToast', text: t.zugangFehler })
-    } finally {
-      setLaeuft(false)
-    }
-  }
-
   // `uqr` erst jetzt, und gleichzeitig mit der Function: Wer nie einen Code braucht, lädt es nicht.
   const zeigen = () =>
     waehrenddessen(async () => {
       const [einmal, { qrBild }] = await Promise.all([einmalCodeHolen(), import('../lib/qr-bild')])
-      if (einmal) setCode({ einmal, qr: qrBild(einmal.zettelUrl) })
-      else dispatch({ type: 'showToast', text: t.zugangFehler })
+      if (!einmal) return false
+      setCode({ einmal, qr: qrBild(einmal.zettelUrl) })
     })
 
   const erneuernJetzt = () =>
     waehrenddessen(async () => {
-      const ok = await zugangErneuern()
-      if (ok) setCode(null)
-      dispatch({ type: 'showToast', text: ok ? t.zugangErneuert : t.zugangFehler })
+      if (!(await zugangErneuern())) return false
+      setCode(null)
+      dispatch({ type: 'showToast', text: t.zugangErneuert })
     })
 
   if (!state.personId) return null

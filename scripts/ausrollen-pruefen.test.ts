@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { functionsDesRepos } from './ausrollen-plan.mjs'
 import {
   cliPaket,
   ersterJsonWert,
   functionsBefunde,
+  GEHEIMNIS_ZUERST,
   katalogBefunde,
   rauchtest,
   rauchtestBefunde,
@@ -137,6 +139,19 @@ describe('rauchtestBefunde', () => {
     expect(rauchtestBefunde({ name: 'send-plan', verifyJwt: true }, GEMESSEN.mitglied)).toEqual([])
     expect(rauchtestBefunde({ name: 'anmelden', verifyJwt: true }, GEMESSEN.anmelden)).toEqual([])
     expect(rauchtestBefunde({ name: 'send-reminders', verifyJwt: false }, GEMESSEN.cron)).toEqual([])
+  })
+
+  it('offenes Tor ohne Geheimnis (`kalender`): Es antwortet der Handler wie bei jeder Function mit Sitzung', () => {
+    expect(rauchtestBefunde({ name: 'kalender', verifyJwt: false }, GEMESSEN.mitglied)).toEqual([])
+    expect(rauchtestBefunde({ name: 'kalender', verifyJwt: false }, GEMESSEN.cron)).toEqual([
+      'kalender: OPTIONS 401 statt 200 "Unauthorized"',
+      'kalender: POST 401 "Unauthorized" statt 401 {"error":"unauthorized"}',
+    ])
+  })
+
+  it('wer sein Geheimnis zuerst prüft, steht mit `verify_jwt = false` in config.toml — sonst käme der Zeitplan nicht durchs Tor', () => {
+    const offen = new Set(functionsDesRepos().filter((f) => !f.verifyJwt).map((f) => f.name))
+    expect([...GEHEIMNIS_ZUERST].filter((name) => !offen.has(name))).toEqual([])
   })
 
   it('eine Antwort der Plattform statt des Handlers fällt auf — das Modul kam nicht hoch', () => {

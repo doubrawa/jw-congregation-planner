@@ -657,7 +657,8 @@ statt der Kopfzeile der Pfeil zurück und **Alle gelesen**.
 Das **Profil** öffnest du über deinen Namen unten im Menü. Oben stehen deine
 Initialen, dein Name, deine Rolle und deine Gruppe; darunter stellst du
 persönliche Vorlieben ein, trägst Abwesenheiten ein (Abschnitt 5), meldest ein
-weiteres Gerät an, öffnest dieses Handbuch und meldest dich ab. Admins finden
+weiteres Gerät an, holst deine Aufgaben in deinen Kalender, öffnest dieses
+Handbuch und meldest dich ab. Admins finden
 am Handy hier auch **Personen** und **Einstellungen**.
 
 ![Profil](screenshots/verkuendiger-profil.png)
@@ -710,6 +711,8 @@ am Handy hier auch **Personen** und **Einstellungen**.
     Link.
   - Deinen bisherigen Code zeigt die App nicht: Gespeichert ist nur eine
     Prüfsumme davon, damit niemand ihn aus der Datenbank lesen kann.
+- **Kalender** – deine Aufgaben als Termine im Kalender deines Handys (siehe
+  [Abschnitt 8](#deine-aufgaben-im-kalender)).
 - **Handbuch** – öffnet dieses Handbuch im Browser, außerhalb der App. Wer
   planen darf, findet darunter auch das [Handbuch für Planer](planer.md). Die
   Handbücher gibt es nur auf Deutsch; ist die App auf eine andere Sprache
@@ -794,6 +797,52 @@ Push-Nachricht die neue Zahl mit – etwa nach einer neuen Zuteilung oder einer
 Erinnerung. Ob und wie die Zahl erscheint, entscheidet dein Gerät: Manche
 Startbildschirme zeigen nur einen Punkt, und auf dem iPhone steht sie nur, wenn
 Benachrichtigungen für die App erlaubt sind.
+
+### Deine Aufgaben im Kalender
+
+Deine Aufgaben können auch als Termine im Kalender deines Handys stehen – neben
+deinen übrigen Terminen und mit dessen Erinnerungen. Dafür abonniert dein
+Kalender einen Link, der nur dir gehört; Änderungen holt er sich von selbst.
+
+1. Im **Profil** auf der Karte **Kalender** auf **Kalender abonnieren** tippen.
+   Ein Blatt mit deinem Link öffnet sich.
+2. Je nach Gerät:
+   - **iPhone, iPad, Mac:** **Im Kalender öffnen** antippen und das Abonnieren
+     bestätigen.
+   - **Android (Google Kalender):** **Kopieren** antippen und den Link am
+     Computer in Google Kalender unter **Weitere Kalender → Per URL** einfügen.
+     Die Kalender-App am Handy kann das nicht; dort erscheint der Kalender
+     danach über dein Google-Konto.
+   - **Outlook:** **Kopieren** antippen und den Link als Kalender **aus dem
+     Internet abonnieren**.
+
+Was im Kalender steht:
+
+- Deine Aufgaben in den Zusammenkünften und an den Treffpunkten, **sobald der
+  Plan an dich gesendet ist** – über die ganze Zusammenkunft, ein Treffpunkt
+  eine Stunde lang. In der Notiz stehen die Zusammenkunft und die Nummer des
+  Programmpunkts (etwa „Zusammenkunft unter der Woche · Punkt 4") und darunter,
+  ob die Aufgabe **noch bestätigt werden muss** oder schon **bestätigt** ist.
+  Bestätigen und absagen geht weiter nur in der App.
+- Deine Trolley-Termine mit ihren Zeiten, sobald du eingetragen bist.
+- Was du abgesagt hast und was ausfällt, verschwindet wieder.
+
+Wie schnell eine Änderung ankommt, bestimmt dein Kalender – Google sieht nur
+etwa einmal am Tag nach. Was eilt, meldet dir die App.
+
+Nach dem Abonnieren steht auf der Karte **Abonniert** und darunter, wann dein
+Kalender zuletzt nachgesehen hat. Heißt es nach einem Tag noch, er habe nicht
+nachgesehen, hat das Abonnieren nicht geklappt.
+
+- **Neuer Link** – wenn du den Link verloren oder weitergegeben hast: Wer ihn
+  hat, sieht deine Aufgaben. Der neue Link sperrt den alten; entferne das alte
+  Abo aus deinem Kalender und abonniere den neuen wie oben. Der erste Tipp fragt
+  „Alten Link sperren?", erst der zweite sperrt.
+- **Abo beenden** – sperrt den Link, ohne einen neuen. Den Kalender entfernst
+  du danach in deiner Kalender-App. Der erste Tipp fragt „Wirklich beenden?".
+
+Die Termine stehen in der Sprache, auf die die App beim Abonnieren gestellt war.
+Stellst du sie später um, bringt ein **neuer Link** die neue Sprache mit.
 
 ---
 

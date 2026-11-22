@@ -11848,7 +11848,114 @@ vitest 4.1.12 wie in der Sperrdatei): Typprüfung, oxlint, die ganze Suite
 Im Browser auf der Entwicklerseite: Verkündiger ohne Saal auf dem Start und im
 Blatt, Planer mit; bei 375 px dunkel kein waagerechtes Rollen; der Film ohne
 Saal, die Konsole leer. Neu aufgenommen: `verkuendiger-start`,
-`verkuendiger-tausch`, `planer-start`.
+`verkuendiger-tausch`, `planer-start`. Committet als `127506d8`.
+
+## Aufgenommen am 22. November 2026 — Kalender-Abo (T204)
+
+**T204 · Die eigenen Aufgaben im Kalender des Handys** (Betreiber: „können wir
+CalDAV einbinden"). CalDAV passt nicht: Es bräuchte die Zugangsdaten des
+Kalenders auf dem Server, die Edge Functions nehmen `PROPFIND` und `REPORT`
+nicht an, und Android kann es nur mit DAVx⁵. Stattdessen ein **Kalender-Abo**:
+je Person ein geheimer Link auf eine iCalendar-Datei, den die Kalender-App
+abonniert. Entschieden mit dem Betreiber, vier Fragen und ein Entwurf:
+
+- **bauen** — nur lesend, Bestätigen und Absagen bleibt in der App;
+- **erst nach „Plan senden"** (Versand-Tagebuch) oder nach der eigenen Zusage —
+  vorher sortiert der Planer noch um;
+- **ein Termin über die ganze Zusammenkunft** (105 Minuten, dieselbe Zahl, mit
+  der die App das „Ende ca." des Programms rechnet, jetzt
+  `ZUSAMMENKUNFT_MINUTEN` in `_shared/planung.ts`), ein Treffpunkt eine Stunde,
+  ein Trolley-Termin mit seinen Zeiten;
+- **nur die eigenen Aufgaben**, keine Namen anderer;
+- Entwurf **„A · nur im Profil"**: eine Karte „Kalender" unter „Anmeldung", der
+  Stand der Zusage in der Notiz des Termins (`STATUS:TENTATIVE`/`CONFIRMED`).
+
+**Gebaut:** die Function `kalender` (`verify_jwt = false`): `GET ?t=<Link>`
+liefert die Datei (RFC 5545: CRLF, gefaltet nach 75 Bytes, maskierter Text,
+`VTIMEZONE` Europe/Berlin, feste `UID` je Platz, vier Wochen zurück),
+übersetzt in die Sprache vom Ausstellen; `POST` mit Sitzung kennt `stand`,
+`ausstellen` und `beenden`, die Person kommt aus der Mitgliedschaft. Die Tabelle
+`kalender_abos` (Migration `20261122100000_kalender-abo`) hält je Person
+höchstens ein Abo und vom Link nur die SHA-256-Prüfsumme; ohne RLS-Richtlinie,
+nur die Function liest. Eingetragen in die handgepflegten Listen: Aufbewahrung
+(ohne Frist), Fremdschlüssel-Spiegel, Mandanten-Nachweis, Zurücksetzen auf eine
+Sicherung (bleibt) und Zurücksetzen der Versammlung (geleert). In der App die
+Karte mit dem Blatt zum Abonnieren (`webcal://` für iPhone und Mac, Kopieren für
+Google und Outlook, die Wege je Gerät, „Der Link gehört nur dir"), danach
+„Abonniert" mit dem letzten Abruf des Kalenders, **Neuer Link** und **Abo
+beenden** mit zwei Tipps; 19 Schlüssel in allen zwölf Sprachen. Vor dem
+Ausstellen sieht die Karte nach, ob es schon ein Abo gibt — sonst sperrte ein
+Tipp auf „Kalender abonnieren" den Link eines anderen Geräts ohne Rückfrage.
+
+**Der Rauchtest nach dem Ausrollen hätte `kalender` rot gemeldet:** Er nahm
+jede Function mit `verify_jwt = false` für eine, die ihr Geheimnis vor allem
+anderen prüft (`send-reminders`: 401 schon bei `OPTIONS`). Jetzt nennt
+`GEHEIMNIS_ZUERST` diese Functions beim Namen; `kalender` antwortet wie jede
+Function mit Sitzungsprüfung (`OPTIONS` mit CORS, POST ohne Sitzung
+`401 unauthorized`). Eine Probe hält fest, dass jede in `GEHEIMNIS_ZUERST` in
+`config.toml` offen steht.
+
+**Geprüft:** 23 Proben der Function (`_test/kalender.test.ts`: eigene Plätze
+samt Namensvetter und ausgefallener Zusammenkunft, Zusage und Versand, Faltung
+und Maskierung, unbekannter Link 404, Übersetzung, die Rechte des POST) und 14
+der Karte (`KalenderKarte.test.tsx`). Gegenprobe der Karte per Skript, zwölf
+eingebaute Fehler, jeder von genau der Probe gefangen, die ihm gilt. Im Browser
+auf der Entwicklerseite: Karte und Blatt bei 904 px dunkel und bei 375 px hell
+auf Persisch (gespiegelt, kein waagerechtes Rollen, die Konsole leer). README
+(Abschnitt „Kalender-Abo"), Handbuch für Verkündiger (Abschnitt 7 und „Deine
+Aufgaben im Kalender" in Abschnitt 8), ein Satz bei „Plan senden" im
+Planer-Handbuch; `verkuendiger-profil` neu aufgenommen, 1700 px hoch.
+Typprüfung, oxlint (nur `Spur.tsx:112`), die ganze Suite (417 Dateien, 8793
+Proben) und der Build grün. Laufzeit-Messung, voller Satz mit axe über
+PowerShell: 732 Läufe in 356 s ohne Befund, mit drei Tabs — mit vier brach die
+Auswertung bei 320 px an `ERR_INSUFFICIENT_RESOURCES` ab (Chrome lud die Module
+nicht mehr; die axe-Meldungen danach folgten nur daraus).
+
+**Nach `/simplify` und `/code-review max`** (selber Tag, allein und
+nacheinander): `/simplify` — das Sperren der Knöpfe stand fast gleich in den
+Karten „Anmeldung" und „Kalender" und ist jetzt ein Hook
+(`profil/useWaehrenddessen.ts`; „geht nicht" meldet die Arbeit mit `false`);
+`.kalender-abo` war Wort für Wort die Regel von `.anmeldung-knopf`; der neue
+Block in `_shared/planung.ts` hatte `STANDARD_ZEITEN` von ihrem Kommentar
+getrennt; `pendingOfMeeting` nimmt die Dienste `readonly` (keine Kopie je
+Zusammenkunft mehr); dazu kleinere Aufräumarbeiten in der Function und den
+Proben. Nicht übernommen: die Zusagen über `zeilenJePraefix` lesen (je Abruf
+rund 50 Anfragen statt zwei). `/code-review max` — drei Befunde, alle behoben:
+**„Abo beenden" meldete Erfolg, auch wenn das Löschen scheiterte** (`rest.send`
+schluckt HTTP-Fehler; jetzt `zeilenSchreiben` und 500), ein Netzfehler beim
+Vermerk des Abrufs machte aus dem fertigen Kalender eine 500, und nach der
+Rückkehr ins Netz verwarf die Karte den neuen Stand (jetzt ein Zähler der
+Knöpfe statt „nur, solange unbekannt"). Jede Korrektur mit Probe, jeder
+Rückbau per Skript rot. Danach Typprüfung, oxlint, die ganze Suite (417
+Dateien, 8796 Proben) und der Build grün.
+
+**Danach entschieden (Betreiber: „ja" zu beidem):** Die Notiz nennt jetzt auch
+die Zusammenkunft und die Nummer des Programmpunkts, ohne Uhrzeit —
+„Zusammenkunft unter der Woche · Punkt 4". Die Wörter sind die der App
+(`tabMid`, `tabWe`, `heftPunkt`; für „Leben-und-Dienst-Zusammenkunft" gibt es
+keinen eigenen Schlüssel), die Nummer in den Ziffern der Sprache (Persisch
+„۴"). `pendingOfMeeting` reicht dafür `num` des Punkts weiter. Die Tabelle in
+`kalender/texte.ts` erzeugte ein Skript aus den Overlays (das persische ZWNJ
+roh); `kalender/texte.test.ts` vergleicht sie in allen zwölf Sprachen mit dem
+Wörterbuch der App. Gegenprobe: Nummer nicht weitergereicht, Zusammenkunft
+vergessen, Ziffern nicht übertragen, ZWNJ verloren — jedes Mal rot.
+
+Und die **Mitgliedsrechte-Probe misst das Abo** gegen den Betrieb, Fälle
+(122)–(126): ein Link, den sich das Mitglied ausstellt, liefert ohne Anmeldung
+`text/calendar` (Gegenprobe — und zugleich die offene Frage nach der
+Plattform); die Tabelle sieht das Mitglied nicht; ein erfundener Link bekommt
+404; ein Abo, das das Mitglied selbst für die Person des Admins anlegt, kommt
+nicht an (nachgesehen am Link, denn die Tabelle liest auch der Admin nicht);
+nach „Abo beenden" bekommt der alte Link 404. Die Attrappe in
+`schema-probe.test.ts` fährt dafür die echte Function `kalender`; sie kann
+jetzt einen GET an eine Function samt Textantwort und den Filter `or=(…)`, den
+die Function für Trolley-Schichten als Person oder Partner schickt — beim
+Filtern wie beim Prüfen gegen `schema.sql`.
+
+**Offen nach dem Ausrollen:** die Mitgliedsrechte-Probe gegen den Betrieb
+fahren (Betreiber) — (122) beantwortet dabei, ob die Plattform `text/calendar`
+unverändert ausliefert; danach am iPhone aus der installierten App und mit
+Google per URL abonnieren.
 
 ## Was bewusst offen bleibt
 
@@ -11890,13 +11997,15 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑
+13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑☑
 
-**Alle 203 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+**Alle 204 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
 Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf,
 T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
-stehen (alle vier Pakete umgesetzt und ausgerollt), und T202–T203 vom
-22. November (umgesetzt und geprüft, noch nicht committet). Davor als letzte am 14. November
+stehen (alle vier Pakete umgesetzt und ausgerollt), T202–T203 vom
+22. November (committet als `127506d8`, noch nicht ausgerollt) und T204 vom
+selben Tag, das Kalender-Abo (umgesetzt, geprüft und committet, noch nicht ausgerollt).
+Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
 echten Gerät). **T183** ist am selben Tag entschieden:

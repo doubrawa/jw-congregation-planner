@@ -187,6 +187,10 @@ export const LEEREN = [
   // Und die Einmal-Codes fürs nächste Gerät — sie gelten Minuten, und
   // die Personen, an denen sie hängen, kommen hier neu.
   'anmelde_einmalcodes',
+  // Und die Kalender-Abos — sie hängen an den Personen, die hier mit neuen
+  // Ids kommen. Wer abonniert hatte, holt sich im Profil einen neuen Link;
+  // der alte bekommt bis dahin 404.
+  'kalender_abos',
   // Fehlermeldungen von den Geräten (T171): Sie zeigen auf einen Bildschirm in
   // einem Bestand, den dieses Skript gerade wegräumt. Ein Fehler von vorher
   // sagt über den neuen Stand nichts.

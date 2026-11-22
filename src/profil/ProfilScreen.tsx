@@ -17,6 +17,7 @@ import { useT } from '../i18n/useT'
 import { promptInstall } from '../lib/install'
 import { AbwesenheitenKarte } from '../components/AbwesenheitenKarte'
 import { AnmeldungKarte } from './AnmeldungKarte'
+import { KalenderKarte } from './KalenderKarte'
 import { AnsichtKarte } from './AnsichtKarte'
 import { Diagnose } from './Diagnose'
 import { HandbuchKarte } from './HandbuchKarte'
@@ -186,6 +187,9 @@ export function ProfilScreen() {
           )}
 
           <AnmeldungKarte />
+
+          {/* Unter „Anmeldung": Beides verbindet ein Gerät mit dem eigenen Zugang. */}
+          <KalenderKarte />
 
           {/* Das Handbuch gleich über „Erste Schritte" — beides Hilfe. */}
           <HandbuchKarte fuerPlaner={rechte.zuteilen} />

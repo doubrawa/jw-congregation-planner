@@ -54,8 +54,10 @@ describe('functionsAusConfig', () => {
     expect(functionsAusConfig(CONFIG).map((f) => f.name).sort()).toEqual(ordner)
   })
 
-  it('liest `verify_jwt` je Function — offen ist allein `send-reminders`', () => {
-    expect(functionsAusConfig(CONFIG).filter((f) => !f.verifyJwt).map((f) => f.name)).toEqual(['send-reminders'])
+  it('liest `verify_jwt` je Function — offen sind allein `kalender` und `send-reminders`', () => {
+    // Die Kalender-App kennt nur den Link, der Zeitplan nur sein Geheimnis;
+    // beide prüfen selbst, was sie bekommen.
+    expect(functionsAusConfig(CONFIG).filter((f) => !f.verifyJwt).map((f) => f.name).sort()).toEqual(['kalender', 'send-reminders'])
   })
 
   it('übersieht keinen Eintrag ohne Leerzeile davor und keinen am Dateiende', () => {

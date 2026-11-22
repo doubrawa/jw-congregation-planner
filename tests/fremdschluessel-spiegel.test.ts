@@ -155,6 +155,7 @@ const SPIEGEL: Record<string, Spiegel> = {
 const OHNE_SPIEGEL: Record<string, string> = {
   assignment_log: 'Das Versand-Tagebuch steht im Zustand nur als `sentLog` (Schlüssel und Name → Zeitpunkt), ohne Person.',
   anmelde_einmalcodes: 'Einmal-Codes liest kein Client — nur die Function `anmelden`; im Zustand stehen sie nie.',
+  kalender_abos: 'Kalender-Abos liest kein Client — nur die Function `kalender`; im Zustand stehen sie nie.',
 }
 
 const FK = fremdschluessel()

@@ -54,6 +54,13 @@ const LATEIN_ERLAUBT: Record<string, string> = {
   Chrome: 'Name des Browsers',
   Edge: 'Name des Browsers',
   Firefox: 'Name des Browsers',
+  // Die Wege zum Kalender-Abo: Geräte und Dienste, wie sie sich auch auf
+  // Russisch und Ukrainisch schreiben.
+  iPad: 'Name des Geräts',
+  Mac: 'Name des Geräts',
+  Google: 'Name des Dienstes (Google Kalender)',
+  Outlook: 'Name des Programms',
+  URL: 'Adresse im Netz — so heißt sie in jeder Kalender-App',
   S: 'Formularnummer „S-89"',
   Zoom: 'Name des Dienstes (Zoom-Ordner)',
   // „Per Nachricht" im Blatt „Link senden" (24.10.2026): die Dienste, wie sie

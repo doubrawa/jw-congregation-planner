@@ -100,9 +100,9 @@ SHOTS=(
   # Das Blatt vor dem Übernehmen (T185): Simon (p9) bekommt das erste
   # Ersatzgesuch vorgelegt — eins mit „An diesem Tag schon".
   "verkuendiger-uebernehmen|s=freie&pl=0&me=p9&blatt=uebernehmen"
-  # Höher, damit unten Anmeldung, Handbuch, „Erste Schritte" und „Abmelden"
-  # ganz draufstehen — sonst schneidet das Bild die Knöpfe ab.
-  "verkuendiger-profil|s=profil&pl=0&me=p9|${W}x1480"
+  # Höher, damit unten Anmeldung, Kalender, Handbuch, „Erste Schritte" und
+  # „Abmelden" ganz draufstehen — sonst schneidet das Bild die Knöpfe ab.
+  "verkuendiger-profil|s=profil&pl=0&me=p9|${W}x1700"
   # Angemeldet als p9 (Gruppe 1): zeigt die Treffpunkte der EIGENEN Gruppe —
   # fremde Gruppen stehen hier bewusst nicht (siehe fsVisible in src/data/fs.ts).
   "verkuendiger-treffpunkte|s=programm&tab=fs&pl=0&me=p9"

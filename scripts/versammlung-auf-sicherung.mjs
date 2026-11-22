@@ -105,6 +105,7 @@ export const BLEIBEN = {
   push_subscriptions: 'die Geräte, die Mitteilungen bekommen — sie hängen am Konto; gelöscht müsste jeder Push neu einschalten.',
   anmelde_links: 'Link und Zettel-Code jeder Person — mit ihnen kommt ein Gerät wieder hinein; zurückgesetzt gälten die der Tester nicht mehr.',
   anmelde_einmalcodes: 'Einmal-Codes fürs nächste Gerät — sie hängen am Konto und verfallen von selbst.',
+  kalender_abos: 'die Kalender-Abos — sie hängen an der Person, nicht an der Planung; zurückgesetzt müsste jeder seinen Kalender neu abonnieren.',
   geraete_fehler: 'Fehlermeldungen der Geräte — Befunde aus dem Betrieb, keine Planung; gerade die aus der Beta braucht die Fehlersuche.',
 }
 

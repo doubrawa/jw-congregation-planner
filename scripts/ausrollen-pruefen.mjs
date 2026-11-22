@@ -196,6 +196,14 @@ export function functionsBefunde(liste, soll, seit = null) {
  */
 export const OHNE_SITZUNG = new Set(['anmelden'])
 
+/**
+ * Functions, die ihr **Geheimnis vor allem anderen** prüfen, auch vor
+ * `OPTIONS`: Sie ruft der Zeitplan, nie ein Browser. `verify_jwt = false`
+ * allein heißt das nicht — `kalender` lässt das Tor offen und prüft danach
+ * selbst, wie jede andere Function.
+ */
+export const GEHEIMNIS_ZUERST = new Set(['send-reminders'])
+
 /** Der Rumpf des Rauchtests: eine Aktion, die keine Function kennt. */
 export const RAUCHTEST_RUMPF = { action: 'rauchtest', aktion: 'rauchtest' }
 
@@ -203,15 +211,15 @@ export const RAUCHTEST_RUMPF = { action: 'rauchtest', aktion: 'rauchtest' }
  * Was eine Function auf die beiden Anfragen antworten muss (gemessen am
  * 7.11.2026, alle acht).
  *
- *  - `verify_jwt = false` (`send-reminders`): Sie prüft ihr Geheimnis vor
+ *  - `GEHEIMNIS_ZUERST` (`send-reminders`): Sie prüft ihr Geheimnis vor
  *    allem anderen, auch vor `OPTIONS` — beides `401 Unauthorized`.
  *  - sonst `OPTIONS` → 200 vom **Handler**: Nur dessen CORS nennt
  *    `content-type`; die Antworten der Plattform nennen es nicht. Der POST mit
  *    dem öffentlichen Schlüssel kommt am Tor vorbei und trifft auf die
  *    Prüfung der Function: `401 unauthorized`, ohne Sitzung `400 bad-request`.
  */
-export function rauchtestErwartung({ name, verifyJwt }) {
-  if (!verifyJwt) return { options: { status: 401, text: 'Unauthorized' }, post: { status: 401, text: 'Unauthorized' } }
+export function rauchtestErwartung({ name }) {
+  if (GEHEIMNIS_ZUERST.has(name)) return { options: { status: 401, text: 'Unauthorized' }, post: { status: 401, text: 'Unauthorized' } }
   return {
     options: { status: 200, cors: true },
     post: OHNE_SITZUNG.has(name) ? { status: 400, text: '{"error":"bad-request"}' } : { status: 401, text: '{"error":"unauthorized"}' },

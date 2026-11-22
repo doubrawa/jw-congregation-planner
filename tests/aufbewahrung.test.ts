@@ -76,6 +76,7 @@ const OHNE_FRIST: Record<string, string> = {
   push_subscriptions: 'die Geräte für Push — eines geht beim Abmelden oder wenn der Dienst es nicht mehr kennt',
   fs_rules: 'der Grundplan der Treffpunkte',
   trolleys: 'die Trolleys selbst — ihre Termine haben eine Frist',
+  kalender_abos: 'das Kalender-Abo einer Person — höchstens eines je Person; es geht mit ihr oder mit „Abo beenden"',
 }
 
 describe('Aufräumen in der Datenbank', () => {

@@ -276,6 +276,22 @@
  * allein `not-assigned` — der Platz gehört dem Aufrufer nicht. Die Zeilen in
  * ihren Glocken löschen Admin und Planer am Ende selbst.
  *
+ * **Das Kalender-Abo** (Function `kalender`, Tabelle `kalender_abos`): Der Link
+ * ist der einzige Ausweis — wer ihn kennt, sieht die Aufgaben einer Person. Die
+ * Tabelle liest und schreibt allein die Function; ausstellen kann ein Konto nur
+ * für die eigene Person. (122) misst zugleich, was nur der Betrieb zeigt: ob
+ * die Plattform den Kalender als `text/calendar` ausliefert.
+ *
+ *  122. Mitglied: sich einen Link ausstellen und ihn abrufen      → ein Kalender
+ *  123. Mitglied: das eigene Abo in der Tabelle lesen             → unsichtbar
+ *  124. Ohne Anmeldung: ein erfundener Link                       → nichts (404)
+ *  125. Mitglied: ein Abo für die Person des Admins anlegen       → abgewiesen
+ *  126. Nach „Abo beenden": der alte Link                         → nichts (404)
+ *
+ * Abgerufen wird wie von einer Kalender-App: ohne Anmeldung. (126) beendet das
+ * Abo des Mitglieds wieder; käme (125) durch, beendete der Admin das
+ * untergeschobene Abo.
+ *
  * Die Anlage des Tauschens legt der Admin an (`tauschAnlage`): vier Wochen im Jahr 2099 mit
  * je einem Platz eines Dienstes und eine Person ohne Konto, das Kennzeichen
  * im Vornamen. Mitglied und Gruppenaufseher schaltet die Probe für den Dienst
@@ -326,6 +342,7 @@
  * Versammlung tun, weil jemand versehentlich sein eigenes Konto einträgt.
  */
 
+import { createHash, randomBytes } from 'node:crypto'
 import { alsSkript, anfrageKaputt, istDienstSchluessel, probeDatei, pruefKlient, verdecktLesen, wertAusEnvDatei } from './gemeinsam.mjs'
 
 /* ===================== Schlüssel (Spiegel von aufgaben-schluessel.ts) ===== */
@@ -2751,6 +2768,84 @@ async function fehlermeldungProben(k) {
   k.ergebnis(117, 'Mitglied: in eine fremde Versammlung melden', e116, e116.durch ? 'AUCH DAS!' : 'abgewiesen — nur die eigene Versammlung')
 }
 
+/** Ein Link, wie die Function `kalender` ihn ausstellt: 32 Zufallsbytes in base64url. */
+const kalenderLink = () => randomBytes(32).toString('base64url')
+
+/** Wie die Function den Link speichert (`pruefsumme` in `_shared/anmeldung.ts`): SHA-256, hexadezimal. */
+const kalenderPruefsumme = (link) => createHash('sha256').update(link).digest('hex')
+
+/**
+ * (122)–(126) **Das Kalender-Abo** — siehe Kopf. Abgerufen wird wie von einer
+ * Kalender-App: ohne Anmeldung. 200 und 404 sind dabei beide ein Urteil; jede
+ * andere Antwort heißt, die Probe hat nichts gemessen.
+ *
+ * Die Matrix der Function — was in den Kalender kommt, wie sie den POST prüft —
+ * steht in `supabase/functions/_test/kalender.test.ts`; hier steht, was nur
+ * der Betrieb beantwortet.
+ */
+async function kalenderProben(k) {
+  const { planer, mitglied, versammlung } = k
+  console.log('\nDas Kalender-Abo:')
+  const abrufUrteil = (antwort) => ({ urteil: antwort.status === 200 || antwort.status === 404 })
+
+  const was122 = 'Mitglied: sich einen Link ausstellen — er liefert ohne Anmeldung den eigenen Kalender'
+  const aus = await mitglied.funktion('kalender', { aktion: 'ausstellen', sprache: 'de' })
+  const link = typeof aus.daten?.url === 'string' ? aus.daten.url : null
+  if (!link) {
+    k.kaputt(122, was122, `Ausstellen scheiterte (HTTP ${aus.status}: ${JSON.stringify(aus.daten)})`, true)
+    for (const nr of [123, 124, 125, 126]) k.ungemessen(nr, 'Kalender-Abo', 'ohne den Link aus (122)')
+    return
+  }
+  /** Derselbe Weg mit einem anderen Link. */
+  const mitLink = (anderer) => {
+    const adresse = new URL(link)
+    adresse.searchParams.set('t', anderer)
+    return String(adresse)
+  }
+
+  try {
+    const abruf = await fetch(link)
+    const typ = abruf.headers.get('content-type') ?? ''
+    const text = await abruf.text()
+    const kalender = abruf.status === 200 && typ.startsWith('text/calendar') && text.startsWith('BEGIN:VCALENDAR')
+    const e122 = bewerteVersuch(abruf.status, kalender, true, { urteil: true, woerter: ['ein Kalender kam', 'KEIN KALENDER'] })
+    k.ergebnis(122, was122, e122, e122.durch ? `der Weg steht offen (${typ})` : `ZU STRENG oder verbogen — ${typ || 'ohne Typ'}: ${JSON.stringify(text.slice(0, 60))}`)
+
+    const sicht = await mitglied.rest(`kalender_abos?select=person_id&person_id=eq.${mitglied.pid}`)
+    const e123 = bewerteVersuch(sicht.status, zeilenVon(sicht).length > 0, false, { woerter: ['SICHTBAR', 'nicht sichtbar'] })
+    k.ergebnis(123, 'Mitglied: das eigene Abo in der Tabelle lesen', e123, e123.durch ? 'AUCH DAS! — samt Prüfsumme' : 'unsichtbar — lesen darf nur die Function')
+
+    const erfunden = await fetch(mitLink(kalenderLink()))
+    const e124 = bewerteVersuch(erfunden.status, erfunden.status === 200, false, { ...abrufUrteil(erfunden), woerter: ['EIN KALENDER KAM', 'nichts'] })
+    k.ergebnis(124, 'Ohne Anmeldung: ein erfundener Link', e124, e124.durch ? 'AUCH DAS!' : 'kein Kalender ohne echten Link')
+
+    const was125 = 'Mitglied: selbst ein Abo für die Person des Admins anlegen, mit eigenem Link'
+    if (!planer.pid) {
+      k.ungemessen(125, was125, 'der Admin hat keine Person')
+    } else {
+      const untergeschoben = kalenderLink()
+      const zeile = { person_id: planer.pid, congregation_id: versammlung, token_hash: kalenderPruefsumme(untergeschoben), sprache: 'de' }
+      const s = await mitglied.rest('kalender_abos', 'POST', zeile, 'return=minimal')
+      // Nachgesehen wird am Link selbst: Die Tabelle liest auch der Admin nicht.
+      const nach = await fetch(mitLink(untergeschoben))
+      const e125 = bewerteVersuch(s.status, nach.status === 200, false, { leseStatus: abrufUrteil(nach).urteil ? 200 : nach.status })
+      k.ergebnis(125, was125, e125, e125.durch ? 'AUCH DAS! — damit läse es fremde Aufgaben' : 'abgewiesen — anlegen darf nur die Function, für die eigene Person')
+      await k.aufraeumen(e125, () => planer.funktion('kalender', { aktion: 'beenden' }), ['Abo des Admins wieder beendet', 'vorsorglich beendet'])
+    }
+  } finally {
+    // (126) ist zugleich das Aufräumen: Danach steht kein Abo des Mitglieds mehr.
+    const was126 = 'Nach „Abo beenden": der alte Link'
+    const ende = await mitglied.funktion('kalender', { aktion: 'beenden' })
+    if (ende.status >= 400) {
+      k.kaputt(126, was126, `Beenden scheiterte (HTTP ${ende.status}) — !! das Abo des Mitglieds blieb stehen !!`, false)
+    } else {
+      const danach = await fetch(link)
+      const e126 = bewerteVersuch(danach.status, danach.status === 200, false, { ...abrufUrteil(danach), woerter: ['DER LINK GILT NOCH', 'der Link gilt nicht mehr'] })
+      k.ergebnis(126, was126, e126, e126.durch ? 'AUCH DAS! — beenden sperrt nichts' : 'gesperrt')
+    }
+  }
+}
+
 /* ===================== Ausführung ========================================= */
 
 /** Exportiert und mit der Aufrufzeile als Parameter — für `schema-probe.test.ts`. */
@@ -3175,6 +3270,9 @@ export async function main(arg = process.argv.slice(2)) {
   // ---- 120) und 121) Die Absage über die Function substitute ---------------
   await absageProben(k, dienst)
 
+  // ---- 122) bis 126) Das Kalender-Abo ---------------------------------------
+  await kalenderProben(k)
+
   // Verboten ist, was nicht durchkommen soll; die übrigen sind die Gegenproben.
   // Bis zum 3.10.2026 standen deren Nummern hier fest (5, 6, 8).
   const verboten = befunde.filter((b) => !b.erwartet)
@@ -3185,9 +3283,9 @@ export async function main(arg = process.argv.slice(2)) {
   console.log(`\n${durch} von ${verboten.length} verbotenen Versuchen kamen durch.`)
   if (ueberraschungen.length === 0 && kaputte.length === 0) {
     console.log('Genau die erwarteten: S2, S3, S10, S11, S13, die Rechte aus T120, die Rechte-Stufen, die Vormerkungen der')
-    console.log(`Vorträge, die Trolleys und das Tauschen sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length} Gegenproben`)
-    console.log('zeigen, dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Melden, Ein- und Austragen, Zuteilen,')
-    console.log('Tauschen und Sehen gehen weiter.')
+    console.log(`Vorträge, die Trolleys, das Tauschen und das Kalender-Abo sind damit nicht mehr gelesen, sondern gemessen — und die ${gegenproben.length}`)
+    console.log('Gegenproben zeigen, dass die Regeln nicht zu streng geraten sind: Bestätigen, Abmelden, Absagen, Melden, Ein- und Austragen,')
+    console.log('Zuteilen, Tauschen, Abonnieren und Sehen gehen weiter.')
     if (nichtGemessen.length) {
       console.log(`Ohne Messung blieben ${nichtGemessen.map((n) => `(${n})`).join(', ')} — die Voraussetzung fehlte.`)
     }

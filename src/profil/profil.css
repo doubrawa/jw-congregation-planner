@@ -201,7 +201,8 @@
 /* ---- Anmeldung: Einmal-Code und Zugang erneuern ------------------------------ */
 
 .anmeldung-knopf,
-.anmeldung-erneuern {
+.anmeldung-erneuern,
+.kalender-abo {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -244,6 +245,50 @@
 
 .anmeldung-anleitung {
   flex-basis: 100%;
+}
+
+/* ---- Kalender: das Abo und sein Blatt ---------------------------------------- */
+
+.kalender-stand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.kalender-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Beenden sperrt den Link: in der Farbe eines Problems, wie „Entfernen". */
+.kalender-beenden {
+  color: var(--problem);
+}
+
+.kalender-blatt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kalender-wege {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text2);
+  font-size: calc(14.5px * var(--fs));
+}
+
+/* Der Link ist ein Schlüssel — das steht abgesetzt, mit dem Punkt eines Problems. */
+.kalender-geheim {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--feld);
 }
 
 /* ---- Installieren, Abmelden, Stand der App ----------------------------------- */

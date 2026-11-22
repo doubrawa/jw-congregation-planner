@@ -9,6 +9,7 @@
  * (localizedWeek prüft die Struktur).
  */
 
+import { ZUSAMMENKUNFT_MINUTEN } from '../../supabase/functions/_shared/planung.ts'
 import { angleichen, hatAuxKlasse } from './aux-class'
 import type { SectionKind } from './constants'
 import {
@@ -55,9 +56,10 @@ export function itemMinutes(item: PartItem): number | null {
  * fest eingetragenen Endzeiten (19:00 → 20:45, 10:00 → 11:45).
  *
  * Weicht das Programm ab, verschiebt `shiftEnd` die Endzeit mit: der Planer
- * ändert LAC-Minuten, das Ende folgt.
+ * ändert LAC-Minuten, das Ende folgt. Dieselbe Zahl nimmt das Kalender-Abo für
+ * das Ende eines Termins — deshalb steht sie in `_shared`.
  */
-export const MEETING_MINUTES = 105
+export const MEETING_MINUTES = ZUSAMMENKUNFT_MINUTEN
 
 /**
  * Endzeit-Zeile aus der Startzeit: „19:00" → „Ende ca. 20:45".

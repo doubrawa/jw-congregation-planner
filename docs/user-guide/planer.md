@@ -687,7 +687,8 @@ mitgeteilt sind. Ein Tipp öffnet das Blatt: oben der Stand der Woche, darunter 
 sind es nur noch wenige — wer was noch nicht weiß, mit Tag und Aufgabe. Ein
 Tipp auf **Plan senden** im Blatt, und jede eingeteilte Person bekommt **eine**
 Nachricht mit allen ihren Aufgaben dieser Woche — in der App und, wo aktiviert,
-als Push. **Später** schließt das Blatt, ohne zu senden.
+als Push. Wer seine Aufgaben im Kalender abonniert hat (Profil → **Kalender**),
+findet sie ab dann auch dort. **Später** schließt das Blatt, ohne zu senden.
 
 Vier Dinge, auf die du dich verlassen kannst:
 

@@ -74,6 +74,8 @@ export interface PartItem {
    * Kennung, und der Aufgaben-Schluessel hat nur noch **eine** Form.
    */
   iid: string
+  /** Laufende Nummer des Punkts, wie das Arbeitsheft ihn zählt — nicht jeder trägt eine. */
+  num?: number
   title?: string
   names?: Slot[]
   /** Zweite Platzreihe der Zusaetzlichen Klasse (jw.org S-38, Absatz 27). */
@@ -209,7 +211,12 @@ export interface Pending {
   key: string
   /** Ein Hilfsdienst-Platz — `label` ist dann der Name des Dienstes (`inDienstFolge`). */
   dienst?: true
+  /** Die Nummer des Programmpunkts (`PartItem.num`), wo er eine trägt — das Kalender-Abo nennt sie. */
+  num?: number
 }
+
+/** Eine Treffpunkt-Leitung: Tag als Versatz ab Montag, Termin als Text, Uhrzeit und Ort einzeln. */
+type FsLeitung = Pending & { offset: number; datum: string; zeit: string; ort: string }
 
 /**
  * Unbestätigte Treffpunkt-Leitungen einer Woche.
@@ -222,13 +229,16 @@ export interface Pending {
  * Zusammenkunftszeiten; als Versatz ab Montag gerechnet wie im Client
  * (`fsTag`). task_key `fs|<Montag>|<instId>` — dieselbe Form wie dort (T66:
  * vorn steht die **Kennung** der Woche, nicht mehr ihre Position).
+ *
+ * Mit leerer `conf` sind es alle Leitungen der Woche — so fragt das
+ * Kalender-Abo, das dazu Uhrzeit (`zeit`) und Ort (`ort`) braucht.
  */
 export function pendingOfFsWeek(
   woche: string,
   insts: FsInstance[],
   conf: Map<string, string>,
-): Array<Pending & { offset: number; datum: string }> {
-  const out: Array<Pending & { offset: number; datum: string }> = []
+): FsLeitung[] {
+  const out: FsLeitung[] = []
   for (const inst of insts) {
     if (!inst?.leader || inst.lext) continue
     const key = fsKey(woche, inst.id)
@@ -240,6 +250,8 @@ export function pendingOfFsWeek(
       label: FS_LEITER,
       key,
       offset,
+      zeit: inst.time ?? '',
+      ort: inst.place ?? '',
       datum: fsTerminText(woche, offset, inst.time ?? '', inst.place ?? ''),
     })
   }
@@ -258,7 +270,7 @@ export function pendingOfMeeting(
   woche: string,
   tab: 'mid' | 'we',
   meeting: Meeting,
-  services: ServiceRow[],
+  services: readonly ServiceRow[],
   conf: Map<string, string>,
 ): Pending[] {
   const out: Pending[] = []
@@ -304,6 +316,7 @@ export function pendingOfMeeting(
             label: zuteilungsLabel(section.label ?? '', item.title ?? 'Zuteilung', rolleMitHerkunft(slot)),
             // Derselbe Schlüssel, unter dem auch der Client die Bestätigung ablegt.
             key,
+            ...(item.num ? { num: item.num } : {}),
           })
         }
       }

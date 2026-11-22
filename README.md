@@ -1188,6 +1188,49 @@ Empfänger *heute* eingestellt hat.
 - Das Zeitfenster nutzt `week.start` (ISO), das nur bei importierten Wochen
   gesetzt ist. Abgelaufene Push-Abos (404/410) räumt der Versand automatisch ab.
 
+## Kalender-Abo
+
+[`supabase/functions/kalender/`](supabase/functions/kalender/) liefert jeder
+Person ihre eigenen Aufgaben als **Kalender zum Abonnieren** (iCalendar,
+RFC 5545): ein geheimer Link je Person, den die Kalender-App des Handys abonniert
+und von selbst neu holt. Nur lesend — bestätigen und absagen bleibt in der App.
+Abonniert wird im **Profil → Kalender**. CalDAV passt nicht: Es bräuchte die
+Zugangsdaten des Kalenders auf dem Server, die Functions nehmen seine Methoden
+(`PROPFIND`, `REPORT`) nicht an, und Android kann es nur mit einer Zusatz-App.
+
+**Was im Kalender steht:** jede eigene Aufgabe in Zusammenkunft und Treffpunkt,
+sobald der Plan an die Person gesendet ist (Versand-Tagebuch) oder sie bestätigt
+hat — als Termin über die ganze Zusammenkunft (105 Minuten), ein Treffpunkt eine
+Stunde. Die Notiz nennt die Zusammenkunft und, wo er eine trägt, die Nummer des
+Programmpunkts („Zusammenkunft unter der Woche · Punkt 4", in den Wörtern der
+App), darunter, ob noch zu bestätigen ist (`STATUS:TENTATIVE`) oder bestätigt
+(`CONFIRMED`). Trolley-Termine kennen keine Zusage; sie stehen da,
+sobald jemand eingetragen ist, als Person oder Partner. Abgesagtes und
+Ausgefallenes fehlt. Zurück reicht der Kalender vier Wochen; seine Sprache ist
+die der App beim Ausstellen.
+
+**Zwei Wege in die Function:**
+- `GET …/functions/v1/kalender?t=<Link>` — die Kalender-App, ohne Anmeldung
+  (`verify_jwt = false`). Gespeichert ist nur die SHA-256-Prüfsumme des Links
+  (`kalender_abos.token_hash`); ein unbekannter Link bekommt `404`. Jeder Abruf
+  setzt `abgerufen_at` — daran sieht die Person im Profil, ob ihr Abo trägt.
+- `POST` mit der Sitzung des Kontos: `stand`, `ausstellen` (ein neuer Link
+  sperrt den alten), `beenden`. Die Person kommt aus der Mitgliedschaft, nie aus
+  dem Rumpf.
+
+**Tabelle `kalender_abos`:** höchstens ein Abo je Person, ohne RLS-Richtlinie —
+lesen und schreiben darf allein die Function. Das Abo geht mit der Person;
+das Zurücksetzen einer Versammlung leert die Tabelle, danach abonniert jeder neu.
+Gegen den Betrieb messen das die Fälle (122)–(126) der Mitgliedsrechte-Probe:
+Ein ausgestellter Link liefert ohne Anmeldung `text/calendar`, die Tabelle
+bleibt für Mitglieder unsichtbar und unbeschreibbar, ein erfundener oder
+beendeter Link bekommt 404.
+
+**Takt:** Der Kalender bittet um stündliches Nachsehen (`REFRESH-INTERVAL`,
+`X-PUBLISHED-TTL`). Wie oft er wirklich nachsieht, bestimmt die Kalender-App;
+Google holt abonnierte Kalender nur etwa einmal am Tag — das sagt auch das Blatt
+beim Abonnieren.
+
 ## Aufbewahrung (T125)
 
 „Wir wollen ja keine Daten sammeln, die wir nicht brauchen." Zwei Fristen,
@@ -1211,7 +1254,7 @@ vorbei ist, liest nur, wer zuteilt (`absences_select`), jeder andere nur die
 eigenen (Review 17.10.2026).
 
 Stammdaten (Personen, Haushalte, Gruppen, Dienste, Konten, Grundplan,
-Trolleys, Push-Abos) haben kein Alter.
+Trolleys, Push- und Kalender-Abos) haben kein Alter.
 
 Das Protokoll von Supabase Auth schreibt dieses Projekt gar nicht erst in die
 Datenbank (Dashboard: Authentication → Audit Logs, „Write audit logs to the
