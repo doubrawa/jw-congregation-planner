@@ -35,8 +35,9 @@ export function AufgabeBlatt({ task }: { task: MyTask }) {
       onClose={() => dispatch({ type: 'closeMyTask' })}
     >
       <div className="sheet-inhalt">
-        {/* Je Aufgabe ein eigener Saal, wie in der großen Karte: Der Übergang
-            gehört nur zum Bestätigen, nicht zum Wechsel der Aufgabe. */}
+        {/* Je Aufgabe ein eigener Saal, wie in der großen Karte — und wie
+            dort nur beim Planer (`useSaal`): Der Übergang gehört nur zum
+            Bestätigen, nicht zum Wechsel der Aufgabe. */}
         {saal && <Saal key={task.id} lagen={saal.lagen} label={saal.label} du={saal.du} sichtbar />}
         <AufgabeHandlungen task={task} />
       </div>

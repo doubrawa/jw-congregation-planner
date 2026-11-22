@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
@@ -25,34 +25,33 @@ import { termineDieserWoche, type Termin } from './diese-woche'
 import { PlanungsKarte } from './PlanungsKarte'
 import './dashboard.css'
 
-/** So viele Aufgaben stehen unter der großen Karte — die ganze Liste hat „Meine Aufgaben". */
+/** So viele Zeilen stehen unter der großen Karte, bis man alle aufklappt. */
 const WEITERE_AUFGABEN = 3
 
 /**
- * **Start** (T121): was einen selbst angeht, in der Reihenfolge, in der man
- * fragt.
+ * **Start:** was einen selbst angeht, in der Reihenfolge, in der man fragt.
  *
  *  1. **Der Gruß** — mit Vornamen. Darunter, bis man ihn gesehen oder
- *     weggeklickt hat, der Film **Erste Schritte** (22.10.2026).
+ *     weggeklickt hat, der Film **Erste Schritte**.
  *  2. **Die nächste eigene Aufgabe, groß**, mit Bestätigen und Absagen gleich
- *     darunter. Liegt sie in einer Zusammenkunft, steht der Saal darüber: wie
- *     weit der Abend besetzt ist, und wo man selbst sitzt.
+ *     darunter. Liegt sie in einer Zusammenkunft, steht beim Planer der Saal
+ *     darüber: wie weit der Abend besetzt ist, und wo man selbst sitzt
+ *     (`useSaal`).
  *  3. **Die nächsten danach**, je eine Zeile; ein Tipp öffnet die Aufgabe.
- *     Dazwischen, nach dem Tag, die eigenen Trolley-Termine.
+ *     Dazwischen, nach dem Tag, die eigenen Trolley-Termine. Erst drei, mit
+ *     „Alle zeigen" alle, die noch kommen.
  *  4. **Diese Woche in der Versammlung** — die Zusammenkünfte und Treffpunkte,
  *     die noch kommen.
- *  5. Für Planer: **die Planung** der kommenden Wochen (T95), ab dem Tablet
- *     in einer zweiten Spalte daneben. Die Woche der Versammlung steht dann
- *     dort unter der Planung (29.10.2026): Links war die Spalte lang, rechts
- *     blieb sie halb leer. Am Handy hat der Planer die Woche gar nicht — dort
- *     steht die Planung an ihrer Stelle.
+ *  5. Für Planer: **die Planung** der kommenden Wochen, ab dem Tablet in einer
+ *     zweiten Spalte daneben. Die Woche der Versammlung steht dann dort unter
+ *     der Planung; sonst wäre die linke Spalte lang und die rechte halb leer.
+ *     Am Handy hat der Planer die Woche gar nicht — dort steht die Planung an
+ *     ihrer Stelle.
  *
- * Keine Zeile schneidet ihren Text ab: Wo er nicht passt, bricht er um. Bis
- * zum 29.10.2026 endete er mit „…" — beim Planer am Tablet „Zusammenkunft
- * unter …", „Gruppe 1 · Bei Familie Al…".
+ * Keine Zeile schneidet ihren Text ab: Wo er nicht passt, bricht er um. Mit
+ * „…" stünde beim Planer am Tablet „Gruppe 1 · Bei Familie Al…" da.
  *
- * Die Abwesenheiten standen hier bis zum Umbau in einer Zeitleiste mit den
- * Aufgaben; sie gehören jetzt ins Profil, wo man sie auch einträgt.
+ * Die Abwesenheiten stehen im Profil, wo man sie auch einträgt.
  */
 export function DashboardScreen() {
   const { state } = useApp()
@@ -122,10 +121,15 @@ interface StartZeile {
  * öffnet sie — und die eigenen Trolley-Termine, ein Tipp führt zu den Trolleys
  * (Entwurf `GStart`). Am selben Tag steht die Aufgabe vorn; ohne Tag steht sie
  * am Ende (Vorlagen).
+ *
+ * Erst die nächsten drei; **„Alle zeigen"** klappt alle auf, die noch kommen.
+ * Vergangenes steht nie darin: `myTasks` und `eigeneTermine` führen nur, was
+ * noch kommt.
  */
 function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; trolley: readonly TrolleyTermin[] }) {
   const { state, dispatch } = useApp()
   const i18n = useT()
+  const [alle, setAlle] = useState(false)
   const kurz = datumsFormat(state.lang, 'wochentagZahl')
   const zeilen: StartZeile[] = [
     ...aufgaben.map((task) => ({
@@ -147,9 +151,10 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
   ]
   const ohneTag = '9999-12-31'
   zeilen.sort((a, b) => (a.tag ?? ohneTag).localeCompare(b.tag ?? ohneTag))
+  const gezeigt = alle ? zeilen : zeilen.slice(0, WEITERE_AUFGABEN)
   return (
     <div className="karte start-liste">
-      {zeilen.slice(0, WEITERE_AUFGABEN).map((zeile) => (
+      {gezeigt.map((zeile) => (
         <button key={zeile.key} type="button" className="start-zeile" onClick={zeile.onTipp}>
           <span className="start-zeile-inhalt">
             <span className="start-zeile-tag">{zeile.tag ? kurz.format(fromIso(zeile.tag)) : ''}</span>
@@ -158,6 +163,11 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
           <Zeichen name="weiter" />
         </button>
       ))}
+      {zeilen.length > WEITERE_AUFGABEN && (
+        <button type="button" className="start-mehr" aria-expanded={alle} onClick={() => setAlle(!alle)}>
+          {alle ? i18n.t.awWeniger : i18n.t.awAlleZeigen}
+        </button>
+      )}
     </div>
   )
 }

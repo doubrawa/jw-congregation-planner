@@ -77,6 +77,18 @@
   min-height: 44px;
 }
 
+/* „Alle zeigen" / „Weniger zeigen": die letzte Zeile der Liste, in der Farbe
+   eines Verweises — wie „Alle anzeigen" unter den Weiteren Plänen. */
+.start-mehr {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  border-block-start: 1px solid var(--linie);
+  color: var(--akzent-text);
+  font-weight: 600;
+  text-align: start;
+}
+
 /* Tag (und Uhrzeit), daneben der Text. Passt sein längstes Wort nicht mehr
    daneben, steht der Text darunter — Platz statt Bruch mitten im Wort: Bei
    320 px und Stufe 1,45 brach „Microphon|es", „Mikrofo|ny", „Microfoa|ne",

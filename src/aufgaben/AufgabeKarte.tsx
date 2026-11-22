@@ -11,10 +11,10 @@ import { useSaal } from './useSaal'
 import './aufgaben.css'
 
 /**
- * **Die nächste eigene Aufgabe, groß** (T121) — oben auf dem Start und unter
+ * **Die nächste eigene Aufgabe, groß** — oben auf dem Start und unter
  * „Meine Aufgaben": wann, was, mit wem, und gleich darunter Bestätigen oder
- * Absagen. Über einer Aufgabe in einer Zusammenkunft steht der Saal mit dem
- * eigenen Platz (`saal`).
+ * Absagen. Über einer Aufgabe in einer Zusammenkunft steht beim Planer der
+ * Saal mit dem eigenen Platz (`saal`; wer ihn sieht, entscheidet `useSaal`).
  */
 export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: boolean }) {
   const { state } = useApp()

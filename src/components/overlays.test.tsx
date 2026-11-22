@@ -12,7 +12,8 @@ import { demoZustand } from '../../tests/testdaten/demo-start'
 import { dict, loadOverlay } from '../i18n/ui'
 import { APP_LANGS } from '../i18n/langs'
 import { zahlBinden } from '../i18n/zahl-binden'
-import type { MyTask, Notification, S89Payload } from '../data/types'
+import type { MyTask, Notification, S89Payload, Week } from '../data/types'
+import { punktKey } from '../../supabase/functions/_shared/aufgaben-schluessel.ts'
 import { AbsageBlatt } from '../aufgaben/AbsageBlatt'
 import { AufgabeBlatt } from '../aufgaben/AufgabeBlatt'
 import { S89Sheet } from './S89Sheet'
@@ -149,6 +150,46 @@ describe('Das Blatt zur eigenen Aufgabe — drei Zustände, drei Angebote', () =
   it('zeigt gar nichts, wenn die Aufgabe inzwischen weg ist — statt abzustürzen', () => {
     const { container } = zeige('myTask', { myTasks: [], myTaskId: 'gibt-es-nicht' })
     expect(container.querySelector('.sheet')).toBeNull()
+  })
+})
+
+/**
+ * **Der Saal im Blatt — nur beim Planer.** Das Blatt öffnet sich aus jeder
+ * Zeile auf dem Start; zeigte es dem Verkündiger den Saal, den ihm die große
+ * Karte nicht zeigt, stünde der Stand der Planung nach einem Tipp doch wieder
+ * vor ihm.
+ */
+describe('Den Saal im Blatt sieht nur, wer plant', () => {
+  /** Eine geladene Woche mit dem eigenen Platz — so hat das Blatt einen Saal zu zeigen. */
+  function abendMitMir(): { weeks: Week[]; meine: MyTask } {
+    const woche: Week = {
+      range: '7.–13. September', book: '', start: '2026-09-07',
+      mid: {
+        date: 'Dienstag, 8. September · 19:00', end: '20:45',
+        sections: [{
+          label: 'X', farbe: 'petrol',
+          items: [{ iid: 'i2', num: 1, title: 'Bibellesung', meta: '', names: [{ name: 'Anton Alt', pid: 'p-a', bereichsKey: 'bibellesung' }] }],
+        }],
+        helpers: {},
+      },
+      we: { date: 'Sonntag, 13. September · 10:00', end: '11:45', sections: [], helpers: {} },
+    }
+    return { weeks: [woche], meine: task({ id: punktKey(woche.start, 'mid', 'i2', 0) }) }
+  }
+  const saal = () => document.body.querySelector('.sheet svg.saal')
+
+  it('der Verkündiger sieht seine Aufgabe ohne Saal', () => {
+    const { weeks, meine } = abendMitMir()
+    zeige('myTask', { weeks, myTasks: [meine], myTaskId: meine.id, personId: 'p-a' })
+    expect(document.body.querySelector('.sheet-title')?.textContent).toBe('Bibellesung')
+    expect(saal()).toBeNull()
+  })
+
+  it('Gegenprobe: der Planer sieht über derselben Aufgabe den Saal mit seinem Platz', () => {
+    const { weeks, meine } = abendMitMir()
+    zeige('myTask', { weeks, myTasks: [meine], myTaskId: meine.id, personId: 'p-a', zuteiler: true })
+    expect(saal()).not.toBeNull()
+    expect(document.body.querySelectorAll('.sheet .saal-du')).toHaveLength(1)
   })
 })
 

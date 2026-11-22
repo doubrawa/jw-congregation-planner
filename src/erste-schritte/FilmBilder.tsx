@@ -20,20 +20,6 @@ import type { FilmInhalt } from './film-inhalt'
  * echt — es sind `span`, und die Bühne ist für Vorleseprogramme verborgen.
  */
 
-/** Die Besetzung im Saal über der Karte, wie auf dem Entwurf: fast voll, ein Platz ist man selbst. */
-const LAGEN = [
-  'voll', 'voll', 'voll', 'wartet',
-  'voll', 'voll', 'du', 'voll', 'problem', 'voll',
-  'voll', 'voll', 'wartet', 'voll', 'voll', 'voll', 'offen', 'offen',
-] as const
-
-const PLATZ_KLASSE = {
-  voll: 'fm-platz is-voll',
-  wartet: 'fm-platz is-wartet',
-  problem: 'fm-platz is-problem',
-  offen: 'fm-platz is-offen',
-} as const
-
 /** Der Platz der App auf dem Startbildschirm: zweite Reihe, dritte Spalte. */
 const APP_PLATZ = 6
 const KACHELN = 20
@@ -68,35 +54,10 @@ export function AppSymbol() {
 }
 
 /**
- * Der Saal über der Karte. Der eigene Platz wie in der App (`bausteine/Saal`):
- * blass, solange die Zusage aussteht, mit ihr in Minze gefüllt. Beim Wechsel
- * wächst die Füllung in der Szene „Aufgabe" (film-szenen.ts, `du`).
- */
-function Saal({ zugesagt }: { zugesagt: boolean }) {
-  const [pultX, pultY] = LOGO_GROSS.pult.mitte
-  return (
-    <svg className="fm-saal" viewBox={LOGO_GROSS.viewBox}>
-      <circle className="fm-pult" cx={pultX} cy={pultY} r={LOGO_GROSS.pult.r} />
-      {LOGO_GROSS.reihen.flat().map(([x, y], i) => {
-        const lage = LAGEN[i] ?? 'offen'
-        if (lage === 'du') {
-          return (
-            <g key={i}>
-              <circle className="fm-du-grund" cx={x} cy={y} r={LOGO_GROSS.r} />
-              <circle className="fm-du" data-f="du" cx={x} cy={y} r={LOGO_GROSS.r} style={zugesagt ? undefined : { transform: 'scale(0)' }} />
-              <circle className="fm-du-ring" cx={x} cy={y} r="25" />
-            </g>
-          )
-        }
-        return <circle key={i} className={PLATZ_KLASSE[lage]} cx={x} cy={y} r={lage === 'offen' ? 13 : LOGO_GROSS.r} />
-      })}
-    </svg>
-  )
-}
-
-/**
- * Start mit der nächsten Aufgabe. `knopf`: offen (noch zu bestätigen), bestätigt
- * — oder beides, dann wechselt die Bewegung vom einen zum anderen.
+ * Start mit der nächsten Aufgabe, wie ihn ein Verkündiger sieht — ohne den
+ * Saal darüber, den nur sieht, wer plant (`useSaal`). `knopf`: offen (noch zu
+ * bestätigen), bestätigt — oder beides, dann wechselt die Bewegung vom einen
+ * zum anderen.
  */
 export function MockStart({ inhalt, t, knopf }: { inhalt: FilmInhalt; t: Dict; knopf: 'offen' | 'wechsel' | 'bestaetigt' }) {
   return (
@@ -121,7 +82,6 @@ export function MockStart({ inhalt, t, knopf }: { inhalt: FilmInhalt; t: Dict; k
           {inhalt.gruss}
         </p>
         <div className="fm-karte fm-karte--held" data-f="karte">
-          <Saal zugesagt={knopf === 'bestaetigt'} />
           <span className="fm-wann">
             <span className="fm-punkt" />
             <span>{inhalt.wann}</span>

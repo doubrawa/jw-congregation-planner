@@ -34,15 +34,20 @@ import { privSetzen } from '../data/helpers'
 /**
  * **Der Start-Bildschirm — die Landeseite nach dem Anmelden.**
  *
- * Er ist für die meisten Nutzer die ganze App (T121): Gruß, die nächste
- * eigene Aufgabe groß mit dem Saal darüber, die nächsten danach, die Woche der
- * Versammlung. Zusicherungen mit Fachlogik:
+ * Er ist für die meisten Nutzer die ganze App: Gruß, die nächste eigene
+ * Aufgabe groß — beim Planer mit dem Saal darüber —, die nächsten danach, die
+ * Woche der Versammlung. Zusicherungen mit Fachlogik:
  *
  * - Die **große Karte** bietet an, was zum Stand der Aufgabe passt: bestätigen
  *   oder absagen, nach der Zusage doch absagen, nach der Absage doch bestätigen.
  * - Der **Saal** zählt die Plätze ihrer Zusammenkunft (die Verteilung selbst
- *   prüft `saal.test.ts`) und nennt die Zahlen in Worten.
- * - **Nach Rolle sortiert** (T95): Der Planer sieht seine Arbeit gleich neben
+ *   prüft `saal.test.ts`) und nennt die Zahlen in Worten. Er ist der Stand der
+ *   Planung und steht deshalb nur bei dem, der plant — ein Verkündiger kann
+ *   daran nichts tun.
+ * - Unter der Karte stehen erst **drei Zeilen**; „Alle zeigen" klappt alle
+ *   künftigen auf. Sonst stünde eine Aufgabe nach der dritten nur unter
+ *   „Meine Aufgaben".
+ * - **Nach Rolle sortiert:** Der Planer sieht seine Arbeit gleich neben
  *   der eigenen. Ein Verkündiger sieht die Karte gar nicht — er käme über sie
  *   auf einen Screen, den er nicht betreten darf.
  * - Die **Planungs-Karte** nennt die kommenden Wochen, in denen etwas zu tun
@@ -269,7 +274,10 @@ describe('Die nächste Aufgabe steht groß oben', () => {
   })
 })
 
-describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
+describe('Über einer Aufgabe in einer Zusammenkunft steht beim Planer der Saal', () => {
+  /** Wer plant, ohne Admin zu sein — der Saal hängt am Recht zu planen, nicht am Admin. */
+  const PLANER: Partial<AppState> = { zuteiler: true }
+
   /** Die laufende Woche mit dem eigenen Platz besetzt — die Aufgabe dazu trägt seinen Schlüssel. */
   function meinAbend(): { woche: Week; meine: MyTask } {
     const woche = laufendeWoche()
@@ -281,7 +289,7 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
 
   it('mit Worten, sichtbar unter dem Bild: wie viele Plätze besetzt sind, und dass der eigene markiert ist (T188)', () => {
     const { woche, meine } = meinAbend()
-    const { container } = zeige({ weeks: [woche], myTasks: [meine] })
+    const { container } = zeige({ ...PLANER, weeks: [woche], myTasks: [meine] })
     // Bibellesung (ich) + Mikrofon 1 besetzt, Mikrofon 2 offen.
     expect(container.querySelector('.saal-figur figcaption')?.textContent).toBe(
       `${zahlBinden(`${t.saalBesetzung}: 2/3`)} · ${t.saalDeinPlatz}`,
@@ -291,17 +299,20 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     expect(container.querySelectorAll('.saal-du')).toHaveLength(1)
   })
 
-  it('die Absage eines anderen steht blass im Saal, nicht rot — man kann sie nicht beheben (T188)', () => {
+  it('die Absage eines anderen steht rot im Saal — wer ihn sieht, plant und kann sie beheben', () => {
     const { woche, meine } = meinAbend()
+    const rot = (c: HTMLElement) => c.querySelectorAll('.saal-platz.is-problem').length
+    // Gegenprobe: Ohne die Absage wartet Brunos Platz nur, rot ist nichts.
+    expect(rot(zeige({ ...PLANER, weeks: [woche], myTasks: [meine] }).container)).toBe(0)
+    cleanup()
     const confirmations: ConfirmationMap = { [helferKey(woche.start, 'mid', 'mik', 0)]: 'verhindert' }
-    const { container } = zeige({ weeks: [woche], myTasks: [meine], confirmations })
-    expect(container.querySelectorAll('.saal-platz.is-problem')).toHaveLength(0)
-    expect(container.querySelectorAll('.saal-platz.is-wartet').length).toBeGreaterThan(0)
+    // Wie viele Punkte, sagt die Verteilung auf 18 Plätze (`saal.test.ts`) — hier: überhaupt welche.
+    expect(rot(zeige({ ...PLANER, weeks: [woche], myTasks: [meine], confirmations }).container)).toBeGreaterThan(0)
   })
 
-  it('Gegenprobe: die eigene Absage bleibt rot — am eigenen Platz', () => {
+  it('die eigene Absage steht rot am eigenen Platz', () => {
     const { woche, meine } = meinAbend()
-    const { container } = zeige({ weeks: [woche], myTasks: [{ ...meine, status: 'verhindert' }] })
+    const { container } = zeige({ ...PLANER, weeks: [woche], myTasks: [{ ...meine, status: 'verhindert' }] })
     expect(container.querySelector('.saal-du.is-problem')).toBeTruthy()
   })
 
@@ -312,10 +323,10 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
   it('wem der Planer ohne Konto Bescheid gegeben hat, sitzt im Saal voll — nicht blass', () => {
     const { woche, meine } = meinAbend()
     const lagen = (c: HTMLElement) => [...c.querySelectorAll('.saal-platz')].map((p) => p.getAttribute('class'))
-    expect(lagen(zeige({ weeks: [woche], myTasks: [meine] }).container)).toContain('saal-platz is-wartet')
+    expect(lagen(zeige({ ...PLANER, weeks: [woche], myTasks: [meine] }).container)).toContain('saal-platz is-wartet')
     cleanup()
     const persoenlich = { [sentKey(helferKey(woche.start, 'mid', 'mik', 0), 'Bruno Test')]: '2026-09-07T10:00:00Z' }
-    const mit = lagen(zeige({ weeks: [woche], myTasks: [meine], persoenlich }).container)
+    const mit = lagen(zeige({ ...PLANER, weeks: [woche], myTasks: [meine], persoenlich }).container)
     expect(mit).toContain('saal-platz is-voll')
     expect(mit).not.toContain('saal-platz is-wartet')
   })
@@ -324,7 +335,7 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     // Bis dahin war er immer in Minze, ob zugesagt oder nicht.
     const { woche, meine } = meinAbend()
     for (const [status, klasse] of [['offen', 'saal-du is-wartet'], ['bestätigt', 'saal-du is-voll'], ['verhindert', 'saal-du is-problem']] as const) {
-      const { container } = zeige({ weeks: [woche], myTasks: [{ ...meine, status }] })
+      const { container } = zeige({ ...PLANER, weeks: [woche], myTasks: [{ ...meine, status }] })
       expect(container.querySelector('.saal-du')?.getAttribute('class'), status).toBe(klasse)
       cleanup()
     }
@@ -335,10 +346,10 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     // dasselbe Element die Klasse wechselt; ein neu eingesetztes stünde gleich voll da.
     const { woche, meine } = meinAbend()
     const dispatch = vi.fn()
-    const { container, rerender } = render(<Buehne state={zustand({ weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
+    const { container, rerender } = render(<Buehne state={zustand({ ...PLANER, weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
     const platz = container.querySelector('.saal-du')
     expect(platz?.getAttribute('class')).toBe('saal-du is-wartet')
-    rerender(<Buehne state={zustand({ weeks: [woche], myTasks: [{ ...meine, status: 'bestätigt' }] })} dispatch={dispatch} />)
+    rerender(<Buehne state={zustand({ ...PLANER, weeks: [woche], myTasks: [{ ...meine, status: 'bestätigt' }] })} dispatch={dispatch} />)
     expect(container.querySelector('.saal-du')).toBe(platz)
     expect(platz?.getAttribute('class')).toBe('saal-du is-voll')
   })
@@ -350,27 +361,102 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht der Saal', () => {
     const andere: MyTask = { ...meine, id: helferKey(woche.start, 'mid', 'mik', 0), status: 'bestätigt' }
     woche.mid.helpers.mik = [{ name: 'Anton Alt', pid: 'p-a' }]
     const dispatch = vi.fn()
-    const { container, rerender } = render(<Buehne state={zustand({ weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
+    const { container, rerender } = render(<Buehne state={zustand({ ...PLANER, weeks: [woche], myTasks: [meine] })} dispatch={dispatch} />)
     const vorher = container.querySelector('.saal-du')
-    rerender(<Buehne state={zustand({ weeks: [woche], myTasks: [andere] })} dispatch={dispatch} />)
+    rerender(<Buehne state={zustand({ ...PLANER, weeks: [woche], myTasks: [andere] })} dispatch={dispatch} />)
     const nachher = container.querySelector('.saal-du')
     expect(nachher?.getAttribute('class')).toBe('saal-du is-voll')
     expect(nachher).not.toBe(vorher)
   })
 
-  it('ein Treffpunkt hat keinen Saal', () => {
-    const { container } = zeige({ myTasks: [task({ id: `fs|${laufendeWoche().start}|r1`, title: '', rolle: t.fsLeiterLbl })] })
+  it('ein Treffpunkt hat keinen Saal — auch beim Planer nicht', () => {
+    const { container } = zeige({ ...PLANER, myTasks: [task({ id: `fs|${laufendeWoche().start}|r1`, title: '', rolle: t.fsLeiterLbl })] })
     expect(container.querySelector('svg.saal')).toBeNull()
+  })
+
+  describe('Den Saal sieht nur, wer plant', () => {
+    /** Die große Karte steht da, nur ohne Saal — sonst prüfte die Probe eine leere Seite. */
+    function ohneSaal(container: HTMLElement) {
+      expect(karte(container)?.querySelector('.aufgabe-titel')?.textContent).toBe('Bibellesung')
+      expect(knopf(karte(container), t.bestaetigen)).toBeTruthy()
+      expect(container.querySelector('svg.saal')).toBeNull()
+      expect(container.querySelector('.saal-figur')).toBeNull()
+      expect(karte(container)?.classList.contains('mit-saal')).toBe(false)
+    }
+
+    it('ein Verkündiger sieht über seiner Aufgabe keinen Saal — die Aufgabe selbst bleibt', () => {
+      const { woche, meine } = meinAbend()
+      ohneSaal(zeige({ weeks: [woche], myTasks: [meine] }).container)
+    })
+
+    it('ein Gruppenaufseher ebenso — er plant nur die Treffpunkte seiner Gruppe', () => {
+      const { woche, meine } = meinAbend()
+      const groups = [{ id: 'g1', name: 'Gruppe 1', overseerId: 'p-a', assistantId: null }]
+      ohneSaal(zeige({ weeks: [woche], myTasks: [meine], groups }).container)
+    })
+
+    it('Gegenprobe: der Planer und der Admin sehen ihn über derselben Aufgabe', () => {
+      const { woche, meine } = meinAbend()
+      for (const recht of [PLANER, { admin: true }]) {
+        const { container } = zeige({ ...recht, weeks: [woche], myTasks: [meine] })
+        expect(container.querySelector('svg.saal'), JSON.stringify(recht)).not.toBeNull()
+        expect(karte(container)?.classList.contains('mit-saal')).toBe(true)
+        cleanup()
+      }
+    })
+
+    it('der Admin sieht die App als Verkündiger — dann auch ohne Saal', () => {
+      // Die Ansicht zum Testen soll zeigen, was ein Verkündiger sieht; am
+      // echten Admin-Recht vorbei gefragt, stünde der Saal trotzdem da.
+      const { woche, meine } = meinAbend()
+      ohneSaal(zeige({ admin: true, ansicht: { stufe: 'verkuendiger', gruppe: null }, weeks: [woche], myTasks: [meine] }).container)
+      cleanup()
+      const alsPlaner = zeige({ admin: true, ansicht: { stufe: 'planer', gruppe: null }, weeks: [woche], myTasks: [meine] })
+      expect(alsPlaner.container.querySelector('svg.saal')).not.toBeNull()
+    })
   })
 })
 
 describe('Die nächsten Aufgaben danach, je eine Zeile', () => {
   const vier = (): MyTask[] => [1, 2, 3, 4, 5].map((n) => task({ id: `T${n}`, title: `Aufgabe ${n}`, at: inTagen(n) }))
+  const zeilen = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.start-spalte > .start-liste .start-zeile')]
+  /** Was die Zeilen sagen, von oben nach unten. */
+  const zeilenTexte = (c: HTMLElement) => zeilen(c).map((z) => z.querySelector('.start-zeile-text')?.textContent)
+  /** Die Zeile, die auf- und zuklappt — `null`, wo es nichts aufzuklappen gibt. */
+  const mehr = (c: HTMLElement) => c.querySelector<HTMLButtonElement>('.start-spalte > .start-liste .start-mehr')
 
-  it('höchstens drei unter der großen Karte — die ganze Liste hat „Meine Aufgaben"', () => {
+  it('erst drei unter der großen Karte — darunter „Alle zeigen"', () => {
     const { container } = zeige({ myTasks: vier() })
-    const zeilen = [...container.querySelectorAll('.start-spalte > .start-liste .start-zeile-text')].map((z) => z.textContent)
-    expect(zeilen).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
+    expect(mehr(container)?.textContent).toBe(t.awAlleZeigen)
+    expect(mehr(container)?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('„Alle zeigen" klappt alle künftigen auf, „Weniger zeigen" wieder zu', () => {
+    // Zehn, nicht fünf: Mit nur einer Zeile über der Grenze sähe „eine mehr"
+    // genauso aus wie „alle".
+    const zehn = [...Array(10).keys()].map((i) => task({ id: `T${i + 1}`, title: `Aufgabe ${i + 1}`, at: inTagen(i + 1) }))
+    const { container } = zeige({ myTasks: zehn })
+    fireEvent.click(mehr(container)!)
+    expect(zeilenTexte(container)).toEqual(zehn.slice(1).map((a) => a.title))
+    expect(mehr(container)?.textContent).toBe(t.awWeniger)
+    expect(mehr(container)?.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(mehr(container)!)
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
+    expect(mehr(container)?.textContent).toBe(t.awAlleZeigen)
+  })
+
+  it('aufgeklappt öffnet ein Tipp auch die Aufgabe hinter der dritten Zeile', () => {
+    const { container, dispatch } = zeige({ myTasks: vier() })
+    fireEvent.click(mehr(container)!)
+    fireEvent.click(zeilen(container)[3]!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'openMyTask', id: 'T5' })
+  })
+
+  it('bei genau drei Zeilen gibt es nichts aufzuklappen', () => {
+    const { container } = zeige({ myTasks: vier().slice(0, 4) })
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
+    expect(mehr(container)).toBeNull()
   })
 
   it('ein Tipp öffnet das Blatt genau dieser Aufgabe', () => {
@@ -389,24 +475,32 @@ describe('Die nächsten Aufgaben danach, je eine Zeile', () => {
       },
     ],
   })
-  const zeilen = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>('.start-spalte > .start-liste .start-zeile')]
 
   it('dazwischen, nach dem Tag, die eigenen Trolley-Termine — ein Tipp führt zu den Trolleys', () => {
     const { container, dispatch } = zeige({ myTasks: vier(), ...trolley(3) })
-    const z = zeilen(container)
     // Am selben Tag steht die Aufgabe vorn.
-    expect(z.map((e) => e.querySelector('.start-zeile-text')?.textContent)).toEqual([
-      'Aufgabe 2', 'Aufgabe 3', `${t.privZeugnis} · 09:00–11:00`,
-    ])
-    fireEvent.click(z[2]!)
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', `${t.privZeugnis} · 09:00–11:00`])
+    fireEvent.click(zeilen(container)[2]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFsBereich', bereich: 'trolleys' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'navigate', screen: 'programm', thema: 'predigtdienst' })
+  })
+
+  it('ein Trolley-Termin zählt als Zeile — ist er die vierte, steht er hinter „Alle zeigen" an seinem Tag', () => {
+    const { container } = zeige({ myTasks: vier().slice(0, 4), ...trolley(5) })
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4'])
+    fireEvent.click(mehr(container)!)
+    expect(zeilenTexte(container)).toEqual(['Aufgabe 2', 'Aufgabe 3', 'Aufgabe 4', `${t.privZeugnis} · 09:00–11:00`])
+    cleanup()
+    // Mitten zwischen den Aufgaben steht er aufgeklappt an seinem Tag, nicht am Ende.
+    const mitten = zeige({ myTasks: vier(), ...trolley(3) }).container
+    fireEvent.click(mehr(mitten)!)
+    expect(zeilenTexte(mitten)).toEqual(['Aufgabe 2', 'Aufgabe 3', `${t.privZeugnis} · 09:00–11:00`, 'Aufgabe 4', 'Aufgabe 5'])
   })
 
   it('auch ohne Aufgabe steht der Trolley-Termin da', () => {
     const { container } = zeige(trolley(2))
     expect(container.querySelector('.start-leer')).not.toBeNull()
-    expect(zeilen(container).map((e) => e.querySelector('.start-zeile-text')?.textContent)).toEqual([`${t.privZeugnis} · 09:00–11:00`])
+    expect(zeilenTexte(container)).toEqual([`${t.privZeugnis} · 09:00–11:00`])
   })
 
   it('die Zeile trennt wie der Titel der großen Karte — der Programmpunkt nach der Sprache des Programms, die Rolle nach der des Lesers', () => {

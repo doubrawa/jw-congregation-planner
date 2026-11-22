@@ -11780,6 +11780,76 @@ Mitgliedsrechte-Probe gegen die Testversammlung: 0 von 51 verbotenen Versuchen
 kamen durch, alle 42 Gegenproben gingen durch, nichts blieb ungemessen — (6),
 (118), (119), (120) und (121) zum ersten Mal gegen die echte Datenbank.
 
+## Aufgenommen am 22. November 2026 — zwei Wünsche zum Start (T202, T203)
+
+Beide am selben Tag umgesetzt:
+
+- **T202 · Den Saal sieht nur, wer plant** (Betreiber: „auf der startseite
+  nicht das app symbol mit dem planungsstand anzeigen - nur anzeigen bei
+  planern"). Der Saal über der nächsten Aufgabe – 18 Plätze im Bild des Logos,
+  wie weit der Abend besetzt ist – steht nur noch bei Admin und Planer
+  (`rechteVon(…).zuteilen`, also auch in der Ansicht zum Testen). Gefragt wird
+  in `useSaal`, damit die große Karte und das Blatt einer Aufgabe gleich
+  entscheiden: Sonst stünde der Saal nach einem Tipp auf eine Zeile doch wieder
+  vor dem Verkündiger. Der Film „Erste Schritte" zeichnet die Startseite eines
+  Verkündigers nach und hat seinen Saal deshalb verloren, samt dem Füllen des
+  eigenen Platzes beim Bestätigen; die Karte hat oben jetzt den Abstand der
+  App. Im Handbuch steht der Saal nur noch für Planer (Abschnitt 1), beim
+  Gruppenaufseher „ohne Saal".
+- **T203 · Alle künftigen Aufgaben auf dem Start** (Betreiber: „mit einem
+  klickcontrol alle zukünftigen aufgaben anzuzeigen wäre schön"). Unter der
+  großen Karte stehen weiter erst drei Zeilen; gibt es mehr, klappt **Alle
+  zeigen** alle auf, die noch kommen – Aufgaben und Trolley-Termine nach dem
+  Tag –, **Weniger zeigen** wieder zu (`aria-expanded`). Die Beschriftung
+  nimmt die Wörter der Auswertung (`awAlleZeigen`, `awWeniger`), die es in allen
+  zwölf Sprachen gibt und die nicht nach Personen oder Dingen beugen („Pokaż
+  wszystko", „Показать все"); neue Übersetzungen braucht es nicht.
+
+**Geprüft:** Proben in `DashboardScreen.test.tsx` – ohne Saal der Verkündiger,
+der Gruppenaufseher und der Admin in der Ansicht „Verkündiger"; mit Saal Planer
+und Admin, die bisherigen Saal-Proben laufen jetzt als Planer –, dazu Auf- und
+Zuklappen mit zehn Aufgaben, ein Tipp auf eine aufgeklappte Zeile, genau drei
+Zeilen ohne Knopf, ein Trolley-Termin als vierte Zeile; in `overlays.test.tsx`
+das Blatt. Von Hand sabotiert, jedes Mal rot: die Rechte-Frage gestrichen
+(4 Proben), am echten Admin-Recht statt über `rechteVon` gefragt (die Probe der
+Ansicht), nur eine Zeile mehr aufgeklappt (2 – mit fünf Aufgaben hatte die
+Hauptprobe das nicht gemerkt, deshalb zehn). Typprüfung, oxlint (nur
+`Spur.tsx:112`), die ganze Suite (415 Dateien, 8753 Proben) und der Build grün.
+Laufzeit-Messung, voller Satz mit axe: 732 Läufe ohne Befund, gemessen in zwei
+Hälften (354 und 378 Läufe) – am Stück brach der Lauf auf diesem Rechner
+zweimal bei 666 von 732 ohne Meldung ab (Exitcode 127); Start, Druck und Blatt
+für sich (94 Läufe) liefen ebenfalls ohne Befund.
+
+**Nach `/simplify` und `/code-review max`** (selber Tag, allein und
+nacheinander): `/simplify` – `useSaal` fragt das Recht als eigene erste Zeile,
+`width: 100%` an `.start-mehr` war doppelt (die Karte ist eine Flex-Spalte),
+die Proben der Zeilen nehmen gemeinsame Helfer. Nicht übernommen: `.start-mehr`
+mit `.wp-alle` zusammenlegen (berührte die Weiteren Pläne und ein
+Firefox-Messwerkzeug unter `docs/analyse`), die Schlüssel `awAlleZeigen` und
+`awWeniger` umbenennen (zwölf Sprachen). `/code-review max` – drei Befunde,
+zwei behoben: Neue Kommentare und Probentitel trugen Datum, „bis dahin" und
+Ticketmarken (dabei die Chronik der berührten Kommentarblöcke gekürzt), und das
+Planer-Handbuch versprach den Saal über jeder Aufgabe statt nur über einer in
+einer Zusammenkunft. Danach Typprüfung, oxlint, die ganze Suite (8753 Proben)
+und der Build grün, die Laufzeit-Messung für Start und Blatt (82 Läufe) ohne
+Befund.
+
+**Entschieden (Betreiber: „ja"): Im Saal steht eine fremde Absage wieder rot.**
+Die Blässe aus T188 galt der Karte des Verkündigers; der sieht keinen Saal
+mehr, und wer ihn sieht, plant und kann die Absage beheben. `useSaal` gibt die
+Besetzung jetzt unverändert an das Bild; die Probe dazu prüft rot mit Absage
+und nichts Rotes ohne sie (Sabotage mit der alten Blässe: rot). Im
+Planer-Handbuch nennt die Legende des Saals jetzt auch **rot** und **weiß
+Bescheid**; `planer-start` ist neu aufgenommen (ein roter Platz im Saal).
+Geprüft nach `npm ci` im Hauptordner (Betreiber: „ja"; jetzt vite 8.3.8,
+vitest 4.1.12 wie in der Sperrdatei): Typprüfung, oxlint, die ganze Suite
+(8753 Proben) und der Build grün, die Laufzeit-Messung voll mit axe am Stück
+über PowerShell 732 Läufe in 316 s ohne Befund.
+Im Browser auf der Entwicklerseite: Verkündiger ohne Saal auf dem Start und im
+Blatt, Planer mit; bei 375 px dunkel kein waagerechtes Rollen; der Film ohne
+Saal, die Konsole leer. Neu aufgenommen: `verkuendiger-start`,
+`verkuendiger-tausch`, `planer-start`.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -11807,7 +11877,7 @@ kamen durch, alle 42 Gegenproben gingen durch, nichts blieb ungemessen — (6),
 
 ## Fortschritt
 
-Stand 19. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 22. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -11820,12 +11890,13 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑
+13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑
 
-**Alle 201 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
-Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf und
+**Alle 203 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf,
 T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
-stehen (alle vier Pakete umgesetzt und ausgerollt). Davor als letzte am 14. November
+stehen (alle vier Pakete umgesetzt und ausgerollt), und T202–T203 vom
+22. November (umgesetzt und geprüft, noch nicht committet). Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
 echten Gerät). **T183** ist am selben Tag entschieden:

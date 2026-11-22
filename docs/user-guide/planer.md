@@ -49,6 +49,16 @@ Computer steht sie in einer eigenen Spalte daneben, darunter „Diese Woche in
 der Versammlung". Am Handy steht sie unter deinen Aufgaben, dort an der Stelle
 von „Diese Woche in der Versammlung".
 
+Liegt deine nächste Aufgabe in einer Zusammenkunft, steht über ihr – anders
+als beim Verkündiger – der **Saal**: wie weit die Zusammenkunft besetzt ist,
+ein Punkt je Platz. **Voll** heißt zugesagt oder als **weiß Bescheid**
+abgehakt, **blass** wartet noch, **rot** ist abgesagt, **gestrichelt** ist noch
+offen; darunter steht es in Worten („Besetzung: 20/23 · dein Platz ist
+markiert"). Dein eigener Platz trägt einen Ring; der Punkt darin ist blass, bis
+du bestätigst – dann füllt er sich in Minze. Hast du abgesagt, ist er rot. Was
+zu klären ist, steht beim **Planen** (Abschnitt 4). Denselben Saal zeigt das
+Blatt einer Aufgabe, wenn du sie antippst.
+
 ![Planer‑Dashboard](screenshots/planer-start.png)
 
 - **Eine Zeile je Woche, in der etwas zu tun ist** – ab der laufenden Woche,
@@ -113,7 +123,7 @@ von „Diese Woche in der Versammlung".
 - **Gruppenaufseher** planen nur den Predigtdienst ihrer Gruppe: Sie sehen
   **Planen** nur dort, unter **Planen und verwalten** nur die **Planung** – sie
   führt ohne Auswahl gleich zu den Treffpunkten ihrer Gruppe –, und die
-  Startseite wie Verkündiger, ohne Planungs‑Karte.
+  Startseite wie Verkündiger, ohne Planungs‑Karte und ohne Saal.
 
 ### Wer darf was: Planer und Admin
 

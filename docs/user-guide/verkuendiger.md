@@ -93,19 +93,13 @@ Wichtigste zusammen.
   19:00"), was, deine Rolle und bei Schulungsaufgaben dein Partner. Gleich
   darunter **Bestätigen** und **Ich kann nicht**, bei einem Hilfsdienst auch
   **Tauschen**, daneben das **S‑89**.
-- **Der Saal** darüber zeigt, wie weit die Zusammenkunft besetzt ist: ein Punkt
-  je Platz, **voll** heißt zugesagt, **blass** wartet noch, **gestrichelt** ist
-  noch offen. Darunter steht es in Worten („Besetzung: 20/23 · dein Platz ist
-  markiert"). Dein eigener Platz trägt einen Ring; der Punkt darin ist blass,
-  bis du bestätigst – dann füllt er sich in Minze. Hast du abgesagt, ist er
-  rot. Hat ein anderer abgesagt, steht sein Platz blass da: Darum kümmert
-  sich, wer plant.
 - Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
   die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
   [Trolley-Termine](#trolleys) („Trolley · 09:00–11:00"); ein Tipp darauf
-  führt zu den Trolleys. Die Liste zeigt höchstens drei Zeilen, alle zusammen
-  stehen unter **Meine Aufgaben**. Die große Karte wird ein Trolley-Termin
-  nie – er hat keine Zusage.
+  führt zu den Trolleys. Die Liste zeigt erst drei Zeilen. Gibt es mehr, klappt
+  **Alle zeigen** darunter alle auf, die noch kommen, und **Weniger zeigen**
+  wieder zu. Alle zusammen stehen auch unter **Meine Aufgaben**. Die große
+  Karte wird ein Trolley-Termin nie – er hat keine Zusage.
 - **Diese Woche in der Versammlung** – die Zusammenkünfte und die Treffpunkte
   der Versammlung und deiner Gruppe, die in dieser Woche noch kommen.
 
