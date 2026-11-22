@@ -11848,7 +11848,8 @@ vitest 4.1.12 wie in der Sperrdatei): Typprüfung, oxlint, die ganze Suite
 Im Browser auf der Entwicklerseite: Verkündiger ohne Saal auf dem Start und im
 Blatt, Planer mit; bei 375 px dunkel kein waagerechtes Rollen; der Film ohne
 Saal, die Konsole leer. Neu aufgenommen: `verkuendiger-start`,
-`verkuendiger-tausch`, `planer-start`. Committet als `127506d8`.
+`verkuendiger-tausch`, `planer-start`. Committet als `127506d8`, ausgerollt am
+selben Abend zusammen mit T204.
 
 ## Aufgenommen am 22. November 2026 — Kalender-Abo (T204)
 
@@ -11952,10 +11953,25 @@ jetzt einen GET an eine Function samt Textantwort und den Filter `or=(…)`, den
 die Function für Trolley-Schichten als Person oder Partner schickt — beim
 Filtern wie beim Prüfen gegen `schema.sql`.
 
-**Offen nach dem Ausrollen:** die Mitgliedsrechte-Probe gegen den Betrieb
-fahren (Betreiber) — (122) beantwortet dabei, ob die Plattform `text/calendar`
-unverändert ausliefert; danach am iPhone aus der installierten App und mit
-Google per URL abonnieren.
+**Ausgerollt am 22. November 2026** mit `b37e1916` (Betreiber: „Ja, pushen"),
+Lauf `45045031038` grün: Migration `20261122100000_kalender-abo` eingespielt
+(16 von 16), der Katalog gleich der Folge der Migrationen, alle neun Functions
+aktiv und frisch, `verify_jwt` wie `config.toml`, Rauchtest neun von neun —
+`kalender` mit dem Handler-CORS und `401 unauthorized`. `sw.js` liefert
+`shell-b37e191`. Von Hand, lesend: Abruf ohne Link und mit einem erfundenen
+Link je `404 Not found` aus dem Handler (`text/plain`) — der zweite hat in
+`kalender_abos` nachgesehen.
+
+**Live bestätigt am selben Abend (Betreiber):** Die Mitgliedsrechte-Probe ist
+grün — 0 von 55 verbotenen Versuchen kamen durch, alle 43 Gegenproben gingen
+durch, nichts blieb ungemessen. Die Fälle zum Abo zum ersten Mal live: (122)
+`200` mit `text/calendar; charset=utf-8` — die Plattform liefert den Kalender
+unverändert aus, die Frage aus der Recherche ist damit beantwortet; (123) `403`,
+(124) `404`, (125) `403`, (126) `404`. Und Google Kalender hat das Abo am PC per
+URL angenommen.
+
+**Offen:** am iPhone aus der installierten App abonnieren — ob „Im Kalender
+öffnen" dort den Dialog zum Abonnieren bringt.
 
 ## Was bewusst offen bleibt
 
@@ -12003,8 +12019,9 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf,
 T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
 stehen (alle vier Pakete umgesetzt und ausgerollt), T202–T203 vom
-22. November (committet als `127506d8`, noch nicht ausgerollt) und T204 vom
-selben Tag, das Kalender-Abo (umgesetzt, geprüft und committet, noch nicht ausgerollt).
+22. November und T204 vom selben Tag, das Kalender-Abo — alle drei am Abend
+ausgerollt (`b37e1916`); die Mitgliedsrechte-Probe ist live grün, Google nimmt
+das Abo an — offen beim Abo nur der Blick am iPhone.
 Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
