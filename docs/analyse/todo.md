@@ -12050,6 +12050,19 @@ der Eingabefelder hat in Hell rund 2,7 : 1 gegen die Karte (mit der Minze
 2,5 : 1) — bewusst weich gestaltet; 3 : 1 bräuchte 65 bis 70 % statt 55 %
 Deckung.
 
+**Ausgerollt am 25. November 2026** mit `42507d5d`, Lauf `45711892198` grün
+(build, ausrollen, deploy); an Datenbank und Functions änderte der Commit
+nichts. `sw.js` liefert `shell-42507d5`. Das Manifest der Produktion nennt die
+drei Symbole mit Kennung, Chrome beanstandet nichts, jede Adresse liefert ihr
+PNG, und dessen Prüfsumme ist die Kennung; das Favicon lädt als Bild. Im
+ausgelieferten CSS steht der Akzent `#99b5fe`, die Minze nirgends mehr. Der
+Motion-Clip (T132) ist auf Wunsch des Betreibers ebenfalls auf Blau gestellt
+(sieben Farbstellen in seinen Dokumenten, sonst unverändert).
+
+**Offen:** ob das Symbol auf einem Handy mit installierter App von selbst
+wechselt. Chrome frischt die App erst auf, wenn sie geschlossen ist, das Gerät
+lädt und im WLAN hängt; `about://webapks` zeigt den Stand.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -12099,8 +12112,9 @@ stehen (alle vier Pakete umgesetzt und ausgerollt), T202–T203 vom
 22. November und T204 vom selben Tag, das Kalender-Abo — alle drei am Abend
 ausgerollt (`b37e1916`); die Mitgliedsrechte-Probe ist live grün, Google nimmt
 das Abo an — offen beim Abo nur der Blick am iPhone. Dazu **T205** vom
-25. November, Kornblume statt Minze als Akzentfarbe: umgesetzt und geprüft,
-noch nicht ausgerollt.
+25. November, Kornblume statt Minze als Akzentfarbe: am selben Abend
+ausgerollt (`42507d5d`); offen ist nur der Blick auf das Symbol eines Handys
+mit installierter App.
 Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
