@@ -81,7 +81,7 @@
   font-weight: 600;
 }
 
-/* Gewählt: Zahl und Wort in Minze. */
+/* Gewählt: Zahl und Wort im Akzent. */
 .personen-stand-knopf[aria-pressed='true'] .personen-stand-zahl,
 .personen-stand-knopf[aria-pressed='true'] .klein-text {
   color: var(--akzent-text);
@@ -325,7 +325,7 @@
   padding-block-end: 6px;
 }
 
-/* Gestrichelt, solange die Person nicht angemeldet ist — voll in Minze, wenn sie es ist. */
+/* Gestrichelt, solange die Person nicht angemeldet ist — voll im Akzent, wenn sie es ist. */
 .person-bild {
   display: flex;
   align-items: center;

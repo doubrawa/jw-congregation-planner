@@ -112,7 +112,7 @@ function letzteMoeglichkeiten(
  * Ein Schritt der Zeitleiste: links der Punkt und die Linie zum nächsten, dann
  * der Titel und darunter, was er bedeutet, rechts, was sich daran einstellen
  * lässt — oder darunter, wenn beides nicht nebeneinander passt (`erin-inhalt`,
- * T128). Der letzte Schritt ist die Aufgabe selbst (`ziel`): Punkt in Minze mit
+ * T128). Der letzte Schritt ist die Aufgabe selbst (`ziel`): Punkt im Akzent mit
  * Ring und keine Linie mehr — danach kommt nichts.
  */
 function Schritt({

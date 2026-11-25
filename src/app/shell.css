@@ -190,11 +190,11 @@
   fill: var(--start-platz);
 }
 
-/* Die Plätze füllen sich (22.10.2026, im Stil des Clips „Erste Schritte"; bis
-   dahin lief Minze als Welle durch die Reihen): Der Saal wird blass, dann
-   füllt er sich Reihe für Reihe vom Pult nach hinten, in jeder Reihe von der
-   Mitte nach außen — und wieder, solange geladen wird. Die Klasse kommt erst
-   nach einer halben Sekunde (`Startbild.tsx`): Ist die App bis dahin da,
+/* Die Plätze füllen sich (im Stil des Clips „Erste Schritte"): Der Saal wird
+   blass, dann füllt er sich Reihe für Reihe vom Pult nach hinten, in jeder
+   Reihe von der Mitte nach außen — und wieder, solange geladen wird. Die
+   Klasse kommt erst nach einer halben Sekunde (`Startbild.tsx`): Ist die App
+   bis dahin da,
    bleibt es beim ruhigen Bild, und nichts zuckt. Unter jedem vollen Platz
    liegt ein leerer (`Logo` mit `leerePlaetze`).
 

@@ -4,10 +4,12 @@
      Flach, ohne Verläufe und Schatten. Quelle der App-Icons
      (scripts/make-icons.mjs, deren Hintergrund die Kachelfarbe ist); in der
      App zeichnet bausteine/Logo.tsx dieselbe Form ohne Kachel.
-     Farben seit dem 15.10.2026 die der dunklen Darstellung (Graphit · Minze,
-     T121): Kachel wie --karte, Plätze wie --text, Pult in --akzent — bis
-     dahin Petrol, Creme und Gold. tests/logo-farben.test.ts hält beides
-     gleich.
+     Die Farben sind die der dunklen Darstellung (tokens.css): die Kachel wie
+     die Karte, die Plätze in der Textfarbe, das Pult im Akzent;
+     tests/logo-farben.test.ts hält beides gleich. Die Namen der Tokens stehen
+     hier ohne ihre zwei Bindestriche: Die sind in einem XML-Kommentar
+     verboten, und der Browser zeichnete die Datei als Bild dann gar nicht
+     (tests/logo-als-bild.test.ts).
      Das Pult steht seit dem 16.10.2026 um 35 näher an den Reihen, Variante
      D des Betreibers: Die Lücke zur ersten Reihe gleicht nun der zwischen
      zwei Reihen (vorher doppelt so groß). Alles zusammen ist um 17,5 gehoben
@@ -38,5 +40,5 @@
       <circle cx="448.87" cy="265.34" r="15"></circle>
     </g>
   </g>
-  <circle cx="256" cy="157.5" r="30" fill="#86E0B8"></circle>
+  <circle cx="256" cy="157.5" r="30" fill="#99B5FE"></circle>
 </svg>

@@ -11973,6 +11973,83 @@ URL angenommen.
 **Offen:** am iPhone aus der installierten App abonnieren — ob „Im Kalender
 öffnen" dort den Dialog zum Abonnieren bringt.
 
+## Aufgenommen am 25. November 2026 — Kornblume statt Minze (T205)
+
+Betreiber: „ich würde gern die farben ändern. dieser türkis ton gefällt mir
+nicht so." Gezeigt wurden vier Akzentfarben auf dem bestehenden Graphit, jede in
+Hell und Dunkel auf echten Ansichten der Entwicklerseite: Linde (Blattgrün),
+Kornblume (Blau), Flieder (Violett) und Honig (Gold). Gewählt: **Kornblume**.
+Graphit, das Rot der Probleme und die drei Abschnittsfarben des Arbeitshefts
+bleiben; später ergänzt (Betreiber): „das icon muss natürlich auch angepasst
+werden und auch die erste-schritte animation".
+
+- **Die Werte** (`tokens.css`): als Fläche `#99b5fe` in beiden Darstellungen,
+  als Text in Hell `#304aac`; die mittlere Stufe der Auswertung in Dunkel
+  `#7589be`. Vier Werte je Darstellung und das Pult des Startbilds der
+  installierten App — alle übrigen Stellen hängen an den Tokens, auch der Film
+  „Erste Schritte".
+- **Warum Blau trägt** (gemessen als Abstand in OKLab, auch mit nachgestellter
+  Rot-Grün-Schwäche): Vom Rot der Probleme hebt es sich in beiden Fällen klar
+  ab; die Minze und jedes Grün fielen bei Rot-Grün-Schwäche als Text in Hell
+  fast mit dem Rot zusammen. Nachbar im Farbkreis ist das Petrol von
+  Abschnitt 1; der Abstand ist größer als der der Minze dazu. Der Vorschlag in
+  Gold lag auf der Farbe von Abschnitt 2.
+- **Logo und Symbole:** das Pult in `logo.svg` und `logo-klein.svg`, daraus
+  die vier App-Icons neu (`npm run icons`; das Badge der Push-Meldung ist eine
+  Maske und bleibt).
+- **Die SVG-Datei des Favicons ließ sich nicht als Bild laden.** Beide
+  Logo-Dateien nannten im Kommentar die Tokens mit ihren zwei Bindestrichen,
+  und die sind in einem XML-Kommentar verboten: Als Bild geladen blieb die
+  Datei leer, ohne Fehlermeldung. Den App-Icons sah man es nicht an —
+  `make-icons.mjs` bettet das SVG in HTML ein —, und `index.html` nennt daneben
+  einen PNG-Ersatz; was im Tab stand, ist nicht gemessen. Der Kommentar steht
+  jetzt ohne die Bindestriche da; `tests/logo-als-bild.test.ts` liest jede
+  SVG-Datei in `public/` so streng wie der Browser.
+- **Das neue Symbol kommt auf installierten Geräten an.** Chrome lädt ein
+  App-Symbol nur neu, wenn sich seine Adresse im Manifest ändert (seit
+  Chrome 144 vergleicht es nur noch das Feld `icons`). Die Dateien hießen seit
+  Juli gleich — das erklärt, warum am 19. Oktober auf dem Handy des Betreibers
+  noch das Symbol von vor zwei Wechseln stand. Im Manifest trägt jedes Symbol
+  jetzt eine Kennung seines Inhalts (`icon-192.png?v=…`,
+  `scripts/symbol-kennung.mjs`); `npm run icons` führt sie nach,
+  `scripts/symbol-kennung.test.ts` hält sie mit den Dateien zusammen. Die
+  Dateien selbst heißen wie bisher. Am iPhone wechselt das Symbol nur durch
+  erneutes Hinzufügen zum Home-Bildschirm.
+- **Druck:** In den drei Druck-Stilen steht der Akzent als Tinte, jetzt das
+  dunkle Blau.
+- **Wortlaut:** Die Kommentare nennen die Farbe nicht mehr beim Namen, sondern
+  „Akzent" — ein Farbwechsel geht so nicht wieder durch 36 Dateien. Im
+  Planer-Handbuch füllt sich der eigene Platz „in Blau", und in der Auswertung
+  einer Person ist „Blau" eine Aufgabe.
+
+**Geprüft:** `npm run contrast` — aller Text besteht in beiden Paletten. Die
+App im neuen Stand gegen den gezeigten Vorschlag: 24 Ansichten (zwölf je
+Darstellung, Handy und Desktop, darunter Planen, Zuteilen, Auswertung und
+Profil) Pixel für Pixel gleich; die Gegenprobe mit dem alten Stand weicht ab.
+Der Film „Erste Schritte" Szene für Szene in Hell und Dunkel angesehen, das
+Pult dort gemessen (`rgb(153, 181, 254)`); der Wochenbogen gedruckt, sein
+Akzent gemessen (`#304aac`). Die neue Probe zum Favicon war gegen den alten
+Stand rot („malformed comment"), beide Dateien laden jetzt als Bild mit
+512 × 512. Typprüfung, oxlint (nur `Spur.tsx:112`), die ganze Suite
+(420 Dateien, 8823 Proben) und der Build grün. Laufzeit-Messung, voller Satz
+mit axe: 732 Läufe in 326 s ohne Befund. Alle 29 Handbuch-Bilder neu
+aufgenommen, die Maße wie vorher, geändert nur Grün zu Blau. Das Manifest des
+gebauten Stands im echten Chrome: keine Beanstandung, jede Symbol-Adresse
+liefert ihr PNG in der genannten Größe.
+
+**Nach `/code-review max`** (Betreiber: „nur review ohne simplify"; die Winkel
+nacheinander): sieben Befunde, sechs behoben. Der wichtige sind die
+Symbol-Adressen ohne Kennung (oben). Dazu: Die README beschrieb das Logo noch
+in Gold auf Petrol und das maskable-Icon auf Weiß — auf den Stand gebracht.
+`npm run contrast` prüft jetzt auch den Text auf den Stufen der Auswertung und
+auf der getönten Akzentfläche (fünf Paarungen; Gegenprobe mit einer zu dunklen
+Stufe: rot). Die Probe zu den SVG-Dateien liest den Ordner statt zweier Namen.
+Ein Kommentar berief sich auf eine Messung der alten Werte, und dieser Eintrag
+sagte über das Favicon mehr, als gemessen war. Offen gelassen: Der Fokusring
+der Eingabefelder hat in Hell rund 2,7 : 1 gegen die Karte (mit der Minze
+2,5 : 1) — bewusst weich gestaltet; 3 : 1 bräuchte 65 bis 70 % statt 55 %
+Deckung.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -12000,7 +12077,7 @@ URL angenommen.
 
 ## Fortschritt
 
-Stand 22. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 25. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -12013,15 +12090,17 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑☑
+13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑☑ · 25. November ☑
 
-**Alle 204 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+**Alle 205 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
 Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf,
 T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
 stehen (alle vier Pakete umgesetzt und ausgerollt), T202–T203 vom
 22. November und T204 vom selben Tag, das Kalender-Abo — alle drei am Abend
 ausgerollt (`b37e1916`); die Mitgliedsrechte-Probe ist live grün, Google nimmt
-das Abo an — offen beim Abo nur der Blick am iPhone.
+das Abo an — offen beim Abo nur der Blick am iPhone. Dazu **T205** vom
+25. November, Kornblume statt Minze als Akzentfarbe: umgesetzt und geprüft,
+noch nicht ausgerollt.
 Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am

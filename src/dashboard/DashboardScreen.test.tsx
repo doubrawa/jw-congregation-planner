@@ -332,7 +332,7 @@ describe('Über einer Aufgabe in einer Zusammenkunft steht beim Planer der Saal'
   })
 
   it('der eigene Platz zeigt den Stand der eigenen Zusage — blass, gefüllt, rot (29.10.2026)', () => {
-    // Bis dahin war er immer in Minze, ob zugesagt oder nicht.
+    // Sonst stünde er immer gefüllt da, ob zugesagt oder nicht.
     const { woche, meine } = meinAbend()
     for (const [status, klasse] of [['offen', 'saal-du is-wartet'], ['bestätigt', 'saal-du is-voll'], ['verhindert', 'saal-du is-problem']] as const) {
       const { container } = zeige({ ...PLANER, weeks: [woche], myTasks: [{ ...meine, status }] })

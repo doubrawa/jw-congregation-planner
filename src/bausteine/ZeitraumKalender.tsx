@@ -35,7 +35,7 @@ function tagKlasse(tag: string, von: string, bis: string, monat: Monat, heute: s
 /**
  * **Ein Zeitraum im Kalender** (T121): oben „Von" und „Bis", darunter der
  * Monat. Ein Tipp setzt das Ende, das gerade hervorgehoben ist; der gewählte
- * Zeitraum steht als Band in Minze. Für Abwesenheiten und den Zeitraum eines
+ * Zeitraum steht als Band im Akzent. Für Abwesenheiten und den Zeitraum eines
  * Weiteren Plans.
  *
  * `start` sagt, welches Ende zuerst hervorgehoben ist; bei „Bis" steht der

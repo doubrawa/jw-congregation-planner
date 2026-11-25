@@ -1,5 +1,5 @@
 /**
- * Prüft die beiden Paletten in src/styles/tokens.css (T121, Graphit · Minze)
+ * Prüft die beiden Paletten in src/styles/tokens.css
  * gegen WCAG 2.1, dazu, dass beide vollständig und richtig gekennzeichnet sind.
  *
  *   npm run contrast            beide Paletten
@@ -8,7 +8,7 @@
  * Geprüft wird, was in der Oberfläche übereinander liegt. **Text** muss
  * bestehen (sonst Fehlercode): Fließtext 7:1, alles andere 4.5:1. **Grafik**
  * (Umrisse, Punkte, Ring) wird nur berichtet: Der blasse Punkt „wartet" und die
- * Minze als Fläche sind im Entwurf bewusst zart und tragen ihre Aussage nie
+ * Akzentfläche sind im Entwurf bewusst zart und tragen ihre Aussage nie
  * allein — daneben steht immer Text oder eine Spur. Halbtransparente Werte
  * (rgba) werden über die Fläche gerechnet, auf der sie liegen.
  */
@@ -125,6 +125,11 @@ const TEXT = [
   ['sek2', 'karte', 4.5, 'Abschnitt 2 auf Karte'],
   ['sek3', 'karte', 4.5, 'Abschnitt 3 auf Karte'],
   ['leiste-text', 'leiste', 4.5, 'Text in der Aktionsleiste'],
+  ['akzent-text', 'akzent-flaeche', 4.5, 'Akzenttext auf der getönten Fläche des Akzents'],
+  ['text2', 'akzent-flaeche', 4.5, 'Sekundärtext auf der getönten Fläche (Leiste der Ansicht)'],
+  ['text', 'akzent-flaeche', 4.5, 'Auswertung, Stufe 1'],
+  ['auf-akzent', 'stufe2', 4.5, 'Auswertung, Stufe 2'],
+  ['grund', 'stufe3', 4.5, 'Auswertung, Stufe 3'],
 ]
 
 const GRAFIK = [
@@ -135,7 +140,7 @@ const GRAFIK = [
   ['text', 'karte', 3, 'voller Punkt auf Karte'],
   ['wartet', 'karte', 3, 'blasser Punkt (wartet) auf Karte'],
   ['punkt-leer', 'karte', 3, 'leerer Punkt der Auslastung auf Karte'],
-  ['akzent', 'karte', 3, 'Minze als Fläche auf Karte'],
+  ['akzent', 'karte', 3, 'Akzent als Fläche auf Karte'],
 ]
 
 /* ---- Prüfen -------------------------------------------------------------- */

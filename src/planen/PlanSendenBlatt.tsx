@@ -89,7 +89,7 @@ export function PlanSendenBlatt({
               const aufgabe = meldung.aufgabe()
               return (
                 <li key={meldung.key} className="senden-zeile">
-                  {/* Minze wie „jetzt" in der Spur: Das geht mit dem Knopf hinaus. */}
+                  {/* Der Akzent wie „jetzt" in der Spur: Das geht mit dem Knopf hinaus. */}
                   <Punkt art="du" />
                   <span className="senden-zeile-text">
                     <span className="senden-name" dir="auto">

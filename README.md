@@ -135,24 +135,40 @@ npm run icons    # scripts/make-icons.mjs, rendert mit Chrome (headless)
 
 | Datei | Größe | Zweck |
 | --- | --- | --- |
-| `logo.svg` | Vektor | Login, Quelle der PNGs |
-| `logo-klein.svg` | Vektor | Sidebar (40 px), mobiler Header (22 px), SVG-Favicon |
+| `logo.svg` | Vektor | Quelle der PNGs |
+| `logo-klein.svg` | Vektor | SVG-Favicon, Quelle des Badges |
 | `icon-192.png` | 192² | Manifest `any`, PNG-Favicon-Fallback, Push-Notification |
 | `icon-512.png` | 512² | Manifest `any` |
 | `icon-512-maskable.png` | 512² | Manifest `maskable` (Motiv in der Safe-Zone) |
 | `apple-touch-icon.png` | 180² | iOS-Home-Bildschirm (kein SVG, keine Transparenz) |
 | `badge-96.png` | 96² | Badge der Push-Meldung (Android-Statusleiste): nur Plätze und Pult aus `logo-klein.svg`, weiß auf durchsichtig — Android nimmt davon nur den Alphakanal |
 
-Das Zeichen (seit dem 4.10.2026): drei Sitzreihen mit 4, 6 und 8 Plätzen um ein
-goldenes Rednerpult, von oben gesehen, auf einer dunklen Petrol-Kachel — flach.
+Das Zeichen: drei Sitzreihen mit 4, 6 und 8 Plätzen um ein Rednerpult, von oben
+gesehen, auf einer Kachel — flach. Die Farben sind die der dunklen Darstellung:
+die Kachel wie die Karte, die Plätze in der Textfarbe, das Pult im Akzent
+(`tests/logo-farben.test.ts` hält sie mit `tokens.css` gleich). In der App
+zeichnet `bausteine/Logo.tsx` dieselbe Form ohne Kachel.
 Klein verschwammen die 18 Plätze zu Streifen; dort steht deshalb die kleine
 Fassung mit 3, 5 und 7 Plätzen und kräftigeren Punkten auf denselben Bögen
 (Radien 112/176/240 um das Pult, 64 Einheiten Bogenabstand). Die Polsterung je Ziel steht als `share`
-in `scripts/make-icons.mjs`. Das maskable-Icon liegt auf Weiß wie der
-Startbildschirm der installierten App (`background_color`), denn Android zeigt
-es dort groß — vollflächig hätte es spitze Ecken; das iOS-Icon bekommt die
-Kachelfarbe als Fläche, die das Skript aus `logo.svg` liest (iOS rundet selbst).
+in `scripts/make-icons.mjs`. Das maskable-Icon ist randfüllend in der
+Kachelfarbe, wie `background_color` im Manifest: Android zeigt es groß auf dem
+Startbildschirm der installierten App, und auf derselben Farbe geht es dort
+auf. Das iOS-Icon bekommt die Kachelfarbe als Fläche, die das Skript aus
+`logo.svg` liest (iOS rundet selbst).
 Gerendert wird mit Chrome, demselben Renderer wie in der App.
+
+**Die Symbole im Manifest tragen eine Kennung ihres Inhalts**
+(`icon-192.png?v=…`). Chrome lädt ein Symbol auf einem Gerät, auf dem die App
+installiert ist, nur neu, wenn sich seine Adresse im Manifest ändert; unter
+altem Namen bliebe ein neues Logo dort unsichtbar. `npm run icons` führt die
+Kennungen nach, `scripts/symbol-kennung.test.ts` hält sie mit den Dateien
+zusammen. Am iPhone wechselt das Symbol nur, wenn man die App neu zum
+Home-Bildschirm hinzufügt.
+
+**In den SVG-Dateien darf kein Kommentar zwei Bindestriche hintereinander
+enthalten**, etwa den Namen eines CSS-Tokens: Als Bild liest der Browser sie
+als XML und zeichnet sie dann nicht (`tests/logo-als-bild.test.ts`).
 
 ## Projektstruktur
 

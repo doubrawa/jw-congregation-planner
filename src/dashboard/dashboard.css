@@ -222,7 +222,7 @@
 }
 
 /* Was ansteht, im Kleinen — mit den Wörtern und Farben der Wochen beim Planen
-   (`.wochen-karte-lage`): Probleme rot, Offenes leise, der Versand in Minze. */
+   (`.wochen-karte-lage`): Probleme rot, Offenes leise, der Versand im Akzent. */
 .dash-chip {
   color: var(--text2);
   font-size: calc(13.5px * var(--fs));

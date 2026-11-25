@@ -117,7 +117,7 @@ export function TauschenBlatt({ task }: { task: MyTask }) {
 /**
  * „Tauschen" mit jemandem ohne Konto (30.10.2026): Er sieht keine Anfrage, die
  * beiden sprechen sich mündlich ab. Der erste Tipp fragt „Abgesprochen?", erst
- * der zweite tauscht — wie beim Löschen (`useZweiTipp`), aber in Minze statt
+ * der zweite tauscht — wie beim Löschen (`useZweiTipp`), aber im Akzent statt
  * Rot: Es geht nichts verloren. Eigener Baustein, weil jede Zeile ihren
  * eigenen Zustand braucht.
  */

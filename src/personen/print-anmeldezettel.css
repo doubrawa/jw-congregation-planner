@@ -45,7 +45,7 @@
     --text: #000;
     --text2: #444;
     --text3: #555;
-    --akzent: #17694a;
+    --akzent: #304aac;
   }
 
   :root[data-print='anmeldezettel'] body {

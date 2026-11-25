@@ -8,8 +8,8 @@ import { quelldateien, WURZEL } from './quelldateien'
  * **Der eigene Platz im Saal zeigt den Stand der eigenen Zusage** (29.10.2026).
  *
  * Der Ring sagt „du", der Punkt darin, ob man zugesagt hat: blass, solange es
- * aussteht, rot nach einer Absage — und mit dem Bestätigen wächst die Füllung in
- * Minze aus der Mitte. Bis dahin war der Punkt immer in Minze, ob zugesagt oder
+ * aussteht, rot nach einer Absage — und mit dem Bestätigen wächst die Füllung im
+ * Akzent aus der Mitte. Sonst stünde der Punkt immer gefüllt da, ob zugesagt oder
  * nicht.
  *
  * Zwei Dinge sieht jsdom nicht, deshalb stehen sie hier:

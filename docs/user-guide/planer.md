@@ -55,7 +55,7 @@ ein Punkt je Platz. **Voll** heißt zugesagt oder als **weiß Bescheid**
 abgehakt, **blass** wartet noch, **rot** ist abgesagt, **gestrichelt** ist noch
 offen; darunter steht es in Worten („Besetzung: 20/23 · dein Platz ist
 markiert"). Dein eigener Platz trägt einen Ring; der Punkt darin ist blass, bis
-du bestätigst – dann füllt er sich in Minze. Hast du abgesagt, ist er rot. Was
+du bestätigst – dann füllt er sich in Blau. Hast du abgesagt, ist er rot. Was
 zu klären ist, steht beim **Planen** (Abschnitt 4). Denselben Saal zeigt das
 Blatt einer Aufgabe, wenn du sie antippst.
 
@@ -948,7 +948,7 @@ Erwartung).
 
 Die **Wochen** stehen als Kalender da: je Monat eine Zeile, der neueste oben.
 Jede Woche hat zwei Felder – zuerst die Zusammenkunft unter der Woche, dann die
-am Wochenende. Grün ist eine Aufgabe, grau ein Hilfsdienst, halb und halb
+am Wochenende. Blau ist eine Aufgabe, grau ein Hilfsdienst, halb und halb
 beides in derselben Zusammenkunft; schraffiert war die Person abwesend, rot
 umrandet hat sie abgesagt, durchgestrichen fand die Zusammenkunft nicht statt.
 Zu jedem Monat steht da, welche Aufgaben es waren (kam dieselbe öfter, mit der

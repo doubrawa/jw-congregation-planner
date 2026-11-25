@@ -59,7 +59,7 @@
   background: var(--feld);
 }
 
-/* Etwas Neues anlegen (Person anlegen): der runde Knopf in Minze. */
+/* Etwas Neues anlegen (Person anlegen): der runde Knopf im Akzent. */
 .rund-knopf--akzent {
   background: var(--akzent);
   color: var(--auf-akzent);
@@ -476,7 +476,7 @@
   font-weight: 600;
 }
 
-/* Die eine Handlung einer Karte, die weiterführt („Link senden"): Rand und Wort in Minze. */
+/* Die eine Handlung einer Karte, die weiterführt („Link senden"): Rand und Wort im Akzent. */
 .knopf-pille--akzent {
   border-color: var(--akzent-text);
   color: var(--akzent-text);
@@ -582,7 +582,7 @@
 
 /* Der eigene Platz: Der Ring sagt „du", der Punkt den Stand der Zusage — blass,
    solange sie aussteht, rot nach einer Absage. Mit der Zusage wächst die
-   Füllung in Minze aus der Mitte, mit dem Schwung, mit dem sich das Startbild
+   Füllung im Akzent aus der Mitte, mit dem Schwung, mit dem sich das Startbild
    füllt (shell.css). Ein Übergang, keine Animation: Er läuft nur beim Wechsel,
    nicht schon beim Öffnen einer bestätigten Aufgabe; ohne Bewegung (Einstellung
    des Geräts) springt der Punkt um. Der Übergang steht nur am gefüllten Stand,

@@ -7,9 +7,9 @@ import { startbildInstalliert } from './paletten'
  * **Das Logo in den Farben des Designs** (T121, Phase 10; Entscheid des
  * Betreibers am 15.10.2026: „A · Graphit"): Die Dateien in `public/` — und
  * damit App-Icons, iOS-Icon und Favicon — tragen die Farben der dunklen
- * Darstellung. Kachel wie die Karte, Plätze in der Textfarbe, das Pult in
- * Minze. Bis dahin standen dort Petrol, Creme und Gold vom 4. Oktober, während
- * die App längst Graphit · Minze zeigte.
+ * Darstellung. Kachel wie die Karte, Plätze in der Textfarbe, das Pult im
+ * Akzent. Wichen sie ab, trüge das Symbol auf dem Handy andere Farben als die
+ * App dahinter.
  *
  * **Das Manifest in der Kachelfarbe:** Android zeichnet beim Start der
  * installierten App das maskable-Icon auf `background_color` und färbt die
@@ -44,7 +44,7 @@ function farben(datei: string): { kachel?: string; platz?: string; pult?: string
 }
 
 describe('Die Farben des Logos', () => {
-  it.each(['logo.svg', 'logo-klein.svg'])('%s: Kachel wie die Karte, Plätze in der Textfarbe, Pult in Minze', (datei) => {
+  it.each(['logo.svg', 'logo-klein.svg'])('%s: Kachel wie die Karte, Plätze in der Textfarbe, Pult im Akzent', (datei) => {
     expect(farben(datei)).toEqual({ kachel: dunkel('--karte'), platz: dunkel('--text'), pult: dunkel('--akzent') })
   })
 

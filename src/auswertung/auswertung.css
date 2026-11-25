@@ -604,8 +604,8 @@
   background: var(--punkt-leer);
 }
 
-/* Gefüllt im dunklen Grün des Akzents: In Hell wäre Minze kaum heller als
-   das leere Feld (gesehen auf den Tafeln, 16.10.2026). */
+/* Gefüllt im dunklen Ton des Akzents: In Hell höbe sich seine Fläche kaum
+   vom leeren Feld ab. */
 .aw-streifen-feld.is-an {
   background: var(--akzent-text);
 }
@@ -698,8 +698,8 @@
 }
 
 /* Feld und Legende in einer Regel — so haben sie dieselbe Farbe. Die Aufgabe
-   im dunklen Grün des Akzents: In Hell wäre Minze kaum dunkler als das leere
-   Feld, und das Grau des Hilfsdienstes wöge schwerer (Entwurf 23.10.2026). */
+   im dunklen Ton des Akzents: In Hell höbe sich seine Fläche kaum vom leeren
+   Feld ab, und das Grau des Hilfsdienstes wöge schwerer. */
 .aw-halb.is-aufgabe,
 .aw-muster.is-aufgabe {
   background: var(--akzent-text);

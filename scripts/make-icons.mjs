@@ -21,6 +21,10 @@
  *    darum dort die Kachelfarbe als Fläche.
  *  - Badge der Push-Meldung: aus public/logo-klein.svg, nur das Motiv (siehe
  *    `maske`).
+ *
+ * Zum Schluss bekommt jedes Symbol im Manifest die Kennung seines neuen
+ * Inhalts — ohne sie lüde Chrome es auf installierten Geräten nie neu
+ * (`symbol-kennung.mjs`).
  */
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -29,6 +33,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import { chromeFinden } from './chrome.mjs'
+import { manifestMitKennungen } from './symbol-kennung.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLIC = join(ROOT, 'public')
@@ -169,5 +174,11 @@ svg{display:block;flex:none;width:${box}px;height:${box}px}
 } finally {
   rmSync(work, { recursive: true, force: true })
 }
+
+const manifestPfad = join(PUBLIC, 'manifest.webmanifest')
+const manifest = readFileSync(manifestPfad, 'utf8')
+const nachgefuehrt = manifestMitKennungen(manifest, (datei) => readFileSync(join(PUBLIC, datei)))
+if (nachgefuehrt !== manifest) writeFileSync(manifestPfad, nachgefuehrt)
+console.log(`  ✓ manifest.webmanifest  (Kennungen der Symbole ${nachgefuehrt === manifest ? 'unverändert' : 'nachgeführt'})`)
 
 console.log(`Fertig — ${TARGETS.length} Icons aus logo.svg und logo-klein.svg erzeugt.`)

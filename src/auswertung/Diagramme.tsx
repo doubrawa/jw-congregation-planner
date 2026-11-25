@@ -50,7 +50,7 @@ export function LageMarke({ lage, n, erwartet, k }: { lage: Lage; n: number; erw
 
 /**
  * Ein schmaler Balken in einer Liste je Bereich — gestrichelt, wo nie.
- * `hervor` in Minze (der überwiegende Bereich), `auffaellig` in der
+ * `hervor` im Akzent (der überwiegende Bereich), `auffaellig` in der
  * Problemfarbe (ein Bereich mit vielen Absagen).
  */
 export function MiniBalken({ n, max, hervor = false, auffaellig = false }: { n: number; max: number; hervor?: boolean; auffaellig?: boolean }) {

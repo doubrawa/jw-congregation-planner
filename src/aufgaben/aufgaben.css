@@ -287,7 +287,7 @@
   font-weight: 600;
 }
 
-/* Die erste Aufgabe ist die nächste — ihr Termin in Minze. */
+/* Die erste Aufgabe ist die nächste — ihr Termin im Akzent. */
 .oeffnen-aufgabe:first-child .oeffnen-wann {
   color: var(--akzent-text);
 }

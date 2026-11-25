@@ -65,7 +65,7 @@
   background: var(--text);
 }
 
-/* Die Aufgabe selbst: in Minze mit Ring, wie der Schritt „jetzt" einer Spur. */
+/* Die Aufgabe selbst: im Akzent mit Ring, wie der Schritt „jetzt" einer Spur. */
 .erin-schritt--ziel .erin-punkt {
   background: var(--akzent);
   outline: 1.5px solid var(--akzent);

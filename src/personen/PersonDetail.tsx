@@ -39,7 +39,7 @@ export function PersonDetail({ person, spalte = false }: { person: Person; spalt
   const kontoGeht = state.members.some((m) => kontoGehtMit(m, person.id, state.userId))
   const gruppe = state.groups.find((g) => g.id === person.grp)
   const unter = [gruppe ? tu(gruppe.name) : '', t[ROLE_KEY[person.role]]].filter(Boolean).join(' · ')
-  // Angemeldet: der Ring voll in Minze; sonst gestrichelt — wie die Punkte der Liste.
+  // Angemeldet: der Ring voll im Akzent; sonst gestrichelt — wie die Punkte der Liste.
   const angemeldet = state.members.some((m) => m.personId === person.id)
   const stift = (
     <button type="button" className="rund-knopf" aria-label={t.personBearbeiten} onClick={() => setBlatt('bearbeiten')}>

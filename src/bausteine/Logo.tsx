@@ -2,7 +2,7 @@ import { LOGO_GROSS, LOGO_KLEIN, REIHEN_DECKKRAFT, type Punkt } from './logo-for
 import './bausteine.css'
 
 /**
- * **Das Logo in den Farben der Darstellung** (T121): das Pult in Minze, die
+ * **Das Logo in den Farben der Darstellung** (T121): das Pult im Akzent, die
  * Plätze in der Textfarbe, die hinteren Reihen blasser — wie die Dateien in
  * `public/`, nur ohne Kachel. Rein schmückend neben der Wortmarke, deshalb für
  * Vorleseprogramme verborgen.

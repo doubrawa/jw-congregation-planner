@@ -112,7 +112,7 @@
 }
 
 /* Der Verlauf: je Art eine Linie, unter der Woche dunkel mit runden Punkten,
-   am Wochenende in Minze mit eckigen. Oben links die Zahl der obersten Linie. */
+   am Wochenende im Akzent mit eckigen. Oben links die Zahl der obersten Linie. */
 .aw-verlauf {
   gap: 6px;
   padding-block: 12px;

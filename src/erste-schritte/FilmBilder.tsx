@@ -38,7 +38,7 @@ export function Tipp() {
   return <span className="fm-tipp" data-f="tipp" />
 }
 
-/** Das Symbol der App wie `public/logo.svg`: Kachel, helle Plätze, Pult in Minze. */
+/** Das Symbol der App wie `public/logo.svg`: Kachel, helle Plätze, Pult im Akzent. */
 export function AppSymbol() {
   return (
     <svg className="fm-symbol" viewBox="0 0 512 512">

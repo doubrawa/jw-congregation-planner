@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
  * Handys landet. Das Symbol dort zeichnet er selbst (`FilmBilder.tsx`) — in
  * den Farben `--symbol-grund` und `--symbol-platz`. Stimmten sie nicht mit
  * `public/logo.svg` überein, suchte jemand nach dem Film ein Symbol, das es so
- * nicht gibt. Das Pult ist Minze wie überall (`--akzent`, logo-farben.test.ts).
+ * nicht gibt. Das Pult trägt den Akzent wie überall (`--akzent`, logo-farben.test.ts).
  */
 
 const WURZEL = fileURLToPath(new URL('../', import.meta.url))

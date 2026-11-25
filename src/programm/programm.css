@@ -195,7 +195,7 @@
   overflow-wrap: break-word;
 }
 
-/* Eine Person: Punkt, Name, Rolle — die eigene als „Du" in Minze. */
+/* Eine Person: Punkt, Name, Rolle — die eigene als „Du" im Akzent. */
 .prog-person {
   display: flex;
   flex-wrap: wrap;
@@ -204,7 +204,7 @@
   min-width: 0;
 }
 
-/* Der Punkt steht nur am eigenen Platz (Minze) und an einem offenen
+/* Der Punkt steht nur am eigenen Platz (im Akzent) und an einem offenen
    (gestrichelt). Bei den anderen hält er nur die Spalte (T197): Voll heißt in
    der Punktsprache „zugesagt", und ob jemand zugesagt hat, zeigt das Programm
    nicht. */

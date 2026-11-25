@@ -3,8 +3,8 @@ import './bausteine.css'
 
 /**
  * Die Lagen der Punktsprache (T121) — dieselben wie im Saal: voll ist
- * zugesagt, blass wartet, rot ist ein Problem, gestrichelt noch offen, Minze
- * bist du.
+ * zugesagt, blass wartet, rot ist ein Problem, gestrichelt noch offen, der
+ * Akzent bist du.
  */
 export type PunktArt = SaalLage
 

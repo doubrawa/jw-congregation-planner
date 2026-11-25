@@ -25,14 +25,13 @@ const DU_KLASSE: Record<DuLage, string> = {
 
 /**
  * **Der Saal** (T121): die Besetzung einer Zusammenkunft als Bild, vor dem
- * Pult in Minze. Die Lagen rechnet `saalLagen`; die Beschriftung sagt in
+ * Pult im Akzent. Die Lagen rechnet `saalLagen`; die Beschriftung sagt in
  * Worten, was das Bild zeigt.
  *
- * **Der eigene Platz** trägt einen Ring in Minze; der Punkt darin zeigt den
+ * **Der eigene Platz** trägt einen Ring im Akzent; der Punkt darin zeigt den
  * Stand der eigenen Zusage (`du`, 29.10.2026): blass, solange sie aussteht,
- * rot nach einer Absage. Mit der Zusage füllt er sich von der Mitte her in
- * Minze — eine Füllung über dem Grund, die wächst (bausteine.css). Bis dahin
- * war er immer in Minze, ob zugesagt oder nicht.
+ * rot nach einer Absage. Mit der Zusage füllt er sich von der Mitte her im
+ * Akzent — eine Füllung über dem Grund, die wächst (bausteine.css).
  *
  * **`sichtbar`** (T188): Die Beschriftung steht als Zeile unter dem Bild statt
  * nur für Vorleseprogramme — sonst erfuhr, wer nicht sieht, mehr als wer
