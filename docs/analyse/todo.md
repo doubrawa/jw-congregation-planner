@@ -12196,7 +12196,8 @@ Android-Handys und eines iPhones, „Rückgängig" gegen die Datenbank des
 Betriebs (die Entwicklerseite schreibt nicht); die Reihenfolge von Zusage und
 Zurücknehmen nur gegen eine Attrappe, nicht über ein echtes langsames Netz.
 
-**Stand:** umgesetzt, noch nicht ausgerollt.
+**Stand:** ausgerollt am 28. November 2026 mit `a939f352`, zusammen mit dem
+Nachtrag T220–T224 (unten).
 
 ## Nachgetragen am 28. November 2026 — überladene Blätter (T220–T224)
 
@@ -12279,7 +12280,19 @@ Auswertung (Tablet) ist pixelgleich.
 **Nicht geprüft:** „Rückgängig" gegen die Datenbank des Betriebs (die
 Entwicklerseite schreibt nicht) und echte Geräte.
 
-**Stand:** umgesetzt, noch nicht ausgerollt.
+**Ausgerollt am 28. November 2026** mit `a939f352` (T206–T224 in einem
+Commit), Lauf `46158046395` grün (build, ausrollen, deploy), die
+Laufzeit-Messung der CI ebenso. An Datenbank und Functions änderte der Commit
+nichts (Plan: „Migrationen: nein · Functions: nein"); `scripts/ausrollen-pruefen.mjs`
+meldet vier von vier. `sw.js` liefert `shell-a939f35`. Im ausgelieferten Code
+stehen die neuen Texte („Zurückgenommen · wieder offene Plätze", „Jemand von
+außerhalb (z. B. Kreisaufseher)", „Zettel und Link sperren", „Mitteilungen auf
+dieses Gerät"), die alten („Geleerte Zuteilungen", „Leeren: … · …", „Zugang
+erneuern") nicht mehr; im CSS steht die Meldung bei offenem Blatt oben.
+Gegenprobe kurz vor dem Ausrollen gegen `shell-6b3e8e8`: alles umgekehrt.
+
+**Offen:** „Rückgängig" nach dem Bestätigen und nach „Automatisch" gegen die
+Datenbank des Betriebs, und der Blick am echten Gerät.
 
 ## Was bewusst offen bleibt
 
@@ -12334,8 +12347,9 @@ das Abo an — offen beim Abo nur der Blick am iPhone. Dazu **T205** vom
 25. November, Kornblume statt Minze als Akzentfarbe: am selben Abend
 ausgerollt (`42507d5d`); offen ist nur der Blick auf das Symbol eines Handys
 mit installierter App. Zuletzt **T206–T224** vom 28. November, die Bedienbarkeit
-für ältere Nutzer samt dem Nachtrag zu überladenen Blättern: umgesetzt, noch
-nicht ausgerollt.
+für ältere Nutzer samt dem Nachtrag zu überladenen Blättern: am selben Tag
+ausgerollt (`a939f352`); offen ist nur „Rückgängig" gegen die Datenbank des
+Betriebs und der Blick am echten Gerät.
 Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am
