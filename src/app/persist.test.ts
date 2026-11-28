@@ -100,6 +100,7 @@ vi.mock('../lib/daten/zusagen', async (importActual) => ({
   substituteWithdraw: vi.fn(),
   gesuchAblehnen: vi.fn(),
   platzFuellen: vi.fn(),
+  zusageZuruecknehmen: vi.fn(),
 }))
 
 import { deleteAnmeldeLink, deleteMemberRow, saveMemberRow } from '../lib/daten/konto'
@@ -137,6 +138,7 @@ import {
   saveConfirmation,
   substituteSeek,
   substituteWithdraw,
+  zusageZuruecknehmen,
 } from '../lib/daten/zusagen'
 import { reducerFaelle, setztFeld } from './quelltext-proben'
 import { renameInWeeks } from '../data/namensbindung'
@@ -357,11 +359,12 @@ describe('Zuteilen', () => {
     expect(deleteConfirmationRows).not.toHaveBeenCalled()
   })
 
-  it('clearAssignments schreibt nur bei geänderten Wochen', () => {
+  it('„Rückgängig" nach Automatisch schreibt nur bei geänderten Wochen', () => {
     const shared = buildDemoWeeks()
-    persist(st({ weeks: shared }), st({ weeks: shared }), { type: 'clearAssignments', scope: 'parts' })
+    const aktion = { type: 'autoZurueck', gesetzt: [{ key: 'k', name: 'N' }] } as const
+    persist(st({ weeks: shared }), st({ weeks: shared }), aktion)
     expect(saveWeek).not.toHaveBeenCalled() // gleiche Referenz → nichts
-    persist(st({ weeks: shared }), st({ weeks: buildDemoWeeks() }), { type: 'clearAssignments', scope: 'parts' })
+    persist(st({ weeks: shared }), st({ weeks: buildDemoWeeks() }), aktion)
     expect(saveWeek).toHaveBeenCalled()
   })
 })
@@ -1720,6 +1723,20 @@ describe('Mitteilungen / Bestätigungen / Einstellungen / Mitglieder', () => {
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k1', 'bestätigt')
     persist(st(), st(), { type: 'declineTask', ids: ['k2'] })
     expect(saveConfirmation).toHaveBeenCalledWith('c1', 'u1', 'k2', 'verhindert')
+  })
+
+  /*
+   * „Rückgängig" nach dem Bestätigen: Gelöscht werden die eigenen Zeilen zu
+   * genau den Aufgaben, die der Reducer zurückgenommen hat. Was inzwischen
+   * abgesagt ist, behält seine Zeile — sonst stünde eine Absage, von der die
+   * Planer schon wissen, in der Datenbank wieder als offen da.
+   */
+  it('„Rückgängig" löscht die eigene Zusage zu den zurückgenommenen Aufgaben — nicht die zu einer inzwischen abgesagten', () => {
+    const vorher = st({ confirmations: { a: 'bestätigt', b: 'bestätigt', c: 'verhindert' } })
+    const nachher = st({ confirmations: { c: 'verhindert' } })
+    persist(vorher, nachher, { type: 'zusageZurueck', ids: ['a', 'b', 'c'] })
+    expect(vi.mocked(zusageZuruecknehmen).mock.calls).toEqual([['c1', 'u1', ['a', 'b']]])
+    expect(saveConfirmation).not.toHaveBeenCalled()
   })
 
   it('„Alle bestätigen" schreibt die Zusage jeder Aufgabe, die offen stand — eine Absage bleibt eine (T121)', () => {

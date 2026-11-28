@@ -1159,7 +1159,7 @@ Telefonnummern) und als Glocken-Mitteilung in der App. Läuft serverseitig mit
 Service-Role und wird täglich per Cron ausgelöst
 ([`supabase/cron-reminders.sql`](supabase/cron-reminders.sql)).
 
-Empfangen kann, wer im **Profil → Push-Mitteilungen** aktiviert hat (Abo je
+Empfangen kann, wer im **Profil → Mitteilungen auf dieses Gerät** einschaltet (Abo je
 Gerät in `push_subscriptions`).
 Die App ist dafür eine PWA (`public/manifest.webmanifest` + `public/sw.js`);
 auf dem iPhone gibt es Push erst, nachdem die App über Teilen → „Zum

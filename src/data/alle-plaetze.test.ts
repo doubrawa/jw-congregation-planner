@@ -48,7 +48,8 @@ import { bedarfJeBereich } from './bedarf'
 import { emptyQualifications } from './helpers'
 import { partWorkload, workloadOf } from './auslastung'
 import { deriveMyTasks } from './planung/aufgaben'
-import { autoAssignMeeting, clearAssignments } from './planung/automatik'
+import { autoAssignMeeting } from './planung/automatik'
+import { autoZuruecknehmen, neuBesetztePlaetze } from './planung/auto-zurueck'
 import { countOpenSlots, openSlotLabels } from './planung/offen'
 import { assignmentsInMeeting, changedSlotKeys } from './planung/zuteilen'
 import { dropPersonPid, pidsNachtragen, renameInWeeks } from './namensbindung'
@@ -352,15 +353,16 @@ describe('Wer merkt, dass jemand anderes auf dem Platz steht?', () => {
   })
 })
 
-describe('Wer leert eine Zuteilung?', () => {
-  it('„Aufgaben leeren" räumt Hauptsaal, Klasse und Ratgeber — nicht die Hilfsdienste', () => {
-    const { weeks, count } = clearAssignments([woche()], 0, 'mid', 'parts')
-    expect(besetzt(weeks[0], istAnna)).toEqual(['hilfsdienst'])
-    expect(count).toBe(3)
+describe('Wer nimmt „Rückgängig" nach Automatisch zurück?', () => {
+  it('alle vier Sorten: Was zwischen leer und besetzt neu dasteht, ist gesetzt — und geht wieder', () => {
+    const gesetzt = neuBesetztePlaetze([woche(false)], [woche()], 0, ['mid'], SERVICES)
+    expect(gesetzt).toHaveLength(ALLE.length)
+    const { weeks, frei } = autoZuruecknehmen({ weeks: [woche()], fsWeeks: [[]], services: SERVICES }, gesetzt)
+    expect(besetzt(weeks[0], istAnna)).toEqual([])
+    expect(frei).toHaveLength(ALLE.length)
   })
 
-  it('„Hilfsdienste leeren" räumt nur diese', () => {
-    const { weeks } = clearAssignments([woche()], 0, 'mid', 'helpers')
-    expect(besetzt(weeks[0], istAnna)).toEqual(['hauptsaal', 'klasse', 'ratgeber'])
+  it('Gegenprobe: Was vorher schon besetzt war, hat die Automatik nicht gesetzt', () => {
+    expect(neuBesetztePlaetze([woche()], [woche()], 0, ['mid'], SERVICES)).toEqual([])
   })
 })

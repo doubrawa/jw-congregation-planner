@@ -90,8 +90,13 @@ export function EintragenFormular({
   )
   const serverFehler = fehler?.fuer === eingabe ? fehler.text : null
   const meldung = serverFehler ?? (hindernis ? trolleyFehlerText(hindernis, t, partnerName) : null)
-  // Wer es erfährt: der Partner sofort, am Vortag beide — oder, allein, wer dazukommen kann.
-  const hinweis = partner ? fill(t.trolleyPartnerHinweis, { name: partnerName }) : eingabe.mitPartner ? null : t.trolleyGesuchtHinweis
+  // Wer es erfährt: der Partner sofort, am Vortag beide — oder, allein, wer
+  // dazukommen kann. „Mit Partner" ohne Partner: warum der Knopf noch blass ist.
+  const hinweis = partner
+    ? fill(t.trolleyPartnerHinweis, { name: partnerName })
+    : eingabe.mitPartner
+      ? t.trolleyPartnerZuerst
+      : t.trolleyGesuchtHinweis
 
   return (
     <>

@@ -7,6 +7,7 @@ import { Sheet } from '../components/Sheet'
 import { useZweiTipp } from '../components/useZweiTipp'
 import { fill, useT } from '../i18n/useT'
 import { copyText } from '../lib/clipboard'
+import { geraeteArt } from '../lib/geraet'
 import { type KalenderAbo, kalenderAusstellen, kalenderBeenden, kalenderStand, webcalAdresse } from '../lib/kalender'
 import { useWaehrenddessen } from './useWaehrenddessen'
 
@@ -16,7 +17,9 @@ import { useWaehrenddessen } from './useWaehrenddessen'
  * `kalender`). Nur lesend: Bestätigen und absagen bleibt in der App.
  *
  *  - **Kalender abonnieren** stellt den Link aus und zeigt ihn im Blatt — nur
- *    dieses eine Mal: Gespeichert ist nur seine Prüfsumme.
+ *    dieses eine Mal: Gespeichert ist nur seine Prüfsumme. Am Android-Handy
+ *    steht schon davor, dass es dafür einmal einen Computer braucht: Google
+ *    Kalender nimmt einen Abo-Link nur dort an.
  *  - **Abonniert** sagt, wann die Kalender-App zuletzt geholt hat — daran sieht
  *    man, ob das Abo trägt. **Neuer Link** (zwei Tipps) sperrt den alten,
  *    **Abo beenden** (zwei Tipps) ebenso, ohne einen neuen.
@@ -128,6 +131,7 @@ export function KalenderKarte() {
         <div className="profil-zeile kalender-abo">
           <p>{t.kalenderText}</p>
           <p className="klein-text">{t.kalenderHinweis}</p>
+          {geraeteArt() === 'android' && <p className="kalender-vorweg">{t.kalenderAndroidHinweis}</p>}
           <GesperrterKnopf className="knopf-umriss" gesperrt={laeuft} onTipp={() => void abonnieren()}>
             {t.kalenderAbonnieren}
           </GesperrterKnopf>
@@ -139,33 +143,89 @@ export function KalenderKarte() {
 }
 
 /**
- * **Das Blatt zum Abonnieren**: der Link, frisch ausgestellt — „Im Kalender
- * öffnen" (iPhone, Mac) und „Kopieren" für alles andere, dazu die Wege je
- * Gerät und der Hinweis, dass der Link ein Schlüssel ist.
+ * **Das Blatt zum Abonnieren**: der Link, frisch ausgestellt, und der Weg für
+ * das Gerät, das man in der Hand hält:
+ *
+ *  - **iPhone, iPad, Mac:** „Im Kalender öffnen" — ein Tipp, dann bestätigen.
+ *  - **Android:** vorweg der Satz, dass es einen Computer braucht, dann
+ *    „Kopieren" und der Weg über Google Kalender.
+ *  - **Sonst** (ein Rechner, oder die Kennung verrät nichts): beide Knöpfe und
+ *    alle Wege.
+ *
+ * Was das eigene Gerät nicht betrifft, liegt hinter „Anderes Gerät" — drei
+ * Anleitungen nebeneinander lesen sich, als müsse man alle drei gehen. Dass
+ * der Link ein Schlüssel ist, steht immer da.
  */
 function KalenderBlatt({ url, onClose }: { url: string; onClose: () => void }) {
   const { t } = useT()
   const [kopiert, setKopiert] = useState(false)
+  const [andere, setAndere] = useState(false)
+  const geraet = geraeteArt()
+  const oeffnen = (klasse: string) => (
+    <a className={klasse} href={webcalAdresse(url)}>
+      {t.kalenderOeffnen}
+    </a>
+  )
+  const kopieren = (klasse: string) => (
+    <button type="button" className={klasse} onClick={() => void copyText(url).then(setKopiert)}>
+      {kopiert ? t.markeKopiert : t.kopierenBtn}
+    </button>
+  )
+  const apple = <p>{fill(t.kalenderApple, { knopf: t.kalenderOeffnen })}</p>
+  const google = <p>{t.kalenderGoogle}</p>
+  const outlook = <p>{t.kalenderOutlook}</p>
+  const takt = <p className="klein-text">{t.kalenderTakt}</p>
   return (
     <Sheet label={t.kalenderAbonnieren} title={t.kalenderAbonnieren} onClose={onClose}>
       <div className="sheet-inhalt kalender-blatt">
         <p>{t.kalenderBlattText}</p>
-        <a className="knopf-haupt" href={webcalAdresse(url)}>
-          {t.kalenderOeffnen}
-        </a>
-        <button type="button" className="knopf-umriss" onClick={() => void copyText(url).then(setKopiert)}>
-          {kopiert ? t.markeKopiert : t.kopierenBtn}
-        </button>
-        <div className="kalender-wege">
-          <p>{fill(t.kalenderApple, { knopf: t.kalenderOeffnen })}</p>
-          <p>{t.kalenderGoogle}</p>
-          <p>{t.kalenderOutlook}</p>
-        </div>
+        {geraet === 'apple' && (
+          <>
+            {oeffnen('knopf-haupt')}
+            <div className="kalender-wege">{apple}</div>
+          </>
+        )}
+        {geraet === 'android' && (
+          <>
+            <p className="kalender-vorweg">{t.kalenderAndroidHinweis}</p>
+            {kopieren('knopf-haupt')}
+            <div className="kalender-wege">{google}</div>
+          </>
+        )}
+        {geraet === 'anderes' && (
+          <>
+            {oeffnen('knopf-haupt')}
+            {kopieren('knopf-umriss')}
+            <div className="kalender-wege">
+              {apple}
+              {google}
+              {outlook}
+            </div>
+          </>
+        )}
         <p className="kalender-geheim">
           <Punkt art="problem" />
           <span>{t.kalenderGeheim}</span>
         </p>
-        <p className="klein-text">{t.kalenderTakt}</p>
+        {/* Wie oft Google nachsieht — wo der Weg über Google sichtbar ist. */}
+        {geraet !== 'apple' && takt}
+        {geraet !== 'anderes' && (
+          <div className="kalender-andere">
+            <button type="button" className="verweis-leise" aria-expanded={andere} onClick={() => setAndere(!andere)}>
+              {t.kalenderAnderesGeraet}
+            </button>
+            {andere && (
+              <>
+                {geraet === 'apple' ? kopieren('knopf-umriss') : oeffnen('knopf-umriss')}
+                <div className="kalender-wege">
+                  {geraet === 'apple' ? google : apple}
+                  {outlook}
+                </div>
+                {geraet === 'apple' && takt}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </Sheet>
   )

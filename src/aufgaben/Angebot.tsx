@@ -35,7 +35,7 @@ export function AngebotText({
   return (
     <span className="angebot-text" id={id}>
       <span className="angebot-titel">{titel}</span>
-      <span className="klein-text">{wann}</span>
+      <span className="wann-zeile">{wann}</span>
       {hinweis && <span className="klein-text">{hinweis}</span>}
       {schonHeute.length > 0 && (
         <span className="hinweis-schon">

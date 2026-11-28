@@ -39,7 +39,7 @@ import { PlanungScreen, PlanungWochenScreen } from '../planen/PlanungScreen'
 import { zuteilenInSpalte } from '../planen/planen-raster'
 import { ProfilScreen } from '../profil/ProfilScreen'
 import { ProgrammScreen } from '../programm/ProgrammScreen'
-import { useApp, type Toast } from './context'
+import { useApp, type AppAction, type Toast } from './context'
 import { neuLaden } from './neu-laden'
 import { eigenePerson, rolleUndGruppe } from './eigene-person'
 import { parseGoAbschnitt, parseGoTarget, type Abschnitt } from './deeplink'
@@ -212,7 +212,7 @@ export function AppShell() {
   // Die Meldung steht im Startbild und in der App an derselben Stelle (zweites
   // Kind des Fragments): Löst die App das Startbild ab, läuft sie nicht noch
   // einmal ein.
-  const meldung = <Meldung toast={state.toast} />
+  const meldung = <Meldung toast={state.toast} onHandlung={dispatch} />
 
   // Erst prüfen, dann zeigen: Solange offen ist, ob jemand angemeldet ist
   // (`sitzungPruefen`), und solange die Daten kommen, steht das Startbild —
@@ -442,13 +442,22 @@ export function AppShell() {
  * ihren Inhalt: Eine erst mit dem Text eingehängte Region sagen
  * Vorleseprogramme nicht zuverlässig an (T187). Die Meldung selbst trägt `key`
  * je Meldung — eine neue läuft frisch ein.
+ *
+ * Trägt sie eine Handlung („Rückgängig" nach dem Bestätigen), steht der Knopf
+ * daneben; sein Tipp schickt die Aktion ab, und deren Meldung löst diese ab.
  */
-function Meldung({ toast }: { toast: Toast | null }) {
+function Meldung({ toast, onHandlung }: { toast: Toast | null; onHandlung: (aktion: AppAction) => void }) {
+  const handlung = toast?.handlung
   return (
     <div className="toast-region" role="status">
       {toast && (
-        <div key={toast.id} className="toast">
-          {toast.text}
+        <div key={toast.id} className={handlung ? 'toast mit-handlung' : 'toast'}>
+          <span>{toast.text}</span>
+          {handlung && (
+            <button type="button" className="toast-handlung" onClick={() => onHandlung(handlung.aktion)}>
+              {handlung.text}
+            </button>
+          )}
         </div>
       )}
     </div>

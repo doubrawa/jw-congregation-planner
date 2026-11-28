@@ -31,6 +31,9 @@ vi.mock('../lib/kalender', async (importOriginal) => ({
 }))
 const copyText = vi.fn<(text: string) => Promise<boolean>>()
 vi.mock('../lib/clipboard', () => ({ copyText: (text: string) => copyText(text) }))
+// Das Gerät in der Hand — in der Probe ein Rechner, bis ein Fall es anders sagt.
+const geraet = vi.hoisted(() => ({ art: 'anderes' as 'apple' | 'android' | 'anderes' }))
+vi.mock('../lib/geraet', () => ({ geraeteArt: () => geraet.art }))
 
 const { KalenderKarte } = await import('./KalenderKarte')
 
@@ -77,6 +80,7 @@ beforeEach(() => {
   kalenderAusstellen.mockReset().mockResolvedValue(URL_NEU)
   kalenderBeenden.mockReset().mockResolvedValue(true)
   copyText.mockReset().mockResolvedValue(true)
+  geraet.art = 'anderes'
 })
 afterEach(cleanup)
 
@@ -235,5 +239,91 @@ describe('Mit Abo', () => {
     } finally {
       fehler.mockRestore()
     }
+  })
+})
+
+/**
+ * **Je Gerät der eigene Weg.** Das Blatt zeigte die Wege für Apple, Google und
+ * Outlook untereinander — es las sich, als müsse man alle drei gehen. Und am
+ * Android-Handy erfuhr man erst nach dem Ausstellen des Links, dass es dort
+ * gar nicht direkt geht: Google Kalender nimmt einen Abo-Link nur am Computer.
+ */
+describe('Das Blatt zeigt den Weg für das Gerät in der Hand', () => {
+  const oeffneBlatt = async () => {
+    zeige()
+    fireEvent.click(knopf(t.kalenderAbonnieren)!)
+    await waitFor(() => expect(blatt()).not.toBeNull())
+    return blatt()!.textContent ?? ''
+  }
+
+  it('am iPhone: „Im Kalender öffnen" und nur der eigene Weg — nichts von Google oder Outlook', async () => {
+    geraet.art = 'apple'
+    const text = await oeffneBlatt()
+    expect(blatt()!.querySelector('a.knopf-haupt')?.textContent).toBe(t.kalenderOeffnen)
+    expect(text).toContain(fill(t.kalenderApple, { knopf: t.kalenderOeffnen }))
+    expect(text).not.toContain(t.kalenderGoogle)
+    expect(text).not.toContain(t.kalenderOutlook)
+    expect(text).not.toContain(t.kalenderAndroidHinweis)
+    expect(knopf(t.kopierenBtn)).toBeUndefined()
+    // Dass der Link ein Schlüssel ist, steht auf jedem Gerät da.
+    expect(text).toContain(t.kalenderGeheim)
+  })
+
+  it('am iPhone liegt das Übrige hinter „Anderes Gerät": Kopieren und die Wege für Google und Outlook', async () => {
+    geraet.art = 'apple'
+    await oeffneBlatt()
+    const mehr = knopf(t.kalenderAnderesGeraet)!
+    expect(mehr.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(mehr)
+    expect(mehr.getAttribute('aria-expanded')).toBe('true')
+    const text = blatt()!.textContent ?? ''
+    expect(text).toContain(t.kalenderGoogle)
+    expect(text).toContain(t.kalenderOutlook)
+    fireEvent.click(knopf(t.kopierenBtn)!)
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith(URL_NEU))
+  })
+
+  it('am Android-Handy steht schon VOR dem Abonnieren da, dass es einen Computer braucht', async () => {
+    geraet.art = 'android'
+    const { container } = zeige()
+    await waitFor(() => expect(kalenderStand).toHaveBeenCalledTimes(1))
+    expect(container.textContent).toContain(t.kalenderAndroidHinweis)
+    // Noch ist kein Link ausgestellt — die Entscheidung fällt mit dem Wissen.
+    expect(kalenderAusstellen).not.toHaveBeenCalled()
+  })
+
+  it('Gegenprobe: Am iPhone und am Rechner steht der Satz nicht — dort geht es ohne Umweg', async () => {
+    for (const art of ['apple', 'anderes'] as const) {
+      geraet.art = art
+      const { container } = zeige()
+      await waitFor(() => expect(knopf(t.kalenderAbonnieren)).toBeDefined())
+      expect(container.textContent, art).not.toContain(t.kalenderAndroidHinweis)
+      cleanup()
+    }
+  })
+
+  it('am Android-Handy: der Satz, „Kopieren" als Hauptknopf und der Weg über Google — „Im Kalender öffnen" erst hinter „Anderes Gerät"', async () => {
+    geraet.art = 'android'
+    const text = await oeffneBlatt()
+    expect(text).toContain(t.kalenderAndroidHinweis)
+    expect(blatt()!.querySelector('button.knopf-haupt')?.textContent).toBe(t.kopierenBtn)
+    expect(text).toContain(t.kalenderGoogle)
+    expect(text).toContain(t.kalenderTakt)
+    expect(text).not.toContain(t.kalenderOutlook)
+    // Ein webcal-Link führt am Android-Handy ins Leere.
+    expect(blatt()!.querySelector('a')).toBeNull()
+    fireEvent.click(knopf(t.kalenderAnderesGeraet)!)
+    expect(blatt()!.querySelector('a')?.getAttribute('href')).toBe('webcal://test.supabase.co/functions/v1/kalender?t=neu')
+    expect(blatt()!.textContent).toContain(t.kalenderOutlook)
+  })
+
+  it('am Rechner (oder unerkannt) stehen alle Wege da — „Anderes Gerät" gibt es dort nicht', async () => {
+    const text = await oeffneBlatt()
+    expect(text).toContain(fill(t.kalenderApple, { knopf: t.kalenderOeffnen }))
+    expect(text).toContain(t.kalenderGoogle)
+    expect(text).toContain(t.kalenderOutlook)
+    expect(blatt()!.querySelector('a.knopf-haupt')).not.toBeNull()
+    expect(knopf(t.kopierenBtn)).toBeDefined()
+    expect(knopf(t.kalenderAnderesGeraet)).toBeUndefined()
   })
 })

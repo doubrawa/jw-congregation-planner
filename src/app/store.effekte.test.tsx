@@ -1316,6 +1316,29 @@ describe('Der Toast blendet sich selbst aus', () => {
     expect(toastDauer('x'.repeat(100))).toBe(6000)
     expect(toastDauer('x'.repeat(500))).toBe(8000)
   })
+
+  /*
+   * Mit „Rückgängig" muss man die Meldung nicht nur lesen, sondern verstehen,
+   * was der Knopf zurücknimmt, und ihn treffen. Nach vier Sekunden wäre er
+   * für eine unsichere Hand schon wieder fort.
+   */
+  it('mit einem Knopf („Rückgängig" nach dem Bestätigen) steht er 10 Sekunden — auch bei kurzem Text', async () => {
+    expect(toastDauer('Bestätigt', true)).toBe(10_000)
+    vi.useFakeTimers()
+    const { result } = starte()
+    await act(async () => {
+      result.current.dispatch({ type: 'confirmTask', id: 'k1' })
+    })
+    expect(result.current.state.toast?.handlung?.text).toBe(DE.rueckgaengig)
+    await act(async () => {
+      vi.advanceTimersByTime(9900)
+    })
+    expect(result.current.state.toast).not.toBeNull()
+    await act(async () => {
+      vi.advanceTimersByTime(100)
+    })
+    expect(result.current.state.toast).toBeNull()
+  })
 })
 
 describe('Die drei Kontexte liegen an', () => {

@@ -1,6 +1,7 @@
 /**
  * **Der eigene Zugang** — die Profil-Seite der Function `anmelden`: ein
- * Einmal-Code fürs nächste Gerät und „Zugang erneuern". Beides mit der Sitzung
+ * Einmal-Code fürs nächste Gerät und „Zettel und Link sperren" (Aktion
+ * `erneuern`). Beides mit der Sitzung
  * des Kontos; die Function nimmt die Person allein aus ihr.
  *
  * **Ohne Datenbank** (Entwicklerseite, Tests) nachgestellt wie das Anmelden

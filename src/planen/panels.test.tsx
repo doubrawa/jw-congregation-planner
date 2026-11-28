@@ -26,11 +26,6 @@ import { TreffpunkteAutomatikBlatt } from './TreffpunkteAutomatikBlatt'
  * **Panels des Planen-Screens, die noch keiner angefasst hatte:** der Ratgeber
  * der Zusätzlichen Klasse (S-38 Abs. 27), die Wochen-Bearbeitung der
  * Treffpunkte samt Gruppenaufseher-Beschränkung und deren Automatik.
- *
- * „Leeren" mit **Zwei-Tipp-Bestätigung** stand hier bis Phase 10 von T121 an
- * der alten Zeile `AutoAssignRow`, die seit Phase 5c niemand mehr zeigte. Das
- * lebende „Leeren" der Blätter prüfen `AutomatischBlatt.test.tsx` und die
- * Treffpunkt-Automatik unten.
  */
 
 const t = dict('de')
@@ -181,6 +176,23 @@ describe('Treffpunkte planen (T121, Entwurf `GTreffpunktePlanen`)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { time: '10:00' } })
     fireEvent.change(container.querySelector('.treff-ort-feld')!, { target: { value: 'Marktplatz' } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsInstUpdate', wi: 0, id: 'f1', patch: { place: 'Marktplatz' } })
+  })
+
+  /*
+   * Das Ortsfeld ist so flach wie eine Textzeile (23 px) — für eine Fingerkuppe
+   * zu wenig. Titel und Feld stehen deshalb in einem `label`: Ein Tipp auf den
+   * Titel stellt die Schreibmarke ins Feld, zusammen sind es 44 px.
+   */
+  it('der Titel gehört zur Tippfläche des Ortsfelds: Beide stehen in einem label', () => {
+    const { container } = buehne('fs', { fsWeeks: [[inst()]] })
+    const feld = container.querySelector<HTMLInputElement>('.treff-ort-feld')!
+    const marke = feld.closest('label')
+    expect(marke).not.toBeNull()
+    expect(marke!.querySelector('.treff-titel')).not.toBeNull()
+    // Der Name für Vorleseprogramme bleibt der des Felds, mit dem Treffpunkt darin.
+    expect(feld.getAttribute('aria-label')).toContain(t.ortLbl)
+    // Genau ein Feld im label — sonst wüsste der Tipp nicht, wohin.
+    expect(marke!.querySelectorAll('input, select, button')).toHaveLength(1)
   })
 
   it('eine krumme Zeit aus dem Import steht so da, wie sie gilt — nicht als erste der Liste (15.10.2026)', () => {
@@ -411,8 +423,8 @@ describe('Der Planer ändert die Treffpunkte der Woche wie der Admin (15.10.2026
 
 describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
   const zwei = [[inst({ id: 'f1', grp: 'g1', leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', grp: 'g2' })]]
-  const zuteilen = () => fireEvent.click(blatt()!.querySelector('.auto-fuss .knopf-haupt')!)
-  const leeren = () => blatt()!.querySelector<HTMLButtonElement>('.auto-leeren')!
+  const zuteilenKnopf = () => blatt()!.querySelector<HTMLButtonElement>('.sheet-fuss .knopf-haupt')!
+  const zuteilen = () => fireEvent.click(zuteilenKnopf())
 
   it('nennt, wie viele Leiter besetzt sind, und besetzt die offenen aller Gruppen', () => {
     const { dispatch } = buehne('fsAuto', { fsWeeks: zwei })
@@ -421,24 +433,18 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
   })
 
-  it('„Leeren" braucht auch hier zwei Tipps', () => {
-    const { dispatch } = buehne('fsAuto', { fsWeeks: zwei })
-    fireEvent.click(leeren())
-    expect(dispatch.mock.calls.some((c) => c[0].type === 'fsClear')).toBe(false)
-    expect(leeren().textContent).toBe(t.leerenSicher)
-    bestaetigen(leeren())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: null })
+  it('nur „Zuteilen" und „Abbrechen" — kein „Leeren" daneben (zurück geht es über „Rückgängig" in der Meldung)', () => {
+    buehne('fsAuto', { fsWeeks: zwei })
+    const knoepfe = [...blatt()!.querySelectorAll('.sheet-fuss button')].map((b) => b.textContent)
+    expect(knoepfe).toEqual([t.spurZuteilen, t.abbrechen])
   })
 
-  it('ist alles besetzt, gibt es nichts zuzuteilen; ist nichts besetzt, nichts zu leeren', () => {
+  it('ist alles besetzt, gibt es nichts zuzuteilen', () => {
     buehne('fsAuto', { fsWeeks: [[inst({ leader: 'Anton Alt', lpid: 'p-a' })]] })
-    expect(blatt()!.querySelector<HTMLButtonElement>('.auto-fuss .knopf-haupt')!.disabled).toBe(true)
-    cleanup()
-    buehne('fsAuto', { fsWeeks: [[inst()]] })
-    expect(leeren().disabled).toBe(true)
+    expect(zuteilenKnopf().disabled).toBe(true)
   })
 
-  it('beim Gruppenaufseher wirkt beides nur auf seine Gruppe — und zählt nur sie', () => {
+  it('beim Gruppenaufseher wirkt es nur auf seine Gruppe — und zählt nur sie', () => {
     const { dispatch } = buehne('fsAuto', {
       fsWeeks: [[inst({ id: 'f1', grp: 'g1', leader: 'Anton Alt', lpid: 'p-a' }), inst({ id: 'f2', grp: 'g1', time: '10:00' }), inst({ id: 'f3', grp: 'g2' })]],
       admin: false,
@@ -449,9 +455,6 @@ describe('„Automatisch" bei den Treffpunkten (T121, Phase 5e)', () => {
     expect(blatt()!.querySelector('.auto-bereich')?.textContent).toContain(zahlBinden(`${t.saalBesetzung}: 1/2`))
     zuteilen()
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
-    fireEvent.click(leeren())
-    bestaetigen(leeren())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'fsClear', onlyGroup: 'g1' })
   })
 })
 

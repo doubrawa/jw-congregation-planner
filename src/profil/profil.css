@@ -111,32 +111,25 @@
   gap: 12px;
 }
 
-.profil-regler {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 12px;
-  min-height: 44px;
-}
-
-/* Die beiden „A" zeigen die Richtung — und wachsen mit, damit die Wirkung
-   gleich am Regler zu sehen ist. */
-.profil-regler-a {
+/* Die gewählte Stufe als Wort, neben der Überschrift. */
+.profil-schrift-stufe {
   color: var(--text2);
-  font-size: calc(14px * var(--fs));
-  line-height: 1;
 }
 
-.profil-regler-a.is-gross {
-  font-size: calc(24px * var(--fs));
+/* Fünf Knöpfe nebeneinander, jeder mit einem „A" in seiner Größe. Sie bleiben
+   in einer Zeile (anders als `.wahl` sonst): Die Folge von klein nach groß ist
+   die Aussage. Höher als die übliche Tippfläche — hier stellt ein, wer
+   schlecht sieht. */
+.profil-schriftwahl {
+  flex-wrap: nowrap;
+  margin-block-start: 6px;
 }
 
-/* accent-color färbt Schiene und Griff nativ. */
-.profil-regler-feld {
-  width: 100%;
+.profil-schriftwahl .wahl-knopf {
   min-width: 0;
-  accent-color: var(--akzent-text);
-  cursor: pointer;
+  min-height: 52px;
+  padding-inline: 2px;
+  line-height: 1;
 }
 
 .profil-sprache,
@@ -279,6 +272,25 @@
   gap: 8px;
   color: var(--text2);
   font-size: calc(14.5px * var(--fs));
+}
+
+/* Was man vor dem Abonnieren wissen muss (am Android-Handy: es braucht einen
+   Computer) — in der Farbe des Textes, nicht als Kleingedrucktes. */
+.kalender-vorweg {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* „Anderes Gerät": die Wege, die das eigene nicht betreffen, erst auf einen Tipp. */
+.kalender-andere {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.kalender-andere > .knopf-umriss {
+  align-self: stretch;
 }
 
 /* Der Link ist ein Schlüssel — das steht abgesetzt, mit dem Punkt eines Problems. */

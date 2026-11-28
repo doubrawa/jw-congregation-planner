@@ -32,9 +32,7 @@ export function AufgabeKarte({ task, saal = false }: { task: MyTask; saal?: bool
       {besetzung && <Saal key={task.id} lagen={besetzung.lagen} label={besetzung.label} du={besetzung.du} sichtbar />}
       <div className="aufgabe-wann">
         <Punkt art="du" />
-        <span>
-          <AufgabeWann task={task} />
-        </span>
+        <AufgabeWann task={task} />
       </div>
       <h2 className="aufgabe-titel" lang={titelSprache}>{titel}</h2>
       {unter && <div className="aufgabe-unter">{unter}</div>}
@@ -82,7 +80,7 @@ export function AufgabeHandlungen({ task }: { task: MyTask }) {
       )}
       {s89 && (
         <button type="button" className="verweis-leise aufgabe-s89" onClick={() => dispatch({ type: 'openS89', payload: s89 })}>
-          S-89
+          {t.s89Kurz}
         </button>
       )}
       {gefragt && <span className="klein-text aufgabe-tausch">{fill(t.tauschAngefragtBei, { name: gefragt })}</span>}

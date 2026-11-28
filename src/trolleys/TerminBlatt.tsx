@@ -20,7 +20,9 @@ import { trolleyFehlerText, useTrolleyAktion } from './useTrolleyAktion'
  *
  * - **Austragen**, wer dabei ist — mit Rückfrage wie jedes Entfernen. Bleibt
  *   der andere, erfährt er es und sucht wieder einen Partner (`wasBleibt`).
- * - **Dazukommen**, wer das Trolley-Recht hat, wo jemand einen Partner sucht.
+ * - **Dazukommen**, wer das Trolley-Recht hat, wo jemand einen Partner sucht —
+ *   hier, nachdem man gesehen hat, wann, wo und mit wem, und mit dem Satz, wer
+ *   davon erfährt.
  *
  * Vorbei ist vorbei: Dann steht der Termin nur noch da.
  */
@@ -77,6 +79,11 @@ export function TerminBlatt({ termin, onClose }: { termin: TrolleyTermin; onClos
             {fill(t.trolleyAustragenHinweis, { name: vornameVon(state.persons, anderer) })}
           </p>
         )}
+        {kannDazu && (
+          <p className="klein-text" dir="auto">
+            {fill(t.trolleyPartnerHinweis, { name: vornameVon(state.persons, termin.pid) })}
+          </p>
+        )}
         {fehler && (
           <p className="feld-fehler" role="alert" dir="auto">
             {fehler}
@@ -89,7 +96,7 @@ export function TerminBlatt({ termin, onClose }: { termin: TrolleyTermin; onClos
             <EntfernenKnopf
               className="knopf-umriss knopf-entfernen"
               text={t.trolleyAustragen}
-              frage={t.entfernenSicher}
+              frage={t.trolleyAustragenSicher}
               onEntfernen={() => void aktion.austragen(termin, ich.id).then(fertig)}
             />
           ) : (

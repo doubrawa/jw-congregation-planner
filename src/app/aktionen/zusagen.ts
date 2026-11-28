@@ -15,7 +15,7 @@ import { aufgabenBezeichnung } from '../../data/planung/aufgaben'
 import { helperKeyParts, sentKey, wochenIndex } from '../../data/planung/schluessel'
 import { assignmentsInMeeting, assignSlot } from '../../data/planung/zuteilen'
 import type { AppAction, AppState } from '../context'
-import { dropConfirmations, makeNotif, toastKey } from './gemeinsam'
+import { dropConfirmations, makeNotif, mitRueckgaengig, toastKey } from './gemeinsam'
 
 /** Anzeigename des eingeloggten Nutzers. */
 function currentUserName(state: AppState): string {
@@ -38,6 +38,7 @@ function nachrichtAtom(nachricht: string | undefined): string {
   return text ? ` · ${alsFreitext(text)}` : ''
 }
 
+
 type ZusagenAktion = Extract<
   AppAction,
   {
@@ -48,6 +49,7 @@ type ZusagenAktion = Extract<
       | 'getauscht'
       | 'confirmAll'
       | 'confirmTask'
+      | 'zusageZurueck'
       | 'declineTask'
       | 'takeSubstitute'
       | 'gesuchAblehnen'
@@ -113,19 +115,39 @@ export function zusagen(state: AppState, action: ZusagenAktion): AppState {
       if (offen.length === 0) return state
       const confirmations = { ...state.confirmations }
       for (const t of offen) confirmations[t.id] = 'bestätigt'
-      return { ...state, confirmations, toast: toastKey(state, 'toastAlleBestaetigt', { n: offen.length }) }
+      const toast = toastKey(state, 'toastAlleBestaetigt', { n: offen.length })
+      // Ein Fehltipp ließe sich sonst nur absagen — mit einer Meldung an alle, die planen.
+      return { ...state, confirmations, toast: mitRueckgaengig(state, toast, { type: 'zusageZurueck', ids: offen.map((t) => t.id) }) }
     }
-    case 'confirmTask':
+    case 'confirmTask': {
       // Status in die ConfirmationMap — myTasks und confirmOpen folgen aus der
       // Ableitung (withDerivedTasks). Ein offenes Ersatzgesuch hält das Blatt
       // dort ebenfalls.
+      //
+      // „Rückgängig" nur aus dem offenen Stand: „Doch bestätigen" nach einer
+      // Absage hat das Ersatzgesuch beendet — zurück dorthin führte nur eine
+      // neue Absage, und die meldet sich bei allen, die planen.
+      const warOffen = !(action.id in state.confirmations)
+      const toast = toastKey(state, 'toastBestaetigt')
       return {
         ...state,
         confirmations: { ...state.confirmations, [action.id]: 'bestätigt' },
         myTaskId: null,
         absageId: null,
-        toast: toastKey(state, 'toastBestaetigt'),
+        toast: warOffen ? mitRueckgaengig(state, toast, { type: 'zusageZurueck', ids: [action.id] }) : toast,
       }
+    }
+    case 'zusageZurueck': {
+      // Nur, was noch bestätigt dasteht: Eine inzwischen abgesagte Aufgabe
+      // bleibt abgesagt. Ohne Zeile ist eine Zusage offen.
+      const ids = action.ids.filter((id) => state.confirmations[id] === 'bestätigt')
+      if (ids.length === 0) return state
+      return {
+        ...state,
+        confirmations: dropConfirmations(state.confirmations, ids),
+        toast: toastKey(state, 'toastZusageZurueck'),
+      }
+    }
     case 'declineTask': {
       if (action.ids.length === 0) return state
       // Der Name als gekennzeichneter Freitext: Die Glocke übersetzt beim

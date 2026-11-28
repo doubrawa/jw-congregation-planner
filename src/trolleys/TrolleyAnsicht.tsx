@@ -18,7 +18,6 @@ import { type Eingabe, neueEingabe, TROLLEY_WOCHEN } from './trolley-anzeige'
 import { DeineTermine, PartnerGesucht } from './TrolleyListen'
 import { TagWahl, TrolleyTag } from './TrolleyTag'
 import { TrolleyWoche } from './TrolleyWoche'
-import { trolleyFehlerText, useTrolleyAktion } from './useTrolleyAktion'
 import { TrolleyBogen } from '../druck/TrolleyBogen'
 import { AnsichtDrucken } from '../programm/AnsichtDrucken'
 import './trolleys.css'
@@ -32,14 +31,14 @@ import './trolleys.css'
  *
  * Eintragen kann, wer das Trolley-Recht hat; sehen können alle. Geschrieben
  * wird über die Function `trolley` (`useTrolleyAktion`), die dem Partner
- * Bescheid sagt.
+ * Bescheid sagt — aus dem Formular und aus dem Blatt eines Termins, nie mit
+ * einem Tipp in einer Liste.
  */
 export function TrolleyAnsicht() {
-  const { state, dispatch } = useApp()
+  const { state } = useApp()
   const { t } = useT()
   const heute = useKalendertag()
   const desktop = useMedia(DESKTOP_BREITE)
-  const aktion = useTrolleyAktion()
   const ich = eigenePerson(state)
   const darf = darfTrolley(ich)
   const trolleys = useMemo(() => trolleysSortiert(state.trolleys), [state.trolleys])
@@ -67,11 +66,6 @@ export function TrolleyAnsicht() {
     setEingabe(neueEingabe(trolleyId || ersterTrolley, tag < heute ? heute : tag, von ? freierZeitraum(state.trolleyTermine, trolleyId, tag, von) : undefined))
     if (!desktop) setBlatt(true)
   }
-  const dazukommen = async (x: TrolleyTermin) => {
-    if (!ich) return
-    const grund = await aktion.dazukommen(x, ich.id)
-    if (grund) dispatch({ type: 'showToast', text: trolleyFehlerText(grund, t) })
-  }
 
   return (
     <div className={desktop ? 'trolley-ansicht is-desktop' : 'trolley-ansicht'}>
@@ -82,9 +76,7 @@ export function TrolleyAnsicht() {
         {(eigene.length > 0 || gesucht.length > 0) && (
           <div className="trolley-listen">
             {eigene.length > 0 && <DeineTermine termine={eigene} onTermin={setTermin} />}
-            {gesucht.length > 0 && (
-              <PartnerGesucht termine={gesucht} darf={darf} laeuft={aktion.laeuft} onDazukommen={(x) => void dazukommen(x)} />
-            )}
+            {gesucht.length > 0 && <PartnerGesucht termine={gesucht} darf={darf} onTermin={setTermin} />}
           </div>
         )}
         <div className="wochenwahl">

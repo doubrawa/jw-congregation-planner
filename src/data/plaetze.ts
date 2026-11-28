@@ -77,9 +77,9 @@ export type Platz =
  * Die Plätze der **Programmseite** — Hauptsaal, Zusätzliche Klasse, Ratgeber.
  *
  * Was `allePlaetze` ohne `services` herausgibt. Eigener Name, weil der
- * Unterschied fachlich ist und nicht bloß ein weggelassenes Argument: „Aufgaben
- * leeren" meint genau diese Plätze und ausdrücklich nicht die Hilfsdienste,
- * und `partWorkload` zählt genau sie.
+ * Unterschied fachlich ist und nicht bloß ein weggelassenes Argument:
+ * `partWorkload` zählt genau diese Plätze und ausdrücklich nicht die
+ * Hilfsdienste.
  */
 export type ProgrammseitigerPlatz = Exclude<Platz, { art: 'helper' }>
 
@@ -89,7 +89,7 @@ export type ProgrammseitigerPlatz = Exclude<Platz, { art: 'helper' }>
  * Hilfsdienste.
  *
  * Ohne `services` bleiben die Hilfsdienste weg — für Aufrufer, die nur die
- * Programm-Seite meinen (`partWorkload`, „Aufgaben leeren").
+ * Programm-Seite meinen (`partWorkload`).
  *
  * Den Ratgeber gibt es nur, solange die Zusätzliche Klasse besteht: Beim
  * Abschalten fällt die Marke `auxRatgeber` weg, die Namen der Klasse bleiben
@@ -143,8 +143,7 @@ export function leerVorOrt(meeting: Meeting, platz: Platz): boolean {
  * Verkleinert der Planer einen Dienst, bleiben die Namen dahinter erhalten.
  * Für „was ist zu besetzen?" zählen sie nicht mehr (dafür ist `allePlaetze`
  * da), für „wer ist hier eingetragen?" sehr wohl: Wer dort steht, soll nicht
- * zusätzlich eine Aufgabe bekommen, und „Hilfsdienste leeren" muss ihn
- * erreichen.
+ * zusätzlich eine Aufgabe bekommen.
  */
 export function* gespeicherteHelfer(
   meeting: Meeting,

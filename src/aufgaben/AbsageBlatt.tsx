@@ -129,8 +129,9 @@ export function AbsageBlatt({ task }: { task: MyTask }) {
               {t.dochBestaetigen}
             </button>
           )}
+          {/* „Zurück", nicht „Abbrechen": Direkt unter „Absagen" lesen sich die beiden zu ähnlich. */}
           <button type="button" className="knopf-leise" onClick={() => dispatch({ type: 'closeAbsage' })}>
-            {t.abbrechen}
+            {t.a11yZurueck}
           </button>
         </div>
       </div>

@@ -1,8 +1,8 @@
 /**
  * Plätze der Zusammenkünfte besetzen: von Hand (über dasselbe Blatt auch die
- * Leitung eines Treffpunkts), automatisch oder leeren, dazu den Vortragsplan
- * übernehmen und die künftigen Plätze einer Person freigeben. Wechselt ein
- * Platz den Inhaber, verfällt seine Zusage.
+ * Leitung eines Treffpunkts) oder automatisch — und das Automatische
+ * zurücknehmen —, dazu den Vortragsplan übernehmen und die künftigen Plätze
+ * einer Person freigeben. Wechselt ein Platz den Inhaber, verfällt seine Zusage.
  */
 
 import { abwesenheitenVon } from '../../data/absence'
@@ -11,11 +11,12 @@ import { mtab } from '../../data/helpers'
 import { naechsterOffenerPlatz } from '../../data/plaetze'
 import { diensteDerSprache } from '../useDienste'
 import { vortragsplanAnwenden, vortragsplanVorschau } from '../../data/vortragsplan'
-import { autoAssignMeeting, clearAssignments, tabsImUmfang, type Umfang } from '../../data/planung/automatik'
+import { autoAssignMeeting, tabsImUmfang, type Umfang } from '../../data/planung/automatik'
+import { autoZuruecknehmen, neuBesetztePlaetze } from '../../data/planung/auto-zurueck'
 import { assignSlot, changedSlotKeys } from '../../data/planung/zuteilen'
 import type { MeetingKey, Week } from '../../data/types'
 import type { AppAction, AppState } from '../context'
-import { dropConfirmations, mitFreienPlaetzen, toastKey } from './gemeinsam'
+import { dropConfirmations, mitFreienPlaetzen, mitRueckgaengig, toastKey } from './gemeinsam'
 
 /**
  * Schlüssel der Slots, die sich zwischen zwei Wochenständen geändert haben —
@@ -36,7 +37,7 @@ function geaenderteSlots(
   return a && b ? changedSlotKeys(a, b, services, woche, tab) : []
 }
 
-/** Die Zusammenkünfte, auf die „Automatisch" und „Leeren" wirken (`tabsImUmfang`). */
+/** Die Zusammenkünfte, auf die „Automatisch" wirkt (`tabsImUmfang`). */
 function umfangTabs(state: AppState, umfang: Umfang = 'tag'): MeetingKey[] {
   return tabsImUmfang(state.weeks[state.week], mtab(state.tab), umfang)
 }
@@ -52,7 +53,7 @@ type ZuteilenAktion = Extract<
     type:
       | 'assign'
       | 'autoAssign'
-      | 'clearAssignments'
+      | 'autoZurueck'
       | 'vortragsplanUebernehmen'
       | 'plaetzeFreigeben'
   }
@@ -136,28 +137,26 @@ export function zuteilen(state: AppState, action: ZuteilenAktion): AppState {
         const key = unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen'
         return { ...state, toast: toastKey(state, key) }
       }
+      // „Rückgängig" nimmt genau die eben besetzten Plätze zurück.
+      const gesetzt = neuBesetztePlaetze(state.weeks, weeks, state.week, umfangTabs(state, action.umfang), state.services)
       return {
         ...state,
         weeks,
         confirmations: dropConfirmations(state.confirmations, geaenderteSlotsIm(state, weeks, action.umfang)),
-        toast: toastKey(state, 'toastAutoN', { n: count }),
+        toast: mitRueckgaengig(state, toastKey(state, 'toastAutoN', { n: count }), { type: 'autoZurueck', gesetzt }),
       }
     }
-    case 'clearAssignments': {
-      if (!state.weeks[state.week]) return state // keine Wochen geladen
-      let weeks = state.weeks
-      let count = 0
-      for (const tab of umfangTabs(state, action.umfang)) {
-        const r = clearAssignments(weeks, state.week, tab, action.scope)
-        weeks = r.weeks
-        count += r.count
-      }
-      if (count === 0) return { ...state, toast: toastKey(state, 'toastGeleertN', { n: 0 }) }
+    case 'autoZurueck': {
+      // Zusammenkünfte und Treffpunkte — nur, wo noch steht, was die Automatik
+      // gesetzt hat (`autoZuruecknehmen`).
+      const { weeks, fsWeeks, frei } = autoZuruecknehmen(state, action.gesetzt)
+      if (frei.length === 0) return state
       return {
         ...state,
         weeks,
-        confirmations: dropConfirmations(state.confirmations, geaenderteSlotsIm(state, weeks, action.umfang)),
-        toast: toastKey(state, 'toastGeleertN', { n: count }),
+        fsWeeks,
+        confirmations: dropConfirmations(state.confirmations, frei),
+        toast: toastKey(state, 'toastAutoZurueck', { n: frei.length }),
       }
     }
     case 'vortragsplanUebernehmen': {

@@ -42,9 +42,12 @@ Unter dem Namen der App steht in einem Satz, wofür sie da ist.
   (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **Mit dem Zettel:** Scanne den QR‑Code mit der Kamera deines Handys – oder
   tippe auf der Anmeldeseite auf **Zettel scannen**. Geht das nicht, tippst du
-  über **Code eintippen** den Code unter dem QR‑Code ein.
+  über **Code eintippen** den Code unter dem QR‑Code ein. Lässt sich die Kamera
+  nicht öffnen, steht **Code eintippen** gleich unter der Meldung.
 - **Beim Eintippen** gibst du nur die acht Zeichen ein – die Lücke in der Mitte
-  setzt die App selbst. Dann tippst du auf **Weiter**. Die App zeigt dir, wem
+  setzt die App selbst. Dann tippst du auf **Weiter**. Solange der Code
+  unvollständig ist, ist **Weiter** blass; ein Tipp darauf sagt, wie viele
+  Zeichen noch fehlen („Der Code hat 8 Zeichen – noch zu tippen: 4"). Die App zeigt dir, wem
   der Code gehört; erst **Anmelden** meldet an. So merkst du es, wenn du den
   Zettel eines anderen erwischt hast. Ein gescannter Code braucht kein
   **Weiter**.
@@ -92,9 +95,10 @@ Wichtigste zusammen.
 - **Deine nächste Aufgabe, groß** – wann („Morgen · Dienstag, 8. September ·
   19:00"), was, deine Rolle und bei Schulungsaufgaben dein Partner. Gleich
   darunter **Bestätigen** und **Ich kann nicht**, bei einem Hilfsdienst auch
-  **Tauschen**, daneben das **S‑89**.
-- Darunter **deine nächsten Aufgaben** danach, je eine Zeile; ein Tipp öffnet
-  die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
+  **Tauschen**, daneben **Zettel (S‑89)**.
+- Darunter **deine nächsten Aufgaben** danach, je eine Zeile mit ihrem Stand
+  als Wort – **Zu bestätigen**, **Bestätigt** (mit Haken) oder **Verhindert**;
+  ein Tipp öffnet die Aufgabe. Nach dem Tag einsortiert stehen dort auch deine
   [Trolley-Termine](#trolleys) („Trolley · 09:00–11:00"); ein Tipp darauf
   führt zu den Trolleys. Die Liste zeigt erst drei Zeilen. Gibt es mehr, klappt
   **Alle zeigen** darunter alle auf, die noch kommen, und **Weniger zeigen**
@@ -193,8 +197,9 @@ Darunter stehen, sobald es welche gibt, zwei Karten:
   Partner euch beide eingetragen, steht dabei „Jonas hat euch beide
   eingetragen". Ein Tipp öffnet den Termin.
 - **Partner gesucht** – wo andere allein stehen: Tag, Zeit, Trolley und Name.
-  **Dazukommen** (nur mit dem Trolley-Recht, siehe unten) trägt dich sofort
-  als Partner ein; wer gesucht hat, bekommt „Partner gefunden".
+  **Dazukommen** (nur mit dem Trolley-Recht, siehe unten) öffnet den Termin:
+  Du siehst Tag, Zeit, wo man den Trolley abholt und wer sucht. Erst
+  **Dazukommen** dort trägt dich als Partner ein; wer gesucht hat, bekommt „Partner gefunden".
 
 Darunter wählst du mit ‹ › die Woche, bis ein Vierteljahr voraus.
 
@@ -234,17 +239,19 @@ ist zu dieser Zeit schon unterwegs** (ein Trolley, eine Zeit – wer um 11 Uhr
 übernimmt, wo einer um 11 aufhört, stört niemanden); **du bist zu dieser Zeit
 schon eingetragen** (niemand ist an zwei Orten zugleich); dasselbe für deinen
 Partner. Gesperrt bleibt der Knopf auch, solange bei **Mit Partner** noch
-niemand gewählt ist. War jemand anders im selben Moment schneller, sagt es die
+niemand gewählt ist – dann steht darüber „Wähle zuerst einen Partner." War jemand anders im selben Moment schneller, sagt es die
 App nach dem Absenden an derselben Stelle und lädt den neuen Stand.
 
 **Ein Termin** (ein Tipp darauf) nennt den Trolley, Tag und Zeit, wo man ihn
 abholt („abholen: Königreichssaal"), seinen Hinweis („Schlüssel im Fach neben
 der Bühne") und wer dabei ist.
 
-- **Austragen** fragt erst nach („Wirklich entfernen?"). Seid ihr zu zweit,
+- **Austragen** fragt erst nach („Wirklich austragen?"). Seid ihr zu zweit,
   bleibt der andere eingetragen, bekommt Bescheid und sucht dann wieder einen
   Partner. Warst du allein, ist der Termin weg.
-- Sucht dort jemand einen Partner, steht im Termin **Dazukommen**.
+- Sucht dort jemand einen Partner, steht im Termin **Dazukommen** – und
+  darüber, wer davon erfährt: Wer gesucht hat, bekommt eine Mitteilung, und am
+  Vortag erinnert die App euch beide.
 - Was vorbei ist, steht nur noch da.
 
 **Ohne Trolley-Recht** siehst du den Plan, kannst dich aber nicht eintragen.
@@ -379,7 +386,8 @@ Mauszeiger den ganzen Text).
 - Was du angetippt, bestätigt oder übernommen hast, gilt als gelesen und steht
   danach unter **Früher**. **Alle gelesen** (am Handy oben rechts) räumt „Neu"
   auf einmal ab.
-- **Alle löschen** neben der Überschrift entfernt alle deine Mitteilungen.
+- **Alle löschen** unter der letzten Mitteilung entfernt alle deine
+  Mitteilungen.
   Der erste Tipp fragt **Wirklich löschen?**, erst der zweite löscht. Ohne
   Verbindung geht das nicht.
 - Solange Benachrichtigungen auf diesem Gerät aus sind, steht ganz oben die
@@ -395,24 +403,30 @@ Mauszeiger den ganzen Text).
 ![Meine Aufgaben mit Bestätigung](screenshots/verkuendiger-aufgaben.png)
 
 Oben steht, wie viele Aufgaben noch auf deine Zusage warten. Die nächste steht
-groß da, wie auf der Startseite; die übrigen je eine Zeile mit einem Punkt für
-ihren Stand (blass: wartet, voll: zugesagt, rot: abgesagt):
+groß da, wie auf der Startseite; die übrigen je eine Zeile: oben, was es ist,
+darunter, wann. Rechts steht der Stand als Wort; der Punkt davor trägt dieselbe
+Farbe (blass: wartet, voll: zugesagt, rot: abgesagt):
 
-- **Der Haken** rechts bestätigt die Aufgabe – der Planer sieht, dass du
-  sie übernimmst. Ist sie schon bestätigt oder abgesagt, steht dort ein Pfeil.
+- **Bestätigen** rechts sagt die Aufgabe zu – der Planer sieht, dass du sie
+  übernimmst. Danach steht dort **Bestätigt** mit einem Haken, nach einer
+  Absage **Verhindert**.
+- Nach dem Bestätigen steht unten zehn Sekunden lang die Meldung, dass es
+  angekommen ist – mit **Rückgängig**: Ein Tipp darauf nimmt die Zusage zurück,
+  und die Aufgabe steht wieder offen da. Das gilt auch nach **Alle …
+  bestätigen** und auf der Startseite.
 - **Alle … bestätigen** oben sagt alles Offene auf einmal zu und nennt, wie
   viele es sind (etwa **Alle 5 bestätigen**); der Knopf steht da, sobald
   mindestens zwei Aufgaben auf deine Zusage warten.
-- **Antippen** öffnet die Aufgabe. Dort kannst du sie auch **absagen** – und
-  eine Absage später wieder zurücknehmen.
-- **S‑89** – siehe unten.
+- **Antippen** – irgendwo in der Zeile – öffnet die Aufgabe. Dort kannst du sie
+  auch **absagen** – und eine Absage später wieder zurücknehmen.
+- **Zettel (S‑89)** – siehe unten.
 
 Unter den Aufgaben stehen deine **Trolley-Termine** im eigenen Abschnitt
 **Trolley**: je Termin „Trolley 3 · mit Jonas Berger" (oder „Trolley 3 ·
 Partner gesucht"), darunter Tag und Zeit („Sa., 19. Sept. · 09:00–11:00"). Der
 Punkt davor ist voll, wenn ihr zu zweit seid, und gestrichelt, solange ein
-Partner gesucht wird – wie in der Trolley-Ansicht. Einen Haken gibt es dort
-nicht – wer sich eingetragen hat, hat sich verabredet. Ein Tipp führt zu den
+Partner gesucht wird – wie in der Trolley-Ansicht. Zu bestätigen gibt es dort
+nichts – wer sich eingetragen hat, hat sich verabredet. Ein Tipp führt zu den
 [Trolleys](#trolleys).
 
 > **Tipp:** Bestätige zeitnah. Der Planer sieht offene Bestätigungen und
@@ -435,7 +449,7 @@ Freiwillig kannst du zwei Dinge mitgeben: eine **Nachricht an den Planer** (sie
 steht in seiner Mitteilung, etwa „bin an dem Tag verreist") und **den Tag als
 abwesend** – dann wirst du an diesem Tag gar nicht erst wieder eingeteilt. Der
 Schalter dafür steht aus; ist der Tag schon eingetragen, fehlt er. Erst
-**Absagen** sendet ab; **Abbrechen** legt das Blatt weg, ohne etwas zu ändern.
+**Absagen** sendet ab; **Zurück** legt das Blatt weg, ohne etwas zu ändern.
 
 Hast du dich vertan, öffne die Aufgabe erneut und wähle **„Doch bestätigen"**.
 Bei einem Hilfsdienst endet damit auch die Ersatzsuche: Die Mitteilung
@@ -568,7 +582,7 @@ Zoom-Ordner dort **Anwesende fehlen** mit **Eintragen**.
 ### Das S‑89-Formular
 
 Bei Schulungsaufgaben (Bibellesung, Gespräche beginnen, Interesse fördern …)
-steht neben den Knöpfen der Aufgabe **S‑89**. Das öffnet die Aufgabenzuteilung,
+steht neben den Knöpfen der Aufgabe **Zettel (S‑89)**. Das öffnet die Aufgabenzuteilung,
 wie sie sonst auf Papier ausgeteilt wird:
 
 - **Name** und ggf. **Partner**
@@ -593,15 +607,17 @@ eingeteilt.
 2. Den ersten Tag antippen, dann den letzten. Ein einzelner Tag ist ein Tipp.
    Oben stehen **Von** und **Bis**; das hervorgehobene Ende setzt der nächste
    Tipp. Ein Tipp vor „Von" beginnt den Zeitraum neu.
-3. Optional einen **Grund** angeben (z. B. „Urlaub").
-4. Bist du in dieser Zeit schon eingeteilt, stehen deine Aufgaben darunter
-   unter **In dieser Zeit eingeteilt**, jede mit einem Schalter. Eingeschaltet –
-   so stehen sie da – sagst du sie mit dem Eintragen gleich ab, wie unter
-   [Wenn du nicht kannst](#wenn-du-nicht-kannst): Wer plant, erfährt es – mit
-   einer Nachricht für alle, nicht mit einer je Aufgabe –, und beim
+3. Bist du in dieser Zeit schon eingeteilt, stehen deine Aufgaben gleich unter
+   dem Kalender unter **In dieser Zeit eingeteilt**, jede mit einem Schalter.
+   Eingeschaltet – so stehen sie da – sagst du sie mit dem Eintragen gleich ab,
+   wie unter [Wenn du nicht kannst](#wenn-du-nicht-kannst): Wer plant, erfährt
+   es – mit einer Nachricht für alle, nicht mit einer je Aufgabe –, und beim
    Hilfsdienst sucht die App Ersatz. Was du doch wahrnehmen kannst, schaltest
    du aus.
-5. Auf **Abwesenheit eintragen** tippen.
+4. Optional einen **Grund** angeben (z. B. „Urlaub").
+5. Unten steht, was das Eintragen mit absagt – etwa „Aufgaben, die du damit
+   absagst: 2" –, und der Knopf heißt dann **Eintragen und 2 absagen**. Sagst
+   du nichts ab, heißt er **Abwesenheit eintragen**. Darauf tippen.
 
 Deine Zeiträume, die anstehen oder gerade laufen, stehen in der Karte und
 lassen sich mit dem ✕ wieder entfernen. Der erste Tipp fragt „Wirklich
@@ -666,9 +682,11 @@ am Handy hier auch **Personen** und **Einstellungen**.
 - **Darstellung** – **Dunkel**, **Hell** oder **Automatisch**. „Automatisch"
   ist voreingestellt und folgt deinem Gerät: Schaltet das Handy abends auf
   dunkel, schaltet die App mit. Die Einstellung gilt nur für dein Gerät.
-- **Schriftgröße** – ein Regler von **Klein** bis **Sehr groß**. Voreingestellt
-  ist **Standard**; wenn dir der Text zu klein ist, schiebe ihn nach rechts. Die
-  Änderung wirkt sofort in der ganzen App und gilt nur für dein Gerät.
+- **Schriftgröße** – fünf Knöpfe von **Klein** bis **Sehr groß**, jeder mit
+  einem „A" in seiner Größe. Voreingestellt ist **Standard**; wenn dir der Text
+  zu klein ist, tippe auf ein größeres „A". Die gewählte Stufe steht als Wort
+  daneben. Die Änderung wirkt sofort in der ganzen App und gilt nur für dein
+  Gerät.
 - **Sprache** – die Anzeigesprache der App, in 12 Sprachen. Sie gilt nur für
   dich: Deine Versammlung kann deutsch planen, während du alles auf Englisch
   liest.
@@ -688,8 +706,8 @@ am Handy hier auch **Personen** und **Einstellungen**.
   - **Die Nachricht mit dem Link ist die Ausnahme**: Sie kommt in der Sprache
     der Versammlung, ebenso der Zettel – wer sie bekommt, hat noch keine
     Sprache eingestellt.
-- **Push‑Mitteilungen** – Erinnerungen an anstehende Aufgaben ein‑ oder
-  ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
+- **Mitteilungen auf dieses Gerät** – Erinnerungen an anstehende Aufgaben
+  ein‑ oder ausschalten (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
 - **App installieren** – steht da, solange dein Browser das Installieren
   anbietet (etwa Chrome auf Android) und die App noch nicht installiert ist
   (siehe [Abschnitt 8](#8-app-installieren--erinnerungen)).
@@ -701,11 +719,11 @@ am Handy hier auch **Personen** und **Einstellungen**.
     **Code eintippen** und gibst ihn ein – oder du scannst den QR‑Code. Wie beim
     Zettel zeigt die App vorher, wem der Code gehört. Danach steht, wie bei
     jeder weiteren Anmeldung, **Neue Anmeldung** in deinen Mitteilungen.
-  - **Zugang erneuern** – für einen verlorenen Zettel oder wenn jemand deinen
-    Link kennt. Danach gelten Zettel und Link aus der Nachricht nicht mehr, und
+  - **Zettel und Link sperren** – für einen verlorenen Zettel oder wenn jemand
+    deinen Link kennt. Danach gelten Zettel und Link aus der Nachricht nicht mehr, und
     alle anderen Geräte werden abgemeldet – spätestens nach einer Stunde sind
     sie draußen. Dieses Gerät bleibt angemeldet. Der erste Tipp fragt „Wirklich
-    erneuern?", erst der zweite erneuert. Einen neuen Zettel brauchst du danach
+    sperren?", erst der zweite sperrt. Einen neuen Zettel brauchst du danach
     nicht: Ein weiteres Gerät meldest du mit **Code anzeigen** an. Nur wenn du
     auf keinem Gerät mehr angemeldet bist, geben dir die Ältesten einen neuen
     Link.
@@ -775,7 +793,8 @@ Installieren ist offline noch nichts vorhanden.
 
 Wo dein Gerät es unterstützt, kannst du Erinnerungen an anstehende Aufgaben als
 Push‑Nachricht erhalten – über **Aktivieren** auf der Karte oben in den
-**Mitteilungen** oder den Schalter **Push‑Mitteilungen** unter **Profil**.
+**Mitteilungen** oder den Schalter **Mitteilungen auf dieses Gerät** unter
+**Profil**.
 Beides erscheint nur, wenn dein Browser Push unterstützt; hat er die Erlaubnis
 schon einmal verweigert, gibst du sie in seinen Einstellungen wieder frei. Die
 App nimmt Push über die Dienste von Google, Apple, Mozilla und Microsoft an –
@@ -805,8 +824,10 @@ deinen übrigen Terminen und mit dessen Erinnerungen. Dafür abonniert dein
 Kalender einen Link, der nur dir gehört; Änderungen holt er sich von selbst.
 
 1. Im **Profil** auf der Karte **Kalender** auf **Kalender abonnieren** tippen.
-   Ein Blatt mit deinem Link öffnet sich.
-2. Je nach Gerät:
+   Ein Blatt mit deinem Link öffnet sich. Am Android-Handy steht schon vorher
+   auf der Karte, dass du dafür einmal einen Computer brauchst.
+2. Das Blatt zeigt den Weg für das Gerät in deiner Hand; die übrigen liegen
+   hinter **Anderes Gerät**. An einem Computer stehen alle da:
    - **iPhone, iPad, Mac:** **Im Kalender öffnen** antippen und das Abonnieren
      bestätigen.
    - **Android (Google Kalender):** **Kopieren** antippen und den Link am
@@ -855,10 +876,10 @@ Sekunden. Oben erscheint dann ein Hinweisstreifen mit dem Zeitpunkt:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 
-Hat dein Handy kein Netz, steht dort **„Offline"**. Hat es Netz und die Daten
-lassen nur auf sich warten, steht dort **„Verbindung langsam"** – kommen sie
-doch noch, verschwindet der Streifen von selbst. Klappt es gar nicht, wird
-daraus wieder „Offline".
+Hat dein Handy kein Netz, steht dort **„Keine Verbindung"**. Hat es Netz und die
+Daten lassen nur auf sich warten, steht dort **„Verbindung langsam"** – kommen
+sie doch noch, verschwindet der Streifen von selbst. Klappt es gar nicht, wird
+daraus wieder „Keine Verbindung".
 
 - **Lesen geht:** Programm, Treffpunkte, deine Aufgaben und Abwesenheiten sind
   wie zuletzt geladen sichtbar.
@@ -891,7 +912,7 @@ Beim Planen gibt es zwei Reiter:
 
 | Reiter | Was du dort siehst |
 | --- | --- |
-| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen. Am Handy unten in der Leiste: **Automatisch** (zuteilen oder leeren, beides wirkt nur auf deine Gruppe) und **Plan senden** — es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
+| **Treffpunkte** | Ausschließlich die Treffpunkte **deiner** Gruppe, Woche für Woche: **Uhrzeit** und **Ort** ändern, einen Treffpunkt für diese Woche **entfernen** oder einen zusätzlichen **ergänzen**, Leiter eintragen. Am Handy unten in der Leiste: **Automatisch** (wirkt nur auf deine Gruppe; **Rückgängig** in der Meldung danach nimmt es zurück) und **Plan senden** — es benachrichtigt die Leiter deiner Gruppe, die davon noch nichts wissen. |
 | **Grundplan** | Nur den **Grundplan deiner Gruppe** — die Regel, nach der ihr euch regelmäßig trefft: Wochentag, Uhrzeit, Ort und ob sie jede Woche gilt oder z. B. jeden ersten im Monat. |
 
 Die Zusammenkünfte siehst du nur an. **Fertig** (am Handy auch das Kreuz oben)

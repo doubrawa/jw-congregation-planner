@@ -24,8 +24,8 @@ export const DE = {
     // Zwei-Tipp-Bestätigung beim Abmelden (AbmeldenKnopf), wie `loeschenSicher`.
     abmeldenSicher: 'Wirklich abmelden?',
     // Offline-Stand (lib/snapshot.ts): {m} = Zeitpunkt der Momentaufnahme
-    offlineBanner: 'Offline · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich', offlineLangsam: 'Verbindung langsam · Stand von {m}',
-    offlineReadOnly: 'Offline — Änderungen sind erst wieder online möglich',
+    offlineBanner: 'Keine Verbindung · Stand von {m}', offlineBannerHint: 'Nur lesen — keine Änderungen möglich', offlineLangsam: 'Verbindung langsam · Stand von {m}',
+    offlineReadOnly: 'Keine Verbindung – ändern geht erst wieder mit Internet',
     offlineRetry: 'Neu laden',
     anmeldungOhneDb: 'Ohne Datenbank · Anmelden ist nur nachgestellt',
     // Anmelden per Link (T121, Phase 8): kein Kennwort, ein Link per Nachricht
@@ -44,6 +44,9 @@ export const DE = {
     codeLbl: 'Code', codeHinweis: 'Der Code steht auf deinem Zettel unter dem QR-Code.',
     // Vor der Prüfung des getippten Codes; danach heißt der Knopf `anmeldenKnopf`.
     codeWeiter: 'Weiter',
+    // Ein Tipp auf „Weiter" mit unvollständigem Code: {m} die Länge des Codes,
+    // {n} was noch fehlt — hinter einem Doppelpunkt: „es fehlen noch 1" wäre falsch.
+    codeUnvollstaendig: 'Der Code hat {m} Zeichen – noch zu tippen: {n}',
     codePasst: 'Der Code passt',
     codeNichtDu: 'Das bist nicht du? Dann frag bitte in deiner Versammlung nach.',
     codeUnbekannt: 'Diesen Code gibt es nicht. Prüfe ihn bitte noch einmal.',
@@ -189,10 +192,14 @@ export const DE = {
     trolleyMitPartner: 'Mit Partner',
     trolleyPartner: 'Partner',
     trolleyPartnerWaehlen: 'Partner wählen',
+    // „Mit Partner" gewählt, aber noch keiner ausgesucht — warum „Eintragen" blass ist.
+    trolleyPartnerZuerst: 'Wähle zuerst einen Partner.',
     trolleyPartnerHinweis: '{name} bekommt eine Mitteilung. Am Vortag erinnert die App euch beide.',
     trolleyGesuchtHinweis: 'Wer mitkommen möchte, sieht dich unter „Partner gesucht“. Am Vortag erinnert dich die App.',
     trolleyWer: 'Wer dabei ist',
     trolleyAustragen: 'Austragen',
+    // Der zweite Tipp auf „Austragen" — mit dem Wort des Knopfs, nicht „entfernen".
+    trolleyAustragenSicher: 'Wirklich austragen?',
     trolleyAustragenHinweis: '{name} bekommt Bescheid und sucht dann wieder einen Partner.',
     // Was nicht ging — dieselben Gründe, die die Function `trolley` nennt.
     trolleyFehlerKeinRecht: 'Eintragen kann sich, wer mit dem Trolley gehen darf. Sprich dafür die Ältesten an.',
@@ -287,10 +294,6 @@ export const DE = {
     planen: 'Planen', offeneZut: 'Offene Zuteilungen: {n}',
     // Der Seitentitel beim Planen (T201); {bereich} ist der Name des Bereichs.
     planenBereich: '{bereich} planen',
-    leeren: 'Leeren', leerenSicher: 'Wirklich leeren?',
-    // Was „Leeren" im Blatt „Automatisch zuteilen" leert (T198): {was} ist ein
-    // Bereich oder `leerenAlles`, {wann} der Wochentag oder `ganzeWoche`.
-    leerenUmfang: 'Leeren: {was} · {wann}', leerenAlles: 'Alles',
     zuteilenChip: '— zuteilen', offenWort: 'offen', offenDash: '— offen —',
     // Das Schlussgebet am Wochenende plant niemand (T133): Es spricht der Redner,
     // wenn er bleibt, sonst bittet der Studienleiter vor Ort jemanden.
@@ -314,8 +317,8 @@ export const DE = {
     von: 'Von', bis: 'Bis', grundOpt: 'Grund (optional)', grundPh: 'z. B. Urlaub',
     datumPh: 'Datum wählen',
     abwEintragen: 'Abwesenheit eintragen',
-    // Der Hinweis unter dem Kalender: wer nicht eingeteilt wird, dahinter
-    // `abwKonflikt`. `abwHinweisFuer` gilt, wenn der Admin für eine andere
+    // Der Hinweis über dem Knopf: wer nicht eingeteilt wird — und `abwKonflikt`,
+    // solange eine Zuteilung bestehen bleibt. `abwHinweisFuer` gilt, wenn der Admin für eine andere
     // Person einträgt — ohne Genus formuliert: Der Name steht als Subjekt oder
     // nach einer Präposition, die ihn nicht beugt.
     abwHinweis: 'In dieser Zeit wirst du nicht eingeteilt.',
@@ -329,6 +332,13 @@ export const DE = {
     abwAbsagenHinweis: 'Was eingeschaltet ist, sagst du mit dem Eintragen ab. Wer plant, erfährt es; beim Hilfsdienst sucht die App Ersatz.',
     abwFreigebenHinweis: 'Was eingeschaltet ist, wird mit dem Eintragen freigegeben und neu verplant. Wer davon schon wusste, erfährt es.',
     freigebenWort: 'Freigeben',
+    // Über dem Knopf und im Knopf selbst: was das Eintragen mit absagt oder
+    // freigibt. Im Knopf steht die Zahl ohne Hauptwort — „{n} Aufgaben" wäre
+    // bei 1 falsch.
+    abwSagtAb: 'Aufgaben, die du damit absagst: {n}',
+    abwGibtFrei: 'Plätze, die damit frei werden: {n}',
+    abwEintragenAbsagen: 'Eintragen und {n} absagen',
+    abwEintragenFreigeben: 'Eintragen und {n} freigeben',
     toastAbwAbgesagt: 'Abwesenheit eingetragen · Abgesagt: {n}',
     toastAbwFreigegeben: 'Abwesenheit eingetragen · Freigegeben: {n}',
     // Wer etwas nicht mehr macht (T182): Ändert der Admin Bereiche, Rolle oder
@@ -439,7 +449,9 @@ export const DE = {
     zettelAnleitung: 'Mit der Handy-Kamera scannen, und du bist angemeldet. Geht es nicht: {adresse} öffnen und auf „{knopf}“ tippen.',
     kontenOhnePerson: 'Konten ohne Person',
     kontenOhnePersonHint: 'Diese Konten sind noch keiner Person zugeordnet.',
-    pushLbl: 'Push-Mitteilungen',
+    // Der Schalter im Profil und was sein Umlegen meldet — ohne das Wort
+    // „Push": Es sagt nur dem etwas, der es schon kennt.
+    pushLbl: 'Mitteilungen auf dieses Gerät',
     pushPromptTitle: 'Keine Zuteilung verpassen',
     pushPromptText: 'Benachrichtigungen auf diesem Gerät einschalten.',
     pushPromptIos: 'Auf dem iPhone zuerst installieren: Teilen-Symbol → „Zum Home-Bildschirm“. Danach kannst du im Profil Benachrichtigungen aktivieren.',
@@ -481,17 +493,18 @@ export const DE = {
     handbuchVerkuendiger: 'Für Verkündiger',
     handbuchPlaner: 'Für Planer',
     // Anmeldung im Profil (`AnmeldungKarte`): ein Einmal-Code fürs nächste
-    // Gerät und „Zugang erneuern". {zeit} die Uhrzeit, bis zu der der Code gilt;
-    // {knopf} der Knopf auf der Anmeldeseite (`codeEintippen`).
+    // Gerät und „Zettel und Link sperren" — der Knopf heißt nach dem, was er
+    // tut; „erneuern" klänge nach Pflege. {zeit} die Uhrzeit, bis zu der der
+    // Code gilt; {knopf} der Knopf auf der Anmeldeseite (`codeEintippen`).
     anmeldungKarte: 'Anmeldung',
     geraetText: 'Mit einem Code meldest du ein weiteres Gerät an. Er gilt nur kurz und nur einmal.',
     codeAnzeigen: 'Code anzeigen',
     einmalCodeGilt: 'Gilt bis {zeit}, nur einmal',
     einmalCodeAnleitung: 'Auf dem anderen Gerät die App öffnen, auf „{knopf}“ tippen und den Code eingeben — oder den QR-Code scannen.',
-    zugangErneuernText: 'Zettel verloren? Nach dem Erneuern gelten Zettel und Link nicht mehr, und alle anderen Geräte werden abgemeldet. Dieses Gerät bleibt angemeldet.',
-    zugangErneuern: 'Zugang erneuern',
-    zugangErneuernSicher: 'Wirklich erneuern?',
-    zugangErneuert: 'Zugang erneuert. Die anderen Geräte werden abgemeldet.',
+    zugangSperrenText: 'Zettel verloren? Nach dem Sperren gelten Zettel und Link nicht mehr, und alle anderen Geräte werden abgemeldet. Dieses Gerät bleibt angemeldet.',
+    zugangSperren: 'Zettel und Link sperren',
+    zugangSperrenSicher: 'Wirklich sperren?',
+    zugangGesperrt: 'Zettel und Link gesperrt. Die anderen Geräte werden abgemeldet.',
     zugangFehler: 'Das hat nicht geklappt. Versuche es bitte noch einmal.',
     // Profil, Karte „Kalender" (Kalender-Abo): ein geheimer Link,
     // den die Kalender-App abonniert. {knopf} ist `kalenderOeffnen`; {tag} und
@@ -506,6 +519,11 @@ export const DE = {
     kalenderApple: 'iPhone, iPad, Mac: „{knopf}“, dann das Abonnieren bestätigen.',
     kalenderGoogle: 'Android: den Link kopieren und am Computer in Google Kalender als Kalender per URL hinzufügen.',
     kalenderOutlook: 'Outlook: den Link kopieren und als Kalender aus dem Internet abonnieren.',
+    // Am Android-Handy, vor dem Abonnieren und im Blatt: Google Kalender nimmt
+    // einen Abo-Link nur am Computer an. Und der Knopf, hinter dem die Wege der
+    // anderen Geräte liegen.
+    kalenderAndroidHinweis: 'Am Android-Handy brauchst du dafür einmal einen Computer.',
+    kalenderAnderesGeraet: 'Anderes Gerät',
     kalenderGeheim: 'Der Link gehört nur dir. Wer ihn hat, sieht deine Aufgaben – gib ihn nicht weiter.',
     kalenderTakt: 'Google holt Änderungen nur etwa einmal am Tag. Was eilt, meldet dir die App.',
     kalenderAbonniert: 'Abonniert',
@@ -548,10 +566,10 @@ export const DE = {
     schriftGross: 'Groß',
     schriftGroesser: 'Größer',
     schriftSehrGross: 'Sehr groß',
-    toastPushAn: 'Push-Mitteilungen aktiviert',
-    toastPushAus: 'Push-Mitteilungen deaktiviert',
-    toastPushVerweigert: 'Push-Mitteilungen wurden nicht erlaubt',
-    toastPushDienstUnbekannt: 'Push-Mitteilungen gehen in diesem Browser nicht: Seinen Push-Dienst kennt die App nicht. Mit Chrome, Edge, Firefox oder Safari geht es.',
+    toastPushAn: 'Mitteilungen kommen jetzt auf dieses Gerät',
+    toastPushAus: 'Mitteilungen kommen nicht mehr auf dieses Gerät',
+    toastPushVerweigert: 'Mitteilungen auf dieses Gerät wurden nicht erlaubt',
+    toastPushDienstUnbekannt: 'Mitteilungen auf dieses Gerät gehen in diesem Browser nicht. Mit Chrome, Edge, Firefox oder Safari geht es.',
     keineWochenTitel: 'KEIN PROGRAMM GELADEN',
     keineWochenHinweis: 'Es sind noch keine Wochen geladen. Wer plant, holt das Programm unter „Planung“ mit „Holen“.',
     rolle: 'Rolle', aufgabenbereiche: 'Aufgabenbereiche',
@@ -660,7 +678,9 @@ export const DE = {
     toastWillkommen: 'Willkommen, {name}!', toastZugeteilt: 'Zugeteilt · noch nicht gesendet',
     toastEntfernt: 'Zuteilung entfernt', toastKeineOffen: 'Keine offenen Plätze',
     toastKeinePassende: 'Für die offenen Plätze ist niemand Passendes frei',
-    toastAutoN: 'Automatisch vergebene Zuteilungen: {n}', toastGeleertN: 'Geleerte Zuteilungen: {n}',
+    toastAutoN: 'Automatisch vergebene Zuteilungen: {n}',
+    // Nach „Rückgängig" in der Meldung von „Automatisch": was wieder offen ist.
+    toastAutoZurueck: 'Zurückgenommen · wieder offene Plätze: {n}',
     toastAbsentP: '{name} ist in dieser Woche abwesend',
     toastVonBis: 'Bitte Von und Bis angeben',
     toastAbwAdd: 'Abwesenheit eingetragen', toastAbwDel: 'Abwesenheit entfernt',
@@ -746,6 +766,9 @@ export const DE = {
     s89Title: 'Aufgabe in der Leben-und-Dienst-Zusammenkunft', s89Name: 'Name', s89Partner: 'Partner',
     s89Datum: 'Datum', s89Aufgabe: 'Aufgabe', s89Punkt: 'Schulungspunkt', s89Ort: 'Durchzuführen im',
     s89Open: 'S-89 anzeigen',
+    // Der Verweis an einer Schulungsaufgabe: das Formular beim Wort genannt,
+    // seine Nummer dahinter — „S-89" allein sagt nur dem etwas, der es kennt.
+    s89Kurz: 'Zettel (S-89)',
     // Im S-89-Blatt ab dem Tablet (Entwurf GDesktopAufgaben): druckt den einen Zettel.
     s89DieserZettel: 'Diesen Zettel drucken',
     // Die Leiste „S-89 drucken" beim Planen (29.10.2026): wie viele Zettel
@@ -886,10 +909,16 @@ export const DE = {
     vortragThemaPh: 'Vortragsthema eintragen', anfangsliedLbl: 'ANFANGSLIED', liedNrPh: 'Nr.',
     rednerNamePh: 'Name des Redners', rednerVersPh: 'Versammlung des Redners',
     uebernehmenBtn: 'Übernehmen', oderPersonWaehlen: 'Oder aus der eigenen Versammlung wählen:',
+    // Beim Treffpunkt-Leiter: der Verweis, hinter dem das Freitextfeld liegt —
+    // unter der Liste, denn meist leitet jemand aus der Versammlung.
+    fsExternVerweis: 'Jemand von außerhalb (z. B. Kreisaufseher)',
     toastLacAdd: 'Programmpunkt eingefügt · Zeiten angepasst', toastLacDel: 'Programmpunkt entfernt · Zeiten angepasst',
     // Seit „Alles Planen" (15.10.2026) sehen es Admin und Planer — wer plant.
     toastBestaetigt: 'Bestätigt · wer plant, sieht es',
     toastAlleBestaetigt: 'Bestätigt: {n} · wer plant, sieht es',
+    // Der Knopf an der Meldung nach dem Bestätigen — und was sein Tipp meldet.
+    rueckgaengig: 'Rückgängig',
+    toastZusageZurueck: 'Zurückgenommen · wieder offen',
     toastVerhindert: 'Gemeldet · wer plant, erfährt es',
     toastErsatzGesucht: 'Abgesagt · es wird ein Ersatz gesucht',
     toastUebernommen: 'Danke! Du hast den Hilfsdienst übernommen',
@@ -903,14 +932,14 @@ export const DE = {
     // Konten & Mitglieder
     laedt: 'Lädt …',
     stKeineVersText: 'Dein Konto gehört zu keiner Versammlung mehr. Frag bitte die Ältesten nach einem neuen Link.',
-    stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Es gab ein Problem beim Laden aus der Datenbank.',
+    stFehler: 'Daten konnten nicht geladen werden', stFehlerText: 'Beim Laden gab es ein Problem. Versuche es bitte noch einmal.',
     // Error Boundary — Anzeigefehler, nicht Ladefehler
     errTitel: 'Anzeige gestört', errText: 'Dieser Bereich konnte nicht angezeigt werden. Der Rest der App funktioniert weiter.',
     toastSpeicherFehler: 'Änderung konnte nicht gespeichert werden — bitte neu laden',
     // Stehendes Banner statt Toast (T187). {knopf} ist `offlineRetry`.
     speicherFehlerBanner: 'Eine Änderung ist nicht gespeichert.',
     speicherFehlerHint: '„{knopf}“ zeigt, was wirklich gespeichert ist.',
-    stErneut: 'ERNEUT VERSUCHEN', stLeer: 'Versammlung ist noch leer',
+    stErneut: 'Erneut versuchen', stLeer: 'Versammlung ist noch leer',
     stLeerText: 'Es sind noch keine Daten hinterlegt. Bitte wende dich an einen Admin.',
     keinePersonOpt: '— keine Person —', planerLbl: 'Admin', duMarker: ' (du)',
     // Der eigene Platz in den Programm-Ansichten: dasselbe Wort wie `duMarker`,

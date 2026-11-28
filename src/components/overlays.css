@@ -201,6 +201,13 @@
   padding-block-start: 14px;
 }
 
+/* Was das Eintragen mit absagt, direkt über dem Knopf: so kräftig wie er,
+   nicht als Kleingedrucktes. */
+.abw-folge {
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* Was in die gewählte Zeit fällt (T181): je Aufgabe ein Schalter. */
 .abw-aufgaben {
   display: flex;

@@ -1,11 +1,11 @@
 /**
- * Die Auto-Zuteilung: „Automatisch" und „Leeren" für eine Zusammenkunft in
- * fünf Schritten, die Rangfolge für das Zuteilen-Blatt und der feste
- * Studienleiter einer neu geholten Woche.
+ * Die Auto-Zuteilung: „Automatisch" für eine Zusammenkunft in fünf Schritten,
+ * die Rangfolge für das Zuteilen-Blatt und der feste Studienleiter einer neu
+ * geholten Woche. Zurücknehmen: `auto-zurueck.ts`.
  */
 
 import { buildAbsences, istAbwesend, KEINE_ABWESENHEIT, type AbsenceSet } from '../absence'
-import { allePlaetze, gespeicherteHelfer, leerVorOrt } from '../plaetze'
+import { allePlaetze, leerVorOrt } from '../plaetze'
 import { programmPlaetze, ratgeberSlot, slotsOf } from '../aux-class'
 import {
   displayName,
@@ -16,9 +16,6 @@ import {
   istAusgefallen,
   MEETING_TABS,
   idAufloeser,
-  ROLE_GUEST_SPEAKER,
-  ROLE_OWN_SPEAKER,
-  rolleBasis,
   serviceQualKey,
 } from '../helpers'
 import { schlussgebetVorOrt } from '../../../supabase/functions/_shared/planung.ts'
@@ -68,7 +65,7 @@ export interface AutoAssignResult {
 export type AssignScope = 'all' | 'parts' | 'helpers'
 
 /**
- * Worauf „Automatisch" und „Leeren" wirken (Entwurf `GAutomatisch`):
+ * Worauf „Automatisch" wirkt (Entwurf `GAutomatisch`):
  * auf die gezeigte Zusammenkunft (`tag`) oder auf beide der Woche (`woche`).
  */
 export type Umfang = 'tag' | 'woche'
@@ -368,7 +365,7 @@ export function festenWtLeiterEintragen(
  * **Was „Automatisch" vorfindet** (Entwurf `GAutomatisch`): die besetzten
  * und alle Plätze eines Bereichs, gezählt, wie die Auto-Zuteilung sie sieht —
  * ohne die Plätze externer Redner (Gastredner, Kreisaufseher), die sie nicht
- * besetzt und das Leeren stehen lässt.
+ * besetzt.
  */
 export function zuteilbarePlaetze(
   meeting: Meeting,
@@ -385,65 +382,4 @@ export function zuteilbarePlaetze(
     if (platz.slot?.name) besetzt++
   }
   return { besetzt, gesamt }
-}
-
-/**
- * Leert die Zuteilungen einer Woche+Meeting — das Gegenstück zur Auto-Zuteilung.
- * `scope`:
- *  - 'parts'   entfernt die Namen der Programmpunkte. Externe Redner
- *    (Gastredner/Kreisaufseher) bleiben stehen, genau wie die Auto-Zuteilung sie
- *    nicht besetzt — sie kommen von außen und werden manuell eingetragen.
- *  - 'helpers' entfernt die Namen aller Hilfsdienste (inkl. Reinigungsgruppe).
- *  - 'all'     beides (im Blatt „Automatisch" sind beide Bereiche wählbar).
- * Programmstruktur, Rollen, Vortragsthemen und Lieder bleiben unverändert.
- * Pur — die Eingabe bleibt unangetastet. `count` = Anzahl geleerter Slots.
- */
-export function clearAssignments(
-  weeks: Week[],
-  weekIndex: number,
-  tab: MeetingKey,
-  scope: AssignScope,
-): { weeks: Week[]; count: number } {
-  const next = klonWoche(weeks, weekIndex)
-  if (!next) return { weeks, count: 0 }
-  const meeting = next[weekIndex]?.[tab]
-  if (!meeting) return { weeks, count: 0 }
-  let count = 0
-  if (scope !== 'helpers') {
-    // Programm (beide Räume) und Ratgeber: „Leeren" meint die Aufgaben dieser
-    // Ansicht, und die Zusätzliche Klasse gehört dazu. Ohne `services`, denn
-    // die Hilfsdienste sind der andere Umfang.
-    //
-    // Geändert wird an Ort und Stelle: `klonWoche` hat die Woche tief kopiert,
-    // die Plätze aus dem Durchlauf gehören also schon zur neuen Fassung.
-    for (const platz of allePlaetze(meeting)) {
-      const slot = platz.slot
-      if (isGuestRole(slot.rolle)) continue // externer Redner bleibt
-      if (!slot.name) continue
-      slot.name = ''
-      delete slot.pid
-      // Ein geleerter Redner-Platz fällt auf „Gastredner" zurück — den
-      // Ausgangszustand aus dem Import. Bliebe er auf „Redner" stehen, wäre er
-      // ein offener Slot, den die Auto-Zuteilung besetzt; den Redner des
-      // öffentlichen Vortrags vereinbart man aber, man verlost ihn nicht.
-      // Derselbe Rückfall wie beim „Entfernen" — ohne Versammlung: Sonst
-      // bliebe die eines Gastredners davor am eigenen Redner hängen.
-      if (rolleBasis(slot.rolle) === ROLE_OWN_SPEAKER) {
-        slot.rolle = ROLE_GUEST_SPEAKER
-        delete slot.herkunft
-      }
-      count++
-    }
-  }
-  if (scope !== 'parts') {
-    // Über alles Gespeicherte — auch hinter einer verkleinerten Platzzahl und
-    // zu Diensten, die es nicht mehr gibt: „leeren" heißt leeren.
-    for (const { slot } of gespeicherteHelfer(meeting)) {
-      if (!slot.name) continue
-      slot.name = ''
-      delete slot.pid
-      count++
-    }
-  }
-  return { weeks: next, count }
 }

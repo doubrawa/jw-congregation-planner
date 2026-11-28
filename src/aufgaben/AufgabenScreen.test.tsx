@@ -133,8 +133,8 @@ describe('Die Aufgaben: die nächste groß, die übrigen je eine Zeile', () => {
     expect(zeilen(container)[0]!.querySelector('.aufgaben-zeile-titel')?.textContent).toBe('Vorsitz')
     // Der Abstand in Worten vorn, dann der Termin — aus dem echten Kalendertag,
     // Tag und Monat gebunden (T128).
-    expect(zeilen(container)[0]!.querySelector('.klein-text')?.textContent).toMatch(/^Morgen · /)
-    expect(zeilen(container)[0]!.querySelector('.klein-text')?.textContent).toContain(zahlBinden('8. September'))
+    expect(zeilen(container)[0]!.querySelector('.wann-zeile')?.textContent).toMatch(/^Morgen · /)
+    expect(zeilen(container)[0]!.querySelector('.wann-zeile')?.textContent).toContain(zahlBinden('8. September'))
   })
 
   it('ein Tipp auf die Zeile öffnet das Blatt zu genau dieser Aufgabe', () => {
@@ -143,28 +143,48 @@ describe('Die Aufgaben: die nächste groß, die übrigen je eine Zeile', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'openMyTask', id: 'T2' })
   })
 
-  it('offen: der Haken bestätigt — und sagt dem Vorleseprogramm, welche Aufgabe', () => {
+  /*
+   * Jede Zeile sagt ihren Stand als Wort. Ein Haken-Symbol an der offenen
+   * Zeile hieß „noch bestätigen" und las sich wie „erledigt"; die bestätigte
+   * trug nur einen dunkleren Punkt. Wer die Farben nicht kannte, hielt das
+   * Offene für getan und ließ es liegen.
+   */
+  it('offen: Der Knopf trägt das Wort „Bestätigen", bestätigt mit einem Tipp — und sagt dem Vorleseprogramm, welche Aufgabe', () => {
     const { container, dispatch } = zeige({ myTasks: [task({ id: 'T1' }), task({ id: 'T2', title: 'Vorsitz' })] })
-    const haken = zeilen(container)[0]!.querySelector('.knopf-haken')!
-    expect(haken.getAttribute('aria-label')).toBe(`Vorsitz: ${t.bestaetigen}`)
-    fireEvent.click(haken)
+    const bestaetigen = zeilen(container)[0]!.querySelector('.aufgaben-zeile-knopf')!
+    expect(bestaetigen.textContent).toBe(t.bestaetigen)
+    expect(bestaetigen.getAttribute('aria-label')).toBe(`Vorsitz: ${t.bestaetigen}`)
+    fireEvent.click(bestaetigen)
     expect(dispatch).toHaveBeenCalledWith({ type: 'confirmTask', id: 'T2' })
   })
 
-  it('bestätigt und verhindert: kein Haken, der Punkt sagt den Stand', () => {
+  it('offen: kein Haken und kein „Bestätigt" — das stünde für etwas, das noch nicht getan ist', () => {
+    const { container } = zeige({ myTasks: [task({ id: 'T1' }), task({ id: 'T2' })] })
+    const offen = zeilen(container)[0]!
+    expect(offen.querySelector('.zusage-stand')).toBeNull()
+    expect(offen.querySelector('svg')).toBeNull()
+    expect(offen.textContent).not.toContain(t.bestaetigt)
+  })
+
+  it('bestätigt und verhindert: Wo der Knopf stand, steht der Stand als Wort — „Bestätigt" mit Haken, „Verhindert" ohne', () => {
     const { container } = zeige({
       myTasks: [task(), task({ id: 'T2', status: 'bestätigt' }), task({ id: 'T3', status: 'verhindert' })],
     })
     const [best, verh] = zeilen(container)
-    expect(best!.querySelector('.knopf-haken')).toBeNull()
+    expect(best!.querySelector('.aufgaben-zeile-knopf')).toBeNull()
+    expect(best!.querySelector('.zusage-stand')?.textContent).toBe(t.bestaetigt)
+    expect(best!.querySelector('.zusage-stand.is-bestaetigt svg')).not.toBeNull()
+    expect(verh!.querySelector('.aufgaben-zeile-knopf')).toBeNull()
+    expect(verh!.querySelector('.zusage-stand')?.textContent).toBe(t.verhindertChip)
+    expect(verh!.querySelector('.zusage-stand.is-problem svg')).toBeNull()
+    // Der Punkt davor bleibt in der Farbe des Stands.
     expect(best!.querySelector('.punkt.is-voll')).not.toBeNull()
-    expect(verh!.querySelector('.knopf-haken')).toBeNull()
     expect(verh!.querySelector('.punkt.is-problem')).not.toBeNull()
   })
 
   it('das S-89 steht an der großen Karte, wo es eines gibt', () => {
     const { container, dispatch } = zeige({ myTasks: [task({ id: 'T1', s89: S89 })] })
-    fireEvent.click(knopf(container.querySelector('.aufgabe-karte'), 'S-89')!)
+    fireEvent.click(knopf(container.querySelector('.aufgabe-karte'), t.s89Kurz)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openS89', payload: S89 })
   })
 })
@@ -197,8 +217,9 @@ describe('Trolley', () => {
       'Trolley 3 · mit Jonas Berger',
       `Trolley 3 · ${t.trolleyPartnerGesucht}`,
     ])
-    expect(b.querySelector('.aufgaben-zeile .klein-text')?.textContent).toMatch(/ · 09:00–11:00$/)
-    expect(b.querySelector('.knopf-haken')).toBeNull()
+    expect(b.querySelector('.aufgaben-zeile .wann-zeile')?.textContent).toMatch(/ · 09:00–11:00$/)
+    expect(b.querySelector('.aufgaben-zeile-knopf')).toBeNull()
+    expect(b.querySelector('.zusage-stand')).toBeNull()
     // Derselbe Punkt wie in der Trolley-Ansicht: voll mit Partner, gestrichelt ohne.
     expect([...b.querySelectorAll('.punkt')].map((p) => p.getAttribute('class'))).toEqual([
       expect.stringContaining('voll'),

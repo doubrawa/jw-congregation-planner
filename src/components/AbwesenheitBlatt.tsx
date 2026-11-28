@@ -36,6 +36,12 @@ import { Switch } from './Switch'
  * Alle stehen eingeschaltet da: Wer weg ist, kann sie nicht wahrnehmen. Was
  * ausgeschaltet bleibt, sehen die Planer weiter als Konflikt.
  *
+ * Die Liste steht gleich unter dem Kalender, vor dem Grund — am Handy läge sie
+ * sonst unter dem sichtbaren Teil. Und der Fuß, der nicht mitrollt, sagt es
+ * noch einmal: Über dem Knopf steht, wie viele Aufgaben das Eintragen absagt,
+ * und der Knopf selbst nennt die Zahl. Wer die Liste nie sieht, sagt so nichts
+ * ab, ohne es zu wissen.
+ *
  * Über ein Portal am Ende des Dokuments: Das Blatt liegt `position: fixed`, und
  * ein Vorfahr mit `transform` würde es sonst an sich binden (siehe den
  * Vortragsplan, T122).
@@ -67,6 +73,14 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
     return kuenftige.filter((task) => imZeitraum(aufgabeTag(task) ?? '', von, bis))
   }, [eigene, myTasks, fremde, von, bis])
   const alsBeantwortet = useAlsBeantwortet()
+  // Was das Eintragen absagt oder freigibt — der Rest bleibt und steht als Konflikt da.
+  const betroffen = aufgaben.filter((task) => !behalten.has(task.id))
+  const bleibt = aufgaben.length - betroffen.length
+  // Die eigene Absage und die Freigabe für jemand anderen heißen überall anders.
+  const worte =
+    art === 'absagen'
+      ? { schalter: t.absagen, hinweis: t.abwAbsagenHinweis, folge: t.abwSagtAb, knopf: t.abwEintragenAbsagen, toast: t.toastAbwAbgesagt }
+      : { schalter: t.freigebenWort, hinweis: t.abwFreigebenHinweis, folge: t.abwGibtFrei, knopf: t.abwEintragenFreigeben, toast: t.toastAbwFreigegeben }
 
   const umschalten = (id: string): void => {
     const neu = new Set(behalten)
@@ -87,7 +101,7 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
       dispatch({ type: 'showToast', text: t.offlineReadOnly })
       return
     }
-    const keys = aufgaben.filter((task) => !behalten.has(task.id)).map((task) => task.id)
+    const keys = betroffen.map((task) => task.id)
     if (keys.length > 0 && art === 'absagen') {
       // In einem Zug: Wer plant, bekommt einen Push für alle (Betreiber:
       // „ein push je planer"), nicht je Aufgabe einen.
@@ -102,10 +116,7 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
       // Planung nicht, wer fehlt. userId bleibt der Ersteller (siehe Absence).
       absence: { id: crypto.randomUUID(), personId, userId: state.userId, from: von, to: bis, reason: grund.trim() },
     })
-    if (keys.length > 0) {
-      const text = art === 'absagen' ? t.toastAbwAbgesagt : t.toastAbwFreigegeben
-      dispatch({ type: 'showToast', text: fill(text, { n: keys.length }) })
-    }
+    if (keys.length > 0) dispatch({ type: 'showToast', text: fill(worte.toast, { n: keys.length }) })
     onClose()
   }
 
@@ -121,6 +132,26 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
             setBis(b)
           }}
         />
+        {aufgaben.length > 0 && (
+          <section className="abw-aufgaben" aria-labelledby={aufgabenId}>
+            <h3 id={aufgabenId} className="abschnitt-titel">
+              {t.abwEingeteilt}
+            </h3>
+            {aufgaben.map((task) => (
+              <div key={task.id} className="schalter-zeile">
+                <span className="schalter-text">
+                  <AngebotText titel={<AufgabeText task={task} />} wann={<AufgabeTermin task={task} />} />
+                </span>
+                <Switch
+                  on={!behalten.has(task.id)}
+                  label={`${aufgabenLabel(task, i18n)} · ${aufgabenTermin(task, i18n)}: ${worte.schalter}`}
+                  onToggle={() => umschalten(task.id)}
+                />
+              </div>
+            ))}
+            <p className="klein-text">{worte.hinweis}</p>
+          </section>
+        )}
         <div className="abw-grund">
           <label className="feld-marke" htmlFor={grundId}>
             {t.grundOpt}
@@ -136,33 +167,15 @@ export function AbwesenheitBlatt({ personId, onClose }: { personId: string | nul
             onChange={(e) => setGrund(e.target.value)}
           />
         </div>
-        {aufgaben.length > 0 && (
-          <section className="abw-aufgaben" aria-labelledby={aufgabenId}>
-            <h3 id={aufgabenId} className="abschnitt-titel">
-              {t.abwEingeteilt}
-            </h3>
-            {aufgaben.map((task) => (
-              <div key={task.id} className="schalter-zeile">
-                <span className="schalter-text">
-                  <AngebotText titel={<AufgabeText task={task} />} wann={<AufgabeTermin task={task} />} />
-                </span>
-                <Switch
-                  on={!behalten.has(task.id)}
-                  label={`${aufgabenLabel(task, i18n)} · ${aufgabenTermin(task, i18n)}: ${art === 'absagen' ? t.absagen : t.freigebenWort}`}
-                  onToggle={() => umschalten(task.id)}
-                />
-              </div>
-            ))}
-            <p className="klein-text">{art === 'absagen' ? t.abwAbsagenHinweis : t.abwFreigebenHinweis}</p>
-          </section>
-        )}
       </div>
       <div className="abw-fuss">
         <p className="klein-text">
-          {fuer ? fill(t.abwHinweisFuer, { name: fuer }) : t.abwHinweis} {t.abwKonflikt}
+          {fuer ? fill(t.abwHinweisFuer, { name: fuer }) : t.abwHinweis}
+          {(betroffen.length === 0 || bleibt > 0) && ` ${t.abwKonflikt}`}
         </p>
+        {betroffen.length > 0 && <p className="abw-folge">{fill(worte.folge, { n: betroffen.length })}</p>}
         <button type="button" className="knopf-haupt" onClick={eintragen}>
-          {t.abwEintragen}
+          {betroffen.length > 0 ? fill(worte.knopf, { n: betroffen.length }) : t.abwEintragen}
         </button>
       </div>
     </Sheet>,

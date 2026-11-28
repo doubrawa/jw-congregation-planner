@@ -4,21 +4,14 @@
  */
 
 import { wirktAb } from '../../data/meeting-dates'
-import {
-  fsAddInst,
-  fsAutoAssign,
-  fsClear,
-  fsRegelAussetzen,
-  fsRemoveInst,
-  fsUpdateInst,
-  regenFsWeeks,
-} from '../../data/fs'
+import { fsAddInst, fsAutoAssign, fsRegelAussetzen, fsRemoveInst, fsUpdateInst, regenFsWeeks } from '../../data/fs'
 import { besuchAustragen, besuchEintragen, besuchsLage, besuchStand, nachWoche } from '../../data/gruppenbesuche'
+import { neuBesetzteTreffpunkte } from '../../data/planung/auto-zurueck'
 import { termineSortiert } from '../../data/trolleys'
 import type { Dict } from '../../i18n/ui'
 import type { FsInstance, FsRule } from '../../data/types'
 import type { AppAction, AppState } from '../context'
-import { toastKey, wochenKennungen } from './gemeinsam'
+import { mitRueckgaengig, toastKey, wochenKennungen } from './gemeinsam'
 
 /** Der Toast nach einer Trolley-Aktion — was die Function `trolley` getan hat. */
 const TROLLEY_TOAST: Record<NonNullable<Extract<AppAction, { type: 'trolleyTermin' }>['toast']>, keyof Dict> = {
@@ -32,7 +25,6 @@ type PredigtdienstAktion = Extract<
   {
     type:
       | 'fsAutoAssign'
-      | 'fsClear'
       | 'fsInstUpdate'
       | 'fsInstRemove'
       | 'fsInstAdd'
@@ -69,11 +61,13 @@ export function predigtdienst(state: AppState, action: PredigtdienstAktion): App
       if (count === 0) {
         return { ...state, toast: toastKey(state, unfilled > 0 ? 'toastKeinePassende' : 'toastKeineOffen') }
       }
-      return { ...state, fsWeeks, toast: toastKey(state, 'toastAutoN', { n: count }) }
-    }
-    case 'fsClear': {
-      const { fsWeeks, count } = fsClear(state.fsWeeks, state.week, action.onlyGroup)
-      return { ...state, fsWeeks, toast: toastKey(state, 'toastGeleertN', { n: count }) }
+      // „Rückgängig" nimmt genau die eben gesetzten Leiter zurück (`autoZurueck`).
+      const gesetzt = neuBesetzteTreffpunkte(state.fsWeeks, fsWeeks, state.week, state.weeks[state.week]?.start ?? '')
+      return {
+        ...state,
+        fsWeeks,
+        toast: mitRueckgaengig(state, toastKey(state, 'toastAutoN', { n: count }), { type: 'autoZurueck', gesetzt }),
+      }
     }
     case 'fsInstUpdate':
       return { ...state, fsWeeks: fsUpdateInst(state.fsWeeks, action.wi, action.id, action.patch) }

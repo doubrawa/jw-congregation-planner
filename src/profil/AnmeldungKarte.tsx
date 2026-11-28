@@ -10,16 +10,17 @@ import { einmalCodeHolen, type EinmalCode, sichtbarMs, zugangErneuern } from '..
 import { useWaehrenddessen } from './useWaehrenddessen'
 
 /**
- * **Anmeldung**: ein weiteres Gerät anmelden und den Zugang erneuern —
- * ohne die Ältesten.
+ * **Anmeldung**: ein weiteres Gerät anmelden und einen verlorenen Zettel
+ * sperren — ohne die Ältesten.
  *
  *  - **Code anzeigen** holt einen Einmal-Code (`anmelden`, `aktion:
  *    'einmalcode'`): kurz gültig, nur einmal einzulösen, zum Eintippen und als
  *    QR-Code. Eingetippt wird er auf der Anmeldeseite wie der Code vom Zettel —
  *    in der installierten App auf dem iPhone der einzige Weg, ein QR-Code
  *    öffnet dort Safari. Läuft er ab, verschwindet er.
- *  - **Zugang erneuern** (zwei Tipps) sperrt Link und Zettel und meldet alle
- *    übrigen Geräte ab; dieses bleibt angemeldet.
+ *  - **Zettel und Link sperren** (zwei Tipps) macht beide ungültig und meldet
+ *    alle übrigen Geräte ab; dieses bleibt angemeldet. Der Knopf heißt nach
+ *    dem, was er tut.
  *
  * Den bisherigen Code zeigt sie nicht: Gespeichert ist nur seine Prüfsumme.
  * Nur für Konten mit Person — ohne sie gibt es weder Zettel noch Code.
@@ -51,7 +52,7 @@ export function AnmeldungKarte() {
     waehrenddessen(async () => {
       if (!(await zugangErneuern())) return false
       setCode(null)
-      dispatch({ type: 'showToast', text: t.zugangErneuert })
+      dispatch({ type: 'showToast', text: t.zugangGesperrt })
     })
 
   if (!state.personId) return null
@@ -83,14 +84,14 @@ export function AnmeldungKarte() {
         </div>
       )}
       <div className="profil-zeile anmeldung-erneuern">
-        <p className="klein-text">{t.zugangErneuernText}</p>
+        <p className="klein-text">{t.zugangSperrenText}</p>
         <GesperrterKnopf
           className={`zwei-tipp knopf-umriss${erneuern.armed ? ' is-armed' : ''}`}
           gesperrt={laeuft}
           onTipp={erneuern.onClick}
           onBlur={erneuern.onBlur}
         >
-          {erneuern.armed ? t.zugangErneuernSicher : t.zugangErneuern}
+          {erneuern.armed ? t.zugangSperrenSicher : t.zugangSperren}
         </GesperrterKnopf>
       </div>
     </section>

@@ -25,15 +25,11 @@ export const ZWEI_TIPP_SPERRE_MS = 400
  * Statt `window.confirm`: Das sieht auf jedem Gerät anders aus, ignoriert
  * Farbschema und Schriftgröße und lässt sich nicht übersetzen, wo der Browser
  * es nicht tut.
- *
- * `entschaerfen` ist für den Nachbarknopf gedacht: Wer „Automatisch" tippt,
- * will das bewaffnete „Leeren" daneben nicht scharf stehen lassen.
  */
 export function useZweiTipp(ausfuehren: () => void): {
   armed: boolean
   onClick: (e: MouseEvent<HTMLElement>) => void
   onBlur: () => void
-  entschaerfen: () => void
 } {
   const [armed, setArmed] = useState(false)
   // `performance.now()` statt `Date.now()`: Sie läuft gleichmäßig weiter, auch
@@ -64,6 +60,5 @@ export function useZweiTipp(ausfuehren: () => void): {
       ausfuehren()
     },
     onBlur: () => setArmed(false),
-    entschaerfen: () => setArmed(false),
   }
 }

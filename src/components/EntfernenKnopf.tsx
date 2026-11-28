@@ -8,7 +8,7 @@ import './components.css'
  *
  * Der erste Tipp fragt („Wirklich löschen?"), erst der zweite entfernt; ein
  * Tipp daneben bricht ab — dieselbe Zwei-Tipp-Bestätigung wie beim Löschen
- * einer Person und beim Leeren (`useZweiTipp`). Geschärft wird aus dem runden
+ * einer Person (`useZweiTipp`). Geschärft wird aus dem runden
  * ✕ eine Pille mit Text (`.entfernen.is-armed` in `components.css`); die Form
  * davor bringt `className` mit, sie ist je Liste eine andere.
  *

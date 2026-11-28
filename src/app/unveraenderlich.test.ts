@@ -127,8 +127,6 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'openingSong', song: '12' },
     { type: 'closingSong', song: '34' },
     { type: 'autoAssign', scope: 'all' },
-    { type: 'clearAssignments', scope: 'parts' },
-    { type: 'clearAssignments', scope: 'helpers' },
     // Ratgeber-Platz der Zusätzlichen Klasse
     { type: 'openSlot', sel: { kind: 'ratgeber', wi: 0, tab: 'mid', priv: null, groups: false, label: 'x' } },
     { type: 'assign', name: `${zweite.fn} ${zweite.ln}`, pid: zweite.id },
@@ -166,7 +164,6 @@ function schreibfolge(s: AppState): AppAction[] {
     { type: 'updateCongregation', patch: { times: { mid: { wd: 3, time: '19:30' }, we: { wd: 0, time: '09:30' } } } },
     // Treffpunkte
     { type: 'fsAutoAssign', onlyGroup: null },
-    { type: 'fsClear', onlyGroup: null },
     { type: 'fsRuleAdd', rule: neueRegel(grp.name) },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: '09:15' } },
     { type: 'fsRuleRemove', id: regel.id },
@@ -268,6 +265,29 @@ describe('Der Zustand wird nie an Ort und Stelle geändert', () => {
     }
     for (const req of s.substituteReqs) {
       s = tiefFrieren(reducer(s, { type: 'takeSubstitute', key: req.key }))
+    }
+  })
+
+  /*
+   * „Rückgängig" in der Meldung nach „Automatisch" steht in keiner festen
+   * Folge: Was es zurücknimmt, weiß erst die Meldung. Deshalb hier eigens —
+   * Zusammenkünfte und Treffpunkte, beide Male mit Wirkung.
+   */
+  it('… auch „Rückgängig" nach dem automatischen Zuteilen', () => {
+    const start = tiefFrieren(reducer(demoZustand(), { type: 'hydrate', payload: tiefFrieren(ladung()) }))
+    const leiterFrei = tiefFrieren({ ...start, fsWeeks: start.fsWeeks.map((w) => w.map((i) => ({ ...i, leader: '', lpid: undefined }))) })
+    for (const [vorher, auto] of [
+      [start, { type: 'autoAssign', scope: 'all', umfang: 'woche' }],
+      [leiterFrei, { type: 'fsAutoAssign', onlyGroup: null }],
+    ] as const) {
+      const s = tiefFrieren(reducer(vorher, auto))
+      const zurueck = s.toast?.handlung?.aktion
+      expect(zurueck?.type, auto.type).toBe('autoZurueck')
+      try {
+        expect(reducer(s, zurueck!), auto.type).not.toBe(s)
+      } catch (e) {
+        throw new Error(`autoZurueck nach ${auto.type}: ${(e as Error).message}`)
+      }
     }
   })
 })

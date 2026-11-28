@@ -9,7 +9,7 @@ import { naechsteZusammenkunft } from '../../data/meeting-dates'
 import { dict, type Dict } from '../../i18n/ui'
 import { fill } from '../../i18n/useT'
 import type { ConfirmationMap, MeetingTab, Notification, NotificationType } from '../../data/types'
-import type { AppState } from '../context'
+import type { AppAction, AppState } from '../context'
 
 /** Nächster Toast (id erzwingt Timer-/Animations-Neustart bei gleichem Text). */
 export function nextToast(state: AppState, text: string): AppState['toast'] {
@@ -23,6 +23,15 @@ export function toastKey(
   params?: Record<string, string | number>,
 ): AppState['toast'] {
   return nextToast(state, fill(dict(state.lang)[key], params ?? {}))
+}
+
+/**
+ * Die Meldung mit dem Knopf „Rückgängig", der `aktion` schickt — nach dem
+ * Bestätigen und nach dem automatischen Zuteilen. Ein Fehltipp ließe sich dort
+ * sonst nur auf Umwegen zurückholen.
+ */
+export function mitRueckgaengig(state: AppState, toast: AppState['toast'], aktion: AppAction): AppState['toast'] {
+  return toast && { ...toast, handlung: { text: dict(state.lang).rueckgaengig, aktion } }
 }
 
 export function makeNotif(

@@ -47,6 +47,7 @@ import {
   substituteTake,
   substituteWithdraw,
   platzFuellen,
+  zusageZuruecknehmen,
 } from '../lib/daten/zusagen'
 import { ANWESENDE_FELDER, anwesenheitDer } from '../data/anwesenheit'
 import { helperKeyParts } from '../data/planung/schluessel'
@@ -698,11 +699,9 @@ function wochePlanen(congId: string, weeks: Week[], wi: number): void {
  *
  * **Abgelesen, nicht nachgerechnet.** Welche Zusage verfällt, entscheidet der
  * Reducer (`dropConfirmations`, `ohneVerwaisteTreffpunktZusagen`); hier gilt,
- * was im Zustand fehlt. Bis zum 25. September 2026 rechneten vier Zweige die
- * Zusammenkunfts-Schlüssel ein zweites Mal nach (`changedSlotKeys` bei
- * assign, autoAssign und clearAssignments, `dienstZusagenKeys` bei
- * removeService), nur `lacRemove` las ab. Eine künftige Ausnahme im Reducer
- * kommt so von selbst in der Datenbank an.
+ * was im Zustand fehlt. Rechnete ein Zweig die Schlüssel ein zweites Mal nach
+ * (`changedSlotKeys`), käme eine künftige Ausnahme im Reducer dort nie an;
+ * abgelesen kommt sie von selbst in der Datenbank an.
  *
  * Die Zusammenkunfts-Schlüssel gehen sofort hinaus (Block unter dem Switch).
  * Die Treffpunkt-Schlüssel gehen **erst mit dem Schreiben ihrer Woche**
@@ -1146,6 +1145,15 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
         if (task.status === 'offen') saveConfirmation(congId, userId, task.id, 'bestätigt')
       }
       break
+    case 'zusageZurueck':
+      // Nur, was der Reducer wirklich zurückgenommen hat — eine inzwischen
+      // abgesagte Aufgabe behält ihre Zeile.
+      zusageZuruecknehmen(
+        congId,
+        userId,
+        action.ids.filter((id) => prev.confirmations[id] === 'bestätigt' && !(id in next.confirmations)),
+      )
+      break
     case 'declineTask':
       for (const id of action.ids) {
         saveConfirmation(congId, userId, id, 'verhindert')
@@ -1242,8 +1250,9 @@ export function persist(prev: AppState, next: AppState, action: AppAction): void
    * (`entzogeneZuteilungen`).
    *
    * Nach demselben Grundsatz wie oben an **einer** Stelle für alle Wege:
-   * einzeln zuteilen, umteilen, leeren, Auto-Zuteilung, Treffpunkt-Leiter,
-   * Treffpunkt-Auto — und alles, was künftig dazukommt. Eine Aufzählung der
+   * einzeln zuteilen, umteilen, entfernen, Auto-Zuteilung und ihr
+   * Zurücknehmen, Treffpunkt-Leiter, Treffpunkt-Auto — und alles, was künftig
+   * dazukommt. Eine Aufzählung der
    * auslösenden Aktionen wäre die zweite Buchführung: wer eine vergisst, merkt
    * es nie, weil nichts fehlschlägt — es geht nur eine Nachricht weniger
    * hinaus, und der Betroffene übt weiter für einen Platz, den er nicht mehr

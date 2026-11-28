@@ -55,30 +55,32 @@ const basis = (): AppState => ({ ...demoZustand(), weeks: buildDemoWeeks(), week
 
 describe('Der Bearbeiten-Reiter', () => {
   it('erscheint nur, wenn er angefordert wird', () => {
-    const { queryByLabelText, rerender } = render(
+    const { queryByRole, rerender } = render(
       <Buehne state={basis()}>
         <MeetingTabs tab="mid" onChange={() => {}} />
       </Buehne>,
     )
-    expect(queryByLabelText(t.wocheEinrichten)).toBeNull()
+    expect(queryByRole('button', { name: t.wocheEinrichten })).toBeNull()
 
     rerender(
       <Buehne state={basis()}>
         <MeetingTabs tab="mid" onChange={() => {}} showEdit />
       </Buehne>,
     )
-    // Ein Zeichen braucht einen vorgelesenen Namen.
-    expect(queryByLabelText(t.wocheEinrichten)).not.toBeNull()
+    // Er trägt sein Wort sichtbar: Das Zeichen allein sagte niemandem, was dahinter liegt.
+    const reiter = queryByRole('button', { name: t.wocheEinrichten })!
+    expect(reiter.textContent).toBe(t.wocheEinrichten)
+    expect(reiter.querySelector('svg')).not.toBeNull()
   })
 
   it('schaltet auf „edit" um', () => {
     let gewaehlt: string | null = null
-    const { getByLabelText } = render(
+    const { getByRole } = render(
       <Buehne state={basis()}>
         <MeetingTabs tab="mid" onChange={(tab) => (gewaehlt = tab)} showEdit />
       </Buehne>,
     )
-    fireEvent.click(getByLabelText(t.wocheEinrichten))
+    fireEvent.click(getByRole('button', { name: t.wocheEinrichten }))
     expect(gewaehlt).toBe('edit')
   })
 })

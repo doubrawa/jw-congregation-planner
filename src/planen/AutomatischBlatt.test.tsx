@@ -1,7 +1,6 @@
 /** @vitest-environment happy-dom */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { bestaetigen } from '../../tests/zwei-tipps'
 import {
   AppDispatchContext,
   AppStateContext,
@@ -85,7 +84,6 @@ const stand = () => bereiche().map((b) => b.querySelector('.klein-text')?.textCo
 const kaestchen = () => bereiche().map((b) => b.querySelector<HTMLInputElement>('input')!)
 const knopf = (text: string) => [...blatt().querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === text)!
 const zuteilen = () => knopf(t.spurZuteilen)
-const leeren = () => blatt().querySelector<HTMLButtonElement>('.auto-leeren')!
 
 afterEach(cleanup)
 
@@ -146,66 +144,43 @@ describe('Was das Blatt schickt', () => {
     expect(kaestchen().map((k) => k.checked)).toEqual([false, true])
   })
 
-  it('ist im gewählten Bereich nichts offen, ist „Zuteilen" gesperrt — „Leeren" nicht', () => {
+  it('ist im gewählten Bereich nichts offen, ist „Zuteilen" gesperrt', () => {
     zeige({ weeks: [aufgabenVoll()] })
     fireEvent.click(kaestchen()[0]!)
     fireEvent.click(kaestchen()[1]!)
     expect(kaestchen().map((k) => k.checked)).toEqual([true, false])
     expect(zuteilen().disabled).toBe(true)
-    expect(leeren().disabled).toBe(false)
   })
 
   it('ohne Wahl gibt es nichts zu tun', () => {
     const { dispatch } = zeige()
     for (const k of kaestchen()) fireEvent.click(k)
     expect(zuteilen().disabled).toBe(true)
-    expect(leeren().disabled).toBe(true)
     fireEvent.click(zuteilen())
     expect(dispatch).not.toHaveBeenCalled()
   })
 })
 
-describe('„Leeren" fragt nach', () => {
-  it('erst der zweite Tipp leert — gewählte Bereiche, gewählter Umfang — und schließt', () => {
+/**
+ * **Beim Zuteilen nicht auch noch leeren** (Betreiber: „muss man beim zuteilen
+ * unbedingt gleichzeitig vorher noch leeren können - nein"). Neben „Zuteilen"
+ * stand „Leeren: Hilfsdienste · Sonntag" — am Handy dreizeilig, eine zweite,
+ * zerstörende Handlung im selben Blatt. Zurück geht es jetzt über
+ * „Rückgängig" in der Meldung danach (`reducer.test.ts`).
+ */
+describe('Das Blatt hat eine Handlung', () => {
+  it('unten stehen nur „Zuteilen" und „Abbrechen" — „Abbrechen" schließt, ohne etwas zu schicken', () => {
     const { dispatch, onClose } = zeige()
-    fireEvent.click(leeren())
-    expect(leeren().textContent).toBe(t.leerenSicher)
-    expect(dispatch).not.toHaveBeenCalled()
-    bestaetigen(leeren())
-    expect(dispatch).toHaveBeenCalledWith({ type: 'clearAssignments', scope: 'all', umfang: 'tag' })
+    const fuss = [...blatt().querySelectorAll('.sheet-fuss button')]
+    expect(fuss.map((b) => b.textContent)).toEqual([t.spurZuteilen, t.abbrechen])
+    fireEvent.click(knopf(t.abbrechen))
     expect(onClose).toHaveBeenCalled()
-  })
-
-  it('geht der Fokus weg, entschärft es sich — ein Tipp daneben nimmt die Frage zurück', () => {
-    // Bis Phase 10 (T121) nur an der alten Zeile `AutoAssignRow` geprüft, die
-    // seit Phase 5c niemand mehr zeigte.
-    const { dispatch } = zeige()
-    fireEvent.click(leeren())
-    fireEvent.blur(leeren())
-    expect(leeren().textContent).not.toBe(t.leerenSicher)
-    fireEvent.click(leeren())
     expect(dispatch).not.toHaveBeenCalled()
   })
 
-  it('jede andere Wahl nimmt die Frage zurück — sie galt der alten', () => {
-    const { dispatch } = zeige()
-    fireEvent.click(leeren())
-    fireEvent.click(kaestchen()[0]!)
-    expect(leeren().textContent).not.toBe(t.leerenSicher)
-    fireEvent.click(leeren())
-    fireEvent.click(knopf(t.ganzeWoche))
-    expect(leeren().textContent).not.toBe(t.leerenSicher)
-    expect(dispatch).not.toHaveBeenCalled()
-  })
-})
-
-describe('„Leeren" sagt, was es leert (T198)', () => {
-  it('Bereich und Umfang stehen im Knopf — und folgen der Wahl', () => {
+  it('kein Knopf im Blatt leert etwas', () => {
     zeige()
-    expect(leeren().textContent).toMatch(new RegExp(`^Leeren: ${t.leerenAlles} · \\p{L}+tag$`, 'u'))
-    fireEvent.click(kaestchen()[0]!) // die Aufgaben im Programm ab, die Hilfsdienste bleiben
-    expect(leeren().textContent).toMatch(new RegExp(`^Leeren: ${t.hilfsdienste} · `))
-    fireEvent.click(knopf(t.ganzeWoche))
-    expect(leeren().textContent).toBe(`Leeren: ${t.hilfsdienste} · ${t.ganzeWoche}`)
+    const woerter = [...blatt().querySelectorAll('button')].map((b) => b.textContent ?? '')
+    expect(woerter.some((w) => /leer/i.test(w))).toBe(false)
   })
 })

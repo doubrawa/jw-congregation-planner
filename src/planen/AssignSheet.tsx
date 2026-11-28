@@ -260,6 +260,10 @@ function ZuteilenInhalt({
   // Vorbelegt nur, wenn dort schon Freitext steht. Gehört der Name einer
   // Person, wäre er hier ein Angebot, sie zu verdoppeln (wie beim Redner).
   const [externName, setExternName] = useState(fsInst?.lext ? current : '')
+  // Das Feld liegt hinter einem Verweis unter der Liste — offen, wenn schon ein
+  // Freitext dasteht; `getippt`, wenn der Verweis es eben geöffnet hat (dann
+  // gehört die Schreibmarke hinein).
+  const [extern, setExtern] = useState<'zu' | 'offen' | 'getippt'>(fsInst?.lext ? 'offen' : 'zu')
   const applyExtern = () => {
     const name = externName.trim()
     if (!name) {
@@ -369,29 +373,12 @@ function ZuteilenInhalt({
         </div>
       )}
 
-      {fsFrei && (
-        <div className="sheet-guest">
-          <input
-            type="text"
-            dir="auto"
-            className="feld"
-            placeholder={t.personNameLbl}
-            aria-label={t.personNameLbl}
-            value={externName}
-            onChange={(e) => setExternName(e.target.value)}
-          />
-          <button type="button" className="knopf-pille" onClick={applyExtern}>
-            {t.uebernehmenBtn}
-          </button>
-        </div>
-      )}
-
-      {/* Wo es auch einen Freitext gibt, ist die Liste der andere Weg — und
-          sagt das, statt noch einmal zu fragen, wer übernimmt. */}
+      {/* Beim Redner steht der Freitext oben, also ist die Liste der andere
+          Weg — und sagt das, statt noch einmal zu fragen, wer übernimmt. */}
       {personen && (
         <div className="zuteilen-suche">
           <label className="feld-marke" htmlFor={sucheId}>
-            {guest || fsFrei ? t.oderPersonWaehlen : t.werUebernimmt}
+            {guest ? t.oderPersonWaehlen : t.werUebernimmt}
           </label>
           <input
             id={sucheId}
@@ -419,6 +406,40 @@ function ZuteilenInhalt({
           <KandidatZeile key={cand.key} cand={cand} week={state.weeks[sel.wi]} i18n={i18n} onClick={() => pick(cand)} />
         ))}
       </div>
+
+      {/* Treffpunkt-Leiter von außerhalb (meist der Kreisaufseher): selten, also
+          unter der Liste und hinter einem Verweis. Oben über der Suche hätte das
+          Feld „Name" gestanden — wer suchen wollte, tippte hinein und trug einen
+          Freitext statt der Person ein. */}
+      {fsFrei && (
+        <div className="zuteilen-extern">
+          <button
+            type="button"
+            className="verweis-leise"
+            aria-expanded={extern !== 'zu'}
+            onClick={() => setExtern((jetzt) => (jetzt === 'zu' ? 'getippt' : 'zu'))}
+          >
+            {t.fsExternVerweis}
+          </button>
+          {extern !== 'zu' && (
+            <div className="sheet-guest">
+              <input
+                type="text"
+                dir="auto"
+                className="feld"
+                placeholder={t.personNameLbl}
+                aria-label={t.personNameLbl}
+                value={externName}
+                autoFocus={extern === 'getippt'}
+                onChange={(e) => setExternName(e.target.value)}
+              />
+              <button type="button" className="knopf-pille" onClick={applyExtern}>
+                {t.uebernehmenBtn}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </>
   )
 }

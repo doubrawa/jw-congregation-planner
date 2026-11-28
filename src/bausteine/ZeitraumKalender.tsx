@@ -81,7 +81,9 @@ export function ZeitraumKalender({
       }}
     >
       <span className="klein-text">{beschriftung}</span>
-      <span className="kal-ende-wert">{wert ? gebundenesDatum(fromIso(wert), lang, 'kurzerWochentag') : '–'}</span>
+      {/* Der Monat kurz („Mo., 14. Sept."): Ausgeschrieben brach das Datum am
+          Handy schon in der kleinsten Schrift um — zwei Felder teilen sich die Breite. */}
+      <span className="kal-ende-wert">{wert ? gebundenesDatum(fromIso(wert), lang, 'kurzerTag') : '–'}</span>
     </button>
   )
 

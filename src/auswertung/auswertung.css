@@ -264,22 +264,16 @@
 
 /* ---- Kacheln (Handy) ----------------------------------------------------- */
 
-/* Zwei Spalten, solange das längste Wort einer Kachel in die halbe Zeile passt;
-   sonst steht jede Kachel allein in ihrer Zeile. Das längste Wort war am
-   20.10.2026 „Найнапруженіший:" (uk) mit 7,8 em — mit Rand und Abstand braucht
-   die Zeile dafür 20 em. Vorher ragte bei 320 px und Stufe 1,45
-   „Однообразное распределение" 30 px über den Rand (T128). */
+/* Am Handy steht jede Kachel in ihrer eigenen Zeile: Zu zweit nebeneinander
+   brachen ihre Titel auf drei Zeilen („Treffpunkte, / Absagen, / Ballungen"),
+   die Werte auf zwei. Zwei Spalten erst ab 36 em, am Tablet — die Schwelle in
+   `em` wandert mit der Schriftstufe. Allein in der Zeile braucht die Kachel
+   ihre Mindesthöhe nicht: Titel und Wert stehen dann je in einer Zeile. */
 .aw-kacheln {
   container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-}
-
-@container (max-width: 20em) {
-  .aw-kachel {
-    grid-column: 1 / -1;
-  }
 }
 
 .aw-kachel {
@@ -293,6 +287,14 @@
   background: var(--karte);
   color: var(--akzent-text);
   text-align: start;
+}
+
+/* Nach der Grundregel: Davor setzte deren `min-height` die Abfrage wieder außer Kraft. */
+@container (max-width: 36em) {
+  .aw-kachel {
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
 }
 
 .aw-kachel-titel {

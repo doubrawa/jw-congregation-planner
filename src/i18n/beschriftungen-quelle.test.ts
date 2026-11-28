@@ -85,8 +85,8 @@ type Grund =
  * „DU" am eigenen Platz stand vom ersten Entwurf an fest im JSX — in jeder
  * Ansicht, die den eigenen Platz zeigt, und in jeder Sprache deutsch —, weil
  * die Regel es nicht sah. Ein einzelner Buchstabe bleibt draußen: Gemessen am
- * 3.10.2026 ist er hier nie ein Wort, sondern eine Form — das „A" an beiden
- * Enden des Schriftgrößen-Reglers, die Formularnummer „S-89".
+ * 3.10.2026 ist er hier nie ein Wort, sondern eine Form — das „A" auf den
+ * Schriftgrößen-Knöpfen, die Formularnummer „S-89".
  */
 const JSX_TEXT = />[^<>{}()[\]:;=]*[A-Za-zÄÖÜäöüß]{2,}[^<>{}()[\]:;=]*</gu
 

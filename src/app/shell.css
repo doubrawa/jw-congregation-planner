@@ -451,6 +451,33 @@
   animation: toast-in 0.2s;
 }
 
+/* Mit einem Knopf („Rückgängig"): der Text, daneben der Knopf, so hoch wie
+   jede Tippfläche. Seine Farbe erbt er von der Meldung — auf ihrer Fläche
+   trägt in Hell wie in Dunkel nur ihr eigener Text. */
+.toast.mit-handlung {
+  gap: 14px;
+  padding-inline-end: 8px;
+}
+
+.toast-handlung {
+  flex: none;
+  min-height: 44px;
+  padding: 4px 16px;
+  border: 1.5px solid currentColor;
+  border-radius: 22px;
+  color: inherit;
+  font-weight: 700;
+}
+
+/* Bei offenem Blatt oben: Unten läge die Meldung über seinem Fuß („Später",
+   „Alle bestätigen"), und wo eben ein Knopf war, stünde zehn Sekunden lang
+   „Rückgängig". Oben ist Platz — ein Blatt reicht höchstens bis 88 % der
+   Höhe (`.sheet`). Der Selektor wiegt mehr als der der Leiste beim Planen. */
+body:has([role='dialog'][aria-modal='true']) .toast {
+  top: max(12px, env(safe-area-inset-top));
+  bottom: auto;
+}
+
 /* ---- Sichere Bereiche (Notch, Home-Indikator) ------------------------------
    index.html setzt `viewport-fit=cover`, die App füllt also das ganze Display
    bis unter Notch und Home-Indikator. Ohne `env(safe-area-inset-*)` läuft

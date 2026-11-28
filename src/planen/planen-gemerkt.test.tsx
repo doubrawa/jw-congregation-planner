@@ -90,7 +90,7 @@ describe('Planen: gemerkt an dem, was gelesen wird', () => {
     expect(liste).not.toHaveBeenCalled()
     expect(zettel).not.toHaveBeenCalled()
 
-    act(() => dispatch({ type: 'clearAssignments', scope: 'all' }))
+    act(() => dispatch({ type: 'autoAssign', scope: 'all', umfang: 'woche' }))
     expect(liste).toHaveBeenCalled()
     expect(zettel).toHaveBeenCalled()
   })

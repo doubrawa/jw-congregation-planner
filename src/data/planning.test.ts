@@ -13,7 +13,7 @@ import { displayName, isGuestRole, isSong, rolleMitHerkunft } from './helpers'
 import { helperWorkload, partWorkload, workloadOf } from './auslastung'
 import { itemMinutes, lacAdd, lacMinuten, lacMove, lacRemove, shiftEnd } from './meeting-edit'
 import { aufgabenBezeichnung, deriveMyTasks, deriveSubstituteReqs } from './planung/aufgaben'
-import { autoAssignMeeting, clearAssignments, tabsImUmfang, zuteilbarePlaetze } from './planung/automatik'
+import { autoAssignMeeting, tabsImUmfang, zuteilbarePlaetze } from './planung/automatik'
 import { weekConflicts } from './planung/konflikte'
 import { openSlotLabels, countOpenSlots } from './planung/offen'
 import { alleS89DerWoche, buildS89ForSlot } from './planung/s89'
@@ -1548,14 +1548,11 @@ describe('Auswahl, die ins Leere zeigt', () => {
     expect(buildS89ForSlot(weeks, teilAuswahl({ si: WEIT_DRAUSSEN }), STANDARD_ZEITEN)).toBeNull()
   })
 
-  it('autoAssignMeeting und clearAssignments zählen null', () => {
+  it('autoAssignMeeting zählt null', () => {
     const weeks = buildDemoWeeks()
     const auto = autoAssignMeeting(weeks, WEIT_DRAUSSEN, 'mid', DEMO_PERSONS, DEMO_SERVICES)
     expect(auto.count).toBe(0)
     expect(auto.weeks).toBe(weeks)
-    const leer = clearAssignments(weeks, WEIT_DRAUSSEN, 'mid', 'parts')
-    expect(leer.count).toBe(0)
-    expect(leer.weeks).toBe(weeks)
   })
 
   it('weekConflicts auf eine Woche außerhalb meldet nichts', () => {

@@ -278,6 +278,14 @@
   font-size: calc(13.5px * var(--fs));
 }
 
+/* Wann und wo eine Aufgabe ist — Tag, Uhrzeit, Ort. Größer und dunkler als das
+   Kleingedruckte: Danach richtet man sich, und wer schlecht sieht, liest es
+   sonst als Erstes nicht. */
+.wann-zeile {
+  color: var(--text2);
+  font-size: calc(15px * var(--fs));
+}
+
 /* ---- Eingabefeld ------------------------------------------------------------- */
 
 .feld-marke {
@@ -493,19 +501,6 @@
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-/* Runder Haken in einer Zeile: bestätigt mit einem Tipp. */
-.knopf-haken {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: 1.5px solid var(--akzent-text);
-  border-radius: 50%;
-  color: var(--akzent-text);
 }
 
 /* ---- Punkt: die Lagen der Sitzreihen im Kleinen ------------------------------ */

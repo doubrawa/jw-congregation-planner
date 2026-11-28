@@ -19,12 +19,12 @@ import './mitteilungen.css'
  * Am Handy steht statt der Kopfzeile Zurück und „Alle gelesen"
  * (`UnterseiteKopf`); ab dem Tablet steht „Alle gelesen" hier neben dem Titel.
  *
- * „Alle löschen" (T140) steht auf jeder Breite neben dem Titel, mit zwei Tipps
- * wie jedes Löschen. Mit dem Entwurf war es am 12.10.2026 gegangen — was
- * vorbei ist, fällt ohnehin heraus (`notificationsAus`) —, der Betreiber
- * vermisste es beim Testen: „Mitteilungen löschen gibt's nicht mehr."
- * Am Handy nicht im Kopf: Neben „Alle gelesen" fehlt dort in vielen Sprachen
- * der Platz („Oznacz wszystkie jako przeczytane").
+ * „Alle löschen" (T140) steht auf jeder Breite unter den Mitteilungen, mit
+ * zwei Tipps wie jedes Löschen. Was vorbei ist, fällt ohnehin heraus
+ * (`notificationsAus`); der Knopf bleibt, weil der Betreiber ihn vermisste
+ * („Mitteilungen löschen gibt's nicht mehr"). Am Ende der Liste und nicht
+ * neben dem Titel: Dort wäre der rot umrandete Knopf das Auffälligste der
+ * Seite — vor allem, was man hier lesen und beantworten soll.
  */
 export function MitteilungenScreen() {
   const { state, dispatch } = useApp()
@@ -38,17 +38,17 @@ export function MitteilungenScreen() {
     <section className="screen mitteilungen">
       <div className="mitteilungen-kopf">
         <h1 className="seitentitel seitentitel--gross">{t.mitteilungen}</h1>
-        {sichtbar.length > 0 && (
-          <div className="mitteilungen-aktionen">
-            {neu.length > 0 && <AlleGelesen className="knopf-umriss mitteilungen-alle" />}
-            <EntfernenKnopf className="knopf-umriss knopf-entfernen" text={t.alleLoeschen} onEntfernen={() => dispatch({ type: 'clearNotifs' })} />
-          </div>
-        )}
+        {neu.length > 0 && <AlleGelesen className="knopf-umriss mitteilungen-alle" />}
       </div>
       <PushKarte />
       {sichtbar.length === 0 && <p className="karte mitteilungen-leer">{t.keineMitteilungen}</p>}
       <Abschnitt titel={t.mitteilungenNeu} liste={neu} art="neu" />
       <Abschnitt titel={t.mitteilungenFrueher} liste={frueher} art="frueher" />
+      {sichtbar.length > 0 && (
+        <div className="mitteilungen-fuss">
+          <EntfernenKnopf className="knopf-umriss knopf-entfernen" text={t.alleLoeschen} onEntfernen={() => dispatch({ type: 'clearNotifs' })} />
+        </div>
+      )}
     </section>
   )
 }

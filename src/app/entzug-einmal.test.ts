@@ -20,8 +20,19 @@ vi.mock('../data/plan-versand', async (orig) => {
 })
 
 const { reducer } = await import('./reducer')
+const { eachAssignedSlot } = await import('../data/planung/aufgaben')
 const { entzogeneAller } = await import('../data/plan-versand')
 const { demoZustand } = await import('../../tests/testdaten/demo-start')
+
+/** Einen bestätigten Platz freigeben: Wer zugesagt hatte, verliert ihn. */
+function zugesagtenPlatzFreigeben(prev: ReturnType<typeof demoZustand>) {
+  let platz: { personId: string; key: string } | undefined
+  eachAssignedSlot(prev.weeks, prev.services, prev.congregation.times, (slot, key) => {
+    if (!platz && slot.pid && prev.confirmations[key] === 'bestätigt') platz = { personId: slot.pid, key }
+  })
+  if (!platz) throw new Error('Testaufbau: kein bestätigter Platz')
+  return reducer(prev, { type: 'plaetzeFreigeben', personId: platz.personId, keys: [platz.key] })
+}
 
 describe('Entzogene Plätze: einmal je Aktion', () => {
   it('der Reducer rechnet — persist.ts bekommt dieselbe Antwort', () => {
@@ -31,8 +42,7 @@ describe('Entzogene Plätze: einmal je Aktion', () => {
       const prev = demoZustand()
       const gefragt = vi.mocked(entzogeneAller)
       gefragt.mockClear()
-      // Die Woche leeren: Wer zugesagt hatte, verliert seinen Platz.
-      const next = reducer(prev, { type: 'clearAssignments', scope: 'all' })
+      const next = zugesagtenPlatzFreigeben(prev)
       const imReducer = gefragt.mock.results.at(-1)?.value as ReturnType<typeof entzogeneAller>
       expect(imReducer.length).toBeGreaterThan(0)
       expect(entzogeneAller(prev, next)).toBe(imReducer)
@@ -43,7 +53,7 @@ describe('Entzogene Plätze: einmal je Aktion', () => {
 
   it('ein anderer Tag rechnet neu — „vorbei" hängt am Kalendertag', () => {
     const prev = demoZustand()
-    const next = reducer(prev, { type: 'clearAssignments', scope: 'all' })
+    const next = zugesagtenPlatzFreigeben(prev)
     const montag = entzogeneAller(prev, next, new Date(2026, 8, 7, 9, 0))
     expect(entzogeneAller(prev, next, new Date(2026, 8, 7, 22, 0))).toBe(montag)
     expect(entzogeneAller(prev, next, new Date(2026, 8, 8, 9, 0))).not.toBe(montag)

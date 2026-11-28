@@ -21,7 +21,7 @@
   align-items: center;
   gap: 8px;
   color: var(--akzent-text);
-  font-size: calc(14px * var(--fs));
+  font-size: calc(15px * var(--fs));
   font-weight: 600;
 }
 
@@ -112,12 +112,13 @@
   padding-inline-end: 10px;
 }
 
-/* Eine Aufgabe: Punkt, Titel und Termin, rechts der Haken, der Pfeil oder
-   „Übernehmen". Passt das Rechte nicht neben den Text, rückt es darunter —
-   schmaler als sein längstes Wort wird der Text nicht. Neben dem 44-px-Pfeil
-   ragte bei 320 px und Stufe 1,45 „współpracownik:" 36 px hinaus, und der
-   Termin ist gebunden (T128). */
+/* Eine Aufgabe: Punkt, Titel und Termin, rechts „Bestätigen", der Stand als
+   Wort, der Pfeil oder „Übernehmen". Passt das Rechte nicht neben den Text,
+   rückt es darunter — schmaler als sein längstes Wort wird der Text nicht.
+   Neben dem 44-px-Pfeil ragte bei 320 px und Stufe 1,45 „współpracownik:"
+   36 px hinaus, und der Termin ist gebunden (T128). */
 .aufgaben-zeile {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -133,8 +134,8 @@
   margin-inline-start: auto;
 }
 
-/* Titel und Termin öffnen die Aufgabe; der Haken daneben bestätigt. Neben dem
-   Punkt (12 px und der Abstand) bleibt der Text in seiner Zeile. */
+/* Titel und Termin öffnen die Aufgabe; „Bestätigen" daneben bestätigt. Neben
+   dem Punkt (12 px und der Abstand) bleibt der Text in seiner Zeile. */
 .aufgaben-zeile-text,
 .aufgaben-zeile > .angebot-text {
   flex: 1 1 0;
@@ -150,9 +151,90 @@
   text-align: start;
 }
 
+/* Die ganze Zeile öffnet: Die Fläche des Knopfs reicht über Punkt, Stand und
+   Pfeil. „Bestätigen" liegt darüber und bleibt ein eigener Knopf. */
+.aufgaben-zeile-text::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.aufgaben-zeile-knopf {
+  position: relative;
+}
+
+/* Eine eigene Aufgabe: Titel und Knopf (oder Stand) in einer Zeile, der Termin
+   darunter über die ganze Breite — eingerückt unter den Titel (Punkt und
+   Abstand). Neben dem Wort-Knopf bräche er am Handy in drei Zeilen. */
+.aufgaben-zeile.mit-termin {
+  padding-block-start: 6px;
+}
+
+.aufgaben-zeile-knopf,
+.aufgaben-zeile-stand {
+  margin-inline-start: auto;
+}
+
+.aufgaben-zeile-termin {
+  flex-basis: 100%;
+  padding-block-end: 12px;
+  padding-inline-start: 26px;
+}
+
+/* Tag und Uhrzeit hinter dem Abstand („In 13 Tagen · …", `AufgabeWann`): als
+   Ganzes in die nächste Zeile, wenn es neben dem Abstand nicht passt. Breiter
+   als die Zeile wird es nicht — dann bricht es in sich um. */
+.wann-termin {
+  display: inline-block;
+  max-width: 100%;
+}
+
 .aufgaben-zeile-titel {
   font-size: calc(16px * var(--fs));
   font-weight: 600;
+}
+
+/* Wo „Bestätigen" stand, steht danach der Stand — und der Pfeil, der sagt,
+   dass die Zeile sich öffnen lässt. */
+.aufgaben-zeile-stand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+.aufgaben-zeile-stand > .zeichen {
+  width: 20px;
+  height: 20px;
+  color: var(--text3);
+}
+
+/* Der Stand einer eigenen Aufgabe als Wort (`ZusageStand`): bestätigt im
+   Akzent wie auf der großen Karte, abgesagt in der Farbe der Probleme. */
+.zusage-stand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(14.5px * var(--fs));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zusage-stand.is-offen {
+  color: var(--text2);
+}
+
+.zusage-stand.is-bestaetigt {
+  color: var(--akzent-text);
+}
+
+.zusage-stand.is-problem {
+  color: var(--problem);
+}
+
+.zusage-stand > .zeichen {
+  width: 16px;
+  height: 16px;
 }
 
 .aufgaben-zeile-pfeil {
@@ -283,7 +365,7 @@
 
 .oeffnen-wann {
   color: var(--text2);
-  font-size: calc(13.5px * var(--fs));
+  font-size: calc(15px * var(--fs));
   font-weight: 600;
 }
 

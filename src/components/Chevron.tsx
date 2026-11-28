@@ -13,8 +13,8 @@ import './components.css'
  * zentriert, unabhängig von der geladenen Schrift.
  *
  * Im Fließtext bleiben ‹ › richtig (dort SOLL das Zeichen auf x-Höhe sitzen).
- * Die Größe folgt der Schriftgröße des Buttons (em), skaliert also mit dem
- * Schriftgrößen-Regler.
+ * Die Größe folgt der Schriftgröße des Buttons (em), skaliert also mit der
+ * gewählten Schriftgröße.
  */
 export function Chevron({ dir }: { dir: 'prev' | 'next' }) {
   return (

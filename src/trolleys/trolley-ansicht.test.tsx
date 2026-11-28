@@ -99,44 +99,73 @@ describe('oben: die eigenen Termine und wer einen Partner sucht', () => {
     expect(deine.querySelector('.trolley-zeile .punkt')?.getAttribute('class')).toBe('punkt is-voll')
   })
 
-  it('Jonas sucht einen Partner — „Dazukommen" trägt Simon ein und legt die Antwort in den Zustand', async () => {
+  /*
+   * „Dazukommen" in der Liste öffnet den Termin; erst der Knopf im Blatt trägt
+   * ein. Ein Tipp in der Liste benachrichtigte sonst sofort den, der sucht —
+   * und zurück ginge es nur über „Austragen", mit einer zweiten Mitteilung.
+   */
+  const blatt = () => document.querySelector<HTMLElement>('[role="dialog"]')
+  const oeffne = (c: HTMLElement) => fireEvent.click(knopf(karte(c, t.trolleyPartnerGesucht)!, t.trolleyDazukommen)!)
+  const imBlattDazukommen = async () => {
+    await act(async () => {
+      fireEvent.click(knopf(blatt()!.querySelector('.sheet-fuss-ende')!, t.trolleyDazukommen)!)
+    })
+  }
+
+  it('Jonas sucht einen Partner — „Dazukommen" öffnet erst den Termin: wann, wo, mit wem, und wer davon erfährt', () => {
+    const { container, dispatch } = zeige()
+    expect(karte(container, t.trolleyPartnerGesucht)!.textContent).toContain('Jonas Berger')
+    expect(blatt()).toBeNull()
+    oeffne(container)
+    // Noch ist nichts eingetragen und niemand benachrichtigt.
+    expect(trolley.trolleyDazukommen).not.toHaveBeenCalled()
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(blatt()!.textContent).toContain('Jonas Berger')
+    expect(blatt()!.textContent).toContain(t.trolleyPartnerGesucht)
+    expect(blatt()!.textContent).toContain(fill(t.trolleyPartnerHinweis, { name: 'Jonas' }))
+  })
+
+  it('erst der Knopf im Blatt trägt Simon ein und legt die Antwort in den Zustand — dann geht das Blatt zu', async () => {
     const neu: TrolleyTermin = { ...DEMO_TROLLEY_TERMINE[1]!, partner: 'p9' }
     trolley.trolleyDazukommen.mockResolvedValue({ ok: true, termin: neu })
     const { container, dispatch } = zeige()
-    const gesucht = karte(container, t.trolleyPartnerGesucht)!
-    expect(gesucht.textContent).toContain('Jonas Berger')
-    await act(async () => {
-      fireEvent.click(knopf(gesucht, t.trolleyDazukommen)!)
-    })
+    oeffne(container)
+    await imBlattDazukommen()
     expect(trolley.trolleyDazukommen).toHaveBeenCalledWith(DEMO_TROLLEY_TERMINE[1], 'p9', '2026-09-07')
     expect(dispatch).toHaveBeenCalledWith({ type: 'trolleyTermin', id: neu.id, termin: neu, toast: 'dazu' })
+    expect(blatt()).toBeNull()
   })
 
-  it('scheitert es, sagt ein Toast warum — und war jemand schneller, lädt die App still nach', async () => {
+  it('Gegenprobe: Wer das Blatt wieder schließt, hat sich nicht eingetragen', () => {
+    const { container } = zeige()
+    oeffne(container)
+    fireEvent.click(blatt()!.querySelector(`[aria-label="${t.a11yClose}"]`)!)
+    expect(blatt()).toBeNull()
+    expect(trolley.trolleyDazukommen).not.toHaveBeenCalled()
+  })
+
+  it('scheitert es, steht im Blatt warum — und war jemand schneller, lädt die App still nach', async () => {
     trolley.trolleyDazukommen.mockResolvedValue({ ok: false, fehler: 'schon-partner' })
     const { container, dispatch } = zeige({ userId: 'u1' })
-    await act(async () => {
-      fireEvent.click(knopf(karte(container, t.trolleyPartnerGesucht)!, t.trolleyDazukommen)!)
-    })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.trolleyFehlerSchonPartner })
+    oeffne(container)
+    await imBlattDazukommen()
+    expect(blatt()!.querySelector('[role="alert"]')?.textContent).toBe(t.trolleyFehlerSchonPartner)
     expect(loadAndHydrate).toHaveBeenCalledWith(dispatch, 'u1', { silent: true })
   })
 
   it('im Offline-Stand geht nichts hinaus — die Function bliebe am Reducer vorbei', async () => {
-    const { container, dispatch } = zeige({ staleAt: Date.now() })
-    await act(async () => {
-      fireEvent.click(knopf(karte(container, t.trolleyPartnerGesucht)!, t.trolleyDazukommen)!)
-    })
+    const { container } = zeige({ staleAt: Date.now() })
+    oeffne(container)
+    await imBlattDazukommen()
     expect(trolley.trolleyDazukommen).not.toHaveBeenCalled()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.offlineReadOnly })
+    expect(blatt()!.querySelector('[role="alert"]')?.textContent).toBe(t.offlineReadOnly)
   })
 
   it('ohne Verbindung lädt sie nicht nach — es gibt keinen neueren Stand', async () => {
     trolley.trolleyDazukommen.mockResolvedValue({ ok: false, fehler: 'netz' })
     const { container } = zeige({ userId: 'u1' })
-    await act(async () => {
-      fireEvent.click(knopf(karte(container, t.trolleyPartnerGesucht)!, t.trolleyDazukommen)!)
-    })
+    oeffne(container)
+    await imBlattDazukommen()
     expect(loadAndHydrate).not.toHaveBeenCalled()
   })
 
@@ -193,6 +222,36 @@ describe('am Handy: ein Tag mit einer Spalte je Trolley', () => {
     expect(knopf(blatt.querySelector('.sheet-fuss-ende')!, t.trolleyEintragen)?.getAttribute('aria-disabled')).toBe('true')
   })
 
+  /*
+   * „Mit Partner" gewählt, aber noch keinen ausgesucht: „Eintragen" ist blass.
+   * Ohne einen Satz dazu stand man vor einem Knopf, der nicht will.
+   */
+  it('„Mit Partner" ohne Partner: „Eintragen" ist blass, und ein Satz sagt, warum — mit Partner geht der Satz', () => {
+    const { container } = zeige()
+    fireEvent.click(tag(container, 'Montag'))
+    fireEvent.click(knopf(container, t.trolleyEintragen)!)
+    const blatt = document.querySelector('[role="dialog"]')!
+    const eintragen = () => knopf(blatt.querySelector('.sheet-fuss-ende')!, t.trolleyEintragen)!
+    fireEvent.click(knopf(blatt, t.trolleyMitPartner)!)
+    expect(blatt.textContent).toContain(t.trolleyPartnerZuerst)
+    expect(eintragen().getAttribute('aria-disabled')).toBe('true')
+    const partner = [...blatt.querySelectorAll<HTMLSelectElement>('select')].find((s) => s.options[0]?.textContent === t.trolleyPartnerWaehlen)!
+    fireEvent.change(partner, { target: { value: partner.options[1]!.value } })
+    expect(blatt.textContent).not.toContain(t.trolleyPartnerZuerst)
+    expect(eintragen().getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('Gegenprobe: „Partner gesucht" verlangt keinen Partner — dort steht der Satz nicht', () => {
+    const { container } = zeige()
+    fireEvent.click(tag(container, 'Montag'))
+    fireEvent.click(knopf(container, t.trolleyEintragen)!)
+    const blatt = document.querySelector('[role="dialog"]')!
+    fireEvent.click(knopf(blatt, t.trolleyPartnerGesucht)!)
+    expect(blatt.textContent).not.toContain(t.trolleyPartnerZuerst)
+    expect(blatt.textContent).toContain(t.trolleyGesuchtHinweis)
+    expect(knopf(blatt.querySelector('.sheet-fuss-ende')!, t.trolleyEintragen)!.getAttribute('aria-disabled')).toBe('false')
+  })
+
   it('ein Tipp auf einen Termin öffnet ihn — mit „Austragen" für den, der dabei ist', async () => {
     trolley.trolleyAustragen.mockResolvedValue({ ok: true, termin: { ...DEMO_TROLLEY_TERMINE[5]!, partner: null } })
     const { container } = zeige()
@@ -202,7 +261,8 @@ describe('am Handy: ein Tag mit einer Spalte je Trolley', () => {
     expect(blatt.textContent).toContain('Schlüssel im Fach neben der Bühne')
     fireEvent.click(knopf(blatt, t.trolleyAustragen)!)
     await act(async () => {
-      bestaetigen(knopf(blatt, t.entfernenSicher)!)
+      // Die Rückfrage trägt das Wort des Knopfs — „entfernen" stünde für etwas anderes.
+      bestaetigen(knopf(blatt, t.trolleyAustragenSicher)!)
     })
     expect(trolley.trolleyAustragen).toHaveBeenCalledWith(DEMO_TROLLEY_TERMINE[5], 'p9', '2026-09-07')
   })

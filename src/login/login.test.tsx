@@ -50,12 +50,18 @@ vi.mock('../lib/anmelden', () => ({
 // `kaputt`: Er kommt nicht (Nachladen gescheitert) — wie ein Fehler beim Aufbauen.
 const scanErgebnis = { text: '', kaputt: false }
 vi.mock('./ZettelScanner', () => ({
-  default: ({ onGefunden }: { onGefunden: (text: string) => void }) => {
+  default: ({ onGefunden, onTippen }: { onGefunden: (text: string) => void; onTippen: () => void }) => {
     if (scanErgebnis.kaputt) throw new Error('Failed to fetch dynamically imported module')
     return (
-      <button type="button" className="test-scan" onClick={() => onGefunden(scanErgebnis.text)}>
-        scan
-      </button>
+      <>
+        <button type="button" className="test-scan" onClick={() => onGefunden(scanErgebnis.text)}>
+          scan
+        </button>
+        {/* Was der Scanner anbietet, wenn die Kamera nicht aufgeht. */}
+        <button type="button" className="test-tippen" onClick={onTippen}>
+          tippen
+        </button>
+      </>
     )
   },
 }))
@@ -230,6 +236,36 @@ describe('Mit Code anmelden', () => {
     expect(mitCodeAnmelden).not.toHaveBeenCalled()
   })
 
+  /*
+   * Der Knopf ist blass, solange der Code unvollständig ist. Ein Tipp darauf
+   * bewirkte nichts und sagte nichts — wer ein Zeichen übersehen hatte, stand
+   * vor einem Knopf, der nicht will, ohne zu erfahren, warum.
+   */
+  it('unvollständig sagt „Weiter", was fehlt — wie lang der Code ist und wie viele Zeichen noch — und stellt die Schreibmarke ins Feld', async () => {
+    const { container } = zumCode()
+    getippt(container, 'K7RD')
+    weiter(container)
+    expect(container.querySelector('.feld-fehler[role="alert"]')?.textContent).toBe(fill(t.codeUnvollstaendig, { m: 8, n: 4 }))
+    expect(document.activeElement).toBe(codeFeld(container))
+    // Ganz leer fehlen alle acht.
+    getippt(container, '')
+    weiter(container)
+    expect(container.querySelector('.feld-fehler')?.textContent).toBe(fill(t.codeUnvollstaendig, { m: 8, n: 8 }))
+  })
+
+  it('der Hinweis geht mit dem nächsten Zeichen — und kommt beim vollständigen Code gar nicht erst', async () => {
+    const { container } = zumCode()
+    getippt(container, 'K7RD')
+    weiter(container)
+    expect(container.querySelector('.feld-fehler')).not.toBeNull()
+    getippt(container, 'K7RD2')
+    expect(container.querySelector('.feld-fehler')).toBeNull()
+    getippt(container, 'K7RD2QWM')
+    weiter(container)
+    await waitFor(() => expect(container.querySelector('.login-code-passt')).toBeTruthy())
+    expect(container.querySelector('.feld-fehler')).toBeNull()
+  })
+
   it('wer den geprüften Code danach ändert, lässt ihn neu prüfen', async () => {
     const { container } = zumCode()
     getippt(container, 'K7RD2QWM')
@@ -394,6 +430,15 @@ describe('Zettel scannen', () => {
     const { dispatch } = await scannen(`https://versammlung.app/#anmelden=${token}`)
     await waitFor(() => expect(mitLinkAnmelden).toHaveBeenCalledWith(token))
     await waitFor(() => expect(dispatch).toHaveBeenCalledWith({ type: 'login', welcome: true }))
+  })
+
+  it('geht die Kamera nicht auf, führt „Code eintippen" im Scanner geradewegs zum Code-Feld — nicht zurück an den Anfang', async () => {
+    const { container } = zeige()
+    fireEvent.click(knopf(container, t.zettelScannen)!)
+    await waitFor(() => expect(container.querySelector('.test-tippen')).toBeTruthy())
+    fireEvent.click(container.querySelector('.test-tippen')!)
+    expect(container.querySelector('h1')?.textContent).toBe(t.mitCodeAnmelden)
+    expect(codeFeld(container).value).toBe('')
   })
 
   it('ein fremder QR-Code öffnet nichts und sagt es', async () => {

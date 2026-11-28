@@ -502,10 +502,18 @@ describe('Wird eine Zeile für die Schrift zu schmal, stehen ihre Teile unterein
     expect(deklarationen(P, '.prog-dienst-wer', '@container (max-width: 15em)')).toMatch(/grid-column:\s*1 \/ -1/)
   })
 
-  it('Kacheln der Auswertung: unter 20 em steht jede allein — „Однообразное распределение" ragte bei 320 px hinaus', () => {
+  /*
+   * Unter 20 em ragte „Однообразное распределение" bei 320 px hinaus; zu zweit
+   * nebeneinander brachen bei 375 px die Titel auf drei Zeilen („Treffpunkte, /
+   * Absagen, / Ballungen"). Jetzt steht am Handy jede allein, zwei Spalten erst
+   * ab dem Tablet.
+   */
+  it('Kacheln der Auswertung: am Handy (bis 36 em) steht jede allein — ohne die Mindesthöhe zweier Zeilen', () => {
     const A = 'auswertung/auswertung.css'
     expect(deklarationen(A, '.aw-kacheln')).toMatch(/container-type:\s*inline-size/)
-    expect(deklarationen(A, '.aw-kachel', '@container (max-width: 20em)')).toMatch(/grid-column:\s*1 \/ -1/)
+    const schmal = deklarationen(A, '.aw-kachel', '@container (max-width: 36em)')
+    expect(schmal).toMatch(/grid-column:\s*1 \/ -1/)
+    expect(schmal).toMatch(/min-height:\s*0/)
   })
 
   it('Treffpunkte: Wird der Tag zu schmal, steht die Uhrzeit über dem Text — „Congregati|on" bei 320 px', () => {

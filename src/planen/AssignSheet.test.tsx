@@ -643,6 +643,9 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
       ...over,
     })
   const feld = (c: HTMLElement) => c.querySelector('.sheet-guest .feld')!
+  const verweis = (c: HTMLElement, d = t) => knopf(c, d.fsExternVerweis)
+  /** Das Freitextfeld öffnen — es liegt hinter dem Verweis unter der Liste. */
+  const vonAusserhalb = (c: HTMLElement, d = t) => fireEvent.click(verweis(c, d))
 
   it('nennt im Kopf Zeit und Ort statt der Zusammenkunft', () => {
     const { container } = mitTreffpunkt()
@@ -658,8 +661,43 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     }
   })
 
+  /*
+   * Erst die Suche, dann die Liste — der Freitext liegt darunter hinter einem
+   * Verweis. Stand das Feld „Name" über „Name suchen", tippte hinein, wer
+   * suchen wollte, und „Übernehmen" trug einen Freitext statt der Person ein.
+   */
+  it('zuerst „Wer übernimmt?" mit Suche und Liste — das Freitextfeld liegt zu, hinter einem Verweis unter der Liste', () => {
+    const { container } = mitTreffpunkt()
+    expect(container.querySelector('.sheet-guest')).toBeNull()
+    expect(container.querySelector('.zuteilen-suche .feld-marke')?.textContent).toBe(t.werUebernimmt)
+    const liste = container.querySelector('.zuteilen-liste')!
+    expect(liste.compareDocumentPosition(verweis(container)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(verweis(container).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('der Verweis öffnet das Feld und stellt die Schreibmarke hinein', () => {
+    const { container } = mitTreffpunkt()
+    vonAusserhalb(container)
+    expect(verweis(container).getAttribute('aria-expanded')).toBe('true')
+    expect(document.activeElement).toBe(feld(container))
+  })
+
+  it('steht schon ein Freitext-Leiter da, ist das Feld offen — mit seinem Namen, ohne die Schreibmarke zu nehmen', () => {
+    const extern = [[{ ...FS_WOCHE[0]![0]!, leader: 'Kreisaufseher', lext: true }]]
+    const { container } = mitTreffpunkt({ fsWeeks: extern as unknown as AppState['fsWeeks'] })
+    expect((feld(container) as HTMLInputElement).value).toBe('Kreisaufseher')
+    expect(document.activeElement).not.toBe(feld(container))
+  })
+
+  it('Gegenprobe: Beim Redner bleibt der Freitext oben, ohne Verweis — Gastredner sind dort der Regelfall', () => {
+    const { container } = zeige(SEL_REDNER())
+    expect(container.querySelector('.sheet-guest')).not.toBeNull()
+    expect(knopf(container, t.fsExternVerweis)).toBeUndefined()
+  })
+
   it('ein Freitext-Name wird als auswärtig eingetragen', () => {
     const { container, dispatch } = mitTreffpunkt()
+    vonAusserhalb(container)
     fireEvent.change(feld(container), { target: { value: '  Kreisaufseher  ' } })
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({ type: 'assign', name: 'Kreisaufseher', extern: true })
@@ -667,6 +705,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
 
   it('ein leerer Freitext bittet auch hier um einen Namen', () => {
     const { container, dispatch } = mitTreffpunkt()
+    vonAusserhalb(container)
     fireEvent.click(knopf(container, t.uebernehmenBtn))
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: t.toastNameEingeben })
   })
@@ -683,6 +722,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
     // Gegenprobe: Nur wo beide Wörter verschieden sind, prüft der Test etwas.
     expect(pl.personNameLbl).not.toBe(pl.nameLbl)
     const { container } = mitTreffpunkt({ lang: 'pl' })
+    vonAusserhalb(container, pl)
     expect(feld(container).getAttribute('placeholder')).toBe(pl.personNameLbl)
     expect(feld(container).getAttribute('aria-label')).toBe(pl.personNameLbl)
   })
@@ -695,6 +735,7 @@ describe('Der Treffpunkt-Leiter kennt denselben Doppelweg', () => {
 
   it('nur ein Feld — eine Herkunftsversammlung hat ein Treffpunkt-Leiter nicht', () => {
     const { container } = mitTreffpunkt()
+    vonAusserhalb(container)
     expect(container.querySelectorAll('.sheet-guest .feld')).toHaveLength(1)
   })
 

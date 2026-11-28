@@ -891,6 +891,27 @@ describe('Der Toast', () => {
     expect(container.querySelector('.toast')!.textContent).toBe('Zugeteilt')
   })
 
+  /*
+   * „Rückgängig" nach dem Bestätigen: Der Knopf steht an der Meldung, und sein
+   * Tipp schickt genau die Aktion ab, die sie mitbringt — sonst ließe sich ein
+   * Fehltipp nur absagen, mit einer Meldung an alle, die planen.
+   */
+  it('trägt die Meldung eine Handlung, steht ihr Knopf daneben — sein Tipp schickt sie ab', () => {
+    const aktion = { type: 'zusageZurueck' as const, ids: ['T1'] }
+    const { container, dispatch } = zeige({ toast: { id: 1, text: t.toastBestaetigt, handlung: { text: t.rueckgaengig, aktion } } })
+    const meldung = container.querySelector('.toast')!
+    expect(meldung.querySelector('span')?.textContent).toBe(t.toastBestaetigt)
+    const knopf = meldung.querySelector('button')!
+    expect(knopf.textContent).toBe(t.rueckgaengig)
+    fireEvent.click(knopf)
+    expect(dispatch).toHaveBeenCalledWith(aktion)
+  })
+
+  it('Gegenprobe: Eine Meldung ohne Handlung hat keinen Knopf', () => {
+    const { container } = zeige({ toast: { id: 1, text: 'Zugeteilt' } })
+    expect(container.querySelector('.toast button')).toBeNull()
+  })
+
   it('die Live-Region steht schon vor der Meldung da — eine erst mit dem Text eingehängte sagen Vorleseprogramme nicht zuverlässig an (T187)', () => {
     const { container } = zeige()
     const region = container.querySelector('[role="status"].toast-region')

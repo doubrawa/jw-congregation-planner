@@ -3,14 +3,13 @@ import { useApp } from '../app/context'
 import { Wahl } from '../bausteine/Wahl'
 import { datumsFormat } from '../components/datum-anzeige'
 import { Sheet } from '../components/Sheet'
-import { useZweiTipp } from '../components/useZweiTipp'
 import { mtab } from '../data/helpers'
 import { meetingDate } from '../data/meeting-dates'
 import { tabsImUmfang, zuteilbarePlaetze, type AssignScope, type Umfang } from '../data/planung/automatik'
 import type { Meeting, MeetingKey, Service, Week } from '../data/types'
 import { besetzungText, fill, useT } from '../i18n/useT'
 
-/** Ein Bereich, den „Automatisch" füllt oder leert. */
+/** Ein Bereich, den „Automatisch" füllt. */
 type Bereich = Exclude<AssignScope, 'all'>
 const BEREICHE: readonly Bereich[] = ['parts', 'helpers']
 
@@ -41,7 +40,7 @@ function standImUmfang(
   return { parts: standVon(meetings, services, 'parts'), helpers: standVon(meetings, services, 'helpers') }
 }
 
-/** Beide Bereiche gewählt heißt „alles" — so nehmen es Auto-Zuteilung und Leeren. */
+/** Beide Bereiche gewählt heißt „alles" — so nimmt es die Auto-Zuteilung. */
 function scopeVon(gewaehlt: ReadonlySet<Bereich>): AssignScope | null {
   if (gewaehlt.size === BEREICHE.length) return 'all'
   return BEREICHE.find((b) => gewaehlt.has(b)) ?? null
@@ -52,10 +51,11 @@ function scopeVon(gewaehlt: ReadonlySet<Bereich>): AssignScope | null {
  * „Automatisch" der Aktionsleiste: welche Bereiche (Aufgaben im Programm,
  * Hilfsdienste), wie weit sie besetzt sind, und ob nur die gezeigte
  * Zusammenkunft oder die ganze Woche (Entscheid vom 13.10.2026). Gefüllt
- * werden nur offene Plätze; Leeren fragt nach (`useZweiTipp`).
+ * werden nur offene Plätze; zurück geht es über „Rückgängig" in der Meldung
+ * danach (`autoZurueck`) — ein „Leeren" neben „Zuteilen" gibt es nicht.
  *
  * Vorgewählt sind die Bereiche, in denen am gezeigten Tag etwas offen ist.
- * Die Zahlen und die Knöpfe rechnen über dieselben Zusammenkünfte
+ * Die Zahlen und der Knopf rechnen über dieselben Zusammenkünfte
  * (`tabsImUmfang`) wie der Reducer — eine ausgefallene zählt nicht mit.
  */
 export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
@@ -69,24 +69,15 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
     const amTag = standImUmfang(week, tab, 'tag', state.services)
     return new Set(BEREICHE.filter((b) => amTag[b].besetzt < amTag[b].gesamt))
   })
-  const scope = scopeVon(gewaehlt)
-  const leeren = useZweiTipp(() => {
-    if (!scope) return
-    dispatch({ type: 'clearAssignments', scope, umfang })
-    onClose()
-  })
   if (!week) return null
 
+  const scope = scopeVon(gewaehlt)
   const stand = standImUmfang(week, tab, umfang, state.services)
-  const auswahl = BEREICHE.filter((b) => gewaehlt.has(b))
-  const offen = auswahl.some((b) => stand[b].besetzt < stand[b].gesamt)
-  const besetzt = auswahl.some((b) => stand[b].besetzt > 0)
+  const offen = BEREICHE.some((b) => gewaehlt.has(b) && stand[b].besetzt < stand[b].gesamt)
   const tagName = datumsFormat(state.lang, 'wochentag').format(meetingDate(week, tab, state.congregation.times))
   const bereichName = (b: Bereich): string => (b === 'parts' ? t.autoAufgaben : t.hilfsdienste)
 
-  // Jede andere Wahl nimmt ein „Wirklich leeren?" zurück: Es galt der alten.
   const umschalten = (b: Bereich): void => {
-    leeren.entschaerfen()
     setGewaehlt((alt) => {
       const neu = new Set(alt)
       if (neu.has(b)) neu.delete(b)
@@ -117,10 +108,7 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
             { wert: 'woche', text: t.ganzeWoche },
           ]}
           wert={umfang}
-          onWahl={(u: Umfang) => {
-            leeren.entschaerfen()
-            setUmfang(u)
-          }}
+          onWahl={setUmfang}
         />
       </div>
       <AutomatikFuss
@@ -132,12 +120,6 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
               }
             : null
         }
-        leeren={leeren}
-        leerenText={fill(t.leerenUmfang, {
-          was: scope === 'all' ? t.leerenAlles : scope ? bereichName(scope) : '',
-          wann: umfang === 'tag' ? tagName : t.ganzeWoche,
-        })}
-        leerenMoeglich={scope !== null && besetzt}
         onClose={onClose}
       />
     </Sheet>
@@ -146,47 +128,27 @@ export function AutomatischBlatt({ onClose }: { onClose: () => void }) {
 
 /**
  * **Der Fuß beider Automatik-Blätter** (Zusammenkünfte, Treffpunkte):
- * „Zuteilen", darunter „Leeren" mit Rückfrage und „Abbrechen". Die Rückfrage
- * führt das Blatt selbst (`useZweiTipp`): Jede andere Wahl darin nimmt ein
- * „Wirklich leeren?" zurück.
- *
- * `leerenText` nennt, was geleert wird (T198) — bei den Zusammenkünften
- * Bereich und Umfang („Leeren: Hilfsdienste · Dienstag"); ohne steht „Leeren".
+ * „Zuteilen" und „Abbrechen" — sonst nichts. Ein „Leeren" daneben wäre eine
+ * zweite, zerstörende Handlung im selben Blatt; zurück geht es über
+ * „Rückgängig" in der Meldung nach dem Zuteilen.
  */
 export function AutomatikFuss({
   zuteilen,
-  leeren,
-  leerenText,
-  leerenMoeglich,
   onClose,
 }: {
   /** `null`: Es gibt nichts zuzuteilen — der Knopf ist gesperrt. */
   zuteilen: (() => void) | null
-  leeren: ReturnType<typeof useZweiTipp>
-  leerenText?: string
-  leerenMoeglich: boolean
   onClose: () => void
 }) {
   const { t } = useT()
   return (
-    <div className="auto-fuss">
+    <div className="sheet-fuss sheet-fuss--haupt">
       <button type="button" className="knopf-haupt" disabled={!zuteilen} onClick={() => zuteilen?.()}>
         {t.spurZuteilen}
       </button>
-      <div className="knopf-reihe">
-        <button
-          type="button"
-          className="auto-leeren"
-          disabled={!leerenMoeglich}
-          onClick={leeren.onClick}
-          onBlur={leeren.onBlur}
-        >
-          {leeren.armed ? t.leerenSicher : (leerenText ?? t.leeren)}
-        </button>
-        <button type="button" className="knopf-leise" onClick={onClose}>
-          {t.abbrechen}
-        </button>
-      </div>
+      <button type="button" className="knopf-leise" onClick={onClose}>
+        {t.abbrechen}
+      </button>
     </div>
   )
 }

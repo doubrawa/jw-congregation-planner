@@ -90,6 +90,22 @@ export const BLATT_ZUSTAENDE = [
   { name: 'Automatisch', zustand: 's=planen&tab=mid', klicks: ['.aktion-neben'], warten: '.sheet-inhalt.automatisch' },
   { name: 'Plan senden', zustand: 's=planen&tab=mid', klicks: ['.aktion-haupt'], warten: '.sheet-inhalt.senden' },
   { name: 'Drucken', zustand: 's=programm&tab=mid&pl=0&me=p9', klicks: ['.druck-knopf'], warten: '.druck-optionen' },
+  // Eine Abwesenheit über einen Zeitraum, in den Aufgaben fallen (der 14. bis
+  // 22. des Monats der gestellten Uhr, als Felder des Rasters): die Liste unter
+  // dem Kalender und der Fuß, der nennt, was das Eintragen absagt.
+  {
+    name: 'Abwesenheit',
+    zustand: 's=profil&pl=0&me=p9',
+    klicks: ['.abw-neu', '.kal-raster > :nth-child(15)', '.kal-raster > :nth-child(23)'],
+    warten: '.abw-folge',
+  },
+  // „Dazukommen" öffnet den Termin; erst der Knopf darin trägt ein.
+  {
+    name: 'Trolley-Termin',
+    zustand: 's=programm&tab=fs&fb=trolleys&pl=0&me=p9',
+    klicks: ['.trolley-karte .knopf-pille'],
+    warten: '.trolley-termin-blatt',
+  },
 ]
 
 /**

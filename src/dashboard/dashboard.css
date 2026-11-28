@@ -101,11 +101,13 @@
   gap: 2px 10px;
 }
 
+/* Tag und Uhrzeit in der Größe der Terminzeilen (`.wann-zeile`): Danach
+   richtet man sich. */
 .start-zeile-tag {
   flex: none;
-  min-width: 66px;
-  color: var(--text3);
-  font-size: calc(14px * var(--fs));
+  min-width: 72px;
+  color: var(--text2);
+  font-size: calc(15px * var(--fs));
   white-space: nowrap;
 }
 
@@ -131,6 +133,22 @@
 
 .start-termin .start-zeile-text {
   font-weight: 400;
+}
+
+/* Eine eigene Aufgabe: was, und dahinter ihr Stand als Wort. Passt beides in
+   eine Zeile, steht der Stand am Ende vor dem Pfeil; sonst rückt er unter den
+   Text — nie unter den Tag. */
+.start-zeile-was {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  max-width: 100%;
+}
+
+.start-zeile-was > .start-zeile-text {
+  flex: 1 1 auto;
 }
 
 .start-woche,

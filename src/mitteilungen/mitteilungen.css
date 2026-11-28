@@ -19,12 +19,12 @@
   gap: 8px 16px;
 }
 
-/* „Alle gelesen" und „Alle löschen" (T140) — passen sie nicht neben den Titel,
-   rücken sie darunter, und reicht die Zeile nicht für beide, untereinander. */
-.mitteilungen-aktionen {
+/* „Alle löschen" (T140) am Ende der Liste, am Zeilenende — leise, nach allem,
+   was man lesen und beantworten soll. */
+.mitteilungen-fuss {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
+  padding-block-start: 8px;
 }
 
 /* Am Handy steht „Alle gelesen" im Kopf der Seite (`UnterseiteKopf`). */

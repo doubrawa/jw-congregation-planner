@@ -7,8 +7,8 @@ import { useZweiTipp } from './useZweiTipp'
  * **Abmelden — mit Rückfrage** (4.10.2026).
  *
  * Der erste Tipp fragt („Wirklich abmelden?"), erst der zweite meldet ab; ein
- * Tipp daneben bricht ab. Dieselbe Zwei-Tipp-Bestätigung wie beim Löschen und
- * Leeren (`useZweiTipp`), damit die App überall gleich nachfragt.
+ * Tipp daneben bricht ab. Dieselbe Zwei-Tipp-Bestätigung wie beim Löschen
+ * (`useZweiTipp`), damit die App überall gleich nachfragt.
  *
  * Ein Baustein für beide Stellen, an denen es Abmelden gibt: das Profil und
  * die Statusseite, wo das Profil nicht erreichbar ist (`StatusView`). Seit dem

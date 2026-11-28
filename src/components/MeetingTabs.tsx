@@ -22,8 +22,8 @@ interface MeetingTabsProps {
    * Ansehen ist für alle nur lesend, und der Gruppenaufseher plant ohnehin nur
    * den Predigtdienst.
    *
-   * Er trägt ein Zeichen statt eines Wortes, wie im Entwurf; vorgelesen wird
-   * „Woche einrichten".
+   * Er trägt sein Zeichen und sein Wort: Das Zeichen allein sagt niemandem,
+   * was dahinter liegt.
    */
   showEdit?: boolean
   /**
@@ -96,10 +96,10 @@ export function MeetingTabs({ tab, onChange, showEdit = false, week }: MeetingTa
           type="button"
           className={tab === 'edit' ? 'meeting-tab meeting-tab--icon is-active' : 'meeting-tab meeting-tab--icon'}
           aria-pressed={tab === 'edit'}
-          aria-label={t.wocheEinrichten}
           onClick={() => onChange('edit')}
         >
           <Zeichen name="einstellungen" />
+          <span className="meeting-tab-wort">{t.wocheEinrichten}</span>
         </button>
       )}
     </div>

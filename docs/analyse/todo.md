@@ -12063,6 +12063,224 @@ Motion-Clip (T132) ist auf Wunsch des Betreibers ebenfalls auf Blau gestellt
 wechselt. Chrome frischt die App erst auf, wenn sie geschlossen ist, das Gerät
 lädt und im WLAN hängt; `about://webapks` zeigt den Stand.
 
+## Aufgenommen am 28. November 2026 — Bedienbarkeit für ältere Nutzer (T206–T219)
+
+Betreiber: „schau nochmal über alle abläufe und UI elemente drüber, ob das
+einfach bedienbar ist - auch für ältere menschen, die nicht so gut sind im
+umgang mit technik". Durchgesehen wurden alle 56 Ansichten und Blätter am Handy
+(375 px), 25 Abläufe eines Verkündigers mit echten Tipps, die größte
+Schriftstufe bei 360 px, die dunkle Darstellung und alle deutschen Texte der
+Oberfläche. Bewertet mit dem Blick „ältere, wenig technikgeübte Nutzer": 29 von
+40 (Nielsen; die 27 vom 18. November galten dem allgemeinen Blick und sind
+nicht vergleichbar). Sechzehn Befunde, einzeln entschieden („frag mich die
+einzelnen befunden und offenen fragen einzeln ab"), dann: „Gleich alles
+umsetzen".
+
+**Bewusst nicht** (jeweils „So lassen"):
+- die Schriftgröße schon auf der Anmeldeseite und im Film anbieten, eine
+  größere Voreinstellung (Befund 3c)
+- das Wort „Menü" am Menü-Knopf (4) — das Menü bleibt an der Seite, wie am
+  11. Oktober entschieden
+- die ganze Zeile als Tippfläche eines Schalters (5); die Schalter messen
+  weiter 54 × 32 px
+- „Grund (optional)" (aus 13)
+- das Handbuch in der App (15) — es bleibt auf GitHub, wie am 1. November
+  entschieden
+
+| T | Befund | Entscheidung |
+| --- | --- | --- |
+| T206 | „Abwesenheit eintragen" sagt die Aufgaben im Zeitraum mit ab (die Schalter stehen an, T181). Am Handy lag die Liste unter dem sichtbaren Teil, und der Satz am Knopf sprach weiter von einem „Konflikt" | Die Schalter bleiben an. Die Liste steht gleich unter dem Kalender, vor dem Grund; über dem Knopf steht „Aufgaben, die du damit absagst: 2", und der Knopf heißt „Eintragen und 2 absagen" |
+| T207 | In „Meine Aufgaben" hieß ein Haken-Symbol „noch bestätigen"; bestätigte Zeilen trugen nur einen dunkleren Punkt, die Zeilen auf dem Start gar keinen Stand | Wörter statt Symbole: der Knopf „Bestätigen", danach „Bestätigt" mit Haken oder „Verhindert"; auf dem Start „Zu bestätigen", „Bestätigt", „Verhindert" |
+| T208 | Tag und Uhrzeit jeder Aufgabe standen in 13,5 px und grau | Die Terminzeilen wachsen auf 15 px und werden dunkler; die Erklärsätze bleiben |
+| T209 | Die Schriftgröße stellte man über einen 16 px hohen Schieberegler ein; die beiden „A" daneben taten nichts | Fünf Knöpfe, jeder mit einem „A" in seiner Größe |
+| T210 | „Weiter" beim Anmelden mit unvollständigem Code: blass, ein Tipp sagte nichts | Der Tipp sagt, was fehlt („Der Code hat 8 Zeichen – noch zu tippen: 4"), und stellt die Schreibmarke ins Feld |
+| T211 | „Zettel scannen" ohne Kamera: Die Meldung rät zum Eintippen, darunter stand nur „Abbrechen" | Der Knopf „Code eintippen" unter der Meldung |
+| T212 | „Dazukommen" bei den Trolleys trug mit einem Tipp ein und benachrichtigte den anderen | Der Tipp öffnet den Termin; erst der Knopf dort trägt ein (wie T185) |
+| T213 | Eine Bestätigung ließ sich nicht zurücknehmen, auch nicht nach „Alle 5 bestätigen" | „Rückgängig" in der Meldung nach dem Bestätigen; sie steht dann zehn Sekunden |
+| T214 | „Zugang erneuern" klang nach Pflege, sperrt aber Zettel und Link und meldet die übrigen Geräte ab | „Zettel und Link sperren", die Rückfrage „Wirklich sperren?" |
+| T215 | Kalender-Abo: die Wege für Apple, Google und Outlook untereinander; am Android-Handy erfuhr man erst nach dem Ausstellen des Links, dass es einen Computer braucht | Je Gerät der eigene Weg, das Übrige hinter „Anderes Gerät"; am Android-Handy steht der Satz schon auf der Karte |
+| T216 | „Alle löschen" stand rot umrandet neben dem Titel der Mitteilungen (T140) | Am Ende der Liste; die Rückfrage mit zwei Tipps bleibt |
+| T217 | Wörter: „Push-Mitteilungen", „Offline … online", „Datenbank", „ERNEUT VERSUCHEN"; „Austragen" fragte mit „Wirklich entfernen?" nach; „Abbrechen" stand direkt unter „Absagen"; „S-89" ohne Erklärung | „Mitteilungen auf dieses Gerät", „Keine Verbindung – ändern geht erst wieder mit Internet", die Fehlerseite ohne „Datenbank" und mit „Erneut versuchen", „Wirklich austragen?", „Zurück", „Zettel (S-89)" |
+| T218 | Trolley: „Eintragen" blieb blass, solange kein Partner gewählt war — ohne einen Satz dazu | „Wähle zuerst einen Partner." |
+| T219 | Beim Planen: „Partner entfernen" 24 px hoch, „Drucken" 30, das Ortsfeld der Treffpunkte 23, Lied- und Themenfeld 34–36, „+ Hinzufügen" 32, „S-89 anzeigen" 36; Beschriftungen in 11 px; der Reiter „Woche einrichten" nur ein Zeichen | 44 px Tipphöhe, die Beschriftungen 12,5 px, der Reiter trägt sein Wort. Am 18. November hieß es noch „44 statt 24 px: bewusst nicht" — das gilt für diese Stellen nicht mehr, für die Schalter weiter |
+
+**Umgesetzt am 28. November 2026.**
+
+- **T206:** Was das Eintragen absagt (`betroffen`) und was bleibt, rechnet das
+  Blatt einmal. „Bestehende Zuteilungen sehen die Planer als Konflikt" steht
+  nur noch, wenn nichts abgesagt wird oder eine Aufgabe bleibt. Im Knopf steht
+  die Zahl ohne Hauptwort — „2 Aufgaben" wäre bei 1 falsch (`KEIN_NOMEN` in
+  `ui.test.ts`).
+- **T207, T208:** `ZusageStand` zeigt den Stand als Wort. Die Zeile unter
+  „Meine Aufgaben" (`AufgabenZeile`) hat oben Titel und Knopf, darunter über
+  die ganze Breite den Termin — neben dem Wort-Knopf brach er am Handy in drei
+  Zeilen. Die ganze Zeile öffnet die Aufgabe. `AufgabeWann` hält Tag und
+  Uhrzeit zusammen: Passt nicht alles in eine Zeile, bricht sie nach dem
+  Abstand („In 13 Tagen ·"). Die Klasse `.wann-zeile` (15 px, `--text2`) tragen
+  auch die Angebote, die Trolley-Listen, das Blatt beim Öffnen und die
+  Start-Zeilen.
+- **T209:** Die Knöpfe stehen im Stil der `Wahl`. Das „A" jeder Stufe ist fest
+  in px gesetzt, nicht mal `--fs`: Es zeigt, was der Tipp bringt.
+- **T212:** `PartnerGesucht` öffnet das `TerminBlatt`; dort steht jetzt auch,
+  wer davon erfährt.
+- **T213:** Die Meldung trägt eine Handlung (`Toast.handlung`), die Aktion
+  `zusageZurueck` löscht die eigene Zeile in `confirmations` — ohne Zeile ist
+  eine Zusage offen. Das Löschen wartet, bis die Zusage davor geschrieben ist,
+  und eine neue Zusage wartet auf das Löschen. Nur aus dem offenen Stand: Nach „Doch bestätigen" gibt es den Knopf nicht,
+  denn zurück führte dort nur eine neue Absage. An der Datenbank ändert sich
+  nichts; `supabase/zusage-zuruecknehmen.test.ts` misst gegen eine echte
+  Postgres, dass ein Mitglied die eigene Zeile löscht und keine fremde.
+- **T214:** Die Schlüssel heißen `zugangSperren…`; die Aktion der Function
+  heißt weiter `erneuern`.
+- **T215:** `lib/geraet.ts` liest die Art des Geräts aus der Kennung des
+  Browsers (ein iPad meldet sich als Mac). Was sie nicht verrät, gilt als
+  Rechner — dort stehen alle Wege.
+- **T219:** Das Ortsfeld bleibt so flach wie eine Textzeile; Titel und Feld
+  stehen in einem `label` (die Besuchs-Marke daneben), zusammen sind es 44 px. Die Karte „Woche
+  einrichten" steht am Handy in einer eigenen Zeile über die ganze Breite
+  (`@container`, 30em) — neben den Tagen brach im Russischen „вос-кре-сенье"
+  in drei Zeilen.
+- **Übersetzungen:** zwölf neue, vier umbenannte und neun geänderte Texte in
+  allen elf Sprachen, mit den Wörtern der Nachbartexte; Zahlen als
+  „Bezeichnung: n". „Es fehlen noch 1" wäre falsch gewesen — der Hinweis zum
+  Code heißt deshalb „noch zu tippen: n".
+- **Messung:** `laufzeit-auftraege.mjs` kennt zwei weitere Blätter: die
+  Abwesenheit über einen Zeitraum mit Aufgaben und den Trolley-Termin.
+
+**Geprüft:** Typprüfung, oxlint (nur `Spur.tsx:112`), die ganze Suite
+(422 Dateien, 8874 Proben) und der Build grün. Je Regel eine Sabotage im
+Quelltext, 40 insgesamt, alle von den neuen Proben gefangen.
+Laufzeit-Messung, voller Satz mit axe: 756 Läufe in 369 s ohne Befund (ein
+Lauf davor meldete `ERR_INSUFFICIENT_RESOURCES`, die Wiederholung nicht).
+Im echten Chrome am Handyformat mit echten Tipps nachgefahren: Abwesenheit
+14.–22. September (Fuß „Aufgaben, die du damit absagst: 2", Knopf „Eintragen
+und 2 absagen"; eine behalten: 1, und der Konflikt-Satz steht wieder),
+Bestätigen und „Rückgängig", die Schriftknöpfe (58 × 52 px), der Code-Hinweis,
+der Scanner ohne Kamera, „Dazukommen" (keine Meldung vor dem Knopf im Blatt),
+das Kalender-Blatt, Planen in Deutsch und Russisch. Der Anteil der Zeichen
+unter 14 px in den Ansichten eines Verkündigers fiel von 41,7 auf 30,8 %; dort
+bleiben unter 44 px nur die Schalter und die Zeile einer Mitteilung (42 px).
+Handbücher: 22 Stellen bei den Verkündigern, fünf bei den Planern; elf Bilder
+neu aufgenommen, die übrigen achtzehn sind Byte für Byte gleich.
+
+**Nach `/simplify` und `/code-review max`:** Vereinfacht wurden die Wörter
+des Abwesenheits-Blatts (je Art an einer Stelle), die Kette der Zusagen (ohne
+die Ergebnisse aller früheren mitzutragen), die Meldung (ein Weg mit und ohne
+Knopf), die Aufgaben-Zeile (`useAppDispatch`) und der Hinweis zum Takt im
+Kalender-Blatt. Die Review fand sechs Befunde, alle behoben:
+- Eine neue Zusage überholte ein laufendes „Rückgängig": Bestätigen,
+  Rückgängig und gleich wieder bestätigen — bei langsamem Netz kam die neue
+  Zusage vor dem Löschen an, und das Löschen nahm sie mit (hier „Bestätigt",
+  in der Datenbank keine Zeile). Sie wartet jetzt auf das Löschen; ohne
+  laufendes Zurücknehmen geht sie wie bisher sofort hinaus.
+- Der Kopf des Aufgaben-Blatts stellte „Morgen ·" am Handy als schmale Spalte
+  neben den Termin: `AufgabeWann` lieferte zwei Teile, und in einem
+  Flex-Rahmen wird jeder ein eigenes Kind. Es gibt jetzt ein Element zurück.
+- Im Treffpunkt-Kopf stand die Besuchs-Marke (ein `div`) im `label`; sie
+  steht jetzt daneben, sichtbar ändert sich nichts.
+- Dazu Kommentare, die noch den Regler, den Reiter ohne Wort und „Zugang
+  erneuern" nannten, ein falscher Komponentenname und eine Probe, die
+  `chain.then` ohne Aufräumen umbog.
+
+Danach geprüft: Typprüfung, oxlint, die ganze Suite (422 Dateien, 8876
+Proben) und der Build grün; die Sabotage am Warten der Zusage fängt die neue
+Probe, 41 Sabotagen insgesamt. Der Kopf des Blatts im Browser nachgemessen
+(375 px: „Morgen ·" in der ersten Zeile, der Termin geschlossen darunter, wie
+auf der großen Karte), der Treffpunkt-Kopf ebenso (`label` 45 px hoch, das
+Feld 169 × 23). Die vier Handbuch-Bilder vom Planen der Treffpunkte neu
+aufgenommen: pixelgleich.
+Die Laufzeit-Messung lief danach gemeinsam mit dem Nachtrag (T220–T224, unten).
+
+**Nicht geprüft:** echte Geräte — die Kamera-Abfrage, die Kennung eines
+Android-Handys und eines iPhones, „Rückgängig" gegen die Datenbank des
+Betriebs (die Entwicklerseite schreibt nicht); die Reihenfolge von Zusage und
+Zurücknehmen nur gegen eine Attrappe, nicht über ein echtes langsames Netz.
+
+**Stand:** umgesetzt, noch nicht ausgerollt.
+
+## Nachgetragen am 28. November 2026 — überladene Blätter (T220–T224)
+
+Betreiber, mit einem Bild vom Handy (Blatt „Automatisch zuteilen", darin der
+Knopf „Leeren: Hilfsdienste · Sonntag" in drei Zeilen): „eigentlich dachte ich
+du findest sowas wie das hier. zum einem ist der 'Leeren' button unten zu viel
+text, denn es ist dreizeilig und zum anderen sind das zu viele optionen für
+einen dialog. muss man beim zuteilen unbedingt gleichzeitig vorher noch leeren
+können - nein."
+
+Die Durchsicht T206–T219 hatte das Blatt gemessen und nicht gemeldet: Sie
+bewertete Schriftgröße, Trefferflächen und Kontrast, aber weder den Umbruch
+eines Knopfs noch die Handlungen eines Blatts. Nachgeholt mit einem Kriecher
+(`kriechen.mjs`, Arbeitskopie `rundgang/`), der in allen Ansichten der
+Laufzeit-Messung jeden Knopf antippt und jedes Blatt misst, das aufgeht — je
+Knopf die Zeilen seines Texts in Standard und Stufe 1,3, je Blatt die
+Bedienelemente nach Art. Gemessen wurden 43 Ansichten und über hundert Blätter;
+die Befunde einzeln entschieden.
+
+**Bewusst nicht:**
+- der Reiter „Gruppen- / besuche" im Predigtdienst (Befund 22): getrennt nach
+  den Regeln der Sprache, das Zeichen darüber zeigt, wohin er führt
+- „Einspringen" im Blatt beim Öffnen unter den Bestätigungen: vom Betreiber so
+  verlangt (ein offenes Ersatzgesuch wird beim Öffnen vorgelegt wie eine
+  Bestätigung) — kein Befund
+
+| T | Befund | Entscheidung |
+| --- | --- | --- |
+| T220 | Im Blatt „Automatisch zuteilen" stand neben „Zuteilen" „Leeren: Hilfsdienste · Sonntag" — am Handy dreizeilig und eine zweite, zerstörende Handlung im selben Blatt; bei den Treffpunkten ebenso „Leeren" | Leeren entfällt in beiden Blättern. Nach dem automatischen Zuteilen steht zehn Sekunden „Rückgängig" in der Meldung: Es leert genau die eben besetzten Plätze, wo noch dieselbe Zuteilung steht. Einzelne Plätze über „Entfernen"; ein Leeren ganzer Wochen gibt es nicht mehr |
+| T221 | „Person entfernen": „Plätze freigeben" neben „Stehen lassen" brach schon in der kleinsten Schrift auf zwei Zeilen, darunter „Abbrechen" | Untereinander, jeder Knopf über die ganze Breite |
+| T222 | Treffpunkt-Leiter zuteilen: oben das Freitextfeld „Name" mit „Übernehmen" (für den Kreisaufseher), darunter „Name suchen" — wer suchen wollte, trug einen Freitext statt der Person ein | Suche und Liste zuerst („Wer übernimmt?"), der Freitext hinter dem Verweis „Jemand von außerhalb (z. B. Kreisaufseher)" unter der Liste |
+| T223 | Auswertung am Handy: die Kacheln zu zweit, Titel in drei Zeilen („Treffpunkte, / Absagen, / Ballungen") | Am Handy eine Kachel je Zeile, ab dem Tablet das Raster |
+| T224 | Abwesenheit: „Von" und „Bis" brachen um („Mo., / 14. September") | Der Monat kurz: „Mo., 14. Sept." |
+
+**Umgesetzt am 28. November 2026.**
+
+- **T220:** `data/planung/auto-zurueck.ts` merkt, was die Automatik gesetzt
+  hat (`neuBesetztePlaetze`, `neuBesetzteTreffpunkte`: Schlüssel, Name,
+  Person), und `autoZuruecknehmen` leert es, wo es noch so steht, samt den
+  Zusagen dort. Die Aktion `autoZurueck` hängt an der Meldung
+  (`mitRueckgaengig`, derselbe Helfer wie beim Zurücknehmen einer Zusage).
+  Entfernt: die Aktionen `clearAssignments` und `fsClear` mit ihren
+  Datenfunktionen und Proben, `entschaerfen` im Zwei-Tipp-Knopf, die Texte
+  `leeren`, `leerenSicher`, `leerenUmfang`, `leerenAlles` und `toastGeleertN`
+  in allen zwölf Sprachen. Der Fuß beider Blätter ist der übliche: „Zuteilen"
+  breit, „Abbrechen" daneben.
+- **T222:** Steht schon ein Freitext-Leiter da, ist das Feld gleich offen;
+  nach dem Tipp auf den Verweis steht die Schreibmarke darin.
+- **Übersetzungen:** `toastAutoZurueck` und `fsExternVerweis` in allen elf
+  Sprachen, der Kreisaufseher mit dem Fachwort jeder Sprache.
+- **Handbücher:** Planer §3 heißt „Automatisch zuteilen" (statt „… & leeren")
+  und erklärt „Rückgängig"; dazu der Gastredner, die Treffpunkte, die
+  abgeschaltete Gruppe, der Leiter von außerhalb und die Kacheln, bei den
+  Verkündigern der Gruppenaufseher. In der Funktionsübersicht Nr. 43 (und die
+  Datei von Nr. 42, die seit T121 anders heißt).
+
+**Dazu, als Nachtrag zur Review von T213:** Die Meldung mit „Rückgängig" lag
+bei offenem Blatt über seinem Fuß — im Blatt beim Öffnen zehn Sekunden über
+„Später", und an dessen Stelle stand „Rückgängig". Bei offenem Blatt steht sie
+jetzt oben (`shell.css`, `tests/meldung-bei-offenem-blatt.test.ts`). Und ein
+Ersatzgesuch kurz nach „Rückgängig" wartet wie die Zusage auf das Löschen,
+dessen Trigger die frischen Zeilen „Ersatz gesucht" sonst gleich wieder
+abräumte.
+
+**Geprüft:** Typprüfung, oxlint (nur `Spur.tsx:112`), die ganze Suite
+(423 Dateien, 8884 Proben) und der Build grün; ein erster Lauf fand die
+Container-Abfrage der Kacheln vor ihrer Grundregel (`bedingte-regeln-kaskade`),
+die damit wirkungslos war. Je Regel eine Sabotage, 18 neue (59 insgesamt), alle
+gefangen — eine erst, nachdem eine Probe dazukam (die Zusage am
+zurückgenommenen Platz). Laufzeit-Messung, voller Satz mit axe: 756 Läufe in
+474 s ohne Befund (ein Lauf davor meldete in drei Läufen des Blatts S-89
+`ERR_INSUFFICIENT_RESOURCES` und Zeitüberschreitungen; allein gefahren waren
+dieselben zwölf Läufe sauber). Im echten Chrome am Handyformat
+nachgemessen: Die vier Knöpfe stehen in einer Zeile, auch bei Stufe 1,3;
+„Rückgängig" nach „Automatisch" macht sechs, drei, wieder sechs offene Plätze
+und meldet „Zurückgenommen · wieder offene Plätze: 3"; die Meldung steht bei
+offenem Blatt bei 12–72 px, das Blatt beginnt bei 97 px. Das Handbuch-Bild der
+Auswertung (Tablet) ist pixelgleich.
+
+**Nicht geprüft:** „Rückgängig" gegen die Datenbank des Betriebs (die
+Entwicklerseite schreibt nicht) und echte Geräte.
+
+**Stand:** umgesetzt, noch nicht ausgerollt.
+
 ## Was bewusst offen bleibt
 
 | Punkt | Warum |
@@ -12090,7 +12308,7 @@ lädt und im WLAN hängt; `about://webapks` zeigt den Stand.
 
 ## Fortschritt
 
-Stand 25. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
+Stand 28. November 2026 · ☑ erledigt · ⛔ geprüft, kein Mangel · ⚠ teilweise · ⏸ zurückgestellt · ☐ offen
 
 Phase 0 ☑☑☑☑ · Phase 1 ☑☑☑ · Phase 2 ☑☑☑⛔ · Phase 3 ☑☑☑☑ ·
 Phase 4 ☑☑☑☑☑☑☑☑ · Phase 5 ☑☑☑☑⛔ · Phase 6 ☑☑☑☑☑☑☑☑☑☑ · Phase 7 ☑☑☑☑☑☑☑☑☑ ·
@@ -12103,9 +12321,10 @@ Phase 8 ☑☑☑☑☑☑☑☑☑☑ · Phase 9 ☑☑☑☑ · Nachgetragen �
 21. Oktober ☑ · 24. Oktober ☑☑☑☑☑☑☑☑☑ · 25. Oktober ☑☑☑☑ ·
 29. Oktober ☑☑☑☑☑☑☑☑☑ · 30. Oktober ☑ · 31. Oktober ☑☑☑☑☑☑☑☑ ·
 1. November ☑ · 6. November ☑☑ · 7. November ☑☑☑☑☑☑☑ · 8. November ☑ ·
-13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑☑ · 25. November ☑
+13. November ☑☑☑☑☑☑☑☑☑☑ · 18. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑ · 22. November ☑☑☑ · 25. November ☑ ·
+28. November ☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑☑
 
-**Alle 205 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
+**Alle 224 Aufgaben sind abgearbeitet** — erledigt, entschieden oder mit
 Begründung als „kein Mangel" zurückgewiesen: die 184 mit eigenem Kopf,
 T185–T201 aus dem Impeccable-Audit vom 18. November, die nur als Tabelle
 stehen (alle vier Pakete umgesetzt und ausgerollt), T202–T203 vom
@@ -12114,7 +12333,9 @@ ausgerollt (`b37e1916`); die Mitgliedsrechte-Probe ist live grün, Google nimmt
 das Abo an — offen beim Abo nur der Blick am iPhone. Dazu **T205** vom
 25. November, Kornblume statt Minze als Akzentfarbe: am selben Abend
 ausgerollt (`42507d5d`); offen ist nur der Blick auf das Symbol eines Handys
-mit installierter App.
+mit installierter App. Zuletzt **T206–T224** vom 28. November, die Bedienbarkeit
+für ältere Nutzer samt dem Nachtrag zu überladenen Blättern: umgesetzt, noch
+nicht ausgerollt.
 Davor als letzte am 14. November
 **T180**: Die offene App lädt bei der Rückkehr still nach (besprochen,
 umgesetzt und am selben Tag ausgerollt, `757b7098`; offen ist nur der Blick am

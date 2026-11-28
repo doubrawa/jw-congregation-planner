@@ -24,9 +24,8 @@ import { HandbuchKarte } from './HandbuchKarte'
 import './profil.css'
 
 /**
- * Der Name jeder Stufe des Reglers — gegen `FontScale` geprüft: Eine neue Stufe
- * fehlt hier nicht still. Bis zum 16.10.2026 eine Liste neben `FONT_SCALES`,
- * die nur über die Reihenfolge zusammenhing.
+ * Der Name jeder Schriftstufe — gegen `FontScale` geprüft: Eine neue Stufe
+ * fehlt hier nicht still.
  */
 const FS_LABELS = {
   0.9: 'schriftKlein',
@@ -36,16 +35,21 @@ const FS_LABELS = {
   1.45: 'schriftSehrGross',
 } as const satisfies Record<FontScale, keyof Dict>
 
+/** Das „A" der Stufe „Standard" in px; die übrigen stehen im Verhältnis ihrer Stufe dazu. */
+const A_GROESSE = 17
+
 /**
  * **Profil** (T121): wer man ist, wie die App aussieht, wann man fehlt.
  *
  *  - Oben Initialen, Name, Rechte-Stufe und Gruppe — und das Konto (E-Mail):
  *    man sieht, als wer man angemeldet ist.
- *  - **Darstellung**: Hell, Dunkel, Automatisch; Schriftgröße; Sprache;
- *    Push-Mitteilungen (auf dem iPhone erst als App, dann steht dort der Hinweis).
+ *  - **Darstellung**: Hell, Dunkel, Automatisch; Schriftgröße — fünf Knöpfe,
+ *    jeder mit einem „A" in seiner Größe, statt eines Schiebereglers, den eine
+ *    unsichere Hand kaum trifft; Sprache; Mitteilungen auf dieses Gerät (auf
+ *    dem iPhone erst als App, dann steht dort der Hinweis).
  *  - **Abwesenheiten**: die eigenen, die anstehen — und „Abwesenheit eintragen".
  *  - **Verwaltung** (Admins, nur am Handy — ab dem Tablet steht sie im Menü).
- *  - **Anmeldung**: ein Einmal-Code fürs nächste Gerät, „Zugang erneuern".
+ *  - **Anmeldung**: ein Einmal-Code fürs nächste Gerät, „Zettel und Link sperren".
  *  - **Handbuch**: für Verkündiger, wer planen darf auch für Planer (GitHub).
  *  - App installieren, der Film „Erste Schritte", Abmelden und der Stand der App.
  */
@@ -54,10 +58,6 @@ export function ProfilScreen() {
   const i18n = useT()
   const { t } = i18n
   const me = eigenePerson(state)
-  // Position im Regler. Die Stufe ist immer eine bekannte: Was das Gerät
-  // gespeichert hat, grenzt `asFontScale` schon beim Start ein.
-  const scaleIndex = FONT_SCALES.indexOf(state.fontScale)
-  const scaleLabel = FS_LABELS[state.fontScale]
   // Konto-E-Mail (nur Produktion; die eigene Mitglieder-Zeile sieht jeder).
   const myEmail = state.members.find((m) => m.userId === state.userId)?.email ?? ''
   const rechte = rechteVon(state)
@@ -103,28 +103,25 @@ export function ProfilScreen() {
             <div className="profil-zeile profil-schrift">
               <div className="profil-schrift-kopf">
                 <span>{t.schriftgroesse}</span>
-                <span className="klein-text">{t[scaleLabel]}</span>
+                <span className="profil-schrift-stufe">{t[FS_LABELS[state.fontScale]]}</span>
               </div>
-              <div className="profil-regler">
-                <span className="profil-regler-a" aria-hidden="true">
-                  A
-                </span>
-                <input
-                  type="range"
-                  className="profil-regler-feld"
-                  min={0}
-                  max={FONT_SCALES.length - 1}
-                  step={1}
-                  value={scaleIndex}
-                  aria-label={t.schriftgroesse}
-                  aria-valuetext={t[scaleLabel]}
-                  onChange={(e) =>
-                    dispatch({ type: 'setFontScale', scale: FONT_SCALES[Number(e.target.value)] ?? FONT_SCALES[0]! })
-                  }
-                />
-                <span className="profil-regler-a is-gross" aria-hidden="true">
-                  A
-                </span>
+              <div role="group" aria-label={t.schriftgroesse} className="wahl profil-schriftwahl">
+                {FONT_SCALES.map((stufe) => (
+                  <button
+                    key={stufe}
+                    type="button"
+                    className="wahl-knopf"
+                    aria-pressed={stufe === state.fontScale}
+                    aria-label={t[FS_LABELS[stufe]]}
+                    onClick={() => dispatch({ type: 'setFontScale', scale: stufe })}
+                  >
+                    {/* Fest in der Größe seiner Stufe, nicht mit der gewählten:
+                        Das „A" zeigt, was der Tipp bringt. */}
+                    <span aria-hidden="true" style={{ fontSize: `${A_GROESSE * stufe}px` }}>
+                      A
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
             <label className="profil-zeile profil-sprache">

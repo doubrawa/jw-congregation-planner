@@ -1341,7 +1341,11 @@ describe('Entzug: der Reducer räumt ab', () => {
   })
 })
 
-describe('autoAssign / clearAssignments', () => {
+/** Die Treffpunkt-Wochen ohne Leiter — Platz für „Automatisch". */
+const ohneLeiter = (fsWeeks: AppState['fsWeeks']): AppState['fsWeeks'] =>
+  fsWeeks.map((woche) => woche.map(({ lpid: _id, lext: _frei, ...inst }) => ({ ...inst, leader: '' })))
+
+describe('autoAssign', () => {
   it('autoAssign füllt offene Slots (Toast mit Anzahl)', () => {
     const weeks = buildDemoWeeks()
     const closeSi = weeks[0]!.mid.sections.length - 1
@@ -1379,19 +1383,6 @@ describe('autoAssign / clearAssignments', () => {
     expect(reducer(voll, { type: 'autoAssign', scope: 'parts' }).toast?.text).toBe(t.toastKeineOffen)
   })
 
-  it('clearAssignments leert und zählt; erneut geleert → 0', () => {
-    const s = makeState({ week: 0, tab: 'mid' })
-    const cleared = reducer(s, { type: 'clearAssignments', scope: 'parts' })
-    expect(cleared.toast!.text).toMatch(/\d/)
-    const again = reducer({ ...cleared, weeks: cleared.weeks }, { type: 'clearAssignments', scope: 'parts' })
-    expect(again.toast!.text).toMatch(/0/)
-  })
-
-  it('clearAssignments ohne geladene Woche ist ein No-op', () => {
-    const s = makeState({ week: 99 })
-    expect(reducer(s, { type: 'clearAssignments', scope: 'parts' })).toBe(s)
-  })
-
   /*
    * „Ganze Woche" (T121, Phase 5c, Entscheid vom 13.10.2026): beide
    * Zusammenkünfte auf einmal — ausgefallene ausgenommen.
@@ -1400,46 +1391,116 @@ describe('autoAssign / clearAssignments', () => {
   const besetzteIn = (s: AppState, tab: 'mid' | 'we'): number =>
     [...allePlaetze(s.weeks[0]![tab], s.services)].filter((p) => p.slot?.name).length
 
-  it('„Ganze Woche" leert beide Zusammenkünfte, der Tag nur den gezeigten', () => {
-    const s = makeState({ week: 0, tab: 'mid' })
-    expect(besetzteIn(s, 'we')).toBeGreaterThan(0)
-    const tag = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'tag' })
-    expect(besetzteIn(tag, 'mid')).toBeLessThan(besetzteIn(s, 'mid'))
-    // „Alles" heißt beide Bereiche: Auch kein Hilfsdienst ist mehr besetzt.
-    const helfer = (z: AppState) => [...allePlaetze(z.weeks[0]!.mid, z.services)].filter((p) => p.art === 'helper' && p.slot?.name)
-    expect(helfer(s).length).toBeGreaterThan(0)
-    expect(helfer(tag)).toEqual([])
-    expect(besetzteIn(tag, 'we')).toBe(besetzteIn(s, 'we'))
-    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
-    expect(besetzteIn(woche, 'we')).toBeLessThan(besetzteIn(s, 'we'))
-  })
-
-  it('eine ausgefallene Zusammenkunft bleibt, wie sie ist — ihre Zuteilungen ruhen nur (T30)', () => {
+  /** Die erste Demo-Woche ohne Zuteilungen — nur die Gastredner bleiben: Platz für „Automatisch". */
+  const ohneZuteilungen = (over: (w: Week) => void = () => {}): AppState => {
     const weeks = buildDemoWeeks()
-    weeks[0]!.dev = { we: { cancelled: true } }
-    const s = makeState({ weeks, week: 0, tab: 'mid' })
-    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
-    expect(besetzteIn(woche, 'we')).toBe(besetzteIn(s, 'we'))
-  })
+    for (const tab of ['mid', 'we'] as const) {
+      const meeting = weeks[0]![tab]
+      for (const platz of allePlaetze(meeting)) {
+        if (isGuestRole(platz.slot.rolle)) continue
+        platz.slot.name = ''
+        delete platz.slot.pid
+      }
+      meeting.helpers = Object.fromEntries(Object.keys(meeting.helpers).map((key) => [key, []]))
+    }
+    over(weeks[0]!)
+    return makeState({ weeks, week: 0, tab: 'mid' })
+  }
 
   it('„Ganze Woche" teilt beide Zusammenkünfte zu — mit einer Meldung über alle', () => {
-    const geleert = reducer(makeState({ week: 0, tab: 'mid' }), { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
-    const voll = reducer({ ...geleert, toast: null }, { type: 'autoAssign', scope: 'all', umfang: 'woche' })
+    const leer = ohneZuteilungen()
+    const voll = reducer(leer, { type: 'autoAssign', scope: 'all', umfang: 'woche' })
     expect(besetzteIn(voll, 'mid')).toBeGreaterThan(0)
     expect(besetzteIn(voll, 'we')).toBeGreaterThan(0)
-    const n = besetzteIn(voll, 'mid') + besetzteIn(voll, 'we') - besetzteIn(geleert, 'mid') - besetzteIn(geleert, 'we')
+    const n = besetzteIn(voll, 'mid') + besetzteIn(voll, 'we') - besetzteIn(leer, 'mid') - besetzteIn(leer, 'we')
     expect(voll.toast?.text).toContain(String(n))
   })
 
-  it('wer beim Leeren seinen Platz verliert, verliert seine Zusage — in beiden Zusammenkünften', () => {
-    const s0 = makeState({ week: 0, tab: 'mid' })
-    const woche0 = s0.weeks[0]!
-    const weStelle = [...allePlaetze(woche0.we, s0.services)].find((p) => p.slot?.name && !isGuestRole(p.slot.rolle))
-    if (!weStelle) throw new Error('Testaufbau: am Wochenende ist niemand eingeteilt')
-    const weKey = platzKey(weStelle, woche0.start, 'we')
-    const s = { ...s0, confirmations: { [weKey]: 'bestätigt' as const } }
-    const woche = reducer(s, { type: 'clearAssignments', scope: 'all', umfang: 'woche' })
-    expect(woche.confirmations[weKey]).toBeUndefined()
+  it('eine ausgefallene Zusammenkunft bekommt auch mit „Ganze Woche" niemanden (T30)', () => {
+    const leer = ohneZuteilungen((w) => (w.dev = { we: { cancelled: true } }))
+    const voll = reducer(leer, { type: 'autoAssign', scope: 'all', umfang: 'woche' })
+    expect(besetzteIn(voll, 'mid')).toBeGreaterThan(besetzteIn(leer, 'mid'))
+    expect(besetzteIn(voll, 'we')).toBe(besetzteIn(leer, 'we'))
+  })
+})
+
+/**
+ * **„Rückgängig" nach dem automatischen Zuteilen** — statt eines „Leeren"
+ * neben „Zuteilen" (Betreiber: „muss man beim zuteilen unbedingt gleichzeitig
+ * vorher noch leeren können - nein"). Die Meldung trägt den Knopf; er nimmt
+ * genau die Plätze zurück, die die Automatik eben besetzt hat.
+ */
+describe('„Rückgängig" nach Automatisch', () => {
+  const besetzteIn = (s: AppState, tab: 'mid' | 'we'): number =>
+    [...allePlaetze(s.weeks[0]![tab], s.services)].filter((p) => p.slot?.name).length
+  /** Der Schlussteil der Woche ohne Namen — einer der Plätze, die „Automatisch" füllt. */
+  const mitOffenemPlatz = (): AppState => {
+    const weeks = buildDemoWeeks()
+    const closeSi = weeks[0]!.mid.sections.length - 1
+    ;(weeks[0]!.mid.sections[closeSi]!.items[0] as PartItem).names[0]!.name = ''
+    return makeState({ weeks, week: 0, tab: 'mid' })
+  }
+
+  it('die Meldung nach „Automatisch" trägt „Rückgängig" — sein Tipp macht die Plätze wieder offen und sagt, wie viele', () => {
+    const vorher = mitOffenemPlatz()
+    const nach = reducer(vorher, { type: 'autoAssign', scope: 'all', umfang: 'woche' })
+    expect(nach.toast?.handlung?.text).toBe(t.rueckgaengig)
+    const zurueck = reducer(nach, nach.toast!.handlung!.aktion)
+    for (const tab of ['mid', 'we'] as const) expect(besetzteIn(zurueck, tab), tab).toBe(besetzteIn(vorher, tab))
+    const frei = besetzteIn(nach, 'mid') + besetzteIn(nach, 'we') - besetzteIn(vorher, 'mid') - besetzteIn(vorher, 'we')
+    expect(frei).toBeGreaterThan(0)
+    expect(zurueck.toast?.text).toBe(fill(t.toastAutoZurueck, { n: frei }))
+    // Nach dem Zurücknehmen gibt es nichts mehr zurückzunehmen.
+    expect(zurueck.toast?.handlung).toBeUndefined()
+  })
+
+  it('was vorher schon besetzt war, bleibt — „Automatisch" füllt nur Offenes, und zurück geht nur das', () => {
+    const vorher = mitOffenemPlatz()
+    const nach = reducer(vorher, { type: 'autoAssign', scope: 'parts' })
+    const zurueck = reducer(nach, nach.toast!.handlung!.aktion)
+    const namen = (s: AppState) => [...allePlaetze(s.weeks[0]!.mid, s.services)].map((p) => p.slot?.name ?? '')
+    expect(namen(zurueck)).toEqual(namen(vorher))
+  })
+
+  it('hat der Planer einen der Plätze inzwischen umbesetzt, bleibt seine Wahl', () => {
+    const vorher = mitOffenemPlatz()
+    const nach = reducer(vorher, { type: 'autoAssign', scope: 'parts' })
+    const aktion = nach.toast!.handlung!.aktion
+    if (aktion.type !== 'autoZurueck') throw new Error('Testaufbau: kein Zurücknehmen')
+    const [erster] = aktion.gesetzt
+    if (!erster) throw new Error('Testaufbau: nichts gesetzt')
+    // Den ersten gesetzten Platz von Hand neu besetzen.
+    const stelle = [...allePlaetze(nach.weeks[0]!.mid, nach.services)].find((p) => platzKey(p, nach.weeks[0]!.start, 'mid') === erster.key)
+    if (!stelle) throw new Error('Testaufbau: Platz nicht gefunden')
+    const umbesetzt = reducer(
+      { ...nach, slotSel: auswahlFuer(stelle, 0, 'mid') },
+      { type: 'assign', name: 'Von Hand', pid: 'p-hand' },
+    )
+    const zurueck = reducer(umbesetzt, aktion)
+    const danach = [...allePlaetze(zurueck.weeks[0]!.mid, zurueck.services)].find((p) => platzKey(p, zurueck.weeks[0]!.start, 'mid') === erster.key)
+    expect(danach?.slot?.name).toBe('Von Hand')
+  })
+
+  it('eine Zusage am zurückgenommenen Platz verfällt — sonst erbte sie, wer ihn als Nächster bekommt', () => {
+    const nach = reducer(mitOffenemPlatz(), { type: 'autoAssign', scope: 'parts' })
+    const aktion = nach.toast!.handlung!.aktion
+    if (aktion.type !== 'autoZurueck' || !aktion.gesetzt[0]) throw new Error('Testaufbau: nichts gesetzt')
+    const key = aktion.gesetzt[0].key
+    const zurueck = reducer({ ...nach, confirmations: { ...nach.confirmations, [key]: 'bestätigt' } }, aktion)
+    expect(zurueck.confirmations[key]).toBeUndefined()
+  })
+
+  it('Gegenprobe: Steht an keinem der Plätze mehr, was die Automatik gesetzt hat, ändert sich nichts', () => {
+    const s = makeState({ week: 0, tab: 'mid' })
+    expect(reducer(s, { type: 'autoZurueck', gesetzt: [{ key: 'gibt-es-nicht', name: 'Niemand' }] })).toBe(s)
+    expect(reducer(s, { type: 'autoZurueck', gesetzt: [] })).toBe(s)
+  })
+
+  it('ohne neu besetzten Platz trägt die Meldung keinen Knopf — „keine offenen Plätze" nimmt man nicht zurück', () => {
+    const voll = reducer(mitOffenemPlatz(), { type: 'autoAssign', scope: 'parts' })
+    const nochmal = reducer({ ...voll, toast: null }, { type: 'autoAssign', scope: 'parts' })
+    expect(nochmal.toast?.text).toBe(t.toastKeineOffen)
+    expect(nochmal.toast?.handlung).toBeUndefined()
   })
 })
 
@@ -1831,11 +1892,9 @@ describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
     return makeState({ weeks, week: 0, tab: 'mid', ...over })
   }
 
-  /** Treffpunkt-Woche ohne Leiter — geleert über die eigene Aktion. */
-  const mitOffenenTreffpunkten = (over: Partial<AppState> = {}) => {
-    const geleert = reducer(makeState({ week: 0 }), { type: 'fsClear', onlyGroup: null })
-    return makeState({ fsWeeks: geleert.fsWeeks, week: 0, ...over })
-  }
+  /** Treffpunkt-Woche ohne Leiter. */
+  const mitOffenenTreffpunkten = (over: Partial<AppState> = {}) =>
+    makeState({ fsWeeks: ohneLeiter(makeState().fsWeeks), week: 0, ...over })
 
   it('einzelner Programmpunkt: keine Mitteilung, Zuteilung trotzdem', () => {
     const sel = firstPartSlot(makeState().weeks[0]!, 'mid')
@@ -1883,7 +1942,7 @@ describe('Zuteilen meldet nichts mehr an die Planer (T99)', () => {
 })
 
 describe('„Automatisch" bei den Treffpunkten sagt, warum nichts geschah (16.10.2026)', () => {
-  const offen = () => reducer(makeState({ week: 0 }), { type: 'fsClear', onlyGroup: null }).fsWeeks
+  const offen = () => ohneLeiter(makeState().fsWeeks)
 
   it('offen, aber alle abwesend: „niemand Passendes frei" — nicht „keine offenen Plätze"', () => {
     const basis = makeState()
@@ -1902,7 +1961,19 @@ describe('„Automatisch" bei den Treffpunkten sagt, warum nichts geschah (16.10
     const auto = reducer(leer, { type: 'fsAutoAssign', onlyGroup: null })
     expect(auto.fsWeeks).toBe(leer.fsWeeks)
     expect(auto.toast?.text).toBe(t.toastKeineOffen)
-    expect(reducer(leer, { type: 'fsClear', onlyGroup: null }).fsWeeks).toBe(leer.fsWeeks)
+  })
+
+  it('die Meldung trägt „Rückgängig" — sein Tipp nimmt genau die eben gesetzten Leiter zurück', () => {
+    const vorher = makeState({ fsWeeks: offen(), week: 0 })
+    const nach = reducer(vorher, { type: 'fsAutoAssign', onlyGroup: null })
+    expect(nach.toast?.handlung?.text).toBe(t.rueckgaengig)
+    const gesetzt = (nach.fsWeeks[0] ?? []).filter((i) => i.leader).length
+    expect(gesetzt).toBeGreaterThan(0)
+    const zurueck = reducer(nach, nach.toast!.handlung!.aktion)
+    expect((zurueck.fsWeeks[0] ?? []).filter((i) => i.leader)).toEqual([])
+    // Ohne Spur der Person: Ein leerer Platz gehört niemandem.
+    expect((zurueck.fsWeeks[0] ?? []).some((i) => i.lpid)).toBe(false)
+    expect(zurueck.toast?.text).toBe(fill(t.toastAutoZurueck, { n: gesetzt }))
   })
 })
 
@@ -1993,6 +2064,58 @@ describe('Sprache', () => {
     // Nichts offen: nichts geändert, auch kein Toast.
     const ohne = makeState({ myTasks: [{ id: 'b', title: 'B', date: 'Di', status: 'verhindert', s89: null }] })
     expect(reducer(ohne, { type: 'confirmAll' })).toBe(ohne)
+  })
+
+  /*
+   * „Rückgängig" nach dem Bestätigen. Ein Fehltipp auf „Bestätigen" — oder auf
+   * „Alle 5 bestätigen" — ließ sich nur absagen, mit einer Meldung an alle, die
+   * planen. Die Meldung trägt deshalb einen Knopf, der genau diese Zusagen
+   * zurücknimmt; danach stehen sie wieder offen da.
+   */
+  describe('„Rückgängig" nach dem Bestätigen', () => {
+    it('die Meldung nach „Bestätigen" trägt den Knopf — für genau diese Aufgabe', () => {
+      const nach = reducer(makeState(), { type: 'confirmTask', id: 'a' })
+      expect(nach.toast?.text).toBe(t.toastBestaetigt)
+      expect(nach.toast?.handlung).toEqual({ text: t.rueckgaengig, aktion: { type: 'zusageZurueck', ids: ['a'] } })
+    })
+
+    it('nach „Alle bestätigen" nimmt er alle eben bestätigten zurück — die abgesagte gehört nicht dazu', () => {
+      const s = makeState({
+        myTasks: [
+          { id: 'a', title: 'A', date: 'Di', status: 'offen', s89: null },
+          { id: 'b', title: 'B', date: 'Do', status: 'verhindert', s89: null },
+          { id: 'c', title: 'C', date: 'So', status: 'offen', s89: null },
+        ],
+        confirmations: { b: 'verhindert' },
+      })
+      const nach = reducer(s, { type: 'confirmAll' })
+      expect(nach.toast?.handlung?.aktion).toEqual({ type: 'zusageZurueck', ids: ['a', 'c'] })
+      const zurueck = reducer(nach, nach.toast!.handlung!.aktion)
+      expect(zurueck.confirmations).toEqual({ b: 'verhindert' })
+    })
+
+    it('der Tipp darauf macht die Aufgabe wieder offen und sagt es — ohne einen neuen Knopf', () => {
+      const bestaetigt = reducer(makeState(), { type: 'confirmTask', id: 'a' })
+      const zurueck = reducer(bestaetigt, bestaetigt.toast!.handlung!.aktion)
+      // Ohne Zeile ist eine Zusage offen.
+      expect('a' in zurueck.confirmations).toBe(false)
+      expect(zurueck.toast?.text).toBe(t.toastZusageZurueck)
+      expect(zurueck.toast?.handlung).toBeUndefined()
+    })
+
+    it('Gegenprobe: „Doch bestätigen" nach einer Absage trägt keinen Knopf — zurück führte dort nur eine neue Absage', () => {
+      const nach = reducer(makeState({ confirmations: { a: 'verhindert' } }), { type: 'confirmTask', id: 'a' })
+      expect(nach.confirmations.a).toBe('bestätigt')
+      expect(nach.toast?.text).toBe(t.toastBestaetigt)
+      expect(nach.toast?.handlung).toBeUndefined()
+    })
+
+    it('was inzwischen abgesagt ist, bleibt abgesagt — und gibt es nichts zurückzunehmen, ändert sich nichts', () => {
+      const s = makeState({ confirmations: { a: 'verhindert', b: 'bestätigt' } })
+      expect(reducer(s, { type: 'zusageZurueck', ids: ['a', 'b'] }).confirmations).toEqual({ a: 'verhindert' })
+      const nichts = makeState({ confirmations: { a: 'verhindert' } })
+      expect(reducer(nichts, { type: 'zusageZurueck', ids: ['a', 'x'] })).toBe(nichts)
+    })
   })
 
   it('das Absage-Blatt ersetzt das Aufgaben-Blatt — Absagen und Bestätigen schließen es (T121)', () => {
@@ -2593,8 +2716,8 @@ describe('abgeleitete Aufgaben (Produktionsmodus)', () => {
       Die Treffpunkt-Aktionen standen allesamt nicht in der Liste der
       Ableitungs-Aktionen: Wer den Treffpunkt löschte, dem blieb die Aufgabe
       unter „Meine Aufgaben" stehen — samt Bestätigungs-Knopf für eine
-      Zusammenkunft, die es nicht mehr gab. Dasselbe galt für `fsClear` und für
-      jede gelöschte Regel (`fsRuleRemove` baut die Wochen neu auf).
+      Zusammenkunft, die es nicht mehr gab. Dasselbe galt für jede gelöschte
+      Regel (`fsRuleRemove` baut die Wochen neu auf).
     */
     const me = person('Simon Krüger')
     const fsWeeks = buildDemoFsWeeks()
@@ -2687,9 +2810,9 @@ describe('Treffpunkt-Zusagen verfallen mit dem Leiter', () => {
     expect(next.confirmations[KEY]).toBeUndefined()
   })
 
-  it('„Leeren" räumt alle Zusagen der Woche ab', () => {
-    const next = reducer(zugesagt(), { type: 'fsClear', onlyGroup: null })
-    expect(next.confirmations).toEqual({})
+  it('„Rückgängig" nach Automatisch räumt die Zusage des zurückgenommenen Leiters ab — der andere behält seine', () => {
+    const next = reducer(zugesagt(), { type: 'autoZurueck', gesetzt: [{ key: KEY, name: displayName(simon), pid: simon.id }] })
+    expect(next.confirmations).toEqual({ [ANDERER]: 'bestätigt' })
   })
 
   it('der Treffpunkt ist aus der Woche gelöscht', () => {
@@ -3125,6 +3248,15 @@ describe('Index außerhalb des Fensters', () => {
  * und jede Meldung stünde in jeder anderen Sprache deutsch da.
  */
 describe('Toasts in der Sprache des Nutzers', () => {
+  /** Ein besetzter Platz der Demo-Woche — als hätte ihn „Automatisch" gesetzt. */
+  const besetzt = (() => {
+    const s = makeState()
+    const woche = s.weeks[0]!
+    const platz = [...allePlaetze(woche.mid, s.services)].find((p) => p.slot?.name && !isGuestRole(p.slot.rolle))
+    if (!platz?.slot) throw new Error('Testaufbau: kein besetzter Platz')
+    const { name, pid } = platz.slot
+    return { key: platzKey(platz, woche.start, 'mid'), name, ...(pid ? { pid } : {}) }
+  })()
   /** Aktionen, die eine Meldung erzeugen — je eine je Bauart. */
   const AKTIONEN: Array<[string, AppAction, Partial<AppState>?]> = [
     ['Person angelegt', { type: 'addPerson', person: { id: 'pX', fn: 'Neu', ln: 'Person', role: 'verkuendiger', priv: {} as Person['priv'], grp: null } }],
@@ -3132,7 +3264,7 @@ describe('Toasts in der Sprache des Nutzers', () => {
     ['Gruppe angelegt', { type: 'addGroup', group: { id: 'gX', name: 'Gruppe 9', overseerId: null, assistantId: null } }],
     ['Dienst angelegt', { type: 'addService', service: { key: 'svcX', name: 'Neuer Dienst', count: 1 } }],
     ['automatisch zugeteilt', { type: 'autoAssign', scope: 'all' }],
-    ['geleert', { type: 'clearAssignments', scope: 'parts' }],
+    ['zurückgenommen', { type: 'autoZurueck', gesetzt: [besetzt] }],
   ]
 
   it.each(AKTIONEN)('%s: ukrainisch statt deutsch', async (name, action, over) => {

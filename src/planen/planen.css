@@ -204,6 +204,7 @@
 .lac-add-input {
   flex: 1;
   min-width: 0;
+  min-height: 44px;
   padding: 8px 12px;
   border-radius: var(--r-pill);
   border: 1px solid var(--umriss);
@@ -218,6 +219,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   line-height: 1;
   border: 1px solid var(--akzent-text);
   color: var(--akzent-text);
@@ -228,13 +230,12 @@
   white-space: nowrap;
 }
 
-/* Mindestens 24 px hoch (WCAG 2.5.8, „Trefferflächen" in components.css):
-   gemessen waren es 16. */
+/* 44 px hoch wie jede Tippfläche; das Schriftbild bleibt, nur der Knopf ist
+   höher. Den Abstand nach oben bringt er damit selbst mit. */
 .partner-toggle {
-  min-height: 24px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  margin-top: 8px;
   color: var(--akzent-text);
   font-size: calc(12px * var(--fs));
   font-weight: 600;
@@ -254,6 +255,7 @@
 .talk-title-input {
   flex: 1;
   min-width: 0;
+  min-height: 44px;
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--umriss);
@@ -347,7 +349,15 @@
 }
 
 /* Der Ort dieser Woche, dort, wo er sonst als Text steht — gestrichelt
-   unterstrichen, damit man sieht, dass er sich ändern lässt. */
+   unterstrichen, damit man sieht, dass er sich ändern lässt. Die Zeile bleibt
+   so flach wie der Text; zum Tippen gehört der Titel darüber dazu (ein
+   `label` um beide, `TreffpunktKopf`) — zusammen sind es 44 px. */
+.treff-ort-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .treff-ort-feld {
   width: 100%;
   min-width: 0;
@@ -434,7 +444,7 @@
 
 /* Beschriftung einer Eingabezeile (Anfangs- und Schlusslied, Grundplan). */
 .plan-helper-label {
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12.5px * var(--fs));
   letter-spacing: 0.14em;
   color: var(--text2);
 }
@@ -478,9 +488,10 @@
   min-width: 0;
 }
 
-/* Das S-89 unter der Zeile — leiser als „Entfernen", aber erreichbar. */
+/* Das S-89 unter der Zeile — leiser als „Entfernen", aber so hoch wie jede
+   Tippfläche. */
 .zuteilen-s89 {
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .zuteilen-entfernen {
@@ -550,6 +561,15 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+}
+
+/* Unter der Liste, beim Treffpunkt-Leiter: der Weg für jemanden von außerhalb.
+   Die Liste rollt für sich, der Verweis bleibt darunter stehen. */
+.zuteilen-extern {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding-block-start: 4px;
 }
 
 /* Mit Maus steht ein Rollbalken neben der Liste, und die Punkte stießen an ihn
@@ -759,7 +779,7 @@
 }
 
 .sonder-label {
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12.5px * var(--fs));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text2);
@@ -1224,22 +1244,13 @@ body:has(.planen-leiste) .toast {
   accent-color: var(--akzent-text);
 }
 
+/* Fuß beim Programm-Holen: „Übernehmen und zuteilen" über die ganze Breite,
+   darunter die beiden leisen Wege. */
 .auto-fuss {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-top: 16px;
-}
-
-.auto-leeren {
-  min-height: 46px;
-  color: var(--problem);
-  font-weight: 600;
-}
-
-.auto-leeren:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 /* Blatt „Plan senden" (`GSenden`). */
@@ -1489,7 +1500,10 @@ body:has(.planen-leiste) .toast {
 }
 
 .s89-druck-btn {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 16px;
   border: 1px solid var(--akzent-text);
   border-radius: var(--r-pill);
   background: var(--karte);

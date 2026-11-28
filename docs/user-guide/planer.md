@@ -23,7 +23,7 @@ Versammlungseinstellungen pflegen.
 
 1. [Dashboard für Planer](#1-dashboard-für-planer)
 2. [Planen: Zuteilungen vornehmen](#2-planen-zuteilungen-vornehmen)
-3. [Automatisch zuteilen & leeren](#3-automatisch-zuteilen--leeren)
+3. [Automatisch zuteilen](#3-automatisch-zuteilen)
    – [Vortragsplan übernehmen](#vortragsplan-übernehmen)
 4. [Konflikte und offene Zuteilungen](#4-konflikte-und-offene-zuteilungen)
    – [Die Zusagen der Woche](#die-zusagen-der-woche)
@@ -196,8 +196,8 @@ Unter **Zusammenkünfte** schaltest du oben rechts auf **Planen** und teilst die
 Aufgaben und Hilfsdienste einer Woche zu; die Seite heißt dann
 **Zusammenkünfte planen**. Die Karten der beiden Tage (mit
 Datum und Uhrzeit) wechseln zwischen der **Zusammenkunft unter der Woche** und
-**am Wochenende**; daneben steht die Karte mit dem Zeichen (drei Regler):
-**Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
+**am Wochenende**; daneben – am Handy darunter, über die ganze Breite – steht
+die Karte **Woche einrichten** (Abschnitt 3). Die Zusammenkünfte für den Predigtdienst sind ein eigenes
 Thema im Menü (Abschnitt 5). Mit ‹ › wählst du die Woche – auf Handy und
 Tablet geht auch seitwärts wischen.
 
@@ -323,7 +323,7 @@ bearbeiten").
 
 ---
 
-## 3. Automatisch zuteilen & leeren
+## 3. Automatisch zuteilen
 
 Beim Planen der Zusammenkünfte steht am Handy unten eine Leiste mit
 **Automatisch** und **Plan senden**; bei großer Schrift und auf sehr schmalen
@@ -339,12 +339,13 @@ ist **Plan senden** gleich da. **Automatisch** öffnet ein Blatt:
   vielleicht ein anderer) oder **Ganze Woche**, dann beide Zusammenkünfte. Eine
   ausgefallene Zusammenkunft zählt nicht mit.
 - **Zuteilen** besetzt die offenen Plätze der gewählten Bereiche; die Meldung
-  danach nennt, wie viele es waren.
-- **Leeren** entfernt die Zuteilungen der gewählten Bereiche im gewählten
-  Umfang; der Knopf nennt beides, etwa **Leeren: Hilfsdienste · Dienstag** oder
-  **Leeren: Alles · Ganze Woche**. Es fragt erst nach („Wirklich leeren?"); wählst du danach etwas
-  anderes, gilt die Frage nicht mehr. Die Reinigung rotiert über die
+  danach nennt, wie viele es waren. Die Reinigung rotiert über die
   Predigtdienstgruppen, die reinigen (siehe [Hilfsdienste](#hilfsdienste)).
+- **Rückgängig** steht zehn Sekunden lang in dieser Meldung. Ein Tipp darauf
+  macht die eben besetzten Plätze wieder offen – außer einem, den du
+  inzwischen von Hand anders besetzt hast. Einzelne Plätze nimmst du im
+  Zuteilen-Blatt mit **Entfernen** heraus; ein Leeren ganzer Wochen gibt es
+  nicht.
 
 Die Automatik wählt bevorzugt Personen mit der **geringsten Auslastung**, lässt
 Abwesende aus und vergibt niemanden doppelt am selben Tag. Ausnahmen: Der
@@ -368,8 +369,8 @@ es eine Zuteilung mit Zusage und Erinnerung.
 ### Woche einrichten
 
 Was der ganzen Woche gehört, stellst du unter **Woche einrichten** ein:
-beim Planen der Zusammenkünfte die Karte mit dem Zeichen (drei Regler) neben
-„Dienstag" und „Sonntag". Die Seite ist eine Ebene unter dem Plan – oben führt
+beim Planen der Zusammenkünfte die Karte **Woche einrichten** neben „Dienstag"
+und „Sonntag" (am Handy darunter). Die Seite ist eine Ebene unter dem Plan – oben führt
 der Pfeil zurück, ebenso die Zurück-Taste. Untereinander stehen vier Karten:
 
 | Karte | Was du dort einstellst |
@@ -513,7 +514,7 @@ Woche — im Zuteilungs-Blatt, ohne einen zusätzlichen Schalter:
 | Eine **Person aus der Liste** antippen | Ein Bruder eurer Versammlung. Er bekommt die Aufgabe wie jede andere: Bestätigung, Erinnerung, Anrechnung auf die Auslastung. |
 
 Beides steht im selben Blatt untereinander, jeder Weg führt also auch wieder
-zurück. **Entfernen** und **Leeren** setzen den Platz auf „Gastredner" zurück —
+zurück. **Entfernen** setzt den Platz auf „Gastredner" zurück —
 den Redner des öffentlichen Vortrags vereinbart man, deshalb besetzt die
 Automatik ihn nie von sich aus. Mit dem Gastredner geht beim Entfernen auch
 seine Versammlung, ebenso, wenn du statt seiner eine Person aus der Liste
@@ -796,7 +797,7 @@ siehe [Anwesenheit](#anwesenheit)).
   Namen. Ein Tipp öffnet die Person – bei einer langen Wartezeit die
   Wartezeiten mit diesem Bereich, bei vielen Absagen die Absagen;
   **Alle Hinweise** zeigt den Rest.
-- Am Handy führen unter **Genauer ansehen** sechs Kacheln weiter – **Zu oft,
+- Am Handy führen unter **Genauer ansehen** sechs Kacheln untereinander weiter – **Zu oft,
   zu selten**, **Einseitig verteilt**, **Wartezeiten**, **Engpässe** (mit der
   Zahl der knappen und, wenn es sie gibt, der fast knappen Bereiche),
   **Treffpunkte, Absagen, Ballungen** und
@@ -1051,9 +1052,10 @@ daneben.
 - **+ Treffpunkt für diese Woche** legt einen einmaligen an, etwa einen
   Pioniertag: Gruppe (oder Versammlung), Wochentag, Uhrzeit und Ort. Ohne Ort
   nimmt er euren Saal.
-- **Automatisch** besetzt die offenen Leiter, **Leeren** nimmt alle wieder heraus
-  (zwei Tipps); **Plan senden** teilt die Woche mit. Beide Knöpfe stehen am
-  Handy unten in der Leiste, ab dem Tablet rechts neben der Woche.
+- **Automatisch** besetzt die offenen Leiter – **Rückgängig** in der Meldung
+  danach nimmt sie wieder heraus; **Plan senden** teilt die Woche mit. Beide
+  Knöpfe stehen am Handy unten in der Leiste, ab dem Tablet rechts neben der
+  Woche.
 
 **Gruppenaufseher** können die Treffpunkte **ihrer** Gruppe selbst planen, ohne
 Admin zu sein – Uhrzeit, Ort, Leiter, zusätzliche Treffpunkte und den Grundplan
@@ -1074,10 +1076,12 @@ am Tag (dort meinte es eine von mehreren).
 
 **Der Leiter kann auch jemand von außerhalb sein.** In der Dienstwoche leitet
 in der Regel der **Kreisaufseher** den Treffpunkt, und der steht in keiner
-Personenliste. Tippe den Treffpunkt-Leiter an: Oben im Blatt gibst du einen
-**Namen als Freitext** ein und bestätigst mit **Übernehmen** — darunter steht
-weiterhin die Liste der eigenen Verkündiger, falls es doch jemand von euch
-sein soll. Beide Wege führen zurück, du kannst also jederzeit wechseln.
+Personenliste. Tippe den Treffpunkt-Leiter an: Oben stehen wie immer **Wer
+übernimmt?** und die Liste der eigenen Verkündiger. Unter der Liste öffnet
+**Jemand von außerhalb (z. B. Kreisaufseher)** ein Feld für den **Namen als
+Freitext**; du bestätigst mit **Übernehmen**. Leitet schon jemand von
+außerhalb, steht das Feld gleich offen da. Beide Wege führen zurück, du
+kannst also jederzeit wechseln.
 
 > Ein Freitext-Leiter hat die App nicht: Er bekommt keine Aufgabe und keine
 > Erinnerung, sein Platz steht gleich voll da (es gibt nichts zu bestätigen),
@@ -1321,8 +1325,8 @@ Oben stehen Name, Gruppe und Rolle, daneben der **Stift** für
   angemeldet, steht **Konto verknüpft** da, und das ✕ nimmt das Konto aus der
   Versammlung – mit ihm geht ihr Link. Beim eigenen fehlt es.
   **Wer schon angemeldet ist, braucht für ein weiteres Gerät keinen neuen
-  Link:** Im Profil zeigt **Code anzeigen** einen Einmal-Code, und **Zugang
-  erneuern** sperrt einen verlorenen Zettel selbst (siehe Handbuch für
+  Link:** Im Profil zeigt **Code anzeigen** einen Einmal-Code, und **Zettel und
+  Link sperren** sperrt einen verlorenen Zettel selbst (siehe Handbuch für
   Verkündiger, Abschnitt 7). Danach steht die Person ohne Link da – angemeldet
   bleibt sie.
 - **Zettel** druckt die App auf A4, sechs je Blatt zum Ausschneiden, in der
@@ -1795,8 +1799,9 @@ der Reinigung **Gruppen-Rotation** mit der Zahl der Gruppen, die reinigen
   mit** die Wochen ohne sie. Wieder angeschaltet ist sie wieder dabei; eine
   neue Gruppe reinigt von Anfang an mit. Der Schalter gilt sofort, wie bei den
   Personen. Wo eine abgeschaltete Gruppe schon eingeteilt ist, bleibt sie
-  stehen, bis du den Platz neu besetzt – von Hand oder nach **Leeren** mit
-  **Automatisch**. Sind alle Gruppen abgeschaltet, bleibt die Reinigung offen;
+  stehen, bis du den Platz neu besetzt – von Hand, oder du nimmst sie mit
+  **Entfernen** heraus und lässt **Automatisch** neu verteilen. Sind alle
+  Gruppen abgeschaltet, bleibt die Reinigung offen;
   das Zuteilen-Blatt sagt dann „Gruppen: 0", und als Admin öffnest du dort mit
   **Reinigung ›** gleich dieses Blatt.
 - **Hilfsdienst entfernen** – darüber steht, was mitgeht: „Mit dem Dienst gehen
@@ -2151,7 +2156,7 @@ Durchschnitt (siehe [Anwesenheit](#anwesenheit)).
 Für Schulungsaufgaben gibt es zusätzlich das **S‑89‑Formular** – die
 Aufgabenzuteilung, die sonst auf Papier ausgeteilt wird. Du erreichst es beim
 Zuteilen über **S‑89 anzeigen** unter dem Namen dessen, der den Platz hat; der
-Verkündiger über den Knopf **S‑89** an seiner Aufgabe.
+Verkündiger über **Zettel (S‑89)** an seiner Aufgabe.
 
 Es enthält Name und Gesprächspartner, Datum, Aufgabe, Schulungspunkt und den
 Raum (**Hauptsaal** oder **Zusätzliche Klasse**). Alle Angaben kommen aus der
@@ -2173,9 +2178,10 @@ Sekunden. Ein Hinweisstreifen nennt den Zeitpunkt der Aufnahme:
 
 ![Offline-Stand](screenshots/offline-stand.png)
 
-Ohne Netz heißt er **„Offline"**. Hat das Gerät Netz und die Daten lassen nur
-auf sich warten, heißt er **„Verbindung langsam"** – kommen sie noch, ersetzen
-sie den Stand still; scheitert das Laden, wird daraus wieder „Offline".
+Ohne Netz heißt er **„Keine Verbindung"**. Hat das Gerät Netz und die Daten
+lassen nur auf sich warten, heißt er **„Verbindung langsam"** – kommen sie noch,
+ersetzen sie den Stand still; scheitert das Laden, wird daraus wieder „Keine
+Verbindung".
 
 **Planen ist offline gesperrt.** Zuteilen, automatisch zuteilen, Personen
 bearbeiten, Einstellungen ändern und Holen funktionieren nur online. Beim

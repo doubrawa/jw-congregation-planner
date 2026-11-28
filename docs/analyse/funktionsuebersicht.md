@@ -108,8 +108,8 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | 41 | Externe Redner als Freitext (Gastredner/Kreisaufseher) | Zuteilungs-Sheet | Planer | `PartSlotSelection.guest`, `isGuestRole` |
 | 41a | Öffentlicher Vortrag umschaltbar: Gastredner ↔ eigener Redner (T29) | Zuteilungs-Sheet | Planer | `isSpeakerRole`, `ROLE_OWN_SPEAKER` |
 | 41b | Sonderwoche: Tag/Uhrzeit verlegen, Zusammenkunft absagen, Grund (T30) | Planen | Planer | `Week.dev`, `SonderwochePanel`, `istAusgefallen` |
-| 42 | Auto-Zuteilung, getrennt nach Aufgaben / Hilfsdiensten | Planen | Planer | `planen/AutoAssignPanel.tsx`, `autoAssignMeeting` |
-| 43 | Leeren mit Zwei-Tipp-Bestätigung | Planen | Planer | `AutoAssignPanel.tsx` |
+| 42 | Auto-Zuteilung, getrennt nach Aufgaben / Hilfsdiensten | Planen | Planer | `planen/AutomatischBlatt.tsx`, `autoAssignMeeting` |
+| 43 | „Rückgängig" in der Meldung nach der Auto-Zuteilung — nimmt genau die eben besetzten Plätze zurück (ersetzt seit T220 das „Leeren") | Planen | Planer | `planen/AutomatischBlatt.tsx`, `data/planung/auto-zurueck.ts` |
 | 44 | Konflikt-Banner: abwesend, Doppelbelegung, Hilfsdienst+Aufgabe (Serien seit T81 nicht mehr) | Planen | Planer | `planen/PlanBanners.tsx`, `weekConflicts` |
 | 45 | Banner der offenen Slots (ganze Woche) | Planen | Planer | `openSlotLabels` |
 | 46 | Ampel-Punkt je Chip: grün bestätigt / gelb wartet / rot abgesagt — je Platz, nicht je Person | Planen | Planer | `zusageStatus`, `planen/useZusage.ts`, `ZusageStatus.tsx` |
@@ -195,7 +195,7 @@ Navigation auf einen gesperrten Screen landet im Programm.
 | # | Funktion | Wo | Wer | Umsetzung |
 | --- | --- | --- | --- | --- |
 | 89 | Name, Konto-E-Mail, Versammlung | Profil | alle | `profil/ProfilScreen.tsx` |
-| 90 | Push-Mitteilungen an/aus (je Gerät) | Profil | alle | `components/usePush.ts`, `lib/push.ts` |
+| 90 | Mitteilungen auf dieses Gerät an/aus (Push, je Gerät) | Profil | alle | `components/usePush.ts`, `lib/push.ts` |
 | 91 | iOS-Hinweis „erst installieren" | Profil | alle | `pushNeedsInstall` |
 | 92 | App installieren (Chromium) | Profil | alle | `lib/install.ts` |
 | 93 | 11 Farbschemata (7 hell, 4 dunkel, inkl. „Hoher Kontrast") | Profil | alle | `THEME_LIST`, `styles/tokens.css` |

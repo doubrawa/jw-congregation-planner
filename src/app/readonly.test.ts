@@ -37,11 +37,14 @@ describe('isViewAction', () => {
   const writes: AppAction['type'][] = [
     'assign',
     'autoAssign',
-    'clearAssignments',
+    // „Rückgängig" nach Automatisch leert Plätze — offline stünden sie beim nächsten Laden wieder da.
+    'autoZurueck',
     'addPerson',
     'updatePerson',
     'removePerson',
     'confirmTask',
+    // „Rückgängig" nach dem Bestätigen löscht die Zusage — offen käme sie beim nächsten Laden wieder.
+    'zusageZurueck',
     'declineTask',
     // Einen freien Platz übernehmen schreibt (über die Edge Function) — offline nicht.
     'platzUebernehmen',

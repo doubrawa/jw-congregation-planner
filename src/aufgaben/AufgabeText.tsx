@@ -5,6 +5,7 @@ import { versammlungsSprache } from '../i18n/langs'
 import { aufgabenHaelften, aufgabenSprache, aufgabenTermin, aufgabenTitelSprache, useT } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import { abstandVorn } from './aufgabe-anzeige'
+import './aufgaben.css'
 
 /**
  * **Zeilen aus zwei Sprachen** (T173): Was aus dem Programm kommt — Punkt,
@@ -47,15 +48,25 @@ export function AufgabeTermin({ task }: { task: { date: string; lesersprache?: b
  * Wann eine Aufgabe ist: der Abstand in Worten, dann der Termin — „Morgen ·
  * Dienstag, 8. September · 19:00"; ohne Kalendertag nur der Termin. Auf dem
  * Start, unter „Meine Aufgaben", im Blatt beim Öffnen und beim Tauschen.
+ *
+ * Der Termin bleibt beisammen (`.wann-termin`): Passt nicht alles in eine
+ * Zeile, rückt er als Ganzes in die nächste — sonst stünde die Uhrzeit allein
+ * da oder eine Zeile begänne mit dem Trennpunkt.
+ *
+ * Alles in einem Element: In einem Flex-Rahmen (`.aufgabe-wann`) würde sonst
+ * jeder Teil ein eigenes Flex-Kind, und „Morgen ·" stünde als schmale Spalte
+ * neben dem Termin.
  */
 export function AufgabeWann({ task }: { task: { date: string; at?: number | null; lesersprache?: boolean } }) {
   const lang = useAppSelector((s) => s.lang)
   const abstand = abstandVorn(task.at, lang)
   return (
-    <>
+    <span>
       {abstand && `${abstand} · `}
-      <AufgabeTermin task={task} />
-    </>
+      <span className="wann-termin">
+        <AufgabeTermin task={task} />
+      </span>
+    </span>
   )
 }
 

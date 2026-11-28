@@ -188,8 +188,8 @@ function folge(s: AppState): AppAction[] {
     { type: 'talkEdit', si: p.si, ii: p.ii, title: 'Probevortrag' },
     { type: 'openingSong', song: '12' },
     { type: 'closingSong', song: '34' },
-    { type: 'clearAssignments', scope: 'parts' },
-    { type: 'clearAssignments', scope: 'helpers' },
+    // „Rückgängig" für einen Platz, an dem nicht mehr steht, was die Automatik setzte.
+    { type: 'autoZurueck', gesetzt: [{ key: 'gibt-es-nicht', name: 'Niemand' }] },
     { type: 'lacAdd', si: p.si, title: '' }, // leerer Titel → legt nichts an
     { type: 'lacRemove', si: p.si, ii: 999 }, // Punkt gibt es nicht
     { type: 'lacMove', si: p.si, ii: 0, dir: -1 }, // schon ganz oben
@@ -205,7 +205,6 @@ function folge(s: AppState): AppAction[] {
     { type: 'renameService', key: svc.key, name: svc.name }, // heißt schon so
     { type: 'updateGroup', id: grp.id, patch: { overseerId: grp.overseerId } },
     { type: 'fsRuleUpdate', id: regel.id, patch: { time: regel.time } },
-    { type: 'fsClear', onlyGroup: null },
     { type: 'setCongLang', code: 'de' }, // ist ohnehin schon gesetzt
     { type: 'removeProgLang', code: 'gibt-es-nicht' },
     { type: 'removeAbsence', id: 'gibt-es-nicht' },

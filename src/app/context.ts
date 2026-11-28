@@ -20,6 +20,7 @@ import type { Tausch, TauschAnfrage } from '../data/tausch'
 import type { FontScale } from '../data/constants'
 import type { OffenerPlatz } from '../data/offene-plaetze'
 import type { AssignScope, Umfang } from '../data/planung/automatik'
+import type { AutoGesetzt } from '../data/planung/auto-zurueck'
 import type { VorgemerkterVortrag, Vortragsplan } from '../data/vortragsplan'
 import type { Belegung } from '../data/weitere-plaene'
 import type { AbgelehnteGesuche } from '../lib/abgelehnte-gesuche'
@@ -67,6 +68,11 @@ import type {
 export interface Toast {
   id: number // erzwingt Neustart des Auto-Hide-Timers bei gleichem Text
   text: string
+  /**
+   * Ein Knopf an der Meldung, der das eben Getane zurücknimmt („Rückgängig"
+   * nach dem Bestätigen). Mit ihm steht die Meldung länger (`toastDauer`).
+   */
+  handlung?: { text: string; aktion: AppAction }
 }
 
 /*
@@ -580,10 +586,12 @@ export type AppAction =
   // Aktuelle Woche; Bereich (Default: alles) und Umfang: die gezeigte
   // Zusammenkunft oder beide (T121, „Ganze Woche").
   | { type: 'autoAssign'; scope?: AssignScope; umfang?: Umfang }
-  | { type: 'clearAssignments'; scope: AssignScope; umfang?: Umfang }
+  // „Rückgängig" in der Meldung nach „Automatisch" (Zusammenkünfte wie
+  // Treffpunkte): die eben besetzten Plätze wieder offen, wo noch dieselbe
+  // Zuteilung steht.
+  | { type: 'autoZurueck'; gesetzt: readonly AutoGesetzt[] }
   // Treffpunkte (Wochen-Bearbeitung im Planen-Tab)
   | { type: 'fsAutoAssign'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche automatisch besetzen
-  | { type: 'fsClear'; onlyGroup: string | null } // Treffpunkt-Leiter der aktuellen Woche leeren
   | { type: 'fsInstUpdate'; wi: number; id: string; patch: Partial<Pick<FsInstance, 'time' | 'place'>> }
   | { type: 'fsInstRemove'; wi: number; id: string }
   | { type: 'fsInstAdd'; inst: FsInstance }
@@ -595,6 +603,9 @@ export type AppAction =
   // Bestätigungs-Flow
   | { type: 'confirmTask'; id: string }
   | { type: 'confirmAll' } // alle offenen eigenen Zuteilungen auf einmal (T121)
+  // Die eben gegebene Zusage zurücknehmen — „Rückgängig" in der Meldung nach
+  // dem Bestätigen. Die Aufgaben stehen danach wieder offen da.
+  | { type: 'zusageZurueck'; ids: string[] }
   /**
    * Absagen — eine Aufgabe (Absage-Blatt) oder alle in einer Abwesenheit
    * (T181): Wer plant, bekommt je Empfänger einen Push für alle (`absageMelden`).

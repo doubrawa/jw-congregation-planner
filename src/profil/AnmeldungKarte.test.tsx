@@ -11,7 +11,7 @@ import type { EinmalCode } from '../lib/zugang'
 
 /**
  * **Die Karte „Anmeldung"**: ein Einmal-Code fürs nächste Gerät und
- * „Zugang erneuern". Gerufen wird die Function über `lib/zugang.ts` — hier
+ * „Zettel und Link sperren". Gerufen wird die Function über `lib/zugang.ts` — hier
  * nachgestellt; was die Function dabei prüft, steht in
  * `supabase/functions/_test/anmelden.test.ts`.
  */
@@ -128,18 +128,18 @@ describe('Ein weiteres Gerät anmelden', () => {
     const anzeigen = knopf(container, t.codeAnzeigen)!
     fireEvent.click(anzeigen)
     await waitFor(() => expect(anzeigen.getAttribute('aria-disabled')).toBe('true'))
-    for (const k of [anzeigen, knopf(container, t.zugangErneuern)!]) {
+    for (const k of [anzeigen, knopf(container, t.zugangSperren)!]) {
       expect(k.disabled, k.textContent ?? '').toBe(false)
       expect(k.getAttribute('aria-disabled'), k.textContent ?? '').toBe('true')
     }
     fireEvent.click(anzeigen)
-    fireEvent.click(knopf(container, t.zugangErneuern)!)
+    fireEvent.click(knopf(container, t.zugangSperren)!)
     expect(einmalCodeHolen).toHaveBeenCalledTimes(1)
     // Gesperrt schärft auch der zweite Knopf nicht.
-    expect(knopf(container, t.zugangErneuernSicher)).toBeUndefined()
+    expect(knopf(container, t.zugangSperrenSicher)).toBeUndefined()
     antworten(CODE)
     await waitFor(() => expect(container.querySelector('.anmeldung-code-wert')).not.toBeNull())
-    expect(knopf(container, t.zugangErneuern)?.getAttribute('aria-disabled')).toBe('false')
+    expect(knopf(container, t.zugangSperren)?.getAttribute('aria-disabled')).toBe('false')
   })
 
   it('offline fragt er gar nicht erst — der Hinweis sagt, warum', () => {
@@ -150,15 +150,15 @@ describe('Ein weiteres Gerät anmelden', () => {
   })
 })
 
-describe('Zugang erneuern', () => {
-  it('fragt erst nach — der zweite Tipp erneuert, der Hinweis sagt es, ein gezeigter Code verschwindet', async () => {
+describe('Zettel und Link sperren', () => {
+  it('fragt erst nach — der zweite Tipp sperrt, der Hinweis sagt es, ein gezeigter Code verschwindet', async () => {
     const { container, dispatch } = zeige()
     fireEvent.click(knopf(container, t.codeAnzeigen)!)
     await waitFor(() => expect(container.querySelector('.anmeldung-code-wert')).not.toBeNull())
-    fireEvent.click(knopf(container, t.zugangErneuern)!)
+    fireEvent.click(knopf(container, t.zugangSperren)!)
     expect(zugangErneuern).not.toHaveBeenCalled()
-    bestaetigen(knopf(container, t.zugangErneuernSicher))
-    await waitFor(() => expect(toasts(dispatch)).toEqual([t.zugangErneuert]))
+    bestaetigen(knopf(container, t.zugangSperrenSicher))
+    await waitFor(() => expect(toasts(dispatch)).toEqual([t.zugangGesperrt]))
     expect(zugangErneuern).toHaveBeenCalledTimes(1)
     expect(container.querySelector('.anmeldung-code-wert')).toBeNull()
   })
@@ -166,15 +166,15 @@ describe('Zugang erneuern', () => {
   it('geht es nicht, sagt es der Hinweis', async () => {
     zugangErneuern.mockResolvedValue(false)
     const { container, dispatch } = zeige()
-    fireEvent.click(knopf(container, t.zugangErneuern)!)
-    bestaetigen(knopf(container, t.zugangErneuernSicher))
+    fireEvent.click(knopf(container, t.zugangSperren)!)
+    bestaetigen(knopf(container, t.zugangSperrenSicher))
     await waitFor(() => expect(toasts(dispatch)).toEqual([t.zugangFehler]))
   })
 
   it('offline erneuert er nicht', () => {
     const { container, dispatch } = zeige({ staleAt: JETZT.getTime() })
-    fireEvent.click(knopf(container, t.zugangErneuern)!)
-    bestaetigen(knopf(container, t.zugangErneuernSicher))
+    fireEvent.click(knopf(container, t.zugangSperren)!)
+    bestaetigen(knopf(container, t.zugangSperrenSicher))
     expect(zugangErneuern).not.toHaveBeenCalled()
     expect(toasts(dispatch)).toEqual([t.offlineReadOnly])
   })

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import { codeAnzeige, codeAus, codeNormal, codeVollstaendig, tokenAus } from '../../supabase/functions/_shared/anmeldung.ts'
+import { CODE_LAENGE, codeAnzeige, codeAus, codeNormal, codeVollstaendig, tokenAus } from '../../supabase/functions/_shared/anmeldung.ts'
 import { useApp } from '../app/context'
 import { NachladeGrenze } from '../components/NachladeGrenze'
 import { DESKTOP_BREITE, useMedia } from '../components/useMedia'
@@ -119,7 +119,11 @@ export function LoginScreen() {
               }}
             >
               <Suspense fallback={<p className="klein-text login-scanner-laedt">{t.laedt}</p>}>
-                <ZettelScanner onGefunden={(text) => void gescannt(text)} onAbbrechen={() => setAnsicht({ art: 'start' })} />
+                <ZettelScanner
+                  onGefunden={(text) => void gescannt(text)}
+                  onTippen={() => setAnsicht({ art: 'code', code: '' })}
+                  onAbbrechen={() => setAnsicht({ art: 'start' })}
+                />
               </Suspense>
             </NachladeGrenze>
           </>
@@ -247,6 +251,11 @@ function CodeEingabe({ code: vorgabe, onAngemeldet, onZurueck }: { code: string;
       if (codeVollstaendig(code)) {
         setFehler(null)
         setAnfrage((a) => ({ code, n: (a?.n ?? 0) + 1 }))
+      } else {
+        // Der Knopf ist blass, solange der Code unvollständig ist — ein Tipp
+        // darauf sagt, was fehlt, und stellt die Schreibmarke zurück ins Feld.
+        setFehler(fill(t.codeUnvollstaendig, { m: CODE_LAENGE, n: CODE_LAENGE - code.length }))
+        feld.current?.focus()
       }
       return
     }

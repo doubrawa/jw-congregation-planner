@@ -87,8 +87,8 @@ function zeige(over: Partial<AppState> = {}) {
 
 const knopf = (c: HTMLElement, text: string) => [...c.querySelectorAll('button')].find((b) => b.textContent === text)
 const sprachwahl = (c: HTMLElement) => c.querySelector<HTMLSelectElement>('.profil-sprache select')!
-const regler = (c: HTMLElement) => c.querySelector<HTMLInputElement>('.profil-regler-feld')!
-const stufe = (c: HTMLElement) => c.querySelector('.profil-schrift-kopf .klein-text')?.textContent
+const schriftKnoepfe = (c: HTMLElement) => [...c.querySelectorAll<HTMLButtonElement>('.profil-schriftwahl button')]
+const stufe = (c: HTMLElement) => c.querySelector('.profil-schrift-stufe')?.textContent
 
 beforeEach(() => {
   Object.assign(push, { angemeldet: true, supported: true, needsInstall: false, subscribed: false })
@@ -300,34 +300,49 @@ describe('Darstellung (T121): Dunkel, Hell, Automatisch', () => {
   })
 })
 
+/**
+ * **Schriftgröße: fünf Knöpfe, jeder mit einem „A" in seiner Größe.** Hier
+ * stellt ein, wer schlecht sieht — oft mit unsicherer Hand. Ein Schieberegler
+ * war dafür das kleinste Ziel der ganzen App (16 px hoch), und die beiden „A"
+ * daneben sahen aus wie Knöpfe, taten aber nichts.
+ */
 describe('Schriftgröße', () => {
-  it('der Regler deckt genau die vorgesehenen Stufen ab', () => {
+  const namen = [t.schriftKlein, t.schriftStandard, t.schriftGross, t.schriftGroesser, t.schriftSehrGross]
+
+  it('je Stufe ein Knopf, von klein nach groß — jeder heißt wie seine Stufe', () => {
     const { container } = zeige()
-    expect(regler(container).min).toBe('0')
-    expect(regler(container).max).toBe(String(FONT_SCALES.length - 1))
-    expect(regler(container).step).toBe('1')
+    expect(schriftKnoepfe(container).map((k) => k.getAttribute('aria-label'))).toEqual(namen)
+    expect(schriftKnoepfe(container)).toHaveLength(FONT_SCALES.length)
+    expect(container.querySelector('.profil-schrift input[type="range"]')).toBeNull()
   })
 
-  it('die Stufe steht auch als Wort da — und im Regler für Screenreader', () => {
-    const { container } = zeige({ fontScale: FONT_SCALES[0]! })
-    expect(stufe(container)).toBe(t.schriftKlein)
-    expect(regler(container).getAttribute('aria-valuetext')).toBe(t.schriftKlein)
+  it('jedes „A" steht in der Größe seiner Stufe — das kleinste vorn, das größte hinten, unabhängig von der gewählten', () => {
+    const groessen = (c: HTMLElement) => schriftKnoepfe(c).map((k) => parseFloat(k.querySelector('span')!.style.fontSize))
+    const beiStandard = groessen(zeige().container)
+    expect(beiStandard).toEqual([...beiStandard].sort((a, b) => a - b))
+    expect(new Set(beiStandard).size).toBe(FONT_SCALES.length)
+    expect(beiStandard[4]! / beiStandard[1]!).toBeCloseTo(FONT_SCALES[4]! / FONT_SCALES[1]!, 5)
+    cleanup()
+    // Wüchsen sie mit der gewählten Stufe, zeigte keines mehr, was sein Tipp bringt.
+    expect(groessen(zeige({ fontScale: FONT_SCALES[4]! }).container)).toEqual(beiStandard)
   })
 
-  it('ein Zug am Regler setzt die zugehörige Stufe', () => {
+  it('ein Tipp setzt genau diese Stufe', () => {
     const { container, dispatch } = zeige()
-    fireEvent.change(regler(container), { target: { value: '3' } })
+    fireEvent.click(schriftKnoepfe(container)[3]!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setFontScale', scale: FONT_SCALES[3] })
+    fireEvent.click(schriftKnoepfe(container)[0]!)
+    expect(dispatch).toHaveBeenLastCalledWith({ type: 'setFontScale', scale: FONT_SCALES[0] })
   })
 
-  it('jede Stufe steht an ihrer Stelle und trägt ihren Namen', () => {
+  it('die gewählte Stufe ist gedrückt — nur sie — und steht als Wort daneben', () => {
     // Ein unbekannter gespeicherter Wert kommt hier nicht an: Ihn fängt schon
-    // der Start ab (`asFontScale`, init.test.ts). Bis zum 16.10.2026 stand
-    // dieser Fall hier — mit einem Zustand, den die App nicht erzeugt.
-    const namen = [t.schriftKlein, t.schriftStandard, t.schriftGross, t.schriftGroesser, t.schriftSehrGross]
+    // der Start ab (`asFontScale`, init.test.ts).
     FONT_SCALES.forEach((fontScale, i) => {
       const { container } = zeige({ fontScale })
-      expect(regler(container).value).toBe(String(i))
+      expect(schriftKnoepfe(container).map((k) => k.getAttribute('aria-pressed'))).toEqual(
+        FONT_SCALES.map((_, j) => String(j === i)),
+      )
       expect(stufe(container)).toBe(namen[i])
       cleanup()
     })

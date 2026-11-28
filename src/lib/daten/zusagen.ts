@@ -63,7 +63,11 @@ export function absageFromRow(r: AbsageRow): Absage {
  */
 export function substituteSeek(taskKey: string): void {
   if (!supabase) return
-  void run(supabase.functions.invoke('substitute', { body: { action: 'seek', taskKey } }))
+  const client = supabase
+  // Nach einem laufenden Zurücknehmen: Dessen Löschen räumte die Zeilen
+  // „Ersatz gesucht" sonst gleich wieder ab (`confirmations_gesuch` sähe noch
+  // keine Absage — die neue wartet ja selbst auf das Löschen).
+  void nachDemZuruecknehmen(() => run(client.functions.invoke('substitute', { body: { action: 'seek', taskKey } })))
 }
 
 /** Absagen, die nur ein veralteter Stand erklärt: Der Platz ist nicht mehr der eigene oder fällt aus. */
@@ -190,15 +194,73 @@ export function saveConfirmation(
   status: Exclude<TaskStatus, 'offen'>,
 ): void {
   if (!supabase) return
+  const client = supabase
   // Über `zeilenRun`: Weist die Datenbank ab, weil die Aufgabe inzwischen
   // nicht mehr meine ist (`task_gehoert_mir`, 42501), wird nachgeladen — sonst
   // bliebe lokal „bestätigt" für einen Platz stehen, den längst ein anderer hat.
-  void zeilenRun(
-    supabase.from('confirmations').upsert(
-      { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
-      { onConflict: 'congregation_id,task_key,user_id' },
-    ),
-  )
+  const schreiben = () =>
+    zeilenRun(
+      client.from('confirmations').upsert(
+        { congregation_id: congregationId, user_id: userId, task_key: taskKey, status },
+        { onConflict: 'congregation_id,task_key,user_id' },
+      ),
+    )
+  // Käme die Zusage vor einem laufenden Zurücknehmen an, nähme dessen Löschen
+  // sie mit — hier bestätigt, in der Datenbank offen.
+  const arbeit = nachDemZuruecknehmen(schreiben)
+  // Ohne die Ergebnisse weiterzureichen: Sonst trüge jede Zusage die aller davor mit.
+  zusagenUnterwegs = Promise.allSettled([zusagenUnterwegs, arbeit]).then(() => undefined)
+}
+
+/** Die Zusagen, deren Antwort noch aussteht — damit ein Zurücknehmen sie nicht überholt. */
+let zusagenUnterwegs: Promise<void> = Promise.resolve()
+/** Das Zurücknehmen, dessen Antwort noch aussteht — damit nichts Neues es überholt. */
+let ruecknahme: Promise<void> | null = null
+
+/**
+ * Läuft ein Zurücknehmen, geht `los` erst nach ihm hinaus; sonst sofort, wie
+ * jeder Schreibweg. Solange es wartet, gilt es als unterwegs (`mitverfolgen`):
+ * Sein `fetch` geht ja noch nicht los.
+ */
+function nachDemZuruecknehmen(los: () => Promise<void>): Promise<void> {
+  const davor = ruecknahme
+  if (!davor) return los()
+  const arbeit = davor.then(los)
+  mitverfolgen(arbeit)
+  return arbeit
+}
+
+/**
+ * **Die eigene Zusage zurücknehmen** („Rückgängig" nach dem Bestätigen): die
+ * eigenen Zeilen zu diesen Aufgaben löschen — ohne Zeile ist eine Zusage offen.
+ * Das darf jedes Mitglied bei seinen eigenen (`confirmations_write`).
+ *
+ * Erst, wenn die Zusagen davor geschrieben sind: Käme das Löschen bei
+ * langsamem Netz vor dem Bestätigen an, stünde die Zusage danach wieder da —
+ * hier offen, in der Datenbank bestätigt. Eine Zusage danach wartet
+ * umgekehrt auf das Löschen (`ruecknahme`).
+ */
+export function zusageZuruecknehmen(congregationId: string, userId: string, taskKeys: string[]): void {
+  if (!supabase || taskKeys.length === 0) return
+  const client = supabase
+  const arbeit = zusagenUnterwegs
+    .then(() =>
+      zeilenRun(
+        client
+          .from('confirmations')
+          .delete()
+          .eq('congregation_id', congregationId)
+          .eq('user_id', userId)
+          .in('task_key', taskKeys),
+      ),
+    )
+    .catch(() => undefined)
+  mitverfolgen(arbeit)
+  zusagenUnterwegs = arbeit
+  ruecknahme = arbeit
+  void arbeit.then(() => {
+    if (ruecknahme === arbeit) ruecknahme = null
+  })
 }
 
 /**

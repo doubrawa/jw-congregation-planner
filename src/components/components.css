@@ -47,8 +47,8 @@
 }
 
 /* Abmelden nach dem ersten Tipp („Wirklich abmelden?") — in der Farbe der
-   übrigen Zwei-Tipp-Knöpfe (Leeren, Person löschen). `.zwei-tipp` für jeden
-   weiteren Umriss-Knopf, der so nachfragt („Zugang erneuern"). */
+   übrigen Zwei-Tipp-Knöpfe (Person löschen, Entfernen). `.zwei-tipp` für jeden
+   weiteren Umriss-Knopf, der so nachfragt („Zettel und Link sperren"). */
 .abmelden.is-armed,
 .zwei-tipp.is-armed {
   border-color: var(--problem);
@@ -208,8 +208,12 @@
    dazu. Ein Wochentag, den Chrome nicht trennen kann (Polnisch, Rumänisch, ein
    englisches Großwort), bleibt ganz: Passt er nicht, rückt die Bearbeiten-Karte
    in die nächste Zeile — neben ihr blieben bei 320 px 74 px, und „niedziel|a",
-   „Tuesda|y" brachen ab Stufe 1,15 (T128). */
+   „Tuesda|y" brachen ab Stufe 1,15 (T128).
+
+   Die Leiste misst sich selbst (`container-type`), damit die Bearbeiten-Karte
+   weiß, ob neben den Tagen Platz für sie ist. */
 .meeting-tabs {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -286,10 +290,11 @@
 }
 
 /* Schriftstufen (T191): Beschriftungen in Großbuchstaben oder gesperrt
-   mindestens 11 px, Text und Aktionen mindestens 12 px — je mal `--fs`. */
+   mindestens 11 px, Text und Aktionen mindestens 12 px — je mal `--fs`. Die
+   Beschriftung eines Abschnitts steht darüber: Sie sagt, was folgt. */
 .panel-label {
   padding: 8px 0 2px;
-  font-size: calc(11px * var(--fs));
+  font-size: calc(12.5px * var(--fs));
   font-weight: 600;
   letter-spacing: 0.16em;
   color: var(--panel-accent);
@@ -406,14 +411,46 @@ select {
   text-overflow: ellipsis;
 }
 
-/* Die Bearbeiten-Karte (T64) trägt ein Zeichen statt eines Wortes — so breit
-   wie hoch, und rückt sie um, steht sie am Ende der nächsten Zeile. */
+/* Die Bearbeiten-Karte (T64): ihr Zeichen und ihr Wort („Woche einrichten") —
+   das Zeichen allein sagt niemandem, was dahinter liegt. Ab dem Tablet steht
+   sie neben den Tagen, das Wort in zwei Zeilen; passt sie nicht, rückt sie um
+   und steht am Ende der nächsten Zeile. */
 .meeting-tab--icon {
   flex: none;
+  flex-direction: row;
   align-items: center;
+  gap: 8px;
   min-width: 56px;
   margin-inline-start: auto;
   padding-inline: 14px;
+}
+
+.meeting-tab-wort {
+  max-width: 6.5em;
+  font-size: calc(13px * var(--fs));
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.meeting-tab.is-active .meeting-tab-wort {
+  font-weight: 700;
+}
+
+/* Schmal (Handy, große Schrift): die Bearbeiten-Karte in einer eigenen Zeile
+   über die ganze Breite. Neben den Tagen nähme ihr Wort ihnen den Platz —
+   „вос-кре-сенье" bräche bei 375 px in drei Zeilen. Die Schwelle in `em`
+   wandert mit der Schriftstufe: zwei Tage mit ihrem Datum und die Karte
+   brauchen nebeneinander gut 28em. */
+@container (max-width: 30em) {
+  .meeting-tab--icon {
+    flex-basis: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  .meeting-tab-wort {
+    max-width: none;
+  }
 }
 
 /* Durchgestrichen: Diese Zusammenkunft fällt aus (T30). */

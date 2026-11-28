@@ -1,4 +1,5 @@
-import { useApp } from '../app/context'
+import { useId } from 'react'
+import { useApp, useAppDispatch } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
 import { useKalendertag } from '../app/useKalendertag'
 import { Punkt } from '../bausteine/Punkt'
@@ -6,27 +7,30 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { fromIso } from '../data/meeting-dates'
 import { LAGE_DER_ZUSAGE } from '../data/saal'
 import { eigeneTermine } from '../data/trolleys'
+import type { MyTask } from '../data/types'
 import { aufgabenLabel, fill, useT, wortMitZahl } from '../i18n/useT'
 import { mitWem, tagKurz, trolleyNameVon, zuDenTrolleys } from '../trolleys/trolley-anzeige'
 import { Zeitspanne } from '../trolleys/Zeitspanne'
 import { AufgabeKarte } from './AufgabeKarte'
 import { AufgabeText, AufgabeWann } from './AufgabeText'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
+import { ZusageStand } from './ZusageStand'
 import './aufgaben.css'
 
 /**
  * **Meine Aufgaben** (T121): alles, was ansteht — die nächste Aufgabe groß,
- * die übrigen je eine Zeile mit einem Haken zum Bestätigen, „Alle bestätigen"
- * für alles auf einmal; dann die eigenen Trolley-Termine. Was man übernehmen
- * kann (Einspringen, freie Plätze), steht seit dem 24.10.2026 unter „Freie
- * Plätze" (`FreiePlaetzeScreen`, T134). Die eigenen Abwesenheiten
- * stehen seit dem Umbau im Profil, der Hinweis auf Benachrichtigungen auf den
- * Mitteilungen.
+ * die übrigen je eine Zeile; „Alle bestätigen" für alles auf einmal; dann die
+ * eigenen Trolley-Termine. Was man übernehmen kann (Einspringen, freie
+ * Plätze), steht unter „Freie Plätze" (`FreiePlaetzeScreen`, T134), die
+ * eigenen Abwesenheiten im Profil.
+ *
+ * **Jede Zeile sagt ihren Stand als Wort:** Was offen ist, trägt den Knopf
+ * „Bestätigen"; danach steht dort „Bestätigt" mit Haken, nach einer Absage
+ * „Verhindert". Ein Tipp irgendwo sonst in der Zeile öffnet die Aufgabe.
  */
 export function AufgabenScreen() {
   const { state, dispatch } = useApp()
-  const i18n = useT()
-  const { t } = i18n
+  const { t } = useT()
 
   const [naechste, ...weitere] = state.myTasks
   const zuBestaetigen = state.myTasks.filter((task) => task.status === 'offen').length
@@ -53,41 +57,62 @@ export function AufgabenScreen() {
 
       {weitere.length > 0 && (
         <div className="karte aufgaben-liste">
-          {weitere.map((task) => {
-            const label = aufgabenLabel(task, i18n)
-            return (
-              <div key={task.id} className="aufgaben-zeile">
-                <Punkt art={LAGE_DER_ZUSAGE[task.status]} />
-                <button type="button" className="aufgaben-zeile-text" onClick={() => dispatch({ type: 'openMyTask', id: task.id })}>
-                  <span className="aufgaben-zeile-titel">
-                    <AufgabeText task={task} />
-                  </span>
-                  <span className="klein-text">
-                    <AufgabeWann task={task} />
-                  </span>
-                </button>
-                {task.status === 'offen' ? (
-                  <button
-                    type="button"
-                    className="knopf-haken"
-                    aria-label={`${label}: ${t.bestaetigen}`}
-                    onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
-                  >
-                    <Zeichen name="haken" />
-                  </button>
-                ) : (
-                  <span className="aufgaben-zeile-pfeil">
-                    <Zeichen name="weiter" />
-                  </span>
-                )}
-              </div>
-            )
-          })}
+          {weitere.map((task) => (
+            <AufgabenZeile key={task.id} task={task} />
+          ))}
         </div>
       )}
 
       <TrolleyTermine />
     </section>
+  )
+}
+
+/**
+ * **Eine eigene Aufgabe als Zeile:** oben, was es ist, daneben „Bestätigen"
+ * oder der Stand als Wort; darunter über die ganze Breite, wann. Neben dem
+ * Wort-Knopf bräche der Termin am Handy in drei Zeilen.
+ *
+ * Die ganze Zeile öffnet die Aufgabe (`.aufgaben-zeile-text::after`); der Knopf
+ * dafür trägt den Titel und beschreibt sich mit dem Termin.
+ */
+function AufgabenZeile({ task }: { task: MyTask }) {
+  const dispatch = useAppDispatch()
+  const i18n = useT()
+  const { t } = i18n
+  const terminId = useId()
+  return (
+    <div className="aufgaben-zeile mit-termin">
+      <Punkt art={LAGE_DER_ZUSAGE[task.status]} />
+      <button
+        type="button"
+        className="aufgaben-zeile-text"
+        aria-describedby={terminId}
+        onClick={() => dispatch({ type: 'openMyTask', id: task.id })}
+      >
+        <span className="aufgaben-zeile-titel">
+          <AufgabeText task={task} />
+        </span>
+      </button>
+      {task.status === 'offen' ? (
+        <button
+          type="button"
+          className="knopf-pille knopf-pille--akzent aufgaben-zeile-knopf"
+          aria-label={`${aufgabenLabel(task, i18n)}: ${t.bestaetigen}`}
+          onClick={() => dispatch({ type: 'confirmTask', id: task.id })}
+        >
+          {t.bestaetigen}
+        </button>
+      ) : (
+        <span className="aufgaben-zeile-stand">
+          <ZusageStand status={task.status} />
+          <Zeichen name="weiter" />
+        </span>
+      )}
+      <span id={terminId} className="wann-zeile aufgaben-zeile-termin">
+        <AufgabeWann task={task} />
+      </span>
+    </div>
   )
 }
 
@@ -114,7 +139,7 @@ function TrolleyTermine() {
               <span className="aufgaben-zeile-titel" dir="auto">
                 {`${trolleyNameVon(state.trolleys, termin.trolleyId)} · ${mitWem(termin, ich, state.persons, t)}`}
               </span>
-              <span className="klein-text">
+              <span className="wann-zeile">
                 {tagKurz(termin.datum, state.lang)} · <Zeitspanne termin={termin} />
               </span>
             </button>

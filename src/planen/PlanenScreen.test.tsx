@@ -480,7 +480,7 @@ describe('Der Gruppenaufseher sieht nur seine Treffpunkte', () => {
   it('„Automatisch" bekommt seine Gruppe mit', () => {
     const { container, dispatch } = alsAufseher({ fsWeeks: [[offenerTreffpunkt('g1')]] })
     fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
-    fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
+    fireEvent.click(document.querySelector('[role="dialog"] .sheet-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: 'g1' })
   })
 
@@ -509,12 +509,12 @@ describe('Woche einrichten (T64, T121 `GWochePlanen`)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'mid' })
   })
 
-  it('der Admin kommt über das Zeichen neben den Tagen hin', () => {
+  it('der Admin kommt über die Karte neben den Tagen hin — sie trägt ihr Wort, nicht nur ein Zeichen', () => {
     const { container, dispatch } = zeige()
-    const zeichen = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')].find(
-      (b) => b.getAttribute('aria-label') === t.wocheEinrichten,
+    const karte = [...seite(container).querySelectorAll('.meeting-tabs .meeting-tab')].find(
+      (b) => b.textContent === t.wocheEinrichten,
     )!
-    fireEvent.click(zeichen)
+    fireEvent.click(karte)
     expect(dispatch).toHaveBeenCalledWith({ type: 'setTab', tab: 'edit' })
   })
 })
@@ -525,7 +525,7 @@ describe('Der Treffpunkt-Reiter', () => {
     const { container, dispatch } = zeige({ tab: 'fs', fsWeeks: [[offenerTreffpunkt('g1')]] })
     expect(seite(container).querySelector('.knopf-neu')).toBeTruthy()
     fireEvent.click(container.querySelector('.planen-leiste .aktion-neben')!)
-    fireEvent.click(document.querySelector('[role="dialog"] .auto-fuss .knopf-haupt')!)
+    fireEvent.click(document.querySelector('[role="dialog"] .sheet-fuss .knopf-haupt')!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'fsAutoAssign', onlyGroup: null })
   })
 

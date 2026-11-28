@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveMyFsTasks,
   fsAutoAssign,
-  fsClear,
   fsLeiterZuteilung,
   fsLeiterBinden,
   fsRenameLeader,
@@ -67,12 +66,6 @@ describe('T63 · Freitext-Leiter: setzen und zurücknehmen', () => {
     const [woche] = fsSetLeader(vorher, 0, 'i1', '')
     expect(woche?.[0]?.leader).toBe('')
     expect(woche?.[0]?.lext).toBeUndefined()
-  })
-
-  it('`fsClear` räumt das Kennzeichen mit weg', () => {
-    const { fsWeeks } = fsClear([[inst({ leader: KS, lext: true })]], 0)
-    expect(fsWeeks[0]?.[0]?.leader).toBe('')
-    expect(fsWeeks[0]?.[0]?.lext).toBeUndefined()
   })
 
   it('`fsLeiterZuteilung` gibt den Freitext gar nicht erst als Person aus', () => {

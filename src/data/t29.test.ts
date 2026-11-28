@@ -10,7 +10,7 @@ import {
 } from './helpers'
 import { partWorkload } from './auslastung'
 import { deriveMyTasks } from './planung/aufgaben'
-import { autoAssignMeeting, clearAssignments } from './planung/automatik'
+import { autoAssignMeeting } from './planung/automatik'
 import { assignmentsInMeeting, assignSlot } from './planung/zuteilen'
 import { pidsNachtragen } from './namensbindung'
 import type { Meeting, PartItem, PartSlotSelection, Person, Week } from './types'
@@ -226,34 +226,6 @@ describe('Ein Gastredner überlebt die Lade-Migrationen', () => {
 })
 
 describe('Der Weg zurück zum Gastredner', () => {
-  it('„Leeren" setzt den Platz auf „Gastredner" zurück', () => {
-    // Bliebe „Redner" stehen, wäre der leere Platz ein offener Slot, den die
-    // Auto-Zuteilung besetzt. Den Redner vereinbart man aber.
-    const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id)
-    const { weeks, count } = clearAssignments(eigen, 0, 'we', 'parts')
-    expect(count).toBe(1)
-    expect(vortragsSlot(weeks[0]!).name).toBe('')
-    expect(vortragsSlot(weeks[0]!).rolle).toBe(ROLE_GUEST_SPEAKER)
-    expect(vortragsSlot(weeks[0]!).pid).toBeUndefined()
-  })
-
-  it('„Leeren" lässt am eigenen Redner keine fremde Versammlung zurück', () => {
-    // So konnte eine Woche von vor dem 21.10.2026 dastehen (im Betrieb am
-    // selben Tag gezählt: keine): Das Zuteilungsblatt ließ die Versammlung des
-    // Gastredners davor am eigenen Redner hängen. Der Ausgangszustand aus dem
-    // Import hat keine.
-    const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id, 'Vers. Südfeld')
-    const { weeks } = clearAssignments(eigen, 0, 'we', 'parts')
-    expect(vortragsSlot(weeks[0]!)).not.toHaveProperty('herkunft')
-  })
-
-  it('„Leeren" lässt einen echten Gastredner unangetastet', () => {
-    const gast = assignSlot([makeWeek()], REDNER, 'M. Hartmann', 'Gastredner · Vers. Nordheim')
-    const { weeks, count } = clearAssignments(gast, 0, 'we', 'parts')
-    expect(count).toBe(0)
-    expect(vortragsSlot(weeks[0]!).name).toBe('M. Hartmann')
-  })
-
   it('ein Gastredner nach einem eigenen Redner verliert die pid', () => {
     const eigen = assignSlot([makeWeek()], REDNER, 'M. Hartmann', ROLE_OWN_SPEAKER, person.id)
     const zurueck = assignSlot(eigen, REDNER, 'R. Otte', 'Gastredner · Vers. Südfeld')

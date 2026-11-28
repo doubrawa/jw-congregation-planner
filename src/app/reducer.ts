@@ -250,7 +250,7 @@ function ohneEntzogene(vorher: AppState, nachher: AppState): AppState {
  * anderen Termin liegt (`fsVerwaisteZusagen`).
  *
  * **An einer Stelle für alle Wege**, nicht in jeder Aktion: zuteilen,
- * automatisch zuteilen, leeren, einen Treffpunkt löschen, eine Regel ändern,
+ * automatisch zuteilen und zurücknehmen, einen Treffpunkt löschen, eine Regel ändern,
  * eine Gruppe entfernen — und was künftig dazukommt. Bei den Zusammenkünften
  * räumt jede Aktion einzeln ab (`dropConfirmations`). Die Frage ist nicht,
  * welche Aktion lief, sondern ob ein Platz jetzt jemand anderem gehört — und
@@ -371,12 +371,11 @@ function baseReducer(state: AppState, action: AppAction): AppState {
       return programm(state, action)
     case 'assign':
     case 'autoAssign':
-    case 'clearAssignments':
+    case 'autoZurueck':
     case 'vortragsplanUebernehmen':
     case 'plaetzeFreigeben':
       return zuteilen(state, action)
     case 'fsAutoAssign':
-    case 'fsClear':
     case 'fsInstUpdate':
     case 'fsInstRemove':
     case 'fsInstAdd':
@@ -405,6 +404,7 @@ function baseReducer(state: AppState, action: AppAction): AppState {
     case 'getauscht':
     case 'confirmAll':
     case 'confirmTask':
+    case 'zusageZurueck':
     case 'declineTask':
     case 'takeSubstitute':
     case 'gesuchAblehnen':

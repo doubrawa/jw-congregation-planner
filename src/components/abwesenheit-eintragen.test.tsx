@@ -10,7 +10,7 @@ import {
 } from '../app/context'
 import { demoZustand } from '../../tests/testdaten/demo-start'
 import { emptyQualifications } from '../data/helpers'
-import { dict } from '../i18n/ui'
+import { dict, loadOverlay } from '../i18n/ui'
 import { fill } from '../i18n/useT'
 import { zahlBinden } from '../i18n/zahl-binden'
 import type { Person } from '../data/types'
@@ -121,6 +121,20 @@ describe('Abwesenheit eintragen', () => {
     expect(blatt()?.querySelector('.sheet-title')?.textContent).toBe(t.abwEintragen)
   })
 
+  /*
+   * „Von" und „Bis" teilen sich am Handy die Breite. Ausgeschrieben brach das
+   * Datum schon in der kleinsten Schrift um („Mo., / 14. September") — mit dem
+   * Monat kurz, wie bei den Trolley-Terminen, passt es in eine Zeile.
+   */
+  it('„Von" und „Bis" nennen den Tag mit kurzem Monat', () => {
+    zeige('p-a')
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Freitag, 23. Oktober')
+    const werte = [...blatt()!.querySelectorAll('.kal-ende-wert')].map((w) => w.textContent)
+    expect(werte).toEqual([zahlBinden('Di., 20. Okt.'), zahlBinden('Fr., 23. Okt.')])
+  })
+
   it('ohne Zeitraum wird nichts eingetragen, sondern nachgefragt', () => {
     const { dispatch } = zeige('p-a')
     oeffne()
@@ -209,7 +223,8 @@ describe('Was in die Zeit fällt (T181)', () => {
     id, title: '', rolle: 'Mikrofone', date: `Dienstag, ${tag}. Oktober · 19:00`, at: Date.UTC(2026, 9, tag), status, s89: null,
   })
   const liste = () => [...(blatt()?.querySelectorAll('.abw-aufgaben .schalter-zeile') ?? [])]
-  const eintragen = () => fireEvent.click(knopf(blatt(), t.abwEintragen)!)
+  // Der Knopf heißt nach dem, was er tut (siehe unten) — hier zählt nur, dass er es tut.
+  const eintragen = () => fireEvent.click(blatt()!.querySelector('.abw-fuss .knopf-haupt')!)
 
   it('die eigenen Aufgaben im Zeitraum stehen da, eingeschaltet — die danach nicht', () => {
     zeige('p-a', { myTasks: [aufgabe(MIK_20, 20), aufgabe('2026-10-26|mid|helper|mik|0', 27)] })
@@ -302,6 +317,113 @@ describe('Was in die Zeit fällt (T181)', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'plaetzeFreigeben', personId: 'p-b', keys: [MIK_20] })
     expect(dispatch.mock.calls.some((c) => c[0].type === 'declineTask')).toBe(false)
     expect(dispatch).toHaveBeenCalledWith({ type: 'showToast', text: fill(t.toastAbwFreigegeben, { n: 1 }) })
+  })
+})
+
+/**
+ * **Was das Eintragen absagt, steht am Knopf.** Die Liste liegt im rollenden
+ * Teil des Blatts; am Handy sieht man nach der Wahl des Zeitraums oft nur den
+ * Kalender. Der Fuß rollt nicht mit: Er nennt die Zahl, und der Knopf heißt
+ * nach dem, was er tut. „Abwesenheit eintragen" sagte sonst zwei Dienste ab,
+ * ohne dass es irgendwo zu lesen stand — und der Satz daneben sprach von einem
+ * Konflikt, zu dem es gar nicht kommt.
+ */
+describe('Was das Eintragen absagt, steht am Knopf', () => {
+  const oeffne = () => fireEvent.click(knopf(document.body, t.abwEintragen)!)
+  const MIK_20 = '2026-10-19|mid|helper|mik|0'
+  const MIK_27 = '2026-10-26|mid|helper|mik|0'
+  const aufgabe = (id: string, tag: number) => ({
+    id, title: '', rolle: 'Mikrofone', date: `Dienstag, ${tag}. Oktober · 19:00`, at: Date.UTC(2026, 9, tag), status: 'offen' as const, s89: null,
+  })
+  const zwei = { myTasks: [aufgabe(MIK_20, 20), aufgabe(MIK_27, 27)] }
+  const hauptknopf = () => blatt()?.querySelector('.abw-fuss .knopf-haupt')?.textContent
+  const folge = () => blatt()?.querySelector('.abw-fuss .abw-folge')?.textContent
+  const hinweis = () => blatt()?.querySelector('.abw-fuss .klein-text')?.textContent
+  const schalter = () => [...(blatt()?.querySelectorAll<HTMLElement>('.abw-aufgaben [role="switch"]') ?? [])]
+  /** Ein Tag des angezeigten Monats nach seiner Zahl — unabhängig von der Sprache des Kalenders. */
+  const tippeTag = (tag: number) => fireEvent.click(document.body.querySelectorAll<HTMLButtonElement>('.kal-tag:not(.is-fremd)')[tag - 1]!)
+
+  it('zwei Aufgaben im Zeitraum: Der Knopf nennt die 2, die Zeile darüber auch — von einem Konflikt ist keine Rede', () => {
+    zeige('p-a', zwei)
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Dienstag, 27. Oktober')
+    expect(hauptknopf()).toBe(fill(t.abwEintragenAbsagen, { n: 2 }))
+    expect(folge()).toBe(fill(t.abwSagtAb, { n: 2 }))
+    expect(hinweis()).toBe(t.abwHinweis)
+  })
+
+  it('Gegenprobe: Liegt nichts im Zeitraum, heißt der Knopf wie das Blatt, und nichts kündigt eine Absage an', () => {
+    zeige('p-a', zwei)
+    oeffne()
+    tippe('Mittwoch, 21. Oktober')
+    expect(hauptknopf()).toBe(t.abwEintragen)
+    expect(folge()).toBeUndefined()
+    expect(hinweis()).toBe(`${t.abwHinweis} ${t.abwKonflikt}`)
+  })
+
+  it('eine behalten: Der Knopf zählt nur die andere — und was bleibt, steht wieder als Konflikt da', () => {
+    const { dispatch } = zeige('p-a', zwei)
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Dienstag, 27. Oktober')
+    fireEvent.click(schalter()[0]!)
+    expect(hauptknopf()).toBe(fill(t.abwEintragenAbsagen, { n: 1 }))
+    expect(folge()).toBe(fill(t.abwSagtAb, { n: 1 }))
+    expect(hinweis()).toBe(`${t.abwHinweis} ${t.abwKonflikt}`)
+    // Und der Knopf tut, was er sagt: genau die eine.
+    fireEvent.click(blatt()!.querySelector('.abw-fuss .knopf-haupt')!)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'declineTask', ids: [MIK_27] })
+  })
+
+  it('alle behalten: Der Knopf sagt nichts mehr ab', () => {
+    zeige('p-a', zwei)
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    tippe('Dienstag, 27. Oktober')
+    for (const s of schalter()) fireEvent.click(s)
+    expect(hauptknopf()).toBe(t.abwEintragen)
+    expect(folge()).toBeUndefined()
+    expect(hinweis()).toBe(`${t.abwHinweis} ${t.abwKonflikt}`)
+  })
+
+  it('die Liste steht gleich unter dem Kalender, vor dem Grund — dort sieht man sie am Handy am ehesten', () => {
+    zeige('p-a', zwei)
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    const inhalt = [...blatt()!.querySelector('.sheet-inhalt')!.children].map((e) => e.className.split(' ')[0])
+    expect(inhalt.indexOf('abw-aufgaben')).toBeGreaterThan(-1)
+    expect(inhalt.indexOf('abw-aufgaben')).toBeLessThan(inhalt.indexOf('abw-grund'))
+  })
+
+  it('für eine ANDERE Person gibt der Knopf frei, statt abzusagen', () => {
+    const woche = {
+      range: '', book: '', start: '2026-10-19',
+      mid: { date: '', end: '', sections: [], helpers: { mik: [{ name: 'Berta Bein', pid: 'p-b' }] } },
+      we: { date: '', end: '', sections: [], helpers: {} },
+    }
+    zeige('p-b', {
+      admin: true, persons: [ICH, BERTA], weeks: [woche], fsWeeks: [[]], confirmations: {},
+      services: [{ key: 'mik', name: 'Mikrofone', count: 1 }],
+      congregation: { name: 'Probe', hall: '', times: { mid: { wd: 2, time: '19:00' }, we: { wd: 0, time: '10:00' } } },
+    })
+    oeffne()
+    tippe('Dienstag, 20. Oktober')
+    expect(hauptknopf()).toBe(fill(t.abwEintragenFreigeben, { n: 1 }))
+    expect(folge()).toBe(fill(t.abwGibtFrei, { n: 1 }))
+  })
+
+  it('auf Persisch steht die Zahl in den Ziffern der Sprache — im Knopf und in der Zeile darüber', async () => {
+    await loadOverlay('fa')
+    const fa = dict('fa')
+    zeige('p-a', { ...zwei, lang: 'fa' })
+    fireEvent.click(knopf(document.body, fa.abwEintragen)!)
+    tippeTag(20)
+    tippeTag(27)
+    // U+06F2 ist die persische Zwei.
+    expect(hauptknopf()).toContain('۲')
+    expect(folge()).toContain('۲')
+    expect(`${hauptknopf()} ${folge()}`).not.toMatch(/[0-9]/)
   })
 })
 

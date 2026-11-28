@@ -86,6 +86,7 @@ const OHNE_DATENBANK: Record<string, [() => unknown, unknown]> = {
   saveConfirmation: [() => zusagen.saveConfirmation('c1', 'u1', 'k1', 'bestätigt'), undefined],
   gesuchAblehnen: [() => zusagen.gesuchAblehnen('c1', 'u1', 'k1', 'Max Platzhalter'), undefined],
   deleteConfirmationRows: [() => zusagen.deleteConfirmationRows('c1', ['k1']), undefined],
+  zusageZuruecknehmen: [() => zusagen.zusageZuruecknehmen('c1', 'u1', ['k1']), undefined],
   saveMemberRow: [() => konto.saveMemberRow({ userId: 'u1' } as never), undefined],
   deleteMemberRow: [() => konto.deleteMemberRow('u1'), undefined],
   deleteAnmeldeLink: [() => konto.deleteAnmeldeLink('p1'), undefined],

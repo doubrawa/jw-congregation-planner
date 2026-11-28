@@ -102,8 +102,8 @@ describe('Einspringen', () => {
     const { container } = zeige({ substituteReqs: [gesuch()] })
     const zeile = bereich(container)!.querySelector('.aufgaben-zeile')!
     expect(zeile.querySelector('.angebot-titel')?.textContent).toBe('Mikrofone')
-    expect(zeile.querySelector('.klein-text')?.textContent).toContain(zahlBinden('8. September'))
-    expect(zeile.querySelector('.klein-text')?.textContent).toContain(fill(t.gesuchFuer, { name: 'Bernd Brand' }))
+    expect(zeile.querySelector('.wann-zeile')?.textContent).toContain(zahlBinden('8. September'))
+    expect(zeile.querySelector('.wann-zeile')?.textContent).toContain(fill(t.gesuchFuer, { name: 'Bernd Brand' }))
   })
 
   it('Gesuch und freier Platz stehen in derselben Form: Pille rechts, kein schwarzer Vollbreite-Knopf (T189)', () => {
@@ -128,7 +128,7 @@ describe('Einspringen', () => {
     expect(makeTr('en')('Markus 2 Weber')).toBe('Mark 2 Weber')
     const { container } = zeige({ lang: 'en', substituteReqs: [gesuch({ declinedBy: 'Markus 2 Weber' })] })
     // `fill` bindet Zahl und Wort mit einem geschützten Leerzeichen — der Name bleibt derselbe.
-    const text = bereich(container)!.querySelector('.aufgaben-zeile .klein-text')?.textContent?.replace(/\s+/g, ' ')
+    const text = bereich(container)!.querySelector('.aufgaben-zeile .wann-zeile')?.textContent?.replace(/\s+/g, ' ')
     expect(text).toContain('Markus 2 Weber')
   })
 
@@ -186,7 +186,7 @@ describe('Freie Plätze', () => {
     expect(k.querySelector('.aufgaben-angebote > .klein-text')?.textContent).toBe(t.freiePlaetzeHint)
     const titel = [...k.querySelectorAll('.angebot-titel')].map((e) => e.textContent)
     expect(titel).toEqual(['Mikrofone', 'Saalordner'])
-    expect(k.querySelector('.angebot-text .klein-text')?.textContent).toContain(zahlBinden('8. September'))
+    expect(k.querySelector('.angebot-text .wann-zeile')?.textContent).toContain(zahlBinden('8. September'))
   })
 
   it('was ich an dem Tag schon habe, steht vor dem Übernehmen da', () => {

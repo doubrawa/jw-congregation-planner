@@ -99,7 +99,7 @@ describe('Konflikte: einmal je Zustand', () => {
     expect(doppeltGerechnet()).toEqual([])
 
     gerechnet.mockClear()
-    act(() => dispatch({ type: 'clearAssignments', scope: 'all' }))
+    act(() => dispatch({ type: 'autoAssign', scope: 'all', umfang: 'woche' }))
     // Die Wochen sind neu — gerechnet wird wieder, aber wieder nur einmal.
     expect(gerechnet).toHaveBeenCalled()
     expect(doppeltGerechnet()).toEqual([])

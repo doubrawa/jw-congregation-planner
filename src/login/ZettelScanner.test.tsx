@@ -21,12 +21,16 @@ vi.mock('./qr-leser', () => ({ leserFuer: () => leserLaden() }))
 const { default: ZettelScanner } = await import('./ZettelScanner')
 const t = dict('de')
 
-function zeige({ onGefunden = vi.fn(), onAbbrechen = vi.fn() }: { onGefunden?: (text: string) => void; onAbbrechen?: () => void } = {}) {
+function zeige({
+  onGefunden = vi.fn(),
+  onTippen = vi.fn(),
+  onAbbrechen = vi.fn(),
+}: { onGefunden?: (text: string) => void; onTippen?: () => void; onAbbrechen?: () => void } = {}) {
   const state = { ...demoZustand(), screen: 'login' as const }
   function Buehne() {
     return (
       <AppStoreContext.Provider value={useStaticStore(state)}>
-        <ZettelScanner onGefunden={onGefunden} onAbbrechen={onAbbrechen} />
+        <ZettelScanner onGefunden={onGefunden} onTippen={onTippen} onAbbrechen={onAbbrechen} />
       </AppStoreContext.Provider>
     )
   }
@@ -110,6 +114,33 @@ describe('Zettel scannen', () => {
     const { container } = zeige()
     await waitFor(() => expect(container.querySelector('[role="alert"]')?.textContent).toBe(t.kameraFehlt))
     expect(container.querySelector('video')).toBeNull()
+  })
+
+  /*
+   * Die Meldung rät: „Tippe den Code stattdessen ein." Darunter stand nur
+   * „Abbrechen" — zurück an den Anfang, wo man den Knopf dafür selbst suchen
+   * musste.
+   */
+  it('geht die Kamera nicht auf, steht der andere Weg als Knopf da: „Code eintippen"', async () => {
+    kameraFrage(Promise.reject(new DOMException('verweigert', 'NotAllowedError')))
+    const onTippen = vi.fn()
+    const onAbbrechen = vi.fn()
+    const { container, getByText } = zeige({ onTippen, onAbbrechen })
+    await waitFor(() => expect(container.querySelector('[role="alert"]')).toBeTruthy())
+    fireEvent.click(getByText(t.codeEintippen))
+    expect(onTippen).toHaveBeenCalledTimes(1)
+    expect(onAbbrechen).not.toHaveBeenCalled()
+    // „Abbrechen" bleibt daneben.
+    expect(getByText(t.abbrechen)).toBeTruthy()
+  })
+
+  it('Gegenprobe: Läuft die Kamera, gibt es den Knopf nicht — dort scannt man', async () => {
+    const { strom } = kamera()
+    kameraFrage(Promise.resolve(strom))
+    const { container, queryByText } = zeige()
+    await waitFor(() => expect(leser).toHaveBeenCalled())
+    expect(container.querySelector('video')).not.toBeNull()
+    expect(queryByText(t.codeEintippen)).toBeNull()
   })
 
   it('lädt der Leser nicht (offline), geht die Kamera aus, und er sagt es', async () => {

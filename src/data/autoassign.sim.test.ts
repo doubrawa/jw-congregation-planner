@@ -3,7 +3,8 @@ import { buildImportWeek, DEMO_SERVICES } from '../../tests/testdaten/testdaten'
 import { displayName, isSong, serviceQualKey } from './helpers'
 import { partWorkload, workloadOf } from './auslastung'
 import type { AbsenceSet } from './absence'
-import { autoAssignMeeting, clearAssignments } from './planung/automatik'
+import { autoAssignMeeting } from './planung/automatik'
+import { autoZuruecknehmen, neuBesetztePlaetze } from './planung/auto-zurueck'
 import type { Group, Meeting, PartItem, Person, Qualifications, Service, Week } from './types'
 
 /** Person, die nur über ihren Namen zugeordnet wird (Slots ohne pid). */
@@ -144,59 +145,59 @@ describe('Auto-Zuteilung — getrennter Umfang (Aufgaben / Hilfsdienste)', () =>
   })
 })
 
-describe('Zuteilungen leeren (clearAssignments)', () => {
+/**
+ * **„Rückgängig" nach Automatisch** an einer ganzen geholten Woche: zurück
+ * geht genau, was die Automatik gesetzt hat — Programmpunkte wie Hilfsdienste,
+ * nur in der Zusammenkunft, für die sie lief.
+ */
+describe('Automatisch zurücknehmen (autoZuruecknehmen)', () => {
   const people: Person[] = [
     mk(['vorsitzMid', 'vorsitzWe', 'vortrag', 'gebet', 'studium', 'bibellesung', 'leser', 'schulung']),
     ...many(6, ['vortrag', 'gebet', 'bibellesung', 'leser', 'schulung']),
     ...many(6, [TON, MIK, ...ORDNER]),
   ]
-  const planned = (tab: 'mid' | 'we') =>
-    autoAssignMeeting([buildImportWeek()], 0, tab, people, DEMO_SERVICES).weeks
+  /** Vorher und nachher einer automatisch geplanten Zusammenkunft. */
+  const geplant = (vorher: Week[], tab: 'mid' | 'we') => {
+    const nachher = autoAssignMeeting(vorher, 0, tab, people, DEMO_SERVICES).weeks
+    return { nachher, gesetzt: neuBesetztePlaetze(vorher, nachher, 0, [tab], DEMO_SERVICES) }
+  }
 
-  it("scope 'parts' leert Programmpunkte, lässt Hilfsdienste stehen", () => {
-    const w = planned('mid')
-    const before = w[0]!.mid
-    expect(partNames(before).length).toBeGreaterThan(0)
-    expect(helperNames(before, DEMO_SERVICES).length).toBeGreaterThan(0)
-    const { weeks, count } = clearAssignments(w, 0, 'mid', 'parts')
-    expect(count).toBeGreaterThan(0)
+  it('leert Programmpunkte und Hilfsdienste, die eben gesetzt wurden', () => {
+    const { nachher, gesetzt } = geplant([buildImportWeek()], 'mid')
+    expect(partNames(nachher[0]!.mid).length).toBeGreaterThan(0)
+    expect(helperNames(nachher[0]!.mid, DEMO_SERVICES).length).toBeGreaterThan(0)
+    const { weeks, frei } = autoZuruecknehmen({ weeks: nachher, fsWeeks: [[]], services: DEMO_SERVICES }, gesetzt)
+    expect(frei).toHaveLength(gesetzt.length)
     expect(partNames(weeks[0]!.mid)).toEqual([])
-    expect(helperNames(weeks[0]!.mid, DEMO_SERVICES)).toEqual(helperNames(before, DEMO_SERVICES))
-  })
-
-  it("scope 'helpers' leert Hilfsdienste, lässt Programmpunkte stehen", () => {
-    const w = planned('mid')
-    const before = w[0]!.mid
-    const { weeks, count } = clearAssignments(w, 0, 'mid', 'helpers')
-    expect(count).toBeGreaterThan(0)
     expect(helperNames(weeks[0]!.mid, DEMO_SERVICES)).toEqual([])
-    expect(partNames(weeks[0]!.mid)).toEqual(partNames(before))
   })
 
-  it("scope 'parts' lässt externe Redner (Gastredner) unangetastet", () => {
+  it('lässt einen externen Redner unangetastet — ihn hat die Automatik nicht gesetzt', () => {
     const w = [buildImportWeek()]
     const talk = w[0]!.we.sections.find((s) => s.label === 'ÖFFENTLICHER VORTRAG')
     const slot = talk && !isSong(talk.items[0]!) ? (talk.items[0] as PartItem).names[0] : undefined
-    if (slot) slot.name = 'M. Extern'
-    const { weeks } = clearAssignments(w, 0, 'we', 'parts')
+    if (!slot) throw new Error('Testaufbau: kein Vortrag')
+    slot.name = 'M. Extern'
+    const { nachher, gesetzt } = geplant(w, 'we')
+    const { weeks } = autoZuruecknehmen({ weeks: nachher, fsWeeks: [[]], services: DEMO_SERVICES }, gesetzt)
     const after = weeks[0]!.we.sections.find((s) => s.label === 'ÖFFENTLICHER VORTRAG')
     const nameAfter = after && !isSong(after.items[0]!) ? (after.items[0] as PartItem).names[0]!.name : ''
     expect(nameAfter).toBe('M. Extern')
   })
 
-  it('leert nur die gewählte Zusammenkunft (Tab), nicht die andere', () => {
-    let w = planned('mid')
-    w = autoAssignMeeting(w, 0, 'we', people, DEMO_SERVICES).weeks
-    const { weeks } = clearAssignments(w, 0, 'mid', 'parts')
+  it('nimmt nur die Zusammenkunft zurück, für die es lief — die andere bleibt geplant', () => {
+    const mitWe = autoAssignMeeting([buildImportWeek()], 0, 'we', people, DEMO_SERVICES).weeks
+    const { nachher, gesetzt } = geplant(mitWe, 'mid')
+    const { weeks } = autoZuruecknehmen({ weeks: nachher, fsWeeks: [[]], services: DEMO_SERVICES }, gesetzt)
     expect(partNames(weeks[0]!.mid)).toEqual([])
-    expect(partNames(weeks[0]!.we).length).toBeGreaterThan(0)
+    expect(partNames(weeks[0]!.we)).toEqual(partNames(mitWe[0]!.we))
   })
 
   it('lässt die Eingabe unverändert (pur)', () => {
-    const w = planned('mid')
-    const snapshot = JSON.stringify(w)
-    clearAssignments(w, 0, 'mid', 'parts')
-    expect(JSON.stringify(w)).toBe(snapshot)
+    const { nachher, gesetzt } = geplant([buildImportWeek()], 'mid')
+    const snapshot = JSON.stringify(nachher)
+    autoZuruecknehmen({ weeks: nachher, fsWeeks: [[]], services: DEMO_SERVICES }, gesetzt)
+    expect(JSON.stringify(nachher)).toBe(snapshot)
   })
 })
 

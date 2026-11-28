@@ -107,6 +107,22 @@ describe('Einen Bereich abschalten, an dem künftige Plätze hängen', () => {
     expect(aktionen(dispatch)).toEqual([])
   })
 
+  /*
+   * Nebeneinander brach „Plätze freigeben" am Handy schon in der kleinsten
+   * Schrift auf zwei Zeilen (171 px neben „Stehen lassen"). Untereinander hat
+   * jeder Knopf die ganze Breite; gemessen ist das im Browser, hier steht die
+   * Reihenfolge fest: die Wahl in der Reihenfolge des Satzes darüber, zuletzt
+   * „Abbrechen".
+   */
+  it('die drei Knöpfe stehen untereinander — erst die beiden Wege, dann „Abbrechen"', () => {
+    const { container } = zeige()
+    mikrofonAus(container)
+    const fuss = blatt(t.freiTitel)!.querySelector('.frei-fuss')!
+    expect(fuss.querySelector('.knopf-reihe')).toBeNull()
+    const knoepfe = [...fuss.children].filter((k) => k.tagName === 'BUTTON').map((k) => k.textContent)
+    expect(knoepfe).toEqual([t.plaetzeFreigebenBtn, t.stehenLassenBtn, t.abbrechen])
+  })
+
   it('„Plätze freigeben": die Person ändert sich, und genau diese Plätze werden offen', () => {
     const { container, dispatch } = zeige()
     mikrofonAus(container)

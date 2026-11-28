@@ -6,6 +6,7 @@ import { Zeichen } from '../bausteine/Zeichen'
 import { aufgabeTag } from '../aufgaben/aufgabe-anzeige'
 import { AufgabeKarte } from '../aufgaben/AufgabeKarte'
 import { AufgabeText } from '../aufgaben/AufgabeText'
+import { ZusageStand } from '../aufgaben/ZusageStand'
 import { zusammenkunftName } from '../components/anlass-name'
 import { datumsFormat } from '../components/datum-anzeige'
 import { treffpunktTitel } from '../components/treffpunkt-beschriftung'
@@ -13,7 +14,7 @@ import { eigeneGruppen } from '../data/fs'
 import { fromIso } from '../data/meeting-dates'
 import { rechteVon } from '../data/rechte'
 import { eigeneTermine } from '../data/trolleys'
-import type { MyTask, TrolleyTermin } from '../data/types'
+import type { MyTask, TaskStatus, TrolleyTermin } from '../data/types'
 import { AnwesenheitKarte } from '../anwesenheit/AnwesenheitKarte'
 import { TauschAnfragen } from '../tauschen/TauschAnfragen'
 import { ErsteSchritteKarte } from '../erste-schritte/ErsteSchritteKarte'
@@ -37,7 +38,8 @@ const WEITERE_AUFGABEN = 3
  *     darunter. Liegt sie in einer Zusammenkunft, steht beim Planer der Saal
  *     darüber: wie weit der Abend besetzt ist, und wo man selbst sitzt
  *     (`useSaal`).
- *  3. **Die nächsten danach**, je eine Zeile; ein Tipp öffnet die Aufgabe.
+ *  3. **Die nächsten danach**, je eine Zeile mit ihrem Stand als Wort („Zu
+ *     bestätigen", „Bestätigt", „Verhindert"); ein Tipp öffnet die Aufgabe.
  *     Dazwischen, nach dem Tag, die eigenen Trolley-Termine. Erst drei, mit
  *     „Alle zeigen" alle, die noch kommen.
  *  4. **Diese Woche in der Versammlung** — die Zusammenkünfte und Treffpunkte,
@@ -113,6 +115,8 @@ interface StartZeile {
   key: string
   tag: string | null
   text: ReactNode
+  /** Der Stand der Zusage bei einer eigenen Aufgabe. Ein Trolley-Termin hat keinen: Wer sich einträgt, hat sich verabredet. */
+  status?: TaskStatus
   onTipp: () => void
 }
 
@@ -136,6 +140,7 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
       key: task.id,
       tag: aufgabeTag(task),
       text: <AufgabeText task={task} />,
+      status: task.status,
       onTipp: () => dispatch({ type: 'openMyTask', id: task.id }),
     })),
     ...trolley.map((termin) => ({
@@ -158,7 +163,10 @@ function WeitereAufgaben({ aufgaben, trolley }: { aufgaben: readonly MyTask[]; t
         <button key={zeile.key} type="button" className="start-zeile" onClick={zeile.onTipp}>
           <span className="start-zeile-inhalt">
             <span className="start-zeile-tag">{zeile.tag ? kurz.format(fromIso(zeile.tag)) : ''}</span>
-            <span className="start-zeile-text">{zeile.text}</span>
+            <span className="start-zeile-was">
+              <span className="start-zeile-text">{zeile.text}</span>
+              {zeile.status && <ZusageStand status={zeile.status} />}
+            </span>
           </span>
           <Zeichen name="weiter" />
         </button>

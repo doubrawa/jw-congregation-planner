@@ -288,9 +288,11 @@ describe('Das Absage-Blatt', () => {
     expect(text(absagen({ status: 'bestätigt' }).container, t.dochBestaetigen)).toBeUndefined()
   })
 
-  it('„Abbrechen", ✕, Hintergrund und Escape legen das Blatt weg, ohne abzusagen', () => {
+  // „Zurück", nicht „Abbrechen": Direkt unter „Absagen" lasen sich die beiden zu ähnlich.
+  it('„Zurück", ✕, Hintergrund und Escape legen das Blatt weg, ohne abzusagen — ein „Abbrechen" steht dort nicht', () => {
     const { container, dispatch } = absagen()
-    fireEvent.click(text(container, t.abbrechen)!)
+    expect(text(container, t.abbrechen)).toBeUndefined()
+    fireEvent.click(text(container, t.a11yZurueck)!)
     fireEvent.click(container.querySelector(`[aria-label="${t.a11yClose}"]`)!)
     fireEvent.click(container.querySelector('.sheet-backdrop')!)
     fireEvent.keyDown(window, { key: 'Escape' })
@@ -320,9 +322,9 @@ describe('Das Absage-Blatt', () => {
       expect(gelesen(dispatch)).toEqual([{ type: 'mitteilungGelesen', id: 'n1' }])
     })
 
-    it('nicht nach „Abbrechen" — und offline gar nicht', () => {
+    it('nicht nach „Zurück" — und offline gar nicht', () => {
       const weg = absagen({}, { notifs: notifs() })
-      fireEvent.click(text(weg.container, t.abbrechen)!)
+      fireEvent.click(text(weg.container, t.a11yZurueck)!)
       expect(gelesen(weg.dispatch)).toEqual([])
       cleanup()
       const offline = absagen({}, { notifs: notifs(), staleAt: Date.now() })

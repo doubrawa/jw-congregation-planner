@@ -64,6 +64,7 @@ import {
   substituteTake,
   substituteWithdraw,
   platzFuellen,
+  zusageZuruecknehmen,
 } from './daten/zusagen'
 import type { Group, Person, Service, Week } from '../data/types'
 import { schreibenAbwarten } from './schreiben-unterwegs'
@@ -556,6 +557,138 @@ describe('Delete-Schreiber', () => {
     vi.clearAllMocks()
     deleteConfirmationRows('c1', [])
     expect(chain.from).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * **Die eigene Zusage zurücknehmen** — „Rückgängig" nach dem Bestätigen. Ohne
+ * Zeile ist eine Zusage offen; gelöscht werden deshalb die eigenen Zeilen zu
+ * genau diesen Aufgaben. Unter demselben Schlüssel kann die Zeile eines
+ * anderen stehen (wer abgesagt hat, bevor jemand einsprang) — die bleibt.
+ */
+describe('Die eigene Zusage zurücknehmen', () => {
+  const abwarten = () => new Promise((r) => setTimeout(r, 0))
+  const ruhig = (resolve: (v: unknown) => void) => resolve({ data: null, error: null })
+  afterEach(() => {
+    chain.then = ruhig
+  })
+
+  it('löscht die eigenen Zeilen zu genau diesen Aufgaben — eingegrenzt auf Versammlung UND Konto', async () => {
+    zusageZuruecknehmen('c1', 'u1', ['k1', 'k2'])
+    await abwarten()
+    expect(chain.from).toHaveBeenCalledWith('confirmations')
+    expect(chain.delete).toHaveBeenCalledTimes(1)
+    expect(chain.eq).toHaveBeenCalledWith('congregation_id', 'c1')
+    expect(chain.eq).toHaveBeenCalledWith('user_id', 'u1')
+    expect(chain.in).toHaveBeenCalledWith('task_key', ['k1', 'k2'])
+  })
+
+  it('ohne Aufgabe geht nichts hinaus', async () => {
+    zusageZuruecknehmen('c1', 'u1', [])
+    await abwarten()
+    expect(chain.from).not.toHaveBeenCalled()
+  })
+
+  /*
+   * Bestätigen und gleich „Rückgängig": Beide Aufrufe gehen einzeln hinaus.
+   * Käme das Löschen bei langsamem Netz vor dem Bestätigen an, stünde die
+   * Zusage danach wieder in der Datenbank — hier offen, dort bestätigt, bis
+   * zum nächsten Laden.
+   */
+  it('wartet auf die Zusage davor: Erst wenn sie geschrieben ist, geht das Löschen hinaus', async () => {
+    let antworten: (v: unknown) => void = () => {}
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten = resolve
+    }
+    saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+    await abwarten() // die Zusage ist unterwegs, ihre Antwort steht aus
+    chain.then = ruhig
+    zusageZuruecknehmen('c1', 'u1', ['k1'])
+    await abwarten()
+    expect(chain.delete).not.toHaveBeenCalled()
+    antworten({ data: null, error: null })
+    await abwarten()
+    expect(chain.delete).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+   * Bestätigen, „Rückgängig" und gleich wieder bestätigen (oder „Ich kann
+   * nicht"): Ginge die neue Zusage sofort hinaus, käme sie bei langsamem Netz
+   * vor dem Löschen an, und das Löschen nähme sie mit — hier „Bestätigt", in
+   * der Datenbank keine Zeile.
+   */
+  it('eine neue Zusage wartet auf das Zurücknehmen davor: erst das Löschen, dann die Zusage', async () => {
+    const antworten: Array<(v: unknown) => void> = []
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten.push(resolve)
+    }
+    const kommtAn = async () => {
+      await vi.waitFor(() => expect(antworten.length).toBeGreaterThan(0))
+      antworten.shift()!({ data: null, error: null })
+    }
+    try {
+      saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+      zusageZuruecknehmen('c1', 'u1', ['k1'])
+      saveConfirmation('c1', 'u1', 'k1', 'verhindert')
+      await abwarten()
+      expect(chain.upsert).toHaveBeenCalledTimes(1)
+      expect(chain.delete).not.toHaveBeenCalled()
+      await kommtAn() // die erste Zusage
+      await vi.waitFor(() => expect(chain.delete).toHaveBeenCalledTimes(1))
+      expect(chain.upsert).toHaveBeenCalledTimes(1)
+      await kommtAn() // das Löschen
+      await vi.waitFor(() => expect(chain.upsert).toHaveBeenCalledTimes(2))
+      expect(chain.upsert).toHaveBeenLastCalledWith(
+        expect.objectContaining({ task_key: 'k1', status: 'verhindert' }),
+        expect.anything(),
+      )
+    } finally {
+      // Was noch aussteht, kommt an — sonst wartete das nächste Zurücknehmen ewig.
+      chain.then = ruhig
+      for (const antwort of antworten.splice(0)) antwort({ data: null, error: null })
+    }
+  })
+
+  /*
+   * „Ich kann nicht" gleich nach „Rückgängig" (Hilfsdienst): Das Gesuch legt
+   * Zeilen „Ersatz gesucht" in fremde Glocken. Käme es vor dem Löschen an,
+   * räumte der Trigger des Löschens sie wieder ab — die neue Absage wartet ja
+   * selbst noch auf das Löschen.
+   */
+  it('auch ein Ersatzgesuch wartet auf das Zurücknehmen davor', async () => {
+    const antworten: Array<(v: unknown) => void> = []
+    chain.then = (resolve: (v: unknown) => void) => {
+      antworten.push(resolve)
+    }
+    const kommtAn = async () => {
+      await vi.waitFor(() => expect(antworten.length).toBeGreaterThan(0))
+      antworten.shift()!({ data: null, error: null })
+    }
+    try {
+      saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+      zusageZuruecknehmen('c1', 'u1', ['k1'])
+      substituteSeek('k1')
+      await abwarten()
+      expect(chain.functions.invoke).not.toHaveBeenCalled()
+      await kommtAn() // die Zusage
+      await vi.waitFor(() => expect(chain.delete).toHaveBeenCalledTimes(1))
+      expect(chain.functions.invoke).not.toHaveBeenCalled()
+      await kommtAn() // das Löschen
+      await vi.waitFor(() =>
+        expect(chain.functions.invoke).toHaveBeenCalledWith('substitute', { body: { action: 'seek', taskKey: 'k1' } }),
+      )
+    } finally {
+      chain.then = ruhig
+      for (const antwort of antworten.splice(0)) antwort({ data: null, error: null })
+    }
+  })
+
+  it('Gegenprobe: Läuft kein Zurücknehmen, geht eine Zusage sofort hinaus — auch nach einem, das schon angekommen ist', async () => {
+    zusageZuruecknehmen('c1', 'u1', ['k1'])
+    await vi.waitFor(() => expect(chain.delete).toHaveBeenCalledTimes(1))
+    await abwarten()
+    saveConfirmation('c1', 'u1', 'k1', 'bestätigt')
+    expect(chain.upsert).toHaveBeenCalledTimes(1)
   })
 })
 

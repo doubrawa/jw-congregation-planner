@@ -572,7 +572,7 @@ export function fsGruppeEntfernen(
   return { fsRules, fsWeeks: geaendert ? weeks : fsWeeks }
 }
 
-/* ---- Auto-Zuteilung / Leeren der Treffpunkt-Leiter ---- */
+/* ---- Auto-Zuteilung der Treffpunkt-Leiter ---- */
 
 /*
  * Aufbau und Zerlegung des Treffpunkt-Schlüssels stehen im geteilten Modul
@@ -827,26 +827,6 @@ export function fsAutoAssign(
   })
   if (newly.length === 0) return { fsWeeks, count: 0, unfilled }
   return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count: newly.length, unfilled }
-}
-
-/** Leiter der Woche `wi` leeren (`onlyGroup` grenzt auf eine Gruppe ein). */
-export function fsClear(
-  fsWeeks: FsInstance[][],
-  wi: number,
-  onlyGroup: string | null = null,
-): { fsWeeks: FsInstance[][]; count: number } {
-  let count = 0
-  const week = (fsWeeks[wi] ?? []).map((inst) => {
-    if (!inst.leader || !fsInGruppe(inst, onlyGroup)) return inst
-    count++
-    // Auch die Id muss weg: sonst gehörte der geleerte Platz weiter jemandem
-    // und stünde bei ihm in „Meine Aufgaben". Das Freitext-Kennzeichen ebenso —
-    // ein geleerter Platz ist offen, nicht auswärtig.
-    const { lpid: _weg, lext: _auch, ...ohne } = inst
-    return { ...ohne, leader: '' }
-  })
-  if (count === 0) return { fsWeeks, count: 0 }
-  return { fsWeeks: patchWeek(fsWeeks, wi, () => week), count }
 }
 
 /**

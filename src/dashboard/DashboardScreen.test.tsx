@@ -264,13 +264,13 @@ describe('Die nächste Aufgabe steht groß oben', () => {
 
   it('bei einer Schulungsaufgabe führt der Weg zum S-89-Formular', () => {
     const { container, dispatch } = zeige({ myTasks: [task({ s89: S89 })] })
-    fireEvent.click(knopf(karte(container), 'S-89')!)
+    fireEvent.click(knopf(karte(container), t.s89Kurz)!)
     expect(dispatch).toHaveBeenCalledWith({ type: 'openS89', payload: S89 })
   })
 
   it('sonst nicht — für einen Hilfsdienst gibt es kein Formular', () => {
     const { container } = zeige({ myTasks: [task({ s89: null })] })
-    expect(knopf(karte(container), 'S-89')).toBeUndefined()
+    expect(knopf(karte(container), t.s89Kurz)).toBeUndefined()
   })
 })
 
@@ -474,6 +474,37 @@ describe('Die nächsten Aufgaben danach, je eine Zeile', () => {
         von: '09:00', bis: '11:00', pid: 'p-a', partner: null, gemeinsam: false,
       },
     ],
+  })
+
+  /*
+   * Auf dem Start trug keine Zeile einen Stand: „Do., 17.9. · Mikrofone" sagte
+   * nicht, ob das noch zu bestätigen ist. Jetzt steht er als Wort dahinter —
+   * dieselben Wörter wie unter „Meine Aufgaben".
+   */
+  it('jede Aufgabe nennt ihren Stand als Wort: „Zu bestätigen", „Bestätigt" (mit Haken), „Verhindert"', () => {
+    const { container } = zeige({
+      myTasks: [
+        task({ id: 'T1' }),
+        task({ id: 'T2', title: 'Offen', at: inTagen(1) }),
+        task({ id: 'T3', title: 'Zugesagt', at: inTagen(2), status: 'bestätigt' }),
+        task({ id: 'T4', title: 'Abgesagt', at: inTagen(3), status: 'verhindert' }),
+      ],
+    })
+    expect(zeilen(container).map((z) => z.querySelector('.zusage-stand')?.textContent)).toEqual([
+      t.dashZuBest,
+      t.bestaetigt,
+      t.verhindertChip,
+    ])
+    // Der Haken steht allein beim Bestätigten — an einer offenen Zeile läse er sich wie „erledigt".
+    expect(zeilen(container).map((z) => z.querySelector('.zusage-stand svg') !== null)).toEqual([false, true, false])
+    // Was die Zeile sagt, bleibt für sich: Der Stand steht daneben, nicht darin.
+    expect(zeilenTexte(container)).toEqual(['Offen', 'Zugesagt', 'Abgesagt'])
+  })
+
+  it('Gegenprobe: Ein Trolley-Termin trägt keinen Stand — dort gibt es nichts zu bestätigen', () => {
+    const { container } = zeige({ myTasks: [task({ id: 'T1' })], ...trolley(3) })
+    expect(zeilenTexte(container)).toEqual([`${t.privZeugnis} · 09:00–11:00`])
+    expect(zeilen(container)[0]!.querySelector('.zusage-stand')).toBeNull()
   })
 
   it('dazwischen, nach dem Tag, die eigenen Trolley-Termine — ein Tipp führt zu den Trolleys', () => {

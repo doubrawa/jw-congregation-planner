@@ -488,7 +488,7 @@ export function AppProvider({
   // Toast automatisch ausblenden — so lange, wie das Lesen dauert (T187).
   useEffect(() => {
     if (!state.toast) return
-    const timer = setTimeout(() => dispatch({ type: 'hideToast' }), toastDauer(state.toast.text))
+    const timer = setTimeout(() => dispatch({ type: 'hideToast' }), toastDauer(state.toast.text, Boolean(state.toast.handlung)))
     return () => clearTimeout(timer)
   }, [state.toast, dispatch])
 

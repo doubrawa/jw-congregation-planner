@@ -152,7 +152,7 @@ describe('Trolleys', () => {
     fireEvent.click(container.querySelector('.trolley-karte .trolley-zeile')!)
     const termin = document.querySelector('[role="dialog"]')!
     klick(termin, t.trolleyAustragen)
-    bestaetigen(knopf(termin, t.entfernenSicher))
+    bestaetigen(knopf(termin, t.trolleyAustragenSicher))
     await vi.waitFor(() => expect(container.querySelector('.trolley-termin')).toBeNull())
     expect(container.querySelector('.trolley-karte')).toBeNull()
   })

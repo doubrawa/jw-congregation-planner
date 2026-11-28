@@ -126,6 +126,20 @@ describe('Die Seite', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'clearNotifs' })
   })
 
+  /*
+   * Neben dem Titel war der rot umrandete Knopf das Auffälligste der Seite —
+   * vor allem, was man lesen und beantworten soll. Er steht deshalb nach der
+   * letzten Mitteilung.
+   */
+  it('„Alle löschen" steht am Ende, nach der letzten Mitteilung — nicht im Kopf neben dem Titel', () => {
+    const { container } = zeige({ notifs: [notif(), notif({ id: 'n2', read: true })] })
+    const loeschen = knopf(container, t.alleLoeschen)!
+    expect(container.querySelector('.mitteilungen-kopf')!.contains(loeschen)).toBe(false)
+    const letzte = [...container.querySelectorAll('.mitteilungen-abschnitt')].at(-1)!
+    // Im Dokument nach dem letzten Abschnitt: So kommt er auch beim Vorlesen und mit der Tastatur zuletzt.
+    expect(letzte.compareDocumentPosition(loeschen) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('die eigene, lokal entstandene Absage-Meldung sieht ein Verkündiger nicht — sie gilt den Admins', () => {
     const lokal = notif({ id: 'lokal', type: 'verhindert', title: 'Verhinderung gemeldet', local: true })
     const { container } = zeige({ notifs: [lokal], admin: false })

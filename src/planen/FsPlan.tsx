@@ -140,23 +140,31 @@ function TreffpunktKopf({
         <span className="treff-zeit-pille">{inAnzeigeZiffern(inst.time)}</span>
       )}
       <div className="treff-text">
-        <div className="treff-titel">{titel}</div>
         {aendern ? (
-          <input
-            className="treff-ort-feld"
-            type="text"
-            dir="auto"
-            value={inst.place}
-            placeholder={t.fsOrtPh}
-            aria-label={`${t.ortLbl} · ${titel}`}
-            onChange={(e) => aendere({ place: e.target.value })}
-          />
+          // Ein `label` um Titel und Ort: Ein Tipp auf den Titel stellt die
+          // Schreibmarke ins Feld darunter. Das Feld allein ist so flach wie eine
+          // Textzeile (23 px) — zusammen sind es 44.
+          <label className="treff-ort-label">
+            <span className="treff-titel">{titel}</span>
+            <input
+              className="treff-ort-feld"
+              type="text"
+              dir="auto"
+              value={inst.place}
+              placeholder={t.fsOrtPh}
+              aria-label={`${t.ortLbl} · ${titel}`}
+              onChange={(e) => aendere({ place: e.target.value })}
+            />
+          </label>
         ) : (
-          inst.place && (
-            <div className="treff-ort" dir="auto">
-              {tu(inst.place)}
-            </div>
-          )
+          <>
+            <div className="treff-titel">{titel}</div>
+            {inst.place && (
+              <div className="treff-ort" dir="auto">
+                {tu(inst.place)}
+              </div>
+            )}
+          </>
         )}
         <BesuchsMarke woche={kennung} grp={inst.grp} />
       </div>

@@ -3,13 +3,13 @@ import {
   buildFsWeeks,
   fsAddInst,
   fsAutoAssign,
-  fsClear,
   fsLeaderValue,
   fsRemoveInst,
   fsAnzeigeSort,
   fsSetLeader,
   fsSort,
   fsTag,
+  fsTaskKey,
   fsUpdateInst,
   FS_LOAD_WEEKS,
   genFsWeek,
@@ -26,8 +26,9 @@ import {
 import { GRUPPEN_DURCHEINANDER, IDS_GESPEICHERT, NAMEN_GEZEIGT } from '../../tests/testdaten/gruppen-durcheinander'
 import { emptyQualifications } from './helpers'
 import { montagNach } from './meeting-dates'
+import { autoZuruecknehmen, neuBesetzteTreffpunkte } from './planung/auto-zurueck'
 import type { Conflict } from './planung/konflikte'
-import type { Absence, FsInstance, FsRule, Person } from './types'
+import type { Absence, FsInstance, FsRule, Person, Week } from './types'
 
 /** Treffpunkt-qualifizierte Person (priv.treffpunkt gesetzt). */
 function tpLeader(patch: Partial<Person>): Person {
@@ -392,20 +393,44 @@ describe('fsAutoAssign (Treffpunkt-Leiter automatisch)', () => {
   })
 })
 
-describe('fsClear (Treffpunkt-Leiter leeren)', () => {
-  it('leert alle Leiter der Woche', () => {
-    const week = [inst({ id: 'a', leader: 'X' }), inst({ id: 'b', leader: 'Y' })]
-    const { fsWeeks, count } = fsClear([week], 0)
-    expect(count).toBe(2)
-    expect(fsWeeks[0]!.every((i) => !i.leader)).toBe(true)
+/**
+ * **„Rückgängig" nach Automatisch bei den Treffpunkten** — zurück geht nur,
+ * was die Automatik eben gesetzt hat.
+ */
+describe('Treffpunkt-Leiter automatisch zurücknehmen', () => {
+  const KENNUNG = '2026-09-07'
+  // Die Wochen laufen parallel zu den Treffpunkten — aus ihnen kommt die Kennung des Schlüssels.
+  const leer = { date: '', end: '', sections: [], helpers: {} }
+  const WOCHEN: Week[] = [{ range: '', book: '', start: KENNUNG, mid: leer, we: leer }]
+  const zuruecknehmen = (vorher: FsInstance[][], nachher: FsInstance[][]) =>
+    autoZuruecknehmen({ weeks: WOCHEN, fsWeeks: nachher, services: [] }, neuBesetzteTreffpunkte(vorher, nachher, 0, KENNUNG))
+
+  it('leert die eben gesetzten Leiter — ein schon gesetzter bleibt', () => {
+    const vorher = [[inst({ id: 'a', wd: 1, leader: 'Fix Belegt' }), inst({ id: 'b', wd: 3 })]]
+    const { fsWeeks: nachher, count } = fsAutoAssign(vorher, 0, [tpLeader({ id: 'p1', fn: 'Anton' })])
+    expect(count).toBe(1)
+    const { fsWeeks, frei } = zuruecknehmen(vorher, nachher)
+    expect(frei).toEqual([fsTaskKey(KENNUNG, 'b')])
+    expect(fsWeeks[0]!.map((i) => i.leader)).toEqual(['Fix Belegt', ''])
+    // Ohne Spur der Person: Ein offener Platz gehört niemandem.
+    expect(fsWeeks[0]![1]!.lpid).toBeUndefined()
   })
 
-  it('onlyGroup leert nur die Gruppe', () => {
-    const week = [inst({ id: 'a', grp: null, leader: 'X' }), inst({ id: 'b', grp: 'g1', leader: 'Y' })]
-    const { fsWeeks, count } = fsClear([week], 0, 'g1')
-    expect(count).toBe(1)
-    expect(fsWeeks[0]!.find((i) => i.grp == null)?.leader).toBe('X')
-    expect(fsWeeks[0]!.find((i) => i.grp === 'g1')?.leader).toBe('')
+  it('nach „Automatisch" für eine Gruppe nur deren Treffpunkte', () => {
+    const vorher = [[inst({ id: 'a', grp: null, wd: 1 }), inst({ id: 'b', grp: 'g1', wd: 3 })]]
+    const { fsWeeks: nachher } = fsAutoAssign(vorher, 0, [tpLeader({ id: 'p1', fn: 'Anton' })], 'g1')
+    const { frei } = zuruecknehmen(vorher, nachher)
+    expect(frei).toEqual([fsTaskKey(KENNUNG, 'b')])
+  })
+
+  it('leitet inzwischen jemand anderes, bleibt er', () => {
+    const vorher = [[inst({ id: 'b', wd: 3 })]]
+    const { fsWeeks: nachher } = fsAutoAssign(vorher, 0, [tpLeader({ id: 'p1', fn: 'Anton' })])
+    const gesetzt = neuBesetzteTreffpunkte(vorher, nachher, 0, KENNUNG)
+    const umbesetzt = fsSetLeader(nachher, 0, 'b', 'Bruno Anders', 'p2')
+    const { fsWeeks, frei } = autoZuruecknehmen({ weeks: WOCHEN, fsWeeks: umbesetzt, services: [] }, gesetzt)
+    expect(frei).toEqual([])
+    expect(fsWeeks).toBe(umbesetzt)
   })
 })
 
@@ -433,7 +458,6 @@ describe('Person-Id des Leiters (lpid)', () => {
     // „Meine Aufgaben".
     const weeks = [[inst({ id: 'a', leader: 'Anton Muster', lpid: 'p1' })]]
     expect(fsSetLeader(weeks, 0, 'a', '')[0]![0]!.lpid).toBeUndefined()
-    expect(fsClear(weeks, 0).fsWeeks[0]![0]!.lpid).toBeUndefined()
   })
 
   it('ohne Id (Gast, Altdaten) bleibt nur der Name stehen', () => {

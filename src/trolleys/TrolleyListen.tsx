@@ -1,6 +1,5 @@
 import { useApp } from '../app/context'
 import { eigenePerson } from '../app/eigene-person'
-import { GesperrterKnopf } from '../bausteine/GesperrterKnopf'
 import { Punkt } from '../bausteine/Punkt'
 import { Zeichen } from '../bausteine/Zeichen'
 import type { TrolleyTermin } from '../data/types'
@@ -44,7 +43,7 @@ export function DeineTermine({
               <span className="trolley-zeile-titel">
                 {tagKurz(termin.datum, state.lang)} · <Zeitspanne termin={termin} />
               </span>
-              <span className="klein-text" dir="auto">
+              <span className="wann-zeile" dir="auto">
                 {teile.filter(Boolean).join(' · ')}
               </span>
             </span>
@@ -58,19 +57,19 @@ export function DeineTermine({
 
 /**
  * **Partner gesucht** (Entwurf `GZeugnis`): wo andere allein stehen — Tag,
- * Zeit, Trolley, wer. „Dazukommen" trägt einen gleich als Partner ein; ohne
- * Trolley-Recht steht die Zeile ohne Knopf da.
+ * Zeit, Trolley, wer. „Dazukommen" öffnet den Termin (`onTermin`); erst der
+ * Knopf dort trägt ein. Ein Tipp in der Liste benachrichtigte sonst gleich den
+ * anderen, und zurück ginge es nur über „Austragen" — mit einer zweiten
+ * Mitteilung. Ohne Trolley-Recht steht die Zeile ohne Knopf da.
  */
 export function PartnerGesucht({
   termine,
   darf,
-  laeuft,
-  onDazukommen,
+  onTermin,
 }: {
   termine: readonly TrolleyTermin[]
   darf: boolean
-  laeuft: boolean
-  onDazukommen: (termin: TrolleyTermin) => void
+  onTermin: (termin: TrolleyTermin) => void
 }) {
   const { state } = useApp()
   const { t } = useT()
@@ -83,7 +82,7 @@ export function PartnerGesucht({
           <Punkt art="offen" />
           <span className="trolley-zeile-text">
             <span className="trolley-zeile-titel">{tagKurz(termin.datum, state.lang)}</span>
-            <span className="klein-text" dir="auto">
+            <span className="wann-zeile" dir="auto">
               <Zeitspanne termin={termin} />
               {[trolleyName(termin.trolleyId), nameVon(state.persons, termin.pid)]
                 .filter(Boolean)
@@ -92,13 +91,9 @@ export function PartnerGesucht({
             </span>
           </span>
           {darf && (
-            <GesperrterKnopf
-              className="knopf-pille knopf-pille--akzent"
-              gesperrt={laeuft}
-              onTipp={() => onDazukommen(termin)}
-            >
+            <button type="button" className="knopf-pille knopf-pille--akzent" onClick={() => onTermin(termin)}>
               {t.trolleyDazukommen}
-            </GesperrterKnopf>
+            </button>
           )}
         </div>
       ))}

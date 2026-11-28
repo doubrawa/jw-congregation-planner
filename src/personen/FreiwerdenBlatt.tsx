@@ -66,16 +66,16 @@ export function FreiwerdenBlatt({
           ))}
         </ul>
       </div>
+      {/* Untereinander, jeder Knopf über die ganze Breite: Nebeneinander brach
+          „Plätze freigeben" am Handy schon in der kleinsten Schrift um. */}
       <div className="frei-fuss">
         <p className="klein-text">{mitKonto ? `${hinweis} ${t.confirmPersonDelKonto}` : hinweis}</p>
-        <div className="knopf-reihe">
-          <button type="button" className="knopf-haupt" onClick={onFreigeben}>
-            {t.plaetzeFreigebenBtn}
-          </button>
-          <button type="button" className="knopf-umriss" onClick={onStehenLassen}>
-            {t.stehenLassenBtn}
-          </button>
-        </div>
+        <button type="button" className="knopf-haupt" onClick={onFreigeben}>
+          {t.plaetzeFreigebenBtn}
+        </button>
+        <button type="button" className="knopf-umriss" onClick={onStehenLassen}>
+          {t.stehenLassenBtn}
+        </button>
         <button type="button" className="knopf-leise" onClick={onClose}>
           {t.abbrechen}
         </button>

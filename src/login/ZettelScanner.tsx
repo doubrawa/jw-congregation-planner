@@ -10,9 +10,21 @@ const TAKT_MS = 150
  * sobald ein QR-Code darin steht, geht sein Text an `onGefunden`. Was er
  * bedeutet, entscheidet der Aufrufer — hier wird nichts geöffnet.
  *
+ * Geht die Kamera nicht auf (keine da, nicht erlaubt), rät die Meldung zum
+ * Eintippen — und der Knopf dafür steht gleich darunter (`onTippen`). Nur
+ * „Abbrechen" führte zurück zum Anfang, und den Weg müsste man selbst finden.
+ *
  * Eigene Datei, nachgeladen: Wer nie scannt, lädt weder sie noch `jsqr`.
  */
-export default function ZettelScanner({ onGefunden, onAbbrechen }: { onGefunden: (text: string) => void; onAbbrechen: () => void }) {
+export default function ZettelScanner({
+  onGefunden,
+  onTippen,
+  onAbbrechen,
+}: {
+  onGefunden: (text: string) => void
+  onTippen: () => void
+  onAbbrechen: () => void
+}) {
   const { t } = useT()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [kameraFehlt, setKameraFehlt] = useState(false)
@@ -69,9 +81,14 @@ export default function ZettelScanner({ onGefunden, onAbbrechen }: { onGefunden:
   return (
     <div className="scanner">
       {kameraFehlt ? (
-        <p className="feld-fehler" role="alert">
-          {t.kameraFehlt}
-        </p>
+        <>
+          <p className="feld-fehler" role="alert">
+            {t.kameraFehlt}
+          </p>
+          <button type="button" className="knopf-haupt" onClick={onTippen}>
+            {t.codeEintippen}
+          </button>
+        </>
       ) : (
         <>
           <div className="scanner-bild">
